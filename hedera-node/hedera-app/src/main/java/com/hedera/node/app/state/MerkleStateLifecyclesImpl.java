@@ -23,11 +23,11 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.state.merkle.HederaLifecycles;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -35,7 +35,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -49,8 +49,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Implements the major lifecycle events for Hedera Services, primarily by delegating to a Hedera instance.
  */
-public class HederaLifecyclesImpl implements HederaLifecycles {
-    private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
+public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
+    private static final Logger logger = LogManager.getLogger(MerkleStateLifecyclesImpl.class);
 
     private static final BiConsumer<
                     VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>,
@@ -75,11 +75,11 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     BiConsumer<EntityNumber, StakingNodeInfo>>
             weightUpdateVisitor;
 
-    public HederaLifecyclesImpl(@NonNull final Hedera hedera) {
+    public MerkleStateLifecyclesImpl(@NonNull final Hedera hedera) {
         this(hedera, WEIGHT_UPDATE_VISITOR);
     }
 
-    public HederaLifecyclesImpl(
+    public MerkleStateLifecyclesImpl(
             @NonNull final Hedera hedera,
             @NonNull
                     final BiConsumer<
@@ -91,19 +91,19 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
     }
 
     @Override
-    public void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+    public void onPreHandle(@NonNull final Event event, @NonNull final MerkleState state) {
         hedera.onPreHandle(event, state);
     }
 
     @Override
     public void onHandleConsensusRound(
-            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
+            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final MerkleState state) {
         hedera.onHandleConsensusRound(round, platformState, state);
     }
 
     @Override
     public void onStateInitialized(
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
@@ -113,21 +113,21 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onUpdateWeight(
-            @NonNull final MerkleHederaState state,
+            @NonNull final MerkleStateRoot stateRoot,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
         // Get all nodeIds added in the config.txt
         final var nodeIdsLeftToUpdate = configAddressBook.getNodeIdSet();
-        final var stakingInfoIndex = state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY);
+        final var stakingInfoIndex = stateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY);
         if (stakingInfoIndex == -1) {
             logger.warn("Staking info not found in state, skipping weight update");
             return;
         }
         @SuppressWarnings("unchecked")
-        final var stakingInfoVMap =
-                (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>) state.getChild(stakingInfoIndex);
+        final var stakingInfoVMap = (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>)
+                stateRoot.getChild(stakingInfoIndex);
         // Since it is much easier to modify the in-state staking info after schemas
-        // are registered with MerkleHederaState, we do that work later in the token
+        // are registered with MerkleStateRoot, we do that work later in the token
         // service schema's restart() hook. Here we only update the address book weights
         // based on the staking info in the state.
         weightUpdateVisitor.accept(stakingInfoVMap, (node, info) -> {
@@ -149,7 +149,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
-        hedera.onNewRecoveredState(recoveredState);
+    public void onNewRecoveredState(@NonNull final MerkleStateRoot recoveredStateRoot) {
+        hedera.onNewRecoveredState(recoveredStateRoot);
     }
 }

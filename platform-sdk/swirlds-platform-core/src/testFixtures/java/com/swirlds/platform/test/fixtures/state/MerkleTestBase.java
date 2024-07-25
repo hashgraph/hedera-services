@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.swirlds.platform.test.fixtures.state;
 
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.memory.InMemoryKey;
@@ -132,12 +133,12 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
      * Looks within the merkle tree for a node with the given label. This is useful for tests that
      * need to verify some change actually happened in the merkle tree.
      */
-    protected MerkleNode getNodeForLabel(MerkleHederaState hederaMerkle, String label) {
+    protected MerkleNode getNodeForLabel(MerkleStateRoot stateRoot, String label) {
         // This is not idea, as it requires white-box testing -- knowing the
-        // internal details of the MerkleHederaState. But lacking a getter
+        // internal details of the MerkleStateRoot. But lacking a getter
         // (which I don't want to add), this is what I'm left with!
-        for (int i = 0, n = hederaMerkle.getNumberOfChildren(); i < n; i++) {
-            final MerkleNode child = hederaMerkle.getChild(i);
+        for (int i = 0, n = stateRoot.getNumberOfChildren(); i < n; i++) {
+            final MerkleNode child = stateRoot.getChild(i);
             if (child instanceof Labeled labeled && label.equals(labeled.getLabel())) {
                 return child;
             }

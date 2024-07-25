@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -25,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface OnUpdateWeight {
     void updateWeight(
-            @NonNull final MerkleHederaState state,
+            @NonNull final MerkleStateRoot state,
             @NonNull AddressBook configAddressBook,
             @NonNull final PlatformContext context);
 }
