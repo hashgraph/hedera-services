@@ -110,7 +110,7 @@ final class ServicesMainTest {
         // expect:
         assertThat(subject.newMerkleStateRoot(), instanceOf(State.class));
         // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
-        // assertThat(subject.newMerkleStateRoot(), instanceOf(MerkleHederaState.class));
+        // assertThat(subject.newMerkleStateRoot(), instanceOf(MerkleStateRoot.class));
     }
 
     private void withBadCommandLineArgs() {

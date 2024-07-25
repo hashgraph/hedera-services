@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -67,11 +67,11 @@ public record MigrationContextImpl(
     @Override
     public void copyAndReleaseOnDiskState(@NonNull final String stateKey) {
         requireNonNull(stateKey);
-        if (newStates instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
+        if (newStates instanceof MerkleStateRoot.MerkleWritableStates merkleWritableStates) {
             merkleWritableStates.copyAndReleaseVirtualMap(stateKey);
         } else if (newStates instanceof FilteredWritableStates filteredWritableStates
                 && filteredWritableStates.getDelegate()
-                        instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
+                        instanceof MerkleStateRoot.MerkleWritableStates merkleWritableStates) {
             merkleWritableStates.copyAndReleaseVirtualMap(stateKey);
         } else {
             throw new UnsupportedOperationException("On-disk state is inaccessible");
