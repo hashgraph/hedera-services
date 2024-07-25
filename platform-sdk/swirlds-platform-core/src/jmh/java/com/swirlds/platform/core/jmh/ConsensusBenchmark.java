@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.core.jmh;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -29,7 +28,6 @@ import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -43,15 +41,8 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.results.RunResult;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.openjdk.jmh.runner.options.TimeValue;
 
 @State(Scope.Thread)
 @Fork(value = 1)
@@ -94,5 +85,11 @@ public class ConsensusBenchmark {
         for (final IndexedEvent event : events) {
             bh.consume(consensus.addEvent(event));
         }
+
+        /*
+            Results on a M1 Max MacBook Pro:
+            Benchmark                              (numEvents)  (numNodes)  (seed)  Mode  Cnt   Score    Error  Units
+            ConsensusBenchmark.calculateConsensus       100000          39       0  avgt    3  27.551 ± 11.690  ms/op
+         */
     }
 }

@@ -394,9 +394,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // force it to memoize for this event now, to avoid deep recursion of these methods later
         calculateMetadata(event);
 
-        if (witness(event)) {
-            event.setWitness(true);
+        if (!witness(event)) {
+            return null;
         }
+
+        event.setWitness(true);
+
         if (rounds.getElectionRoundNumber() <= event.getRoundCreated()) {
             if (rounds.getElectionRoundNumber() == event.getRoundCreated()) {
                 // this is a candidate witness which we are voting on, we might need to create
