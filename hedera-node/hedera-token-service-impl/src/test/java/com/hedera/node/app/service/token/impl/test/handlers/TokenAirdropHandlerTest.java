@@ -20,7 +20,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_AC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.NFT_AIRDROP;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AIRDROP;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -400,6 +403,39 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         var relationToNFT = Objects.requireNonNull(writableTokenRelStore.get(tokenReceiverId, nonFungibleTokenId));
         assertThat(relationToNFT.balance()).isEqualTo(1);
         assertThat(relationToFungible.balance()).isEqualTo(1000L);
+    }
+
+    @Test
+    void handleAirdropNotAssociatedToAccountTransfers() {
+        // setup all states
+        handlerTestBaseInternalSetUp(true);
+        givenStoresAndConfig(handleContext);
+
+        // mock record builder
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        var nftWithNoCustomFees = nonFungibleToken
+                .copyBuilder()
+                .customFees(Collections.emptyList())
+                .build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        writableTokenStore.put(nftWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        // set up transaction and context
+        givenAirdropTxn(false, zeroAccountId, TOKEN_AIRDROP);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+
+        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+
+        givenAirdropTxn(false, zeroAccountId, NFT_AIRDROP);
+        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
     @Test
