@@ -162,7 +162,6 @@ jobs:
       - name: Check Linux Configuration (Linux)
         if: ${{ runner.os != 'Windows' && runner.os != 'macOS' }}
         run: |
-          sudo apt update && sudo apt list --installed
           env
           locale -a
           echo "*******"
