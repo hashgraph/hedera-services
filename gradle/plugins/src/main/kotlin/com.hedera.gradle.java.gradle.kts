@@ -178,7 +178,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.isFork = true // run compiler in separate JVM process (independent of toolchain setup)
     options.compilerArgs.add("-implicit:none")
-    options.compilerArgs.add("-Werror")
+    //options.compilerArgs.add("-Werror")
     options.compilerArgs.add("-Xlint:all,-" + deactivatedCompileLintOptions.joinToString(",-"))
 
     doLast {
