@@ -419,16 +419,16 @@ public class TokenAirdropHandler implements TransactionHandler {
             final var tokenToTransfer = transferList.token();
             for (var transfer : transferList.transfers()) {
                 if (tokenRelStore.get(transfer.accountID(), tokenToTransfer) == null) {
-                    var list = tokenAssociationsMap.getOrDefault(transfer.accountID(), new HashSet<>());
-                    list.add(tokenToTransfer);
-                    tokenAssociationsMap.put(transfer.accountID(), list);
+                    tokenAssociationsMap
+                            .computeIfAbsent(transfer.accountID(), ignore -> new HashSet<>())
+                            .add(tokenToTransfer);
                 }
             }
             for (var nftTransfer : transferList.nftTransfers()) {
                 if (tokenRelStore.get(nftTransfer.receiverAccountID(), tokenToTransfer) == null) {
-                    var list = tokenAssociationsMap.getOrDefault(nftTransfer.receiverAccountID(), new HashSet<>());
-                    list.add(tokenToTransfer);
-                    tokenAssociationsMap.put(nftTransfer.receiverAccountID(), list);
+                    tokenAssociationsMap
+                            .computeIfAbsent(nftTransfer.receiverAccountID(), ignore -> new HashSet<>())
+                            .add(tokenToTransfer);
                 }
             }
         }
