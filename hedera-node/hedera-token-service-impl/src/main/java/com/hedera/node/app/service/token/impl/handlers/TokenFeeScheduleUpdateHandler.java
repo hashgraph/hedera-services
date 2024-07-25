@@ -122,7 +122,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var readableTokenRelsStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
 
-        if(token.customFees().isEmpty() && op.customFees().isEmpty()) {
+        if (token.customFees().isEmpty() && op.customFees().isEmpty()) {
             throw new HandleException(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES);
         }
         // validate custom fees before committing

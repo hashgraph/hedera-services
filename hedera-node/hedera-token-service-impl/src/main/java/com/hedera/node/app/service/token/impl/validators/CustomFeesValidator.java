@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -161,9 +160,9 @@ public class CustomFeesValidator {
                     }
                 }
                 case FRACTIONAL_FEE -> // fractional fee can be only applied to fungible common tokens
-                        validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
+                validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
                 case ROYALTY_FEE -> // royalty fee can be only applied to non-fungible unique tokens
-                        validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
+                validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
                 default -> throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
             }
         }
