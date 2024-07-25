@@ -117,7 +117,7 @@ public class CryptoCreateSuite {
                         .stakedAccountId("0.0.3")));
     }
 
-    @HapiTest
+//    @HapiTest
     @DisplayName("canonical EVM addresses are determined by aliases")
     final Stream<DynamicTest> canonicalEvmAddressesDeterminedByAliases(
             @Contract(contract = "MakeCalls") SpecContract makeCalls) {

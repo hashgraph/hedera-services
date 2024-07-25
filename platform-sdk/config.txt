@@ -3,6 +3,7 @@
 ###############################################################################################
 swirld, 123
 
+# app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
 # app,		GameDemo.jar,		   9000, 9000
 # app,		HelloSwirldDemo.jar
 # app,		CryptocurrencyDemo.jar
@@ -22,46 +23,22 @@ app,		HederaNode.jar
 # app, 		PlatformTestingDemo.jar, FCM1KFreeze.json
 # ** END REMOVE FROM SDK RELEASES **
 
- address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
-address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
+ address,   27, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
+# address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
 
-address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
-address,  3,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
+# address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
+# address,  3,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
 
-address,   4, E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208, 0.0.6
-address,   5,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209, 0.0.6
-address,   6, G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210, 0.0.6
-address,   7, H, Hank,     1, 127.0.0.1, 50211, 127.0.0.1, 50211, 0.0.6
-address,   8, I, Iris,     1, 127.0.0.1, 50212, 127.0.0.1, 50212, 0.0.6
-address,   9, J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213, 0.0.6
-address,   10, K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214, 0.0.6
-address,   11, L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215, 0.0.6
- address,   12, A, Alice,    1, 127.0.0.1, 50216, 127.0.0.1, 50216, 0.0.6
-address,  13, B, Bob,      1, 127.0.0.1, 50217, 127.0.0.1, 50217, 0.0.6
+# address,   4, E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208
+# address,   5,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209
+# address,   6, G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210
+# address,   7, H, Hank,     1, 127.0.0.1, 50211, 127.0.0.1, 50211
+# address,   8, I, Iris,     1, 127.0.0.1, 50212, 127.0.0.1, 50212
+# address,   9, J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213
+# address,   10, K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
+# address,   11, L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
 
-address,  14, C, Carol,    1, 127.0.0.1, 50218, 127.0.0.1, 50218, 0.0.6
-address,  15,  D, Dave,     1, 127.0.0.1, 50219, 127.0.0.1, 50219, 0.0.6
-
-address,   16, E, Eric,     1, 127.0.0.1, 50220, 127.0.0.1, 50220, 0.0.6
-address,   17,  F, Fred,     1, 127.0.0.1, 50221, 127.0.0.1, 50221, 0.0.6
-address,   18, G, Gina,     1, 127.0.0.1, 50222, 127.0.0.1, 50222, 0.0.6
-address,   19, H, Hank,     1, 127.0.0.1, 50223, 127.0.0.1, 50223, 0.0.6
-address,   20, I, Iris,     1, 127.0.0.1, 50224, 127.0.0.1, 50224, 0.0.6
-address,   21, J, Judy,     1, 127.0.0.1, 50225, 127.0.0.1, 50225, 0.0.6
-address,   22, K, Kent,     1, 127.0.0.1, 50226, 127.0.0.1, 50226, 0.0.6
-address,   23, L, Lucy,     1, 127.0.0.1, 50227, 127.0.0.1, 50227, 0.0.6
-address,   24, L, Lucy,     1, 127.0.0.1, 50228, 127.0.0.1, 50228, 0.0.6
-address,   25, L, Lucy,     1, 127.0.0.1, 50229, 127.0.0.1, 50229, 0.0.6
-address,   23, L, Lucy,     1, 127.0.0.1, 50230, 127.0.0.1, 50230, 0.0.6
-address,   26, L, Lucy,     1, 127.0.0.1, 50231, 127.0.0.1, 50231, 0.0.6
-address,   27, L, Lucy,     1, 127.0.0.1, 50232, 127.0.0.1, 50232, 0.0.6
-address,   28, L, Lucy,     1, 127.0.0.1, 50233, 127.0.0.1, 50233, 0.0.6
-address,   29, L, Lucy,     1, 127.0.0.1, 50234, 127.0.0.1, 50234, 0.0.6
-address,   30, L, Lucy,     1, 127.0.0.1, 50235, 127.0.0.1, 50235, 0.0.6
-address,   31, L, Lucy,     1, 127.0.0.1, 50236, 127.0.0.1, 50236, 0.0.6
-
-
-nextNodeId, 32
+nextNodeId, 28
 
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
@@ -94,6 +71,12 @@ nextNodeId, 32
 #	CryptocurrencyDemo.jar parameters: none
 #
 #	FilesystemDemo.jar parameters: none
+#
+#	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
+#		in the same order they appear are on the screen, with 1 to check it
+#		and 0 to not check it, followed by the number of events to display
+#		(or “all”). The first parameter  controls whether it runs
+#		slowly (1) or runs at full speed (0).
 #
 #	GameDemo.jar parameters:
 #		height:           height of the board (in cells). Player moves 1 cell at a time.

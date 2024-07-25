@@ -71,6 +71,10 @@ public class StakingInfoDumpUtils {
             reportSize = writer.getSize();
         }
 
+        for(final var entry : allBBMStakingInfo.entrySet()) {
+            System.out.println(entry.getKey() + " : " + entry.getValue());
+        }
+
         System.out.printf("=== staking info report is %d bytes %n", reportSize);
     }
 

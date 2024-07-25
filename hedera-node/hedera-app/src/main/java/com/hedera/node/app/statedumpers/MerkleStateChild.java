@@ -113,7 +113,7 @@ public enum MerkleStateChild {
     public static Set<MerkleStateChild> childrenToDump() {
         if (childrenToDump == null) {
             final var literalSelection =
-                    Optional.ofNullable(System.getProperty("childrenToDump")).orElse("");
+                    Optional.ofNullable(System.getProperty("childrenToDump")).orElse("STAKING_INFOS");
             childrenToDump = literalSelection.isEmpty()
                     ? Collections.emptySet()
                     : Arrays.stream(literalSelection.split(","))

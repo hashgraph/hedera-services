@@ -393,6 +393,8 @@ public final class Hedera implements SwirldMain {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
         }
+
+        dumpModChildrenFrom(state, MOD_POST_EVENT_STREAM_REPLAY, MerkleStateChild.childrenToDump());
     }
 
     /**
@@ -443,7 +445,7 @@ public final class Hedera implements SwirldMain {
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");
-    }
+           }
 
     /*==================================================================================================================
     *
