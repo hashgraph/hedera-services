@@ -66,16 +66,14 @@ public class ConsensusBenchmark {
         final List<EventSource<?>> eventSources =
                 EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);
         final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
 
-        consensus = new ConsensusImpl(
-                platformContext,
-                new NoOpConsensusMetrics(),
-                addressBook);
+        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
     }
 
     @Benchmark
@@ -87,9 +85,9 @@ public class ConsensusBenchmark {
         }
 
         /*
-            Results on a M1 Max MacBook Pro:
-            Benchmark                              (numEvents)  (numNodes)  (seed)  Mode  Cnt   Score    Error  Units
-            ConsensusBenchmark.calculateConsensus       100000          39       0  avgt    3  27.551 ± 11.690  ms/op
-         */
+           Results on a M1 Max MacBook Pro:
+           Benchmark                              (numEvents)  (numNodes)  (seed)  Mode  Cnt   Score    Error  Units
+           ConsensusBenchmark.calculateConsensus       100000          39       0  avgt    3  27.551 ± 11.690  ms/op
+        */
     }
 }
