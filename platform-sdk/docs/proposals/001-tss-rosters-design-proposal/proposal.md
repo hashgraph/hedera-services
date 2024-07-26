@@ -74,7 +74,7 @@ A Roster has a data structure as follows:
 
 ```
 class Roster {
-    List~RosterEntry~ entries
+    Map~NodeId, RosterEntry~ entries
 }
 
 class RosterEntry {
@@ -105,17 +105,18 @@ The protobuf definition for the Roster will look as follows:
 /**
  * A single roster in the network state.
  * <p>
- * The roster SHALL be a list of `RosterEntry` objects.
+ * The roster SHALL be a PBJ map of key `NodeId`, value `RosterEntry`.
  */
 message Roster {
 
     /**
-     * List of roster entries, one per consensus node.
+     * Map of roster entries, one per consensus node.
      * <p>
-     * This list SHALL contain roster entries in natural order of ascending node ids.
-     * This list SHALL NOT be empty.<br/>
-     */
-    repeated RosterEntry rosters = 1;
+     * This map SHALL contain roster entries in natural order of ascending node ids.
+     * The node Id key SHALL match the node Id in the value.
+     * This map SHALL NOT be empty.<br/>
+     */  
+    map<uint64, RosterEntry> mapInt32ToString = 1;
 }
 ```
 
@@ -124,9 +125,9 @@ message Roster {
 A roster entry will look as follows:
 ```proto
 /**
- * A single roster in the network state.
+ * A single roster entry in the network state.
  *
- * Each roster entry in the roster list SHALL encapsulate the elements required
+ * Each roster entry in SHALL encapsulate the elements required
  * to manage node participation in the Threshold Signature Scheme (TSS).<br/>
  * All fields are REQUIRED.
  */
@@ -193,9 +194,14 @@ message RosterEntry {
 }
 ```
 
-The map of rosters will be stored in the state as a PBJ map of Key `hash` and value `Roster`.
+#### Roster Map
 
-The `Roster` value is modeled as previously shown.
+A States API map `Roster Map` (separate from the PBJ Map modeled above) will be introduced.
+It will contain keys which will be the hash of the roster (of type `byte`) and values of type `Roster`.
+This map will store all candidate and active rosters.
+It will be an implementation of `ReadableKVState<>` and `WriteableKVState<>` interfaces.
+
+The `byte` key of the Roster Map will be of the widely used type `com.hedera.pbj.runtime.io.buffer.Bytes`.
 
 #### Roster State
 
@@ -292,7 +298,8 @@ A Roster is considered valid if it satisfies the following conditions:
 5. All RosterEntry/ies must have at least one gossip Endpoint.
 6. The RosterEntry/ies must be specified in order of ascending node id.
 7. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
-8. The roster must have a unique NodeId for each RosterEntry.
+8. The roster must have a unique NodeId for each RosterEntry, and the NodeId key must match the NodeId value in the
+   corresponding RosterEntry.
 
 On the submission of a new Candidate Roster, the platform will validate the roster against these conditions.
 Note that a constructed `Roster` can be valid, but not accepted by the platform.
