@@ -58,7 +58,6 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.TransactionType;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -152,8 +151,7 @@ public record UserTxn(
      * @param state the Hedera state
      * @return whether the given state indicates this transaction is the first after an upgrade
      */
-    private static boolean isUpgradeBoundary(
-            @NonNull final PlatformState platformState, @NonNull final MerkleState state) {
+    private static boolean isUpgradeBoundary(@NonNull final PlatformState platformState, @NonNull final State state) {
         if (platformState.getFreezeTime() == null
                 || !platformState.getFreezeTime().equals(platformState.getLastFrozenTime())) {
             return false;

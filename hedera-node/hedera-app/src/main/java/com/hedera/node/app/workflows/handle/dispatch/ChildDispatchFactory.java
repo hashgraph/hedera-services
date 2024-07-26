@@ -262,7 +262,8 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator);
-        final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+        final var childFees =
+                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
         final var childTokenContext =
