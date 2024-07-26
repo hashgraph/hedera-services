@@ -97,7 +97,9 @@ public record EventDescriptorWrapper(
      *
      * @throws IOException if an IO error occurs
      */
-    public static void serialize(@NonNull final SerializableDataOutputStream out, @Nullable final EventDescriptorWrapper obj) throws IOException {
+    public static void serialize(
+            @NonNull final SerializableDataOutputStream out, @Nullable final EventDescriptorWrapper obj)
+            throws IOException {
         if (obj == null) {
             out.writeInt(NULL_VERSION);
         } else {
@@ -106,7 +108,9 @@ public record EventDescriptorWrapper(
         }
     }
 
-    private static void serializeObject(@NonNull final SerializableDataOutputStream out, @NonNull final EventDescriptorWrapper obj) throws IOException {
+    private static void serializeObject(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventDescriptorWrapper obj)
+            throws IOException {
         out.writeSerializable(obj.hash(), false);
         out.writeSerializable(obj.creator(), false);
         out.writeLong(obj.eventDescriptor().generation());
@@ -121,7 +125,9 @@ public record EventDescriptorWrapper(
      *
      * @throws IOException if an IO error occurs
      */
-    public static void serializeList(@NonNull final SerializableDataOutputStream out, @Nullable final List<EventDescriptorWrapper> list) throws IOException {
+    public static void serializeList(
+            @NonNull final SerializableDataOutputStream out, @Nullable final List<EventDescriptorWrapper> list)
+            throws IOException {
         if (list == null) {
             out.writeInt(NULL_LIST_ARRAY_LENGTH);
         } else {
@@ -130,7 +136,8 @@ public record EventDescriptorWrapper(
             out.writeInt(size);
             if (size != 0) {
                 out.writeBoolean(
-                        true);// if the class ID and version is written only once, we need to write it when we come across
+                        true); // if the class ID and version is written only once, we need to write it when we come
+                // across
                 // the first non-null member, this variable will keep track of whether its written or not
                 boolean classIdVersionWritten = false;
                 while (iterator.hasNext()) {
@@ -152,7 +159,6 @@ public record EventDescriptorWrapper(
         }
     }
 
-
     /**
      * Deserialize an {@link EventDescriptorWrapper} from a {@link SerializableDataInputStream}.
      *
@@ -172,9 +178,11 @@ public record EventDescriptorWrapper(
     }
 
     @NonNull
-    private static EventDescriptorWrapper deserializeObject(@NonNull final SerializableDataInputStream in, int version) throws IOException {
+    private static EventDescriptorWrapper deserializeObject(@NonNull final SerializableDataInputStream in, int version)
+            throws IOException {
         if (!ClassVersion.valid(version)) {
-            throw new InvalidVersionException(ClassVersion.SELF_SERIALIZABLE_NODE_ID, ClassVersion.BIRTH_ROUND, version);
+            throw new InvalidVersionException(
+                    ClassVersion.SELF_SERIALIZABLE_NODE_ID, ClassVersion.BIRTH_ROUND, version);
         }
         final Hash hash = in.readSerializable(false, Hash::new);
         if (hash == null) {
@@ -204,7 +212,8 @@ public record EventDescriptorWrapper(
      * @throws IOException if an IO error occurs
      */
     @Nullable
-    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in) throws IOException {
+    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in)
+            throws IOException {
         final int length = in.readInt();
         if (length == NULL_LIST_ARRAY_LENGTH) {
             return null;
