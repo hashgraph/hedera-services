@@ -16,9 +16,14 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static java.util.Comparator.comparing;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -35,19 +40,30 @@ import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.platform.state.MerkleStateRoot;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class StateChangesValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
+
+    public static void main(String[] args) throws IOException {
+        final var path = "hedera-node/test-clients/src/main/resource/block-streams/blocks";
+        final StateChangesValidator stateChangesValidator = new StateChangesValidator();
+        stateChangesValidator.validateStreams(path);
+    }
 
     public StateChangesValidator() {
         final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
@@ -56,7 +72,7 @@ public class StateChangesValidator {
         final var servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         final var migrator = new OrderedServiceMigrator();
         final var instantSource = InstantSource.system();
-        final var state = new MerkleHederaState();
+        final var state = new MerkleStateRoot();
 
         registerServices(instantSource, servicesRegistry, bootstrapConfig);
 
@@ -65,42 +81,47 @@ public class StateChangesValidator {
                 servicesRegistry,
                 null,
                 SemanticVersion.newBuilder().major(80).build(),
-                bootstrapConfig,
+                new ConfigProviderImpl().getConfiguration(),
                 new FakeNetworkInfo(),
                 new NoOpMetrics());
 
         logger.info("Registered all Service and migrated to version 80");
     }
 
-    //    public void validateStreams(Path blockFilePath, BlockStreamConfig blockStreamConfig) {
-    //        logger.info("Validating streams at path {}", blockFilePath);
-    //        OutputStream out = null;
-    //        try {
-    //            out = Files.newOutputStream(blockFilePath);
-    //            out = new BufferedOutputStream(out, 1024 * 1024); // 1 MB
-    //            if (blockStreamConfig.compressFilesOnCreation()) {
-    //                out = new GZIPOutputStream(out, 1024 * 256); // 256 KB
-    //                // This double buffer is needed to reduce the number of synchronized calls to the underlying
-    //                // GZIPOutputStream. We know most files are going to be ~3-4 MB, so we can safely buffer that
-    // much.
-    //                out = new BufferedOutputStream(out, 1024 * 1024 * 4); // 4 MB
-    //            }
-    //
-    //            this.writableStreamingData = new WritableStreamingData(out);
-    //        } catch (final IOException e) {
-    //            // If an exception was thrown, we should close the stream if it was opened to prevent a resource leak.
-    //            if (out != null) {
-    //                try {
-    //                    out.close();
-    //                } catch (IOException ex) {
-    //                    logger.error("Error closing the FileBlockItemWriter output stream", ex);
-    //                }
-    //            }
-    //            // We must be able to produce blocks.
-    //            logger.fatal("Could not create block file {}", blockFilePath, e);
-    //            throw new UncheckedIOException(e);
-    //        }
-    //    }
+    public void validateStreams(String blockFileDir) throws IOException {
+        logger.info("Validating streams at dir {}", blockFileDir);
+
+        final var list = Files.walk(Path.of(blockFileDir))
+                .map(Path::toString)
+                .filter(f -> f.endsWith(".blk.gz"))
+                .sorted(comparing(this::extractBlockNumber))
+                .toList();
+
+        for (final var file : list) {
+            final var block = readBlockFromGzip(Path.of(file));
+            logger.info("Block: {}", block);
+        }
+    }
+
+    public static Block readBlockFromGzip(Path file) {
+        try (final GZIPInputStream in = new GZIPInputStream(Files.newInputStream(file))) {
+            return Block.PROTOBUF.parse(Bytes.wrap(in.readAllBytes()));
+        } catch (Exception e) {
+            fail("Unknown file type: " + file.getFileName());
+            return null;
+        }
+    }
+
+    private long extractBlockNumber(String fileName) {
+        String lastPart = fileName.substring(fileName.lastIndexOf('/') + 1);
+        String numberPart = lastPart.substring(0, lastPart.indexOf(".blk.gz"));
+        try {
+            return Long.parseLong(numberPart);
+        } catch (NumberFormatException e) {
+            logger.warn("Unable to parse block number from file name: {}", fileName);
+        }
+        return -1;
+    }
 
     private void registerServices(
             final InstantSource instantSource,
