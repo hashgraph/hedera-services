@@ -47,7 +47,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
         @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
-        @ConfigProperty(defaultValue = "false") boolean migrateEventHashing) {
+        @ConfigProperty(defaultValue = "true") boolean migrateEventHashing) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

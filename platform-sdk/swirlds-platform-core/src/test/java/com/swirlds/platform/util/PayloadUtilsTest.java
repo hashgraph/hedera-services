@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -39,8 +39,8 @@ class PayloadUtilsTest {
     @ParameterizedTest
     @MethodSource("buildArgumentsSwirldTransactions")
     void testSizeComparisonsSwirldTransactions(
-            final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
-        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), swirldTransaction.getSerializedLength());
+            final OneOf<PayloadOneOfType> payload, final PayloadWrapper swirldTransaction) {
+        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), swirldTransaction.getSize());
         assertFalse(PayloadUtils.isSystemPayload(payload));
     }
 
@@ -49,10 +49,10 @@ class PayloadUtilsTest {
         final Randotron randotron = Randotron.create();
 
         IntStream.range(0, 100).forEach(i -> {
-            final var payload = randotron.nextHashBytes();
+            final Bytes payload = randotron.nextHashBytes();
 
-            arguments.add(Arguments.of(
-                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload), new SwirldTransaction(payload)));
+            OneOf<PayloadOneOfType> oneOfPayload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload);
+            arguments.add(Arguments.of(oneOfPayload, new PayloadWrapper(oneOfPayload)));
         });
 
         return arguments.stream();
@@ -61,8 +61,8 @@ class PayloadUtilsTest {
     @ParameterizedTest
     @MethodSource("buildArgumentsStateSignatureTransaction")
     void testSizeComparisonsStateSignatureTransaction(
-            final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
-        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), stateSignatureTransaction.getSerializedLength());
+            final OneOf<PayloadOneOfType> payload, final PayloadWrapper stateSignatureTransaction) {
+        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), stateSignatureTransaction.getSize());
         assertTrue(PayloadUtils.isSystemPayload(payload));
     }
 
@@ -71,13 +71,12 @@ class PayloadUtilsTest {
         final Randotron randotron = Randotron.create();
 
         IntStream.range(0, 100).forEach(i -> {
-            final var payload = StateSignaturePayload.newBuilder()
+            final StateSignaturePayload payload = StateSignaturePayload.newBuilder()
                     .hash(randotron.nextHashBytes())
                     .signature(randotron.nextSignatureBytes())
                     .build();
-            arguments.add(Arguments.of(
-                    new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload),
-                    new StateSignatureTransaction(payload)));
+            final OneOf<PayloadOneOfType> oneOfPayload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload);
+            arguments.add(Arguments.of(oneOfPayload, new PayloadWrapper(oneOfPayload)));
         });
 
         return arguments.stream();

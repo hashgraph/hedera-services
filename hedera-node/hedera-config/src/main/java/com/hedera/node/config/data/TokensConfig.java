@@ -55,5 +55,6 @@ public record TokensConfig(
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
         @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
                 boolean balancesInQueriesEnabled,
+        @ConfigProperty(value = "airdrops.enabled", defaultValue = "false") @NetworkProperty boolean airdropsEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
                 int nftsMaxBatchSizeUpdate) {}
