@@ -23,14 +23,15 @@ The Roster, an immutable subset of the address book, will provide the data struc
 This proposal provides a specification for the behavior of rosters starting from their creation from the Address Book to
 their terminal state within the TSS specification.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
+The candidate roster will always get adopted on the next software upgrade.
 
 The Hedera App (henceforth reffered to as 'App') will maintain a version of the Address Book as a dynamic list that
 reflects the desired future state of
 the
 network's nodes. This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that
 create, update, or delete nodes.
-At some point when the App decides to adopt a new address book, it will create a `Roster` object with
-information from the Address Book and pass it to the platform.
+At some point when the App decides it's time to begin work on adopting a new address book (scope beyond this proposal),
+it will create a `Roster` object with information from the Address Book and pass it to the platform.
 
 The mechanism for doing so is detailed below.
 
@@ -57,6 +58,7 @@ The mechanism for doing so is detailed below.
 
 ### Roster Public API
 
+#### Setting the Candidate Roster
 A new method will be added to the platform state to allow the App to submit a Candidate Roster to the platform:
 
 ```java
@@ -284,8 +286,8 @@ The new `RosterState` will store the `candidateRosterHash` and a list `roundActi
 of pairs of round numbers and the active roster that was used for that round. The `roundActiveRosters` list will be
 updated only when the active roster changes.
 In the vast majority of cases, the list will contain only one element, the current active roster.
-Immediately following the adoption of an active roster, this list will have two elements — the previous active roster
-and the current active roster.
+Immediately following the adoption of a candidate roster, this list will have two elements — the previous active roster
+and the current active roster (which was the candidate roster).
 The choice of a list is suitable here as it is much cheaper to iterate over 2-3 elements comparing their `long` round
 numbers than it is to do a hash lookup.
 When we reach full Dynamic Address Book, this design choice may need to be revisited.
@@ -295,7 +297,7 @@ is, setting a candidate roster is an idempotent operation.
 
 One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle
 state.
-Another benefit is that adoption trigger becomes simple (App sets the roster) with delineated
+Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated
 responsibilities between the App and the platform.
 
 ### Roster Validity
@@ -352,27 +354,54 @@ The current startup procedure will be altered as follows
 
 ### DevOps Workflow changes
 
-The urrent network Transplant procedure is manual.
+The current network Transplant procedure is manual.
 DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
 the `config.txt` file using that state. This will change as follows:
-When adding new nodes to an existing network, DevOps will be given a combination of optional State data and Roster with
-the new node in it. Devops will no longer need `config.txt` on new nodes to existing networks.
-One of the State or Roster or both must exist for the network to start.
+
+#### Genesis Roster
+
+A `Genesis Roster` is an optional Roster that DevOps may provide to either start a Genesis Network process or Transplant
+an existing network.
+It is essential to distinguish the Genesis Roster from the Candidate or Active rosters.
+The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network. However, it's structure is
+exactly the same.
+The equivalent of the Genesis Roster in the current network is the `config.txt` file.
+DevOps and Services may choose to create the Genesis Roster from the `config.txt` file or some other mechanism.
+
+A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
+
+```java
+    //in PlatformBuilder
+    /**
+     * Set the Genesis Roster for the network.
+     * <p>
+     * This method is used to set the Genesis Roster for the network.
+     * The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network.
+     * The Genesis Roster is immutable and will be used to start a Genesis network Process or Network Transplant process.
+     * <p>
+     * @param genesisRoster the Genesis Roster for the network.
+     */
+    void withGenesisRoster(@NonNull final Roster genesisRoster);
+``` 
 
 #### New Transplant Procedure
-
 The App will decide a network transplant sequence based on the following heuristics:
 
-* Network Transplant process == Active Roster AND State provided
-  When both a roster and a state are provided, it signifies a network transplant.
+* Network Transplant process == Genesis Roster AND State provided
+  When both a Genesis Roster and State are provided, it signifies a network transplant.
   The node will discard any existing candidate roster, rotate the active roster to the previous roster,
-  and adopt the provided roster as the new active roster. This way, the provided network state and roster are adopted.
+  and adopt the provided Genesis Roster as the new Active Roster. This way, the provided network state and Genesis
+  Roster are adopted.
+  There will be new code required to create the Genesis Roster and pass it to the platform via the `PlatformBuilder` if
+  the network is intended to be in a Transplant mode.
+  The Services team will be responsible for implementing this, althouth the details are yet to be defined.
 
-* Genesis Network process == Active Roster, No State provided
-  When a roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
+* Genesis Network process == Genesis Roster, No State provided
+  When a Genesis Roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
   The node will initiate the TSS key generation process (out of scope for this proposal),
-  create a genesis state with the provided roster, and start participating in consensus from round 0.
-* Keep Network Settings (Normal restart) == No Active Roster AND State provided
+  create a genesis state with the provided Genesis Roster, and start participating in consensus from round 0.
+
+* Keep Network Settings (Normal restart) == No Genesis Roster AND State provided
   If only a state is provided without a roster, the node will retain its existing network settings, including the active
   roster.
   This will be the typical behavior for a node restarting within an established network.
@@ -386,7 +415,7 @@ The App will decide a network transplant sequence based on the following heurist
 - Roster Storage: The Roster is stored in the State as a map of Roster Hash to Roster. A reference to the candidate
   roster's hash is also stored in the
   `RosterState` object.
-- Roster Adoption: The adoption of the candidate roster is beyond the scope of this proposal.
+- Roster Adoption: The candidate roster is always adopted on the next software upgrade.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the previous.
 
