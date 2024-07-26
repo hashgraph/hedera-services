@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -45,7 +45,7 @@ public interface EmbeddedHedera {
      *
      * @return the fake state of the embedded Hedera node
      */
-    FakeMerkleState state();
+    FakeState state();
 
     /**
      * Returns the platform state of the embedded Hedera node.

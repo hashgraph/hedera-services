@@ -35,7 +35,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -69,7 +69,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProviderImpl configProvider;
 
-    private FakeMerkleState state;
+    private FakeState state;
 
     private Map<FileID, File> files;
 
@@ -87,7 +87,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         files = new HashMap<>();
-        state = new FakeMerkleState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
+        state = new FakeState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 
         final var config = new TestConfigBuilder(false)
                 .withConverter(Bytes.class, new BytesConverter())

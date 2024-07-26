@@ -55,7 +55,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -67,7 +67,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Factory for all readable stores. It creates new readable stores based on the {@link MerkleState}.
+ * Factory for all readable stores. It creates new readable stores based on the {@link State}.
  *
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
@@ -111,15 +111,15 @@ public class ReadableStoreFactory {
         return Collections.unmodifiableMap(newMap);
     }
 
-    private final MerkleState state;
+    private final State state;
 
     /**
      * Constructor of {@code ReadableStoreFactory}
      *
-     * @param state the {@link MerkleState} to use
+     * @param state the {@link State} to use
      */
     @Inject
-    public ReadableStoreFactory(@NonNull final MerkleState state) {
+    public ReadableStoreFactory(@NonNull final State state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
 

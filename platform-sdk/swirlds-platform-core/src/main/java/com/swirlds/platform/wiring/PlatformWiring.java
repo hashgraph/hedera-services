@@ -103,7 +103,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
@@ -168,7 +168,7 @@ public class PlatformWiring {
     private final boolean publishStaleEvents;
     private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
             staleEventDetectorWiring;
-    private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
+    private final ComponentWiring<TransactionResubmitter, List<PayloadWrapper>> transactionResubmitterWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;

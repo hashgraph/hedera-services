@@ -18,6 +18,7 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Objects.requireNonNull;
@@ -65,6 +66,7 @@ public class AppThrottleAdviser implements ThrottleAdviser {
         final var childRecords = stack.getChildBuilders();
         @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
+        int numAutoAssociations = 0;
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);
             if (Objects.equals(childRecord.status(), SUCCESS)) {
@@ -95,7 +97,12 @@ public class AppThrottleAdviser implements ThrottleAdviser {
                 if (shouldThrottleTxn) {
                     isAllowed = false;
                 }
+                numAutoAssociations += childRecord.getNumAutoAssociations();
             }
+        }
+        if (isAllowed && numAutoAssociations > 0) {
+            isAllowed = !networkUtilizationManager.shouldThrottleNOfUnscaled(
+                    numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT, consensusNow);
         }
         if (!isAllowed) {
             networkUtilizationManager.resetUsageThrottlesTo(snapshotsIfNeeded);
