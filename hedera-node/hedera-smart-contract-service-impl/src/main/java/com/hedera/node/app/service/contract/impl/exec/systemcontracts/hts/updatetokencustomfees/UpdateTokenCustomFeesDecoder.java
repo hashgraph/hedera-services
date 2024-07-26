@@ -82,7 +82,15 @@ public class UpdateTokenCustomFeesDecoder {
     @Inject
     public UpdateTokenCustomFeesDecoder() {}
 
-    public @Nullable TransactionBody decodeUpdateFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt) {
+    /***
+     * Decoding the update request for a fungible token's custom fees.
+     * Only accepting Fixed and Fractional fees.
+     * @param attempt the hts call attempt
+     * @return TokenFeeScheduleUpdateTransactionBody
+     * @throws IllegalArgumentException if the call cannot be decoded
+     */
+    public TransactionBody decodeUpdateFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt)
+            throws IllegalArgumentException {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
         return TransactionBody.newBuilder()
@@ -91,7 +99,15 @@ public class UpdateTokenCustomFeesDecoder {
                 .build();
     }
 
-    public TransactionBody decodeUpdateNonFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt) {
+    /***
+     * Decoding the update request for a non-fungible token's custom fees.
+     * Only accepting Fixed and Royalty fees.
+     * @param attempt the hts call attempt
+     * @return TokenFeeScheduleUpdateTransactionBody
+     * @throws IllegalArgumentException if the call cannot be decoded
+     */
+    public TransactionBody decodeUpdateNonFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt)
+            throws IllegalArgumentException {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
         return TransactionBody.newBuilder()

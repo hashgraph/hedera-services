@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
@@ -45,7 +46,8 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
     private final UpdateTokenCustomFeesDecoder decoder;
 
     @Inject
-    public UpdateTokenCustomFeesTranslator(UpdateTokenCustomFeesDecoder decoder) {
+    public UpdateTokenCustomFeesTranslator(@NonNull final UpdateTokenCustomFeesDecoder decoder) {
+        requireNonNull(decoder);
         this.decoder = decoder;
     }
 
