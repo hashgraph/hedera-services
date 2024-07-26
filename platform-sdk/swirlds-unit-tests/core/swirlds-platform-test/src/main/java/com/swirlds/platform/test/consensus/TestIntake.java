@@ -86,10 +86,7 @@ public class TestIntake {
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
         final EventHasher eventHasher = new DefaultEventHasher(
                 new BasicSoftwareVersion(1).getPbjSemanticVersion(),
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .migrateEventHashing());
+                false);
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<PlatformEvent> postHashCollectorWiring =
