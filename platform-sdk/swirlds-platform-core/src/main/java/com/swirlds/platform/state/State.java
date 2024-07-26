@@ -43,7 +43,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     private static final long CLASS_ID = 0x2971b4ba7dd84402L;
 
-    private static class ClassVersion {
+    public static class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int ADD_MIN_GEN = 2;
         public static final int EVENT_REFACTOR = 3;
@@ -103,7 +103,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
         if (version < ClassVersion.MIGRATE_PLATFORM_STATE
                 && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            merkleStateRoot.setPlatformState(getPlatformState());
+            PlatformState platformState = getPlatformState().copy();
+            setChild(ChildIndices.PLATFORM_STATE, null);
+            merkleStateRoot.setPlatformState(platformState);
         }
 
         return this;

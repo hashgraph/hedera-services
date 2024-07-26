@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.platform.state.MerkleStateRoot.PLATFORM_STATE_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -52,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -845,6 +847,39 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
                     .isEqualTo(3);
             assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Platform state is set twice (same instance) ")
+        void platformStatSetTwice_sameInstance() {
+            final var platformState = new PlatformState();
+            platformState.setRound(nextLong());
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState);
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.getPlatformState())
+                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                            .withIgnoredFields("reservationCount")
+                            .build())
+                    .isEqualTo(platformState);
+        }
+
+        @Test
+        @DisplayName("Platform state is set twice (different instance) ")
+        void platformStatSetTwice_differentInstance() {
+            final var platformState1 = new PlatformState();
+            platformState1.setRound(nextLong());
+            stateRoot.setPlatformState(platformState1);
+            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState1);
+            final var platformState2 = new PlatformState();
+            platformState2.setRound(nextLong());
+            platformState2.reserve();
+            stateRoot.setPlatformState(platformState2);
+            assertThat(stateRoot.getPlatformState())
+                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                            .withIgnoredFields("route")
+                            .build())
+                    .isEqualTo(platformState2);
         }
     }
 }
