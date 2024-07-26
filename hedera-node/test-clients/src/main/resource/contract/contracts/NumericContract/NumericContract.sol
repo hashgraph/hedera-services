@@ -147,4 +147,35 @@ contract NumericContract {
         }
     }
 
+    function hbarApproveProxy(address spender, int256 amount) external {
+        (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("hbarApprove(address,int256)", spender, amount));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function hbarApprove(address owner, address spender, int256 amount) external {
+        (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("hbarApprove(address,address,int256)", owner, spender, amount));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function convertTinycentsToTinybars(uint256 tinycents) external {
+        (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("convertTinycentsToTinybars(uint256)", tinycents));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function convertTinybarsToTinycents(uint256 tinybars) external {
+        (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("convertTinybarsToTinycents(uint256)", tinybars));
+
+        if (success == false) {
+            revert();
+        }
+    }
 }
