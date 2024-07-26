@@ -159,14 +159,6 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: Check Linux Configuration (Linux)
-        if: ${{ runner.os != 'Windows' && runner.os != 'macOS' }}
-        run: |
-          env
-          locale -a
-          echo "*******"
-          locale
-
       - name: Setup Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
@@ -211,14 +203,6 @@ jobs:
       - name: Build Artifacts
         id: gradle-build
         run: ./gradlew assemble --scan --no-build-cache
-
-      - name: Upload Javadoc Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        if: ${{ !cancelled() && always()}}
-        with:
-          name: javadoc options
-          path: "**/build/tmp/javadoc/*.options"
-          retention-days: 7
 
       - name: Regenerate Manifest
         id: regen-manifest
