@@ -142,6 +142,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void endRound(@NonNull final State state) {
+        log.info(
+                "Capturing end of round state changes for block {} with {}",
+                blockNumber,
+                roundStateChangeListener.stateChanges());
         pendingItems.add(roundStateChangeListener.stateChanges());
 
         if (!pendingItems.isEmpty()) {

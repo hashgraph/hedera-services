@@ -47,7 +47,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.swirlds.state.spi.StateChangesListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

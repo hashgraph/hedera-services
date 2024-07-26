@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM;
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -30,10 +28,6 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.StateChangesCause;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
@@ -90,15 +84,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     @Nullable
     private RoundStateChangeListener roundStateChangeListener;
-    /**
-     * Any system state changes made <b>before</b> all transaction-caused changes in
-     * the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
-     */
-    private final List<StateChange> preTxnSystemChanges = new ArrayList<>();
-    /**
-     * Any system state changes made <b>after</b> all transaction-caused changes.
-     */
-    private final List<StateChange> postTxnSystemChanges = new ArrayList<>();
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
@@ -208,7 +193,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @throws NullPointerException if called on the root stack
      */
     public void commitFullStack() {
-        commitFullStack(null, null, null);
+        commitFullStack(baseBuilder);
     }
 
     private enum SystemStateChangeOrder {
@@ -222,40 +207,23 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param builder the builder to correlate the state changes to
      */
     public void commitTransaction(@Nullable final StreamBuilder builder) {
-        commitFullStack(STATE_CHANGE_CAUSE_TRANSACTION, null, builder);
+        commitFullStack(builder);
     }
 
     /**
      * Commits all state changes captured in this stack; and captures the details for
      * the block stream, correlated to state changes preceding the first transaction.
      */
-    public void commitPreTxnSystemChanges() {
-        commitFullStack(STATE_CHANGE_CAUSE_SYSTEM, SystemStateChangeOrder.PRE_TXNS, null);
-    }
-
-    /**
-     * Commits all state changes captured in this stack; and captures the details for
-     * the block stream, correlated to state changes following the last transaction.
-     */
-    public void commitPostTxnSystemChanges() {
-        commitFullStack(STATE_CHANGE_CAUSE_SYSTEM, SystemStateChangeOrder.POST_TXNS, null);
+    public void commitSystemStateChanges() {
+        commitFullStack(baseBuilder);
     }
 
     /**
      * Commits all state changes captured in this stack; if this is the root stack, also
      * captures those changes as builders with the given cause.
      */
-    private void commitFullStack(
-            @Nullable final StateChangesCause cause,
-            @Nullable final SystemStateChangeOrder changeOrder,
-            @Nullable final StreamBuilder causeBuilder) {
-        if (cause != null || causeBuilder != null || changeOrder != null) {
-            requireNonNull(builderSink, "Cause metadata provided to child stack");
-        }
+    private void commitFullStack(@NonNull final StreamBuilder causeBuilder) {
         final var isRoot = builderSink != null;
-        if (isRoot) {
-            requireNonNull(cause, "Committing root stack must have a cause");
-        }
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
             if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
@@ -266,21 +234,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 stack.pop().commit();
 
                 final var stateChanges = listener.getStateChanges();
-                log.info("Capturing {} state changes {}", cause, stateChanges);
-                switch (cause) {
-                    case STATE_CHANGE_CAUSE_SYSTEM -> {
-                        requireNonNull(changeOrder, "System cause given without order");
-                        if (changeOrder == SystemStateChangeOrder.PRE_TXNS) {
-                            preTxnSystemChanges.addAll(stateChanges);
-                        } else {
-                            postTxnSystemChanges.addAll(stateChanges);
-                        }
-                    }
-                    case STATE_CHANGE_CAUSE_TRANSACTION -> {
-                        requireNonNull(causeBuilder, "Transaction cause given without builder");
-                        causeBuilder.stateChanges(stateChanges);
-                    }
-                }
+                log.info("Capturing state changes {}", stateChanges);
+                causeBuilder.stateChanges(stateChanges);
             } else {
                 stack.pop().commit();
             }
@@ -541,17 +496,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                             .addAll(pairedBuilder.ioBlockItemsBuilder().build());
                 }
             }
-        }
-        if (HandleWorkflow.STREAM_MODE != RECORDS && !preTxnSystemChanges.isEmpty()) {
-            final var preTxnConsensusNow = consensusTime.minusNanos(indexOfUserRecord + 1);
-            requireNonNull(blockItems)
-                    .addFirst(BlockItem.newBuilder()
-                            .stateChanges(StateChanges.newBuilder()
-                                    .cause(STATE_CHANGE_CAUSE_SYSTEM)
-                                    .consensusTimestamp(new Timestamp(
-                                            preTxnConsensusNow.getEpochSecond(), preTxnConsensusNow.getNano()))
-                                    .stateChanges(preTxnSystemChanges))
-                            .build());
         }
         requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
         return new HandleOutput(blockItems, records);

@@ -91,7 +91,7 @@ public class NodeStakeUpdates {
             try {
                 // Update the exchange rate
                 exchangeRateManager.updateMidnightRates(stack);
-                stack.commitPreTxnSystemChanges();
+                stack.commitSystemStateChanges();
             } catch (final Exception e) {
                 // If anything goes wrong, we log the error and continue
                 logger.error("CATASTROPHIC failure updating midnight rates", e);

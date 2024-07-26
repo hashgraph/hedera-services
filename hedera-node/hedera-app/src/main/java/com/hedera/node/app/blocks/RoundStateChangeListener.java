@@ -65,7 +65,7 @@ public class RoundStateChangeListener implements StateChangesListener {
 
     @Override
     public void queuePopChange(String stateName) {
-        requireNonNull(stateName, "stateKey must not be null");
+        requireNonNull(stateName, "stateName must not be null");
 
         final var stateChange = StateChange.newBuilder()
                 .stateName(stateName)
@@ -76,7 +76,7 @@ public class RoundStateChangeListener implements StateChangesListener {
 
     @Override
     public <V> void singletonUpdateChange(@NonNull final String stateName, @NonNull final V value) {
-        requireNonNull(stateName, "stateKey must not be null");
+        requireNonNull(stateName, "stateName must not be null");
         requireNonNull(value, "value must not be null");
 
         final var stateChange = StateChange.newBuilder()

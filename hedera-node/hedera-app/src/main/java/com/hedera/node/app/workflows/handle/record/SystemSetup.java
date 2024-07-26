@@ -142,11 +142,9 @@ public class SystemSetup {
                             txBody,
                             entityNum,
                             recordBuilder.status());
-                    dispatch.stack().rollbackFullStack();
-                } else {
-                    controlledNum.put(new EntityNumber(firstUserNum - 1));
-                    dispatch.stack().commitTransaction(recordBuilder);
                 }
+                controlledNum.put(new EntityNumber(firstUserNum - 1));
+                dispatch.stack().commitSystemStateChanges();
             }
 
             @Override
@@ -156,9 +154,6 @@ public class SystemSetup {
                         .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
                 if (recordBuilder.status() != SUCCESS) {
                     log.error("Failed to dispatch update transaction {} for - {}", txBody, recordBuilder.status());
-                    dispatch.stack().rollbackFullStack();
-                } else {
-                    dispatch.stack().commitTransaction(recordBuilder);
                 }
             }
 
