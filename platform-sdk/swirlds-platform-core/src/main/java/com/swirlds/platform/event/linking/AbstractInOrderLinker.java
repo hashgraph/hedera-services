@@ -116,7 +116,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                     0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
             this.parentDescriptorMap = new StandardSequenceMap<>(
-                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 

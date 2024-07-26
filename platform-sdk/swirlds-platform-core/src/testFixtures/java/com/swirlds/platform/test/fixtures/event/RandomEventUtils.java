@@ -83,14 +83,14 @@ public class RandomEventUtils {
                 : new EventDescriptorWrapper(new EventDescriptor(
                         selfParent.getBaseHash().getBytes(),
                         selfParent.getCreatorId().id(),
-                        selfParent.getBirthRound(),
+                        selfParent.getBaseEvent().getBirthRound(),
                         selfParent.getGeneration()));
         final EventDescriptorWrapper otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
                 : new EventDescriptorWrapper(new EventDescriptor(
                         otherParent.getBaseHash().getBytes(),
                         otherParent.getCreatorId().id(),
-                        otherParent.getBirthRound(),
+                        otherParent.getBaseEvent().getBirthRound(),
                         otherParent.getGeneration()));
 
         final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
