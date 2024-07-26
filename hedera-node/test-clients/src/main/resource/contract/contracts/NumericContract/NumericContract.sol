@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 contract NumericContract {
 
-    uint8 public constant SUCCESS_CODE = 22;
+    int32 public constant SUCCESS_CODE = 22;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*               Non-static Simple HTS functions              */

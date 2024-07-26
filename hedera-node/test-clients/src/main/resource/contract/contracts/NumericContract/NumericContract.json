@@ -1,5 +1,18 @@
 [
   {
+    "inputs": [],
+    "name": "SUCCESS_CODE",
+    "outputs": [
+      {
+        "internalType": "int32",
+        "name": "",
+        "type": "int32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
