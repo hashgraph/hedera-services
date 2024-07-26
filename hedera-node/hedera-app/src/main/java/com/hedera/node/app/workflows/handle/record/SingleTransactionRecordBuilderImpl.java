@@ -644,6 +644,15 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Returns the number of automatic token associations
+     *
+     * @return the number of associations
+     */
+    public int getNumAutoAssociations() {
+        return automaticTokenAssociations.size();
+    }
+
+    /**
      * Sets the alias.
      *
      * @param alias the alias
