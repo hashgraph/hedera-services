@@ -17,7 +17,8 @@ module com.hedera.node.app.service.util.impl {
             UtilServiceImpl;
 
     exports com.hedera.node.app.service.util.impl to
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.service.util.impl.handlers;
     exports com.hedera.node.app.service.util.impl.components;
     exports com.hedera.node.app.service.util.impl.records;

@@ -57,7 +57,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.ingest to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.query to
@@ -66,7 +67,8 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
             com.hedera.node.services.cli,
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
@@ -99,6 +101,12 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.cache to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
+    exports com.hedera.node.app.ids;
+    exports com.hedera.node.app.state.recordcache;
+    exports com.hedera.node.app.records;
+    exports com.hedera.node.app.blocks;
+    exports com.hedera.node.app.fees;
+    exports com.hedera.node.app.throttle;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
