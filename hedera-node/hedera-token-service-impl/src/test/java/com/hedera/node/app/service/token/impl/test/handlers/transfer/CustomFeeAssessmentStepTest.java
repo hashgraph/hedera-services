@@ -54,12 +54,16 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class CustomFeeAssessmentStepTest extends StepsBase {
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
     private Token fungibleWithNoKyc;
     private Token nonFungibleWithNoKyc;
+
+    @Mock
+    private CryptoTransferRecordBuilder builder;
 
     @BeforeEach
     public void setUp() {
@@ -175,8 +179,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -255,8 +257,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -368,8 +368,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -447,6 +445,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
         givenAutoCreationDispatchEffects(payerId);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);

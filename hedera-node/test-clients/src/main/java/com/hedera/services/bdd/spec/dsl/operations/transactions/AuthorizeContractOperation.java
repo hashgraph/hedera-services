@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType.FEE_SCHEDULE_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType.SUPPLY_KEY;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -87,8 +88,23 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
             case SpecAccount account -> cryptoUpdate(account.name()).key(managedKeyName);
             case SpecToken token -> {
                 final var op = tokenUpdate(token.name()).adminKey(managedKeyName);
+                if (extraTokenAuthorizations.contains(TokenKeyType.KYC_KEY)) {
+                    op.kycKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.FREEZE_KEY)) {
+                    op.freezeKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.WIPE_KEY)) {
+                    op.wipeKey(managedKeyName);
+                }
                 if (extraTokenAuthorizations.contains(SUPPLY_KEY)) {
                     op.supplyKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(FEE_SCHEDULE_KEY)) {
+                    op.feeScheduleKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.PAUSE_KEY)) {
+                    op.pauseKey(managedKeyName);
                 }
                 yield op;
             }

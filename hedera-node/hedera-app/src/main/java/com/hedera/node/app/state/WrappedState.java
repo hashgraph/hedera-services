@@ -18,7 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,26 +26,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A {@link MerkleState} that wraps another {@link MerkleState} and provides a {@link #commit()} method that
+ * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
  * commits all modifications to the underlying state.
  */
-public class WrappedMerkleState implements MerkleState {
+public class WrappedState implements State {
 
-    private final MerkleState delegate;
+    private final State delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
 
     /**
-     * Constructs a {@link WrappedMerkleState} that wraps the given {@link MerkleState}.
+     * Constructs a {@link WrappedState} that wraps the given {@link State}.
      *
-     * @param delegate the {@link MerkleState} to wrap
+     * @param delegate the {@link State} to wrap
      * @throws NullPointerException if {@code delegate} is {@code null}
      */
-    public WrappedMerkleState(@NonNull final MerkleState delegate) {
+    public WrappedState(@NonNull final State delegate) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
     /**
-     * Returns {@code true} if the state of this {@link WrappedMerkleState} has been modified.
+     * Returns {@code true} if the state of this {@link WrappedState} has been modified.
      *
      * @return {@code true}, if the state has been modified; otherwise {@code false}
      */
@@ -65,7 +65,7 @@ public class WrappedMerkleState implements MerkleState {
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
      * <p>
-     * Unlike other {@link MerkleState} implementations, the returned {@link ReadableStates} of this implementation
+     * Unlike other {@link State} implementations, the returned {@link ReadableStates} of this implementation
      * must only be used in the handle workflow.
      */
     @Override
@@ -88,7 +88,7 @@ public class WrappedMerkleState implements MerkleState {
     }
 
     /**
-     * Writes all modifications to the underlying {@link MerkleState}.
+     * Writes all modifications to the underlying {@link State}.
      */
     public void commit() {
         for (final var writableStates : writableStatesMap.values()) {
