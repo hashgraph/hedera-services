@@ -134,6 +134,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
+    public PlatformState platformState() {
+        return platformState;
+    }
+
+    @Override
     public Timestamp nextValidStart() {
         var candidateNano = nextNano.getAndIncrement();
         if (candidateNano >= NANOS_IN_A_SECOND) {
