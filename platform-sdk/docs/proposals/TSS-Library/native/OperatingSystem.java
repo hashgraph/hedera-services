@@ -16,21 +16,15 @@
 
 
 
-package com.swirlds.pairings.nativ3support;
+package com.hedera.common.nativesupport;
 
 public enum OperatingSystem {
-    WINDOWS("windows"),
-    LINUX("linux"),
-    DARWIN("darwin");
-
-    private final String directoryName;
-
-    OperatingSystem(final String directoryName) {
-        this.directoryName = directoryName;
-    }
+    WINDOWS,
+    LINUX,
+    DARWIN;
 
     public String directoryName() {
-        return directoryName;
+        return this.name().toLowerCase();
     }
 
     /**

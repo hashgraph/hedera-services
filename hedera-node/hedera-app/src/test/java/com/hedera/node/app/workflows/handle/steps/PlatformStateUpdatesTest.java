@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.swirlds.platform.state.PlatformState;
@@ -48,7 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformStateUpdatesTest implements TransactionFactory {
-    private FakeMerkleState state;
+    private FakeState state;
 
     private PlatformStateUpdates subject;
     private AtomicReference<Timestamp> freezeTimeBackingStore;
@@ -66,7 +66,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
 
-        state = new FakeMerkleState().addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore));
+        state = new FakeState().addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore));
 
         doAnswer(answer -> when(platformState.getFreezeTime()).thenReturn(answer.getArgument(0)))
                 .when(platformState)

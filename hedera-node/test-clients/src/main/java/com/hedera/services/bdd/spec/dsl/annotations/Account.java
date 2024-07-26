@@ -60,9 +60,8 @@ public @interface Account {
     long stakedNodeId() default -1;
 
     /**
-     * If set, the initial auto association slots for the account.
-     *
-     * @return the initial number of auto-association slots for the account
+     * If set, the maximum number of auto-associations to allow for the account.
+     * @return the maximum number of auto-associations
      */
-    int autoAssociationSlots() default 0;
+    int maxAutoAssociations() default 0;
 }

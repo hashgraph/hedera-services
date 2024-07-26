@@ -351,16 +351,16 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     /** Utility method that get the writable queue from the working state */
     private WritableStates getWritableState() {
-        final var merkleState = workingStateAccessor.getMerkleState();
-        if (merkleState == null) {
-            throw new RuntimeException("MerkleState is null. This can only happen very early during bootstrapping");
+        final var state = workingStateAccessor.getState();
+        if (state == null) {
+            throw new RuntimeException("State is null. This can only happen very early during bootstrapping");
         }
-        return merkleState.getWritableStates(NAME);
+        return state.getWritableStates(NAME);
     }
 
     /** Utility method that get the readable queue from the working state */
     private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
-        final var states = requireNonNull(workingStateAccessor.getMerkleState()).getReadableStates(NAME);
+        final var states = requireNonNull(workingStateAccessor.getState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }
 }

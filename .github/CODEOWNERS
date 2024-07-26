@@ -44,6 +44,11 @@
 /hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
 /hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci
 
+###############################
+##### Hedera Cryptography #####
+###############################
+/hedera-cryptography/                           @hashgraph/platform-cryptography
+
 #########################
 ##### Platform SDK ######
 #########################
