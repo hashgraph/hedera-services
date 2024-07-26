@@ -20,6 +20,7 @@ import static java.util.Comparator.comparing;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -58,11 +59,12 @@ import org.apache.logging.log4j.Logger;
 
 public class StateChangesValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
+    final MerkleStateRoot state = new MerkleStateRoot();
 
     public static void main(String[] args) throws IOException {
         final var path = "hedera-node/test-clients/src/main/resource/block-streams/blocks";
-        final StateChangesValidator stateChangesValidator = new StateChangesValidator();
-        stateChangesValidator.validateStreams(path);
+        final var validator = new StateChangesValidator();
+        validator.validateStreams(path);
     }
 
     public StateChangesValidator() {
@@ -72,7 +74,6 @@ public class StateChangesValidator {
         final var servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         final var migrator = new OrderedServiceMigrator();
         final var instantSource = InstantSource.system();
-        final var state = new MerkleStateRoot();
 
         registerServices(instantSource, servicesRegistry, bootstrapConfig);
 
@@ -100,6 +101,31 @@ public class StateChangesValidator {
         for (final var file : list) {
             final var block = readBlockFromGzip(Path.of(file));
             logger.info("Block: {}", block);
+            for (final var item : block.items()) {
+               if(item.hasStateChanges()){
+                   final var stateChanges = item.stateChangesOrThrow().stateChanges();
+                   for(final var stateChange : stateChanges){
+                       switch(stateChange.changeOperation().kind()){
+                           case UNSET -> throw new IllegalStateException("Change operation is not set");
+                           case STATE_ADD -> {
+
+                           }
+                           case STATE_REMOVE -> {
+                           }
+                           case SINGLETON_UPDATE -> {
+                           }
+                           case MAP_UPDATE -> {
+                           }
+                           case MAP_DELETE -> {
+                           }
+                           case QUEUE_PUSH -> {
+                           }
+                           case QUEUE_POP -> {
+                           }
+                       }
+                   }
+               }
+            }
         }
     }
 
