@@ -24,22 +24,25 @@ This proposal provides a specification for the behavior of rosters starting from
 their terminal state within the TSS specification.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 
-The Hedera app will maintain a version of the Address Book as a dynamic list that reflects the desired future state of
+The Hedera App (henceforth reffered to as 'App') will maintain a version of the Address Book as a dynamic list that
+reflects the desired future state of
 the
 network's nodes. This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that
 create, update, or delete nodes.
-At some point when the app decides to adopt a new address book, it will create a `Roster` object with
+At some point when the App decides to adopt a new address book, it will create a `Roster` object with
 information from the Address Book and pass it to the platform.
 
 The mechanism for doing so is detailed below.
 
+## What this proposal does not address
+
 ## Requirements
 
-- Immutability: The hash of rosters will be a critical piece of data. Rosters must be immutable to protect the integrity
+- Immutability: The roster hash will be a critical piece of data. Rosters must be immutable to protect the integrity
   of its computed hash.
 - Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data
   copying.
-- Clear API: A well-defined API should be provided for the app to create and submit candidate rosters to the platform,
+- Clear API: A well-defined API should be provided for the App to create and submit candidate rosters to the platform,
   and for the
   platform to manage the lifecycle of submitted rosters.
 - Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
@@ -62,11 +65,16 @@ A new method will be added to the platform state to allow the App to submit a Ca
 void setCandidateRoster(@NonNull final Roster candidateRoster);
 ```
 
+The steps to validate and add the Roster to the state will be executed within the same thread that submits the request.
+An exception will be thrown if the Roster is invalid.
+The durability of the submitted Roster is ensured via storing it in the state.
+
 The existing `PlatformState` class is in the middle of a refactor, and in the long term, may cease to exist.
 However, its replacement will continue to have this new API to set a candidate roster.
 
 ## Data Structure
-The Hedera app is already responsible for managing the address book.
+
+The App is already responsible for managing the address book.
 We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
 and passes it to the platform via the new API. The platform will then validate the roster and store it in the state.
 
@@ -164,7 +172,7 @@ message RosterEntry {
     bytes gossip_ca_certificate = 3;
 
     /**
-     * An elliptic curve public encryption key.<br/>
+     * An elliptic curve public signing key.<br/>
      * This contains the _long term_ public key for this node.
      * <p>
      * This value SHALL be the DER encoding of the presented elliptic curve
@@ -284,8 +292,8 @@ is, setting a candidate roster is an idempotent operation.
 
 One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle
 state.
-Another benefit is that adoption trigger becomes simple (app sets the roster) with delineated
-responsibilities between the app and the platform.
+Another benefit is that adoption trigger becomes simple (App sets the roster) with delineated
+responsibilities between the App and the platform.
 
 ### Roster Validity
 
@@ -336,7 +344,7 @@ The current startup procedure will be altered as follows
 - The `config.txt` file will no longer be used by the platform for storing the address book in existing networks. It
   will no longer be used by the platform code
 - Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the
-  app) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
+  App) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
   AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
 
 ### DevOps Workflow changes
@@ -350,7 +358,7 @@ One of the State or Roster or both must exist for the network to start.
 
 #### New Transplant Procedure
 
-The app will decide a network transplant sequence based on the following heuristics:
+The App will decide a network transplant sequence based on the following heuristics:
 
 * Network Transplant process == Active Roster AND State provided
   When both a roster and a state are provided, it signifies a network transplant.
@@ -425,9 +433,9 @@ state. Both of these will need to be updated to use rosters instead.
 
 Some of the obvious test cases to be covered in the plan include validating one or more of the following scenarios:
 
-1. New valid Candidate Roster created with no subsequent one sent by app. Verify accept.
-2. New valid Candidate Roster created with the subsequent one sent by app. Verify accept.
-3. Invalid roster(s) sent by the app. Verify reject.
+1. New valid Candidate Roster created with no subsequent one sent by App. Verify accept.
+2. New valid Candidate Roster created with the subsequent one sent by App. Verify accept.
+3. Invalid roster(s) sent by the App. Verify reject.
 4. Node Failures During Roster Change: What happens if nodes fail or disconnect during a roster change? Verify valid
    node successfully reconnects.
 5. Concurrent Roster Updates: What if we make multiple roster updates concurrently? Verify no effect on adoption.
