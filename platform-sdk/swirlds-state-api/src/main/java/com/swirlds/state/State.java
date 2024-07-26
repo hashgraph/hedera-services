@@ -23,11 +23,11 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The full state used by Hedera. The primary implementation is based on a merkle tree, and the data
+ * The full state used of the app. The primary implementation is based on a merkle tree, and the data
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface HederaState {
+public interface State {
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't

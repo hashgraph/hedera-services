@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.fixtures.state;
+package com.swirlds.platform.test.fixtures.state;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.state.spi.MigrationContext;

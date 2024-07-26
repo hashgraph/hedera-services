@@ -143,6 +143,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     }
 
     @Override
+    @NonNull
     public Iterator<ConsensusTransaction> consensusTransactionIterator() {
         return platformEvent.consensusTransactionIterator();
     }

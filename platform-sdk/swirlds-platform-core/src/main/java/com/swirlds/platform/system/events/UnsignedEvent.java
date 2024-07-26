@@ -32,16 +32,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -103,7 +100,7 @@ public class UnsignedEvent extends AbstractHashable {
     /**
      * the payload: an array of transactions
      */
-    private final ConsensusTransactionImpl[] transactions;
+    private final List<PayloadWrapper> transactions;
 
     /**
      * The core event data.
@@ -159,14 +156,7 @@ public class UnsignedEvent extends AbstractHashable {
                                 ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
-        this.transactions = transactions.stream()
-                .map(t -> switch (t.kind()) {
-                    case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
-                    case APPLICATION_PAYLOAD -> new SwirldTransaction((Bytes) t.as());
-                    default -> throw new IllegalArgumentException("Unexpected transaction type: " + t.kind());
-                })
-                .toList()
-                .toArray(new ConsensusTransactionImpl[0]);
+        this.transactions = transactions.stream().map(PayloadWrapper::new).toList();
     }
 
     /**
@@ -342,16 +332,19 @@ public class UnsignedEvent extends AbstractHashable {
                 && Objects.equals(otherParents, that.otherParents)
                 && eventCore.birthRound() == that.eventCore.birthRound()
                 && Objects.equals(timeCreated, that.timeCreated)
-                && Arrays.equals(transactions, that.transactions)
+                && Objects.equals(transactions, that.transactions)
                 && (softwareVersion.compareTo(that.softwareVersion) == 0);
     }
 
     @Override
     public int hashCode() {
-        int result =
-                Objects.hash(softwareVersion, creatorId, selfParent, otherParents, eventCore.birthRound(), timeCreated);
-        result = 31 * result + Arrays.hashCode(transactions);
-        return result;
+        return Objects.hash(
+                getSoftwareVersion(),
+                getCreatorId(),
+                getSelfParent(),
+                getOtherParents(),
+                getTimeCreated(),
+                getTransactions());
     }
 
     @Override
@@ -363,7 +356,7 @@ public class UnsignedEvent extends AbstractHashable {
                 .append("otherParents", otherParents)
                 .append("birthRound", eventCore.birthRound())
                 .append("timeCreated", timeCreated)
-                .append("transactions size", transactions == null ? "null" : transactions.length)
+                .append("transactions size", transactions == null ? "null" : transactions.size())
                 .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
                 .toString();
     }
@@ -522,7 +515,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return array of transactions inside this event instance
      */
     @NonNull
-    public ConsensusTransactionImpl[] getTransactions() {
+    public List<PayloadWrapper> getTransactions() {
         return transactions;
     }
 

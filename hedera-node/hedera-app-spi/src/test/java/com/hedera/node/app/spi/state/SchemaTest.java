@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.ArrayList;
