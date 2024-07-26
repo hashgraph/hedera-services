@@ -147,6 +147,9 @@ contract NumericContract {
         }
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                    HАS functions                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function hbarApproveProxy(address spender, int256 amount) external {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("hbarApprove(address,int256)", spender, amount));
 
@@ -163,6 +166,9 @@ contract NumericContract {
         }
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                    Exchange Rate functions                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function convertTinycentsToTinybars(uint256 tinycents) external {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("convertTinycentsToTinybars(uint256)", tinycents));
 
