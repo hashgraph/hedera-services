@@ -20,12 +20,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.ASSOCIATE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator.TRANSFER_TOKEN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -41,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -123,8 +126,8 @@ public class ClassicTransfersCall extends AbstractCall {
                     INVALID_TRANSACTION_BODY,
                     false);
         }
-        final var gasRequirement =
-                transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
+        // When unlimited associations are enabled, will be updated with additional charges for any auto-associations
+        var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
         if (preemptingFailureStatus != null) {
             return reversionWith(preemptingFailureStatus, gasRequirement);
         }
@@ -158,6 +161,12 @@ public class ClassicTransfersCall extends AbstractCall {
             specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
         } else {
             recordBuilder.status(callStatusStandardizer.codeForFailure(recordBuilder.status(), frame, op));
+        }
+        if (recordBuilder.getNumAutoAssociations() > 0) {
+            if (configOf(frame).getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled()) {
+                gasRequirement +=
+                        recordBuilder.getNumAutoAssociations() * gasCalculator.canonicalGasRequirement(ASSOCIATE);
+            }
         }
         return completionWith(gasRequirement, recordBuilder, encodedRc(recordBuilder.status()));
     }
