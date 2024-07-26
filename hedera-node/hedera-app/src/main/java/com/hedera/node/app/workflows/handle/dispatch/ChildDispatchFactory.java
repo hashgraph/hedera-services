@@ -234,7 +234,7 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var feeAccumulator =
+        final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -260,10 +260,9 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
-        final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
+                childFeeAccumulator);
+        final var childFees =
+                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
                 txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
         if (congestionMultiplier > 1) {
@@ -293,6 +292,7 @@ public class ChildDispatchFactory {
     }
 
     private static Fees computeChildFees(
+            @NonNull final AccountID payerId,
             @NonNull final FeeContext feeContext,
             @NonNull final HandleContext.TransactionCategory childCategory,
             @NonNull final TransactionDispatcher dispatcher,
@@ -304,7 +304,7 @@ public class ChildDispatchFactory {
                 if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
                     yield Fees.FREE;
                 } else {
-                    yield dispatcher.dispatchComputeFees(feeContext);
+                    yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
                 }
             }
             case CHILD -> Fees.FREE;

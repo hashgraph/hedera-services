@@ -417,7 +417,7 @@ public class TipsetEventCreator implements EventCreator {
 
         lastSelfEvent = descriptor;
         lastSelfEventCreationTime = event.getTimeCreated();
-        lastSelfEventTransactionCount = event.getTransactions().length;
+        lastSelfEventTransactionCount = event.getTransactions().size();
 
         return event;
     }

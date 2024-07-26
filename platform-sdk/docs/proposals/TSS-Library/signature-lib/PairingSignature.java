@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.signaturescheme.api;
+package com.hedera.cryptography.signaturescheme.api;
 
-import com.swirlds.pairings.api.BilinearPairing;
-import com.swirlds.pairings.api.Group;
-import com.swirlds.pairings.api.GroupElement;
-import com.swirlds.pairings.api.PairingResult;
+import com.hedera.cryptography.pairings.api.BilinearPairing;
+import com.hedera.cryptography.pairings.api.Group;
+import com.hedera.cryptography.pairings.api.GroupElement;
+import com.hedera.cryptography.pairings.api.PairingResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
