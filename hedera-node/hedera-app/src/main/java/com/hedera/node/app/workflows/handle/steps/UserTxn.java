@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -104,7 +105,8 @@ public record UserTxn(
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final HandleWorkflow handleWorkflow,
+            @NonNull final BlockStreamManager blockStreamManager) {
 
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
@@ -120,7 +122,8 @@ public record UserTxn(
         final var stack = SavepointStackImpl.newRootStack(
                 state,
                 isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
-                consensusConfig.handleMaxFollowingRecords());
+                consensusConfig.handleMaxFollowingRecords(),
+                blockStreamManager.getRoundStateChangeListener());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);

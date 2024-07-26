@@ -51,7 +51,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /** The cached most recent peeked element */
     private E peekedElement = null;
 
-    private StateChangesListener stateChangesListener;
+    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
 
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {
@@ -70,7 +70,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
 
     public void register(@NonNull StateChangesListener listener) {
         Objects.requireNonNull(listener);
-        this.stateChangesListener = listener;
+        stateChangesListeners.add(listener);
     }
 
     /**
@@ -81,18 +81,12 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     public final void commit() {
         for (int i = 0; i < readElements.size(); i++) {
             removeFromDataSource();
-
-            if (stateChangesListener != null) {
-                stateChangesListener.queuePopChange(getStateKey());
-            }
+            stateChangesListeners.forEach(listener -> listener.queuePopChange(getStateKey()));
         }
 
         for (final var addedElement : addedElements) {
             addToDataSource(addedElement);
-
-            if (stateChangesListener != null) {
-                stateChangesListener.queuePushChange(getStateKey(), addedElement);
-            }
+            stateChangesListeners.forEach(l -> l.queuePushChange(getStateKey(), addedElement));
         }
 
         reset();

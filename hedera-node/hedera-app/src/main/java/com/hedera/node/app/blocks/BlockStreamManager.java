@@ -60,4 +60,6 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * produces that block and enters a terminal state that refuses to accept any other calls.
      */
     void closeStream();
+
+    RoundStateChangeListener getRoundStateChangeListener();
 }

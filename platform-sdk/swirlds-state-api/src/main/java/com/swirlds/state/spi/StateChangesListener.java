@@ -16,34 +16,13 @@
 
 package com.swirlds.state.spi;
 
-import com.hedera.hapi.block.stream.output.StateChange;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * An interface responsible for observing any state changes occurred on state
  * and some additional helper methods
  */
 public interface StateChangesListener {
-    /**
-     * Add a state change so that it can be written to the block stream
-     * @param stateChange the state change to be written
-     */
-    void addStateChange(@NonNull final StateChange stateChange);
-
-    /**
-     * Return all the state changes currently extracted
-     * @return all state changes
-     */
-    List<StateChange> getStateChanges();
-
-    /**
-     * Return state changes from the end of a round
-     * @return end of round state changes
-     */
-    LinkedList<StateChange> getEndOfRoundStateChanges();
-
     /**
      * Save the state change when an entry is added in to a map.
      *
@@ -53,7 +32,7 @@ public interface StateChangesListener {
      * @param <K> The type of the key
      * @param <V> The type of the value
      */
-    <K, V> void mapUpdateChange(@NonNull final String label, @NonNull final K key, @NonNull final V value);
+    default <K, V> void mapUpdateChange(@NonNull final String label, @NonNull final K key, @NonNull final V value) {}
 
     /**
      * Save the state change when an entry is removed from a map.
@@ -62,7 +41,7 @@ public interface StateChangesListener {
      * @param key The key removed from the map
      * @param <K> The type of the key
      */
-    <K> void mapDeleteChange(@NonNull final String label, @NonNull final K key);
+    default <K> void mapDeleteChange(@NonNull final String label, @NonNull final K key) {}
 
     /**
      * Save the state change when a value is added to a queue
@@ -71,14 +50,14 @@ public interface StateChangesListener {
      * @param value The value added to the queue
      * @param <V> The type of the value
      */
-    <V> void queuePushChange(@NonNull final String label, @NonNull final V value);
+    default <V> void queuePushChange(@NonNull final String label, @NonNull final V value) {}
 
     /**
      * Save the state change when a value is removed from a queue
      *
      * @param label The label of the queue
      */
-    void queuePopChange(@NonNull final String label);
+    default void queuePopChange(@NonNull final String label) {}
 
     /**
      * Save the state change when the value of a singleton is written.
@@ -87,5 +66,5 @@ public interface StateChangesListener {
      * @param value The value of the singleton
      * @param <V> The type of the value
      */
-    <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value);
+    default <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value) {}
 }

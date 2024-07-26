@@ -17,6 +17,8 @@
 package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -30,7 +32,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     private final Consumer<T> backingStoreMutator;
     private boolean modified;
     private T value;
-    private StateChangesListener stateChangesListener;
+    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
 
     /**
      * Creates a new instance.
@@ -73,7 +75,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
 
     public void register(@NonNull StateChangesListener listener) {
         Objects.requireNonNull(listener);
-        this.stateChangesListener = listener;
+        stateChangesListeners.add(listener);
     }
 
     /**
@@ -84,10 +86,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     public void commit() {
         if (modified) {
             backingStoreMutator.accept(value);
-
-            if (stateChangesListener != null) {
-                stateChangesListener.singletonUpdateChange(getStateKey(), value);
-            }
+            stateChangesListeners.forEach(l -> l.singletonUpdateChange(getStateKey(), value));
         }
         reset();
     }

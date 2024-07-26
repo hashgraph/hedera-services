@@ -32,7 +32,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     private final Map<K, V> modifications = new LinkedHashMap<>();
 
-    private StateChangesListener stateChangesListener;
+    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
 
     /**
      * Create a new StateBase.
@@ -45,7 +45,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
 
     public void register(@NonNull StateChangesListener listener) {
         Objects.requireNonNull(listener);
-        this.stateChangesListener = listener;
+        stateChangesListeners.add(listener);
     }
 
     /**
@@ -59,16 +59,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             final var value = entry.getValue();
             if (value == null) {
                 removeFromDataSource(key);
-
-                if (stateChangesListener != null) {
-                    stateChangesListener.mapDeleteChange(getStateKey(), key);
-                }
+                stateChangesListeners.forEach(listener -> listener.mapDeleteChange(getStateKey(), key));
             } else {
                 putIntoDataSource(key, value);
-
-                if (stateChangesListener != null) {
-                    stateChangesListener.mapUpdateChange(getStateKey(), key, value);
-                }
+                stateChangesListeners.forEach(listener -> listener.mapUpdateChange(getStateKey(), key, value));
             }
         }
         reset();

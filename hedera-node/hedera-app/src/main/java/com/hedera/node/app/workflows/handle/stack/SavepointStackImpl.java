@@ -35,9 +35,10 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
-import com.hedera.node.app.blocks.impl.StateChangesListenerImpl;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -53,7 +54,6 @@ import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -87,6 +87,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     // because child stacks flush their builders into the savepoint at the top of their parent stack
     @Nullable
     private final BuilderSink builderSink;
+
+    @Nullable
+    private RoundStateChangeListener roundStateChangeListener;
     /**
      * Any system state changes made <b>before</b> all transaction-caused changes in
      * the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
@@ -96,20 +99,21 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Any system state changes made <b>after</b> all transaction-caused changes.
      */
     private final List<StateChange> postTxnSystemChanges = new ArrayList<>();
-
-    private StateChangesListener listener = new StateChangesListenerImpl();
-
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
-     * @param state the state
-     * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
-     * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
+     * @param state                    the state
+     * @param maxBuildersBeforeUser    the maximum number of preceding builders with available consensus times
+     * @param maxBuildersAfterUser     the maximum number of following builders with available consensus times
+     * @param roundStateChangeListener
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
-            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
-        return new SavepointStackImpl(state, maxBuildersBeforeUser, maxBuildersAfterUser);
+            @NonNull final State state,
+            final int maxBuildersBeforeUser,
+            final int maxBuildersAfterUser,
+            final RoundStateChangeListener roundStateChangeListener) {
+        return new SavepointStackImpl(state, maxBuildersBeforeUser, maxBuildersAfterUser, roundStateChangeListener);
     }
 
     /**
@@ -138,11 +142,15 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param maxBuildersAfterUser the maximum number of following builders to create
      */
     private SavepointStackImpl(
-            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
+            @NonNull final State state,
+            final int maxBuildersBeforeUser,
+            final int maxBuildersAfterUser,
+            @NonNull RoundStateChangeListener roundStateChangeListener) {
         this.state = requireNonNull(state);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
+        this.roundStateChangeListener = roundStateChangeListener;
     }
 
     /**
@@ -163,6 +171,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         requireNonNull(category);
         this.state = requireNonNull(parent);
         this.builderSink = null;
+        this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
     }
@@ -250,7 +259,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
             if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
+                final var listener = new KVStateChangeListener();
                 ((WrappedState) stack.peek().state()).register(listener);
+                ((WrappedState) stack.peek().state()).register(roundStateChangeListener);
 
                 stack.pop().commit();
 
@@ -484,6 +495,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      */
     public HandleOutput buildHandleOutput(@NonNull final Instant consensusTime) {
         final List<BlockItem> blockItems;
+        Instant lastAssignedConsenusTime = consensusTime;
         if (HandleWorkflow.STREAM_MODE == RECORDS) {
             blockItems = null;
         } else {
@@ -514,6 +526,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                         .syncBodyIdFromRecordId();
             }
             final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
+            lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
                 builder.parentConsensus(consensusTime);
@@ -540,6 +553,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                                     .stateChanges(preTxnSystemChanges))
                             .build());
         }
+        requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
         return new HandleOutput(blockItems, records);
     }
 

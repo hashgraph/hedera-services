@@ -35,6 +35,7 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.config.ConfigProvider;
@@ -87,6 +88,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private List<BlockItem> pendingItems;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
+    private RoundStateChangeListener roundStateChangeListener;
     /**
      * A future that completes after all items not in the pending list have been fully serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
@@ -112,6 +114,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
+        roundStateChangeListener = new RoundStateChangeListener();
         pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
@@ -139,6 +142,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void endRound(@NonNull final State state) {
+        pendingItems.add(roundStateChangeListener.stateChanges());
+
         if (!pendingItems.isEmpty()) {
             schedulePendingWork();
         }
@@ -173,6 +178,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void closeStream() {
         writer.closeBlock();
+    }
+
+    @Override
+    public RoundStateChangeListener getRoundStateChangeListener() {
+        return roundStateChangeListener;
     }
 
     @Override

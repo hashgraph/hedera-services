@@ -550,6 +550,7 @@ public class HandleWorkflow {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
-                this);
+                this,
+                blockStreamManager);
     }
 }
