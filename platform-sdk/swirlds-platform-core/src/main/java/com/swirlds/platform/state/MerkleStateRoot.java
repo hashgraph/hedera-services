@@ -175,7 +175,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public MerkleStateRoot() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
-        this.registryRecord = null;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
     /**
