@@ -31,8 +31,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -281,17 +279,6 @@ public class TransactionPoolNexus implements TransactionSupplier {
         }
 
         return selectedTrans;
-    }
-
-    /**
-     * Check if a transaction is a signature transaction.
-     *
-     * @param transaction the transaction to check
-     * @return true if the transaction is a signature transaction
-     */
-    private static boolean isSignatureTransaction(@NonNull final ConsensusTransaction transaction) {
-        // check the class rather than casting and calling getType() because it is more performant
-        return transaction.getClass().equals(StateSignatureTransaction.class);
     }
 
     /**

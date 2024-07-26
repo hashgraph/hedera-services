@@ -244,10 +244,8 @@ public class HollowAccountFinalizationSuite {
                             .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
 
                     final var hapiGetTxnRecord = getTxnRecord(FT_XFER)
-                            .hasNonStakingChildRecordCount(2)
-                            .hasChildRecords(
-                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                    recordWith().status(SUCCESS));
+                            .hasNonStakingChildRecordCount(1)
+                            .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO));
 
                     allRunFor(
                             spec,
