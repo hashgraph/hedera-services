@@ -21,8 +21,12 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * A utility class for the Merkle state.
+ */
 public class MerkleStateUtils {
     /**
      * Generate a string that describes this state.
@@ -32,7 +36,12 @@ public class MerkleStateUtils {
      * @param state current root node state
      *
      */
-    public static String createInfoString(int hashDepth, PlatformState platformState, Hash rootHash, MerkleNode state) {
+    @NonNull
+    public static String createInfoString(
+            int hashDepth,
+            @NonNull final PlatformState platformState,
+            @NonNull final Hash rootHash,
+            @NonNull final MerkleNode state) {
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
