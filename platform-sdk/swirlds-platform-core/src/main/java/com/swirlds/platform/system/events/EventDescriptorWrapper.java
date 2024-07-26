@@ -200,7 +200,7 @@ public record EventDescriptorWrapper(
             birthRound = in.readLong();
         }
 
-        return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), generation, birthRound));
+        return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), birthRound, generation));
     }
 
     /**

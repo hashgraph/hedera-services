@@ -93,7 +93,7 @@ class TipsetTrackerTests {
 
             final EventDescriptorWrapper selfParent = latestEvents.get(creator);
             final EventDescriptorWrapper fingerprint = new EventDescriptorWrapper(
-                    new EventDescriptor(randomHash(random).getBytes(), creator.id(), generation, birthRound));
+                    new EventDescriptor(randomHash(random).getBytes(), creator.id(), birthRound, generation));
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.

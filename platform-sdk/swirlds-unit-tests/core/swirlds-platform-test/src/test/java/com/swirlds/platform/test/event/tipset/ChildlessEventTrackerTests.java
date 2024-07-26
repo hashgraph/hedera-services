@@ -98,7 +98,7 @@ class ChildlessEventTrackerTests {
 
         final List<EventDescriptorWrapper> expectedEvents = new ArrayList<>(batch2);
         for (final EventDescriptorWrapper descriptor : batch1) {
-            if (descriptor.creator().id() % 2 == 0) {
+            if (descriptor.eventDescriptor().creatorNodeId() % 2 == 0) {
                 expectedEvents.add(descriptor);
             }
         }
@@ -168,6 +168,6 @@ class ChildlessEventTrackerTests {
      */
     private EventDescriptorWrapper newEventDescriptor(
             @NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
-        return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), generation, -1));
+        return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), -1, generation));
     }
 }

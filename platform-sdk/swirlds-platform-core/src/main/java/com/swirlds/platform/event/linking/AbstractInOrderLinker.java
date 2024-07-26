@@ -315,7 +315,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
         }
 
         if (candidateParent.getBirthRound()
-                != parentDescriptor.eventDescriptor().generation()) {
+                != parentDescriptor.eventDescriptor().birthRound()) {
             parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
             return null;
         }

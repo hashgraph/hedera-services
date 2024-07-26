@@ -501,7 +501,7 @@ public class TestingEventBuilder {
         final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
         return new EventDescriptorWrapper(new EventDescriptor(
-                parent.getHash().getBytes(), parent.getCreatorId().id(), generation, birthRound));
+                parent.getHash().getBytes(), parent.getCreatorId().id(), birthRound, generation));
     }
 
     /**
