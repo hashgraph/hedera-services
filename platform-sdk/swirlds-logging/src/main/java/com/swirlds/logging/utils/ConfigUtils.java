@@ -33,7 +33,6 @@ import java.util.Objects;
  * @deprecated Do not extend this class as this should become behaviour of the config api.
  */
 @Deprecated(forRemoval = true)
-@SuppressWarnings({"deprecation", "removal"})
 public class ConfigUtils {
 
     // FUTURE-WORK move all this as features of the config module.
