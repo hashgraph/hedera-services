@@ -248,16 +248,16 @@ public class V0490FileSchema extends Schema {
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
                 .forEach(node -> {
-                        nodeDetails.add(NodeAddress.newBuilder()
-                                .nodeId(node.nodeId())
-                                .nodeAccountId(node.accountId())
-                                .nodeCertHash(node.grpcCertificateHash())
-                                .description(node.description())
-                                .stake(node.weight())
-                                .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
-                                        node.gossipCaCertificate().toByteArray(), node.nodeId())))
-                                .serviceEndpoint(node.serviceEndpoint())
-                                .build());
+                    nodeDetails.add(NodeAddress.newBuilder()
+                            .nodeId(node.nodeId())
+                            .nodeAccountId(node.accountId())
+                            .nodeCertHash(node.grpcCertificateHash())
+                            .description(node.description())
+                            .stake(node.weight())
+                            .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
+                                    node.gossipCaCertificate().toByteArray(), node.nodeId())))
+                            .serviceEndpoint(node.serviceEndpoint())
+                            .build());
                 });
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
