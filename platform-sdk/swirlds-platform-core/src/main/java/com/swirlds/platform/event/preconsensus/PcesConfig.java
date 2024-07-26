@@ -105,4 +105,4 @@ public record PcesConfig(
         @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures,
         @ConfigProperty(defaultValue = "1m") Duration roundDurabilityBufferHeartbeatPeriod,
         @ConfigProperty(defaultValue = "1m") Duration suspiciousRoundDurabilityDuration,
-        @ConfigProperty(defaultValue = "5s") Duration replayHealthThreshold) {}
+        @ConfigProperty(defaultValue = "1ms") Duration replayHealthThreshold) {}
