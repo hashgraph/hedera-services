@@ -56,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MerkleStateLifecyclesImplTest extends MerkleTestBase {
+class StateLifecyclesImplTest extends MerkleTestBase {
     private static final int PRETEND_STAKING_INFO_CHILD_INDEX = 7;
 
     @Mock
