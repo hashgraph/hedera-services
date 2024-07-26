@@ -32,4 +32,8 @@ javaModuleDependencies {
         "com.hedera.cryptography.pairings.signatures",
         "com.hedera.cryptography:hedera-cryptography-pairings-signatures"
     )
+    moduleNameToGA.put(
+        "com.hedera.cryptography.pairings.api",
+        "com.hedera.cryptography:hedera-cryptography-pairings-api"
+    )
 }

@@ -19,7 +19,7 @@ plugins { id("com.hedera.gradle.platform") }
 group = "com.hedera.cryptography"
 
 testModuleInfo {
-    requires("com.hedera.cryptography.pairings.signatures")
+    requires("com.hedera.cryptography.pairings.api")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
 }

@@ -62,6 +62,9 @@ dependencies.constraints {
     api("com.google.protobuf:protobuf-java-util:3.21.7") {
         because("com.google.protobuf.util")
     }
+    api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.api")
+    }
     api("com.hedera.cryptography:hedera-cryptography-pairings-signatures:0.1.0-SNAPSHOT") {
         because("com.hedera.cryptography.pairings.signatures")
     }
