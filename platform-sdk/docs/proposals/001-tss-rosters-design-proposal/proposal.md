@@ -286,6 +286,9 @@ updated only when the active roster changes.
 In the vast majority of cases, the list will contain only one element, the current active roster.
 Immediately following the adoption of an active roster, this list will have two elements — the previous active roster
 and the current active roster.
+The choice of a list is suitable here as it is much cheaper to iterate over 2-3 elements comparing their `long` round
+numbers than it is to do a hash lookup.
+When we reach full Dynamic Address Book, this design choice may need to be revisited.
 
 If a `candidateRosterHash` hash entry already exist (hash collisions) in the map of Rosters, it will be discarded. That
 is, setting a candidate roster is an idempotent operation.
