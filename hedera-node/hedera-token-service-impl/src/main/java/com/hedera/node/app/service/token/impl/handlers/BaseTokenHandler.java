@@ -328,7 +328,8 @@ public class BaseTokenHandler {
         final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
-        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        final var existingRel = tokenRelStore.get(accountId, tokenId);
+        validateTrue(existingRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);

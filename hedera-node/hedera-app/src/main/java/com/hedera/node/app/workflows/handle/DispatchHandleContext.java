@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
@@ -33,9 +34,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -48,7 +49,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -60,11 +60,11 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -94,7 +94,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
-    private final AccountID syntheticPayer;
+    private final AccountID payerId;
     private final AppKeyVerifier verifier;
     private final PlatformState platformState;
     private final HederaFunctionality topLevelFunction;
@@ -107,11 +107,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionDispatcher dispatcher;
     private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
-    private final RecordBuilders recordBuilders;
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
-    private final RecordListBuilder recordListBuilder;
     private final ThrottleAdviser throttleAdviser;
+    private final FeeAccumulator feeAccumulator;
     private Map<AccountID, Long> dispatchPaidRewards;
 
     public DispatchHandleContext(
@@ -124,7 +123,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
-            @NonNull final AccountID syntheticPayer,
+            @NonNull final AccountID payerId,
             @NonNull final AppKeyVerifier verifier,
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
@@ -135,11 +134,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final RecordBuilders recordBuilders,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final ThrottleAdviser throttleAdviser) {
+            @NonNull final ThrottleAdviser throttleAdviser,
+            @NonNull final FeeAccumulator feeAccumulator) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -149,7 +147,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.storeFactory = requireNonNull(storeFactory);
-        this.syntheticPayer = requireNonNull(syntheticPayer);
+        this.payerId = requireNonNull(payerId);
         this.verifier = requireNonNull(verifier);
         this.platformState = requireNonNull(platformState);
         this.topLevelFunction = requireNonNull(topLevelFunction);
@@ -159,14 +157,13 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.entityNumGenerator = requireNonNull(entityNumGenerator);
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.recordListBuilder = requireNonNull(recordListBuilder);
         this.throttleAdviser = requireNonNull(throttleAdviser);
+        this.feeAccumulator = requireNonNull(feeAccumulator);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
         this.recordCache = requireNonNull(recordCache);
         this.networkInfo = requireNonNull(networkInfo);
-        this.recordBuilders = requireNonNull(recordBuilders);
     }
 
     @NonNull
@@ -184,7 +181,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public AccountID payer() {
-        return syntheticPayer;
+        return payerId;
+    }
+
+    @Override
+    public boolean tryToChargePayer(final long amount) {
+        return feeAccumulator.chargeNetworkFee(payerId, amount);
     }
 
     @NonNull
@@ -247,7 +249,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public ExchangeRateInfo exchangeRateInfo() {
-        return exchangeRateManager.exchangeRateInfo(stack.peek());
+        return exchangeRateManager.exchangeRateInfo(stack);
     }
 
     @Override
@@ -292,8 +294,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @Override
     public SystemPrivilege hasPrivilegedAuthorization() {
-        return authorizer.hasPrivilegedAuthorization(
-                requireNonNull(txnInfo.payerID()), txnInfo.functionality(), txnInfo.txBody());
+        return authorizer.hasPrivilegedAuthorization(payerId, txnInfo.functionality(), txnInfo.txBody());
     }
 
     @NonNull
@@ -319,12 +320,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NetworkInfo networkInfo() {
         return networkInfo;
-    }
-
-    @NonNull
-    @Override
-    public RecordBuilders recordBuilders() {
-        return recordBuilders;
     }
 
     @Override
@@ -360,7 +355,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
             return txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
-                            .accountID(syntheticPayer)
+                            .accountID(payerId)
                             .transactionValidStart(Timestamp.newBuilder()
                                     .seconds(consensusNow().getEpochSecond())
                                     .nanos(consensusNow().getNano())))
@@ -385,9 +380,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
     }
 
@@ -403,9 +398,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayer,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -427,9 +422,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 false);
     }
 
@@ -453,7 +448,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 customizer,
                 TransactionCategory.CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -491,14 +486,14 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 category,
                 customizer,
                 reversingBehavior,
-                recordListBuilder,
                 config,
                 stack,
                 storeFactory.asReadOnly(),
                 creatorInfo,
                 platformState,
                 topLevelFunction,
-                throttleAdviser);
+                throttleAdviser,
+                consensusNow);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();
@@ -511,6 +506,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             }
             paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
-        return RecordBuildersImpl.castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
+        return castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

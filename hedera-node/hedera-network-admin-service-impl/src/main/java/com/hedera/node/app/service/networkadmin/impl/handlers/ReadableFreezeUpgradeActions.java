@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Provides all the read-only actions that need to take place during upgrade
+ * Provides read-only actions that take place during network upgrade
  */
 public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
@@ -106,6 +105,9 @@ public class ReadableFreezeUpgradeActions {
         this.stakingInfoStore = stakingInfoStore;
     }
 
+    /**
+     * Write a NOW_FROZEN_MARKER marker file to signal that the network is frozen.
+     */
     public void externalizeFreezeIfUpgradePending() {
         log.info(
                 "Externalizing freeze if upgrade pending, freezeStore: {}, updateFileHash: {}",
@@ -116,6 +118,13 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
+    /**
+     * Write a marker file.
+     * @param file the name of the marker file
+     *             @param now the timestamp to write to the marker file
+     *                        if null, the marker file will contain the string "✓"
+     *                        if not null, the marker file will contain the string representation of the timestamp
+     */
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
@@ -133,11 +142,20 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
+    /**
+     * Write a marker file containing the string '✓'.
+     * @param file the name of the marker file
+     */
     protected void writeCheckMarker(@NonNull final String file) {
         requireNonNull(file);
         writeMarker(file, null);
     }
 
+    /**
+     * Write a marker file containing the string representation of the given timestamp.
+     * @param file the name of the marker file
+     * @param now the timestamp to write to the marker file
+     */
     protected void writeSecondMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         writeMarker(file, now);
@@ -148,21 +166,43 @@ public class ReadableFreezeUpgradeActions {
         catchUpOnMissedUpgradePrep();
     }
 
+    /**
+     * Check whether the two given hashes match.
+     * @param curSpecialFilesHash the first hash
+     * @param hashFromTxnBody the second hash
+     * @return true if the hashes match, false otherwise
+     */
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
         return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
     }
 
+    /**
+     * Extract the telemetry upgrade from the given archive data.
+     * @param archiveData the archive data
+     * @param now the timestamp to write to the marker file
+     * @return a future that completes when the extraction is done
+     */
     public CompletableFuture<Void> extractTelemetryUpgrade(
             @NonNull final Bytes archiveData, @Nullable final Timestamp now) {
         requireNonNull(archiveData);
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
+    /**
+     * Extract the software upgrade from the given archive data.
+     * @param archiveData the archive data
+     * @return a future that completes when the extraction is done
+     */
     public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
         requireNonNull(archiveData);
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
+    /**
+     * Check whether a freeze is scheduled.
+     * @param platformState the platform state
+     * @return true if a freeze is scheduled, false otherwise
+     */
     public boolean isFreezeScheduled(final PlatformState platformState) {
         requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
         final var freezeTime = platformState.getFreezeTime();
@@ -197,9 +237,9 @@ public class ReadableFreezeUpgradeActions {
         return StreamSupport.stream(
                         Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
+                .sorted()
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
-                .sorted(Comparator.comparing(Node::nodeId))
                 .map(node -> new ActiveNode(node, stakingInfoStore.get(node.nodeId())))
                 .toList();
     }
@@ -220,19 +260,25 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(artifactsDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (desc.equals(PREPARE_UPGRADE_DESC)) {
-                requireNonNull(nodes, "Cannot generate config.txt without a valid list of active nodes");
+            if (nodes != null) {
                 generateConfigPem(artifactsLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
-        } catch (final Throwable t) {
+        } catch (final Exception t) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
             log.error("Failed to unzip archive for NMT consumption", t);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
+    }
+
+    private long getNextNodeID(@NonNull List<ActiveNode> nodes) {
+        requireNonNull(nodes);
+        final long maxNodeId =
+                nodes.stream().mapToLong(a -> a.node.nodeId()).max().orElse(-1L);
+        return maxNodeId + 1;
     }
 
     private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
@@ -245,29 +291,14 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
+        final var nextNodeId = getNextNodeID(activeNodes);
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
-            writeNextNodeId(activeNodes, bw);
+            bw.write("nextNodeId, " + nextNodeId);
             bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
-        }
-    }
-
-    private void writeNextNodeId(final List<ActiveNode> activeNodes, final BufferedWriter bw) {
-        requireNonNull(activeNodes);
-        requireNonNull(bw);
-        // find max nodeId of all nodes and write nextNodeId as maxNodeId + 1
-        final var maxNodeId = activeNodes.stream()
-                .map(ActiveNode::node)
-                .map(Node::nodeId)
-                .max(Long::compareTo)
-                .orElseThrow();
-        try {
-            bw.write("nextNodeId, " + (maxNodeId + 1));
-        } catch (IOException e) {
-            log.error("Failed to write nextNodeId {} with exception : {}", maxNodeId, e);
         }
     }
 
@@ -280,7 +311,8 @@ public class ReadableFreezeUpgradeActions {
         var line = new StringBuilder();
         int weight = 0;
         final var node = activeNode.node();
-        final var alias = nameToAlias(node.description());
+        final var name = "node" + (node.nodeId() + 1);
+        final var alias = nameToAlias(name);
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
@@ -297,7 +329,7 @@ public class ReadableFreezeUpgradeActions {
                     .append(", ")
                     .append(node.nodeId())
                     .append(", ")
-                    .append(node.description())
+                    .append(name)
                     .append(", ")
                     .append(weight)
                     .append(", ")

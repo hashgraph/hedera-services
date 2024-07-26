@@ -36,7 +36,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.Executor;
@@ -76,7 +76,7 @@ public class CacheWarmer {
      * @param state the current state
      * @param round the current round
      */
-    public void warm(@NonNull final HederaState state, @NonNull final Round round) {
+    public void warm(@NonNull final State state, @NonNull final Round round) {
         executor.execute(() -> {
             final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
             final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
