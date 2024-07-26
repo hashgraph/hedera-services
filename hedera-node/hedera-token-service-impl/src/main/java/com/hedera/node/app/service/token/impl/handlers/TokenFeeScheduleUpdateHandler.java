@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -120,6 +122,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var readableTokenRelsStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
 
+        if (token.customFees().isEmpty() && op.customFees().isEmpty()) {
+            throw new HandleException(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES);
+        }
         // validate custom fees before committing
         customFeesValidator.validateForFeeScheduleUpdate(
                 token, readableAccountStore, readableTokenRelsStore, tokenStore, op.customFees());

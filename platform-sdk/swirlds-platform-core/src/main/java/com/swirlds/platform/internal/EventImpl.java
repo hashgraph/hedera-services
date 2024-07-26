@@ -21,9 +21,10 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -130,9 +131,9 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl> {
     }
 
     /**
-     * @return array of transactions inside this event instance
+     * @return list of transactions inside this event instance
      */
-    public ConsensusTransactionImpl[] getTransactions() {
+    public List<PayloadWrapper> getTransactions() {
         return baseEvent.getUnsignedEvent().getTransactions();
     }
 
