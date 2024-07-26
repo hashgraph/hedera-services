@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.workflows.handle.record.GenesisSetup;
+import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import java.time.Instant;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -51,7 +51,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class GenesisSetupTest {
+class SystemSetupTest {
     private static final AccountID ACCOUNT_ID_1 =
             AccountID.newBuilder().accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
@@ -84,7 +84,7 @@ class GenesisSetupTest {
     @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
-    private GenesisSetup subject;
+    private SystemSetup subject;
 
     @BeforeEach
     void setup() {
@@ -96,7 +96,7 @@ class GenesisSetupTest {
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
-        subject = new GenesisSetup(fileService, syntheticAccountCreator);
+        subject = new SystemSetup(fileService, syntheticAccountCreator);
     }
 
     @Test

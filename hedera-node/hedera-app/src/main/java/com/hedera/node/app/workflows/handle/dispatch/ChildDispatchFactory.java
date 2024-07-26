@@ -262,7 +262,8 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator);
-        final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+        final var childFees =
+                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
         final var childTokenContext =
@@ -289,6 +290,7 @@ public class ChildDispatchFactory {
     }
 
     private static Fees computeChildFees(
+            @NonNull final AccountID payerId,
             @NonNull final FeeContext feeContext,
             @NonNull final HandleContext.TransactionCategory childCategory,
             @NonNull final TransactionDispatcher dispatcher,
@@ -300,7 +302,7 @@ public class ChildDispatchFactory {
                 if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
                     yield Fees.FREE;
                 } else {
-                    yield dispatcher.dispatchComputeFees(feeContext);
+                    yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
                 }
             }
             case CHILD -> Fees.FREE;
