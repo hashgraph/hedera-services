@@ -610,6 +610,17 @@ public class TokenAirdropTest {
                             .signedByPayerAnd(OWNER_TWO)
                             .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
+
+        @HapiTest
+        @DisplayName("with different payer signature")
+        final Stream<DynamicTest> missingTheRightPayerSigFails() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(moving(50, NON_FUNGIBLE_TOKEN).between(OWNER, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(INVALID_SIGNATURE));
+        }
     }
 
     @Nested
