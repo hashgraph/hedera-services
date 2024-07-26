@@ -27,7 +27,7 @@ import java.time.Instant;
  * transactions for mirror node importers that were designed for the semantics of the original record
  * stream.
  */
-public interface GenesisContext {
+public interface SystemContext {
     /**
      * Dispatches a transaction to the appropriate service using the requested next entity number, which
      * must be less than the first user entity number.
@@ -37,6 +37,14 @@ public interface GenesisContext {
      * @throws IllegalArgumentException if the entity number is not less than the first user entity number
      */
     void dispatchCreation(@NonNull TransactionBody txBody, long entityNum);
+
+    /**
+     * Dispatches a transaction to the appropriate service
+     *
+     * @param txBody the transaction body
+     * @throws IllegalArgumentException if the entity number is not less than the first user entity number
+     */
+    void dispatchUpdate(@NonNull TransactionBody txBody);
 
     /**
      * The {@link Configuration} at genesis.
