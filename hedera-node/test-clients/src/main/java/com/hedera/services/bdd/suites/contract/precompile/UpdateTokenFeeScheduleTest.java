@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
@@ -303,12 +304,11 @@ public class UpdateTokenFeeScheduleTest {
     public Stream<DynamicTest> resetFungibleTokenCustomFees() {
         return hapiTest(
                 updateTokenFeeSchedules.call("resetFungibleTokenFees", fungibleToken),
-                fungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom)
-                /*,
+                fungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom),
                 updateTokenFeeSchedules
                         .call("resetFungibleTokenFees", fungibleToken)
-                        .andAssert(
-                                result -> result.hasKnownStatus(ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES))*/ );
+                        .andAssert(result -> result.hasKnownStatuses(
+                                CONTRACT_REVERT_EXECUTED, CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES)));
     }
 
     @Order(16)
@@ -317,12 +317,11 @@ public class UpdateTokenFeeScheduleTest {
     public Stream<DynamicTest> resetNonFungibleTokenCustomFees() {
         return hapiTest(
                 updateTokenFeeSchedules.call("resetNonFungibleTokenFees", nonFungibleToken),
-                nonFungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom)
-                /*,
+                nonFungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom),
                 updateTokenFeeSchedules
                         .call("resetNonFungibleTokenFees", nonFungibleToken)
-                        .andAssert(
-                                result -> result.hasKnownStatus(ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES))*/ );
+                        .andAssert(result -> result.hasKnownStatuses(
+                                CONTRACT_REVERT_EXECUTED, CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES)));
     }
 
     @Order(17)
@@ -365,9 +364,9 @@ public class UpdateTokenFeeScheduleTest {
                 updateTokenFeeSchedules
                         .call("updateNonFungibleFixedHtsFee", nonFungibleToken, feeToken, -1L, feeCollector)
                         .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
-                //                updateTokenFeeSchedules.call("updateNonFungibleRoyaltyFee", nonFungibleToken, -1L,
-                // -10L, feeCollector)
-                //                        .andAssert(txn -> txn.hasKnownStatuses(CUSTOM_FEE_MUST_BE_POSITIVE)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleRoyaltyFee", nonFungibleToken, -1L, -10L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
                 updateTokenFeeSchedules
                         .call("updateFungibleFractionalFee", fungibleToken, 1L, -10L, false, feeCollector)
                         .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)));
