@@ -19,7 +19,7 @@ package com.hedera.node.app.blocks;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.swirlds.platform.system.Round;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -39,14 +39,14 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
      */
-    void startRound(@NonNull Round round, @NonNull HederaState state);
+    void startRound(@NonNull Round round, @NonNull MerkleState state);
 
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
      * @param state the mutable state of the network at the end of the round
      */
-    void endRound(@NonNull HederaState state);
+    void endRound(@NonNull MerkleState state);
 
     /**
      * Writes a block item to the stream.

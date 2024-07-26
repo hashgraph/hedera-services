@@ -112,7 +112,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -229,7 +229,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private DispatchProcessor dispatchProcessor;
 
     @Mock(strictness = LENIENT)
-    private HederaState baseState;
+    private MerkleState baseState;
 
     @Mock
     private WritableStates writableStates;
@@ -534,7 +534,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 G_KEY, GRAPE);
 
         @Mock(strictness = LENIENT)
-        private HederaState baseState;
+        private MerkleState baseState;
 
         @Mock(strictness = LENIENT, answer = Answers.RETURNS_SELF)
         private RecordBuilderImpl childRecordBuilder;
@@ -630,7 +630,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
             verify(dispatcher, never()).dispatchHandle(any());
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test
@@ -657,7 +657,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             context.dispatchPrecedingTransaction(txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
 
             verify(dispatchProcessor).processDispatch(childDispatch);
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test

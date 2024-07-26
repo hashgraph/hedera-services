@@ -32,12 +32,12 @@ import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.List;
@@ -54,7 +54,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
     protected final BuilderSink parentSink;
-    protected final WrappedHederaState state;
+    protected final WrappedMerkleState state;
     private Status status = Status.PENDING;
 
     /**
@@ -65,7 +65,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      * @param maxFollowing the maximum number of following builders
      */
     protected AbstractSavepoint(
-            @NonNull final WrappedHederaState state,
+            @NonNull final WrappedMerkleState state,
             @NonNull final BuilderSink parentSink,
             final int maxPreceding,
             final int maxFollowing) {
@@ -81,14 +81,14 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      * @param maxTotal the maximum number of total builders
      */
     protected AbstractSavepoint(
-            @NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
+            @NonNull final WrappedMerkleState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
         super(maxTotal);
         this.state = requireNonNull(state);
         this.parentSink = requireNonNull(parentSink);
     }
 
     @Override
-    public HederaState state() {
+    public MerkleState state() {
         return state;
     }
 
@@ -120,7 +120,6 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
-        // TODO - enable this switch when IoBlockItemsBuilder and PairedStreamBuilder are implemented
         final var builder =
                 switch (HandleWorkflow.STREAM_MODE) {
                     case RECORDS -> new RecordBuilderImpl(reversingBehavior, customizer, txnCategory);

@@ -74,6 +74,9 @@ import "token_pause.proto";
 import "token_unpause.proto";
 import "token_update_nfts.proto";
 import "token_reject.proto";
+import "token_airdrop.proto";
+import "token_cancel_airdrop.proto";
+import "token_claim_airdrop.proto";
 
 import "schedule_create.proto";
 import "schedule_delete.proto";
@@ -400,5 +403,20 @@ message TransactionBody {
          * SHALL NOT be charged for this transaction.
          */
         TokenRejectTransactionBody tokenReject = 57;
+
+        /**
+        * A transaction body for a `tokenAirdrop` request.
+        */
+        TokenAirdropTransactionBody tokenAirdrop = 58;
+
+        /**
+        * A transaction body for a `cancelAirdrop` request.
+        */
+        TokenCancelAirdropTransactionBody tokenCancelAirdrop = 59;
+
+        /**
+        * A transaction body for a `claimAirdrop` request.
+         */
+        TokenClaimAirdropTransactionBody tokenClaimAirdrop = 60;
     }
 }

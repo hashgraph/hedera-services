@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
+import static com.hedera.hapi.block.stream.output.RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -113,9 +114,7 @@ public class IoBlockItemsBuilderTest {
         assertTrue(outputBlockItem.hasTransactionOutput());
         final var output = outputBlockItem.transactionOutput();
         assertTrue(output.hasSubmitMessage());
-        assertSame(
-                "WITH_FULL_MESSAGE",
-                output.submitMessageOrThrow().topicRunningHashVersion().protoName());
+        assertSame(WITH_MESSAGE_DIGEST_AND_PAYER, output.submitMessageOrThrow().topicRunningHashVersion());
     }
 
     @Test
@@ -177,8 +176,7 @@ public class IoBlockItemsBuilderTest {
         final var outputBlockItem = blockItems.get(2);
         assertTrue(outputBlockItem.hasTransactionOutput());
         final var output = outputBlockItem.transactionOutput();
-        assertTrue(output.hasCryptoTransfer());
-        assertEquals(List.of(assessedCustomFee), output.cryptoTransferOrThrow().assessedCustomFees());
+        assertTrue(output.hasContractCall());
     }
 
     private void validateTransactionResult(final List<BlockItem> blockItems) {

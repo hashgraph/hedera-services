@@ -78,7 +78,6 @@ import java.util.Set;
 /**
  * A temporary implementation of {@link StreamBuilder} that forwards all mutating calls to an
  * {@link IoBlockItemsBuilder} and a {@link RecordBuilderImpl}.
- * <p>
  */
 public class PairedStreamBuilder
         implements StreamBuilder,
@@ -137,6 +136,11 @@ public class PairedStreamBuilder
         recordBuilder.transaction(transaction);
         ioBlockItemsBuilder.transaction(transaction);
         return this;
+    }
+
+    @Override
+    public int getNumAutoAssociations() {
+        return ioBlockItemsBuilder.getNumAutoAssociations();
     }
 
     @Override

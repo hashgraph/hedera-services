@@ -23,7 +23,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
@@ -55,7 +55,7 @@ class SavepointStackImplTest extends StateTestBase {
             G_KEY, GRAPE);
 
     @Mock(strictness = LENIENT)
-    private HederaState baseState;
+    private MerkleState baseState;
 
     @BeforeEach
     void setup() {
@@ -534,7 +534,7 @@ class SavepointStackImplTest extends StateTestBase {
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
 
             // when
-            stack.commitFullStack();
+            stack.commitPreTxnSystemChanges();
 
             // then
             final var newData = new HashMap<>(BASE_DATA);
@@ -557,7 +557,7 @@ class SavepointStackImplTest extends StateTestBase {
 
             // when
             stack.commit();
-            stack.commitFullStack();
+            stack.commitPreTxnSystemChanges();
 
             // then
             final var newData = new HashMap<>(BASE_DATA);
@@ -580,7 +580,7 @@ class SavepointStackImplTest extends StateTestBase {
 
             // when
             stack.rollback();
-            stack.commitFullStack();
+            stack.commitPreTxnSystemChanges();
 
             // then
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
@@ -593,13 +593,13 @@ class SavepointStackImplTest extends StateTestBase {
             final var stack = SavepointStackImpl.newRootStack(baseState, 3, 50);
 
             // when
-            stack.commitFullStack();
+            stack.commitPreTxnSystemChanges();
 
             // then
             assertThatThrownBy(stack::commit).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(stack::rollback).isInstanceOf(IllegalStateException.class);
             assertThat(stack.depth()).isOne();
-            assertThatCode(stack::commitFullStack).doesNotThrowAnyException();
+            assertThatCode(stack::commitPreTxnSystemChanges).doesNotThrowAnyException();
             assertThatCode(stack::createSavepoint).doesNotThrowAnyException();
         }
 
@@ -613,7 +613,7 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(A_KEY, ACAI);
 
             // when
-            stack.commitFullStack();
+            stack.commitPreTxnSystemChanges();
 
             // then
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));

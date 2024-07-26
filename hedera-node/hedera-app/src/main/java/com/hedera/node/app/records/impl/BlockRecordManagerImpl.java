@@ -35,7 +35,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -95,7 +95,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     @Inject
     public BlockRecordManagerImpl(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
 
         requireNonNull(state);
@@ -155,7 +155,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     public boolean startUserTransaction(
             @NonNull final Instant consensusTime,
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final PlatformState platformState) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
@@ -234,7 +234,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 lastBlockInfo.lastBlockNumber(), lastBlockInfo.lastBlockNumber() + 1, consensusTime);
     }
 
-    private void putLastBlockInfo(@NonNull final HederaState state) {
+    private void putLastBlockInfo(@NonNull final MerkleState state) {
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
         blockInfoState.put(lastBlockInfo);
@@ -244,7 +244,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     public void endUserTransaction(
-            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final HederaState state) {
+            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final MerkleState state) {
         // check if we need to run event recovery before we can write any new records to stream
         if (!this.eventRecoveryCompleted) {
             // FUTURE create event recovery class and call it here. Should this be in startUserTransaction()?
@@ -258,7 +258,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     @Override
-    public void endRound(@NonNull final HederaState state) {
+    public void endRound(@NonNull final MerkleState state) {
         // We get the latest running hash from the StreamFileProducer blocking if needed for it to be computed.
         final var currentRunningHash = streamFileProducer.getRunningHash();
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
@@ -342,7 +342,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     @Override
-    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final MerkleState state) {
         final var builder = this.lastBlockInfo
                 .copyBuilder()
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()

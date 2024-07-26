@@ -49,6 +49,11 @@ public class FakeCryptoCreateRecordBuilder {
     public CryptoCreateRecordBuilder create() {
         return new CryptoCreateRecordBuilder() {
             @Override
+            public int getNumAutoAssociations() {
+                return 0;
+            }
+
+            @Override
             public Transaction transaction() {
                 return Transaction.DEFAULT;
             }

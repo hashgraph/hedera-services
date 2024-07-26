@@ -115,6 +115,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             private long newTotalSupply;
 
             @Override
+            public int getNumAutoAssociations() {
+                return 0;
+            }
+
+            @Override
             public Transaction transaction() {
                 return Transaction.DEFAULT;
             }

@@ -99,9 +99,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>Clears the set of peeked values and added values.
+     * Clears the set of peeked values and added values.
      */
     public final void reset() {
         readElements.clear();

@@ -18,17 +18,17 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A singleton class that provides access to the working {@link HederaState}.
+ * A singleton class that provides access to the working {@link MerkleState}.
  */
 @Singleton
 public class WorkingStateAccessor {
-    private HederaState hederaState = null;
+    private MerkleState merkleState = null;
 
     @Inject
     public WorkingStateAccessor() {
@@ -36,20 +36,20 @@ public class WorkingStateAccessor {
     }
 
     /**
-     * Returns the working {@link HederaState}.
-     * @return the working {@link HederaState}.
+     * Returns the working {@link MerkleState}.
+     * @return the working {@link MerkleState}.
      */
     @Nullable
-    public HederaState getHederaState() {
-        return hederaState;
+    public MerkleState getMerkleState() {
+        return merkleState;
     }
 
     /**
-     * Sets the working {@link HederaState}.
-     * @param hederaState the working {@link HederaState}.
+     * Sets the working {@link MerkleState}.
+     * @param merkleState the working {@link MerkleState}.
      */
-    public void setHederaState(HederaState hederaState) {
-        requireNonNull(hederaState);
-        this.hederaState = hederaState;
+    public void setMerkleState(MerkleState merkleState) {
+        requireNonNull(merkleState);
+        this.merkleState = merkleState;
     }
 }

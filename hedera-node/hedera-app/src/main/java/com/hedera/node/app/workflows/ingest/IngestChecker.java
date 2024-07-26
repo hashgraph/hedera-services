@@ -64,7 +64,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.EnumSet;
@@ -155,14 +155,14 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
-     * @param state the {@link HederaState} to use
+     * @param state the {@link MerkleState} to use
      * @param tx the {@link Transaction} to check
      * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
     public TransactionInfo runAllChecks(
-            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
+            @NonNull final MerkleState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = instantSource.instant();

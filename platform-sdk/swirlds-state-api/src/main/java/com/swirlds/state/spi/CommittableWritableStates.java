@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id("java")
-    id("com.hedera.gradle.maven-publish")
-}
+package com.swirlds.state.spi;
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            pom.developers {
-                developer {
-                    name = "Release Engineering Team"
-                    email = "release-engineering@swirldslabs.com"
-                    organization = "Hedera Hashgraph"
-                    organizationUrl = "https://www.hedera.com"
-                }
-            }
-        }
-    }
+/**
+ * A {@link WritableStates} implementation that is not buffering changes for a wrapped delegate, but itself knows how to
+ * persist changes.
+ */
+public interface CommittableWritableStates {
+    /**
+     * Commits all changes.
+     */
+    void commit();
 }

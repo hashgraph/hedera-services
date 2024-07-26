@@ -61,7 +61,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,7 +71,7 @@ public record UserTxn(
         boolean isGenesisTxn,
         @NonNull HederaFunctionality functionality,
         @NonNull Instant consensusNow,
-        @NonNull HederaState state,
+        @NonNull MerkleState state,
         @NonNull PlatformState platformState,
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
@@ -86,7 +86,7 @@ public record UserTxn(
 
     public static UserTxn from(
             // @UserTxnScope
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creatorInfo,

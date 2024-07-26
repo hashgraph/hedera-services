@@ -188,6 +188,13 @@ public interface StreamBuilder {
     StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
+     * Returns the number of automatic token associations
+     *
+     * @return the number of associations
+     */
+    int getNumAutoAssociations();
+
+    /**
      * Sets the congestion multiplier used for charging the fees for this transaction. This is set if non-zero.
      * @param congestionMultiplier the congestion multiplier
      * @return this builder

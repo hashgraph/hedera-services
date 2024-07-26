@@ -326,6 +326,16 @@ public class IoBlockItemsBuilder
         return reversingBehavior;
     }
 
+    /**
+     * Returns the number of automatic token associations
+     *
+     * @return the number of associations
+     */
+    @Override
+    public int getNumAutoAssociations() {
+        return automaticTokenAssociations.size();
+    }
+
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
     /**{@inheritDoc}*/

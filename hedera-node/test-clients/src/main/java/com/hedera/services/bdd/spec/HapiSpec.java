@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
@@ -67,7 +67,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -452,12 +452,12 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Get the {@link FakeHederaState} for the embedded network, if this spec is targeting an embedded network.
+     * Get the {@link FakeMerkleState} for the embedded network, if this spec is targeting an embedded network.
      *
      * @return the embedded state
      * @throws IllegalStateException if this spec is not targeting an embedded network
      */
-    public @NonNull FakeHederaState embeddedStateOrThrow() {
+    public @NonNull FakeMerkleState embeddedStateOrThrow() {
         if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
             throw new IllegalStateException("Cannot access embedded state for non-embedded network");
         }
@@ -489,7 +489,7 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Commits all pending changes to the embedded {@link FakeHederaState} if this spec is targeting
+     * Commits all pending changes to the embedded {@link FakeMerkleState} if this spec is targeting
      * an embedded network.
      */
     public void commitEmbeddedState() {

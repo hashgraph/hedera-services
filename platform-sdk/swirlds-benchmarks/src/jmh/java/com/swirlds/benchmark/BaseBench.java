@@ -64,7 +64,6 @@ public abstract class BaseBench {
     @Param({"1000000"})
     public int maxKey = 10_000_000;
 
-    // 8 - VirtualLongKey, 8+ - generic VirtualKey
     @Param({"8"})
     public int keySize = 32;
 

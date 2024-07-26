@@ -55,6 +55,11 @@ public class FakeCryptoTransferRecordBuilder {
     public CryptoTransferRecordBuilder create() {
         return new CryptoTransferRecordBuilder() {
             @Override
+            public int getNumAutoAssociations() {
+                return 0;
+            }
+
+            @Override
             public Transaction transaction() {
                 return Transaction.DEFAULT;
             }
