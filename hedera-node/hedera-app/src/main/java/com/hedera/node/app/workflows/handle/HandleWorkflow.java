@@ -69,7 +69,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -165,12 +165,12 @@ public class HandleWorkflow {
     /**
      * Handles the next {@link Round}
      *
-     * @param state the writable {@link MerkleState} that this round will work on
+     * @param state the writable {@link State} that this round will work on
      * @param platformState the {@link PlatformState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
-            @NonNull final MerkleState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
+            @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
         final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
@@ -229,14 +229,14 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link MerkleState} that this transaction will work on
+     * @param state the writable {@link State} that this transaction will work on
      * @param platformState the {@link PlatformState} that this transaction will work on
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
-            @NonNull final MerkleState state,
+            @NonNull final State state,
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
@@ -492,7 +492,7 @@ public class HandleWorkflow {
      * @return the new user transaction
      */
     private UserTxn newUserTxn(
-            @NonNull final MerkleState state,
+            @NonNull final State state,
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,

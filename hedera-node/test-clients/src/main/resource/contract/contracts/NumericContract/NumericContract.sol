@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 contract NumericContract {
 
+    uint8 public constant SUCCESS_CODE = 22;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*               Non-static Simple HTS functions              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -40,9 +42,7 @@ contract NumericContract {
             success
                 ? abi.decode(result, (int32, uint64))
                 : (int32(0), 0);
-        if (responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function burnTokenV2(address _token, int64 _amount, int64[] memory _serialNumbers) external
@@ -54,56 +54,42 @@ contract NumericContract {
             success
                 ? abi.decode(result, (int32, uint64))
                 : (int32(0), 0);
-        if (responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function mintTokenV1(address token, uint64 amount, bytes[] memory metadata) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("mintToken(address,uint64,bytes[])", token, amount, metadata));
 
         (int32 responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = abi.decode(result, (int32, uint64, int[]));
-
-        if (responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function mintTokenV2(address token, int64 amount, bytes[] memory metadata) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("mintToken(address,int64,bytes[])", token, amount, metadata));
 
         (int32 responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = abi.decode(result, (int32, uint64, int[]));
-
-        if (responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function wipeFungibleV1(address token, address account, uint32 amount) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("wipeTokenAccount(address,address,uint32)", token, account, amount));
 
         int32 responseCode = abi.decode(result, (int32));
-        if(responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function wipeFungibleV2(address token, address account, int64 amount) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("wipeTokenAccount(address,address,int64)", token, account, amount));
 
         int32 responseCode = abi.decode(result, (int32));
-        if(responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     function wipeNFT(address token, address account, int64[] memory serialNumbers) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("wipeTokenAccountNFT(address,address,int64[])", token, account, serialNumbers));
 
         int32 responseCode = abi.decode(result, (int32));
-        if(responseCode != 22) {
-            revert();
-        }
+        require(responseCode == SUCCESS_CODE);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

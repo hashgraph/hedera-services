@@ -30,11 +30,11 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.state.WrappedMerkleState;
+import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.List;
@@ -51,7 +51,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
     protected final BuilderSink parentSink;
-    protected final WrappedMerkleState state;
+    protected final WrappedState state;
     private Status status = Status.PENDING;
 
     /**
@@ -62,7 +62,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      * @param maxFollowing the maximum number of following builders
      */
     protected AbstractSavepoint(
-            @NonNull final WrappedMerkleState state,
+            @NonNull final WrappedState state,
             @NonNull final BuilderSink parentSink,
             final int maxPreceding,
             final int maxFollowing) {
@@ -78,14 +78,14 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      * @param maxTotal the maximum number of total builders
      */
     protected AbstractSavepoint(
-            @NonNull final WrappedMerkleState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
+            @NonNull final WrappedState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
         super(maxTotal);
         this.state = requireNonNull(state);
         this.parentSink = requireNonNull(parentSink);
     }
 
     @Override
-    public MerkleState state() {
+    public State state() {
         return state;
     }
 

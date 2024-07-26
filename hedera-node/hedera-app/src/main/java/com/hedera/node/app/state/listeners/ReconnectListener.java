@@ -28,7 +28,7 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -42,14 +42,14 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectListener implements ReconnectCompleteListener {
     private static final Logger log = LogManager.getLogger(ReconnectListener.class);
 
-    private final Supplier<AutoCloseableWrapper<MerkleState>> stateAccessor;
+    private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
     private final PlatformStateAccessor platformStateAccessor;
 
     @Inject
     public ReconnectListener(
-            @NonNull final Supplier<AutoCloseableWrapper<MerkleState>> stateAccessor,
+            @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final PlatformStateAccessor platformStateAccessor) {

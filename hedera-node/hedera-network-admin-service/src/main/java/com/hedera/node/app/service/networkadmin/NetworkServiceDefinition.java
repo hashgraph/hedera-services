@@ -33,6 +33,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class NetworkServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The global singleton NetworkServiceDefinition INSTANCE.
+     */
     public static final NetworkServiceDefinition INSTANCE = new NetworkServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
@@ -47,12 +50,22 @@ public final class NetworkServiceDefinition implements RpcServiceDefinition {
         requireNonNull(CommonUtils.class);
     }
 
+    /**
+     * Returns the base path for the Network Service
+     *
+     * @return the base path
+     */
     @Override
     @NonNull
     public String basePath() {
         return "proto.NetworkService";
     }
 
+    /**
+     * Returns the set of rpc methods supported by the network service
+     *
+     * @return the methods
+     */
     @Override
     @NonNull
     public Set<RpcMethodDefinition<?, ?>> methods() {

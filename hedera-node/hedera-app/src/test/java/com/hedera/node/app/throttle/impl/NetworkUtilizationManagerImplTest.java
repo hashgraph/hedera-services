@@ -35,7 +35,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -70,7 +70,7 @@ class NetworkUtilizationManagerImplTest {
     private TransactionInfo transactionInfo;
 
     @Mock
-    private MerkleState state;
+    private State state;
 
     @Mock
     private ReadableStates readableStates;
