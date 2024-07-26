@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
@@ -94,9 +95,10 @@ class StateTest {
         PlatformState expectedPlatformState = state.getPlatformState().copy();
         // expected platform state will have reservation count = 1
         expectedPlatformState.reserve();
-        state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
+        MerkleNode newRoot = state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
         MerkleStateRoot stateRoot = (MerkleStateRoot) state.getSwirldState();
-        assertNull(state.getPlatformState());
+        assertSame(newRoot, stateRoot, "migrate should return a new root");
+        assertNull(state.getPlatformState(), "platform state should be null in the old root");
 
         assertThat(stateRoot.getPlatformState())
                 .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
