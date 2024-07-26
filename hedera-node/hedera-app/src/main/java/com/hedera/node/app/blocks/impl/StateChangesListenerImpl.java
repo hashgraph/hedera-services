@@ -44,42 +44,25 @@ import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.*;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.StateChangesListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 
 public class StateChangesListenerImpl implements StateChangesListener {
-    private List<StateChange> stateChanges;
-    private LinkedList<StateChange> endOfRoundStateChanges;
-    private HashMap<String, StateChange> endOfRoundSingletonStateChanges;
+    private final List<StateChange> stateChanges = new ArrayList<>();
+    ;
+    private final LinkedList<StateChange> endOfRoundStateChanges = new LinkedList<>();
+    ;
+    private final HashMap<String, StateChange> endOfRoundSingletonStateChanges = new HashMap<>();
 
-    public StateChangesListenerImpl() {
-        resetStateChanges();
-        resetEndOfRoundStateChanges();
-    }
-
-    public void resetStateChanges() {
-        stateChanges = new ArrayList<>();
-    }
-
-    public void resetEndOfRoundStateChanges() {
-        endOfRoundStateChanges = new LinkedList<>();
-        endOfRoundSingletonStateChanges = new HashMap<>();
-    }
-
-    public boolean hasRecordedStateChanges() {
-        return !stateChanges.isEmpty();
-    }
-
-    public boolean hasRecordedEndOfRoundStateChanges() {
-        return !endOfRoundStateChanges.isEmpty();
-    }
+    public StateChangesListenerImpl() {}
 
     /**
      * We don't want to write certain state changes to the block stream until we are at the end of a block. For example,
@@ -102,9 +85,7 @@ public class StateChangesListenerImpl implements StateChangesListener {
         // writing it will be delayed until the end of the round. The state change type for these will have to be
         // end-of-round or system for now as it doesn't make sense if on one hand BlockInfo is updated because of a
         // transaction and then overwritten by another BlockInfo update for the end of the block.
-
-        //        if (isEndOfRoundStateChange(stateChange)) {
-        // We need to add it to the end of round state changes.
+        //        if (stateChange.hasSingletonUpdate()) {
         //            addEndOfRoundStateChange(stateChange);
         //            return;
         //        }
@@ -112,22 +93,8 @@ public class StateChangesListenerImpl implements StateChangesListener {
         stateChanges.add(stateChange);
     }
 
-    @Nullable
-    public List<StateChange> getStateChanges() {
-        return stateChanges;
-    }
-
-    @Nullable
-    public LinkedList<StateChange> getEndOfRoundStateChanges() {
-        return endOfRoundStateChanges;
-    }
-
     private boolean isIgnoredStateChange(@NonNull final StateChange stateChange) {
-        return stateChange.stateName().equals("RecordCache.TransactionRecordQueue");
-    }
-
-    private boolean isEndOfRoundStateChange(@NonNull final StateChange stateChange) {
-        return stateChange.hasSingletonUpdate();
+        return Objects.equals(stateChange.stateName(), "RecordCache.TransactionRecordQueue");
     }
 
     /**
@@ -158,8 +125,8 @@ public class StateChangesListenerImpl implements StateChangesListener {
         Objects.requireNonNull(value, "value must not be null");
 
         final var change = MapUpdateChange.newBuilder()
-                .key(keyFor(key))
-                .value(valueFor(value))
+                .key(mapChangeKeyFor(key))
+                .value(mapChangeValueFor(value))
                 .build();
         final var stateChange =
                 StateChange.newBuilder().stateName(stateKey).mapUpdate(change).build();
@@ -170,13 +137,54 @@ public class StateChangesListenerImpl implements StateChangesListener {
         Objects.requireNonNull(stateKey, "stateKey must not be null");
         Objects.requireNonNull(key, "key must not be null");
 
-        final var change = MapDeleteChange.newBuilder().key(keyFor(key)).build();
+        final var change =
+                MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
         final var stateChange =
                 StateChange.newBuilder().stateName(stateKey).mapDelete(change).build();
         addStateChange(stateChange);
     }
 
-    private static <K> MapChangeKey keyFor(@NonNull final K key) {
+    public <V> void queuePushChange(@NonNull final String stateKey, @NonNull final V value) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+
+        final var stateChange = StateChange.newBuilder()
+                .stateName(stateKey)
+                .queuePush(new QueuePushChange(queuePushChangeValueFor(value)))
+                .build();
+        addStateChange(stateChange);
+    }
+
+    public void queuePopChange(@NonNull final String stateKey) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+
+        final var stateChange = StateChange.newBuilder()
+                .stateName(stateKey)
+                .queuePop(new QueuePopChange())
+                .build();
+        addStateChange(stateChange);
+    }
+
+    public <V> void singletonUpdateChange(@NonNull final String stateKey, @NonNull final V value) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+
+        final var stateChange = StateChange.newBuilder()
+                .stateName(stateKey)
+                .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value)))
+                .build();
+        addStateChange(stateChange);
+    }
+
+    public List<StateChange> getStateChanges() {
+        return stateChanges;
+    }
+
+    public LinkedList<StateChange> getEndOfRoundStateChanges() {
+        return endOfRoundStateChanges;
+    }
+
+    private static <K> MapChangeKey mapChangeKeyFor(@NonNull final K key) {
         return switch (key) {
             case AccountID accountID -> MapChangeKey.newBuilder()
                     .accountIdKey(accountID)
@@ -218,7 +226,7 @@ public class StateChangesListenerImpl implements StateChangesListener {
         };
     }
 
-    private static <V> MapChangeValue valueFor(final V value) {
+    private static <V> MapChangeValue mapChangeValueFor(@NonNull final V value) {
         return switch (value) {
             case Account account -> MapChangeValue.newBuilder()
                     .accountValue(account)
@@ -256,65 +264,59 @@ public class StateChangesListenerImpl implements StateChangesListener {
         };
     }
 
-    public <V> void queuePushChange(@NonNull final String stateKey, @NonNull final V value) {
-        Objects.requireNonNull(stateKey, "stateKey must not be null");
-        Objects.requireNonNull(value, "value must not be null");
-
-        final var builder = QueuePushChange.newBuilder();
-        setQueuePushChangeElement(builder, value);
-        final var change = builder.build();
-        final var stateChange =
-                StateChange.newBuilder().stateName(stateKey).queuePush(change).build();
-        addStateChange(stateChange);
-    }
-
-    private static <V> void setQueuePushChangeElement(
-            @NonNull final QueuePushChange.Builder b, @NonNull final V value) {
+    private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
         switch (value) {
-            case Bytes protoBytesElement -> b.protoBytesElement(protoBytesElement);
-            case TransactionRecordEntry transactionRecordEntryElement -> b.transactionRecordEntryElement(
-                    transactionRecordEntryElement);
+            case Bytes protoBytesElement -> {
+                return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement);
+            }
+            case String protoStringElement -> {
+                return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_STRING_ELEMENT, protoStringElement);
+            }
+            case TransactionRecordEntry transactionRecordEntryElement -> {
+                return new OneOf<>(
+                        QueuePushChange.ValueOneOfType.TRANSACTION_RECORD_ENTRY_ELEMENT, transactionRecordEntryElement);
+            }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
     }
 
-    public void queuePopChange(@NonNull final String stateKey) {
-        Objects.requireNonNull(stateKey, "stateKey must not be null");
-
-        final var stateChange = StateChange.newBuilder()
-                .stateName(stateKey)
-                .queuePop(new QueuePopChange())
-                .build();
-        addStateChange(stateChange);
-    }
-
-    public <V> void singletonUpdateChange(@NonNull final String stateKey, @NonNull final V value) {
-        Objects.requireNonNull(stateKey, "stateKey must not be null");
-        Objects.requireNonNull(value, "value must not be null");
-
-        final var builder = SingletonUpdateChange.newBuilder();
-        setSingletonUpdateChangeValue(builder, value);
-        final var change = builder.build();
-        final var stateChange = StateChange.newBuilder()
-                .stateName(stateKey)
-                .singletonUpdate(change)
-                .build();
-        addStateChange(stateChange);
-    }
-
-    private <V> void setSingletonUpdateChangeValue(
-            @NonNull final SingletonUpdateChange.Builder b, @NonNull final V value) {
+    private static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
+            @NotNull V value) {
         switch (value) {
-            case BlockInfo blockInfo -> b.blockInfoValue(blockInfo);
-            case EntityNumber entityNumber -> b.entityNumberValue(entityNumber);
-            case ExchangeRateSet exchangeRateSet -> b.exchangeRateSetValue(exchangeRateSet);
-            case NetworkStakingRewards networkStakingRewards -> b.networkStakingRewardsValue(networkStakingRewards);
-            case Bytes protoBytes -> b.bytesValue(protoBytes);
-            case RunningHashes runningHashes -> b.runningHashesValue(runningHashes);
-            case Timestamp timestamp -> b.timestampValue(timestamp);
-            case ThrottleUsageSnapshots throttleUsageSnapshots -> b.throttleUsageSnapshotsValue(throttleUsageSnapshots);
-            case CongestionLevelStarts congestionLevelStarts -> b.congestionLevelStartsValue(congestionLevelStarts);
+            case BlockInfo blockInfo -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_INFO_VALUE, blockInfo);
+            }
+            case CongestionLevelStarts congestionLevelStarts -> {
+                return new OneOf<>(
+                        SingletonUpdateChange.NewValueOneOfType.CONGESTION_LEVEL_STARTS_VALUE, congestionLevelStarts);
+            }
+            case EntityNumber entityNumber -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.ENTITY_NUMBER_VALUE, entityNumber);
+            }
+            case ExchangeRateSet exchangeRateSet -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.EXCHANGE_RATE_SET_VALUE, exchangeRateSet);
+            }
+            case NetworkStakingRewards networkStakingRewards -> {
+                return new OneOf<>(
+                        SingletonUpdateChange.NewValueOneOfType.NETWORK_STAKING_REWARDS_VALUE, networkStakingRewards);
+            }
+            case Bytes protoBytes -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BYTES_VALUE, protoBytes);
+            }
+            case String protoString -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.STRING_VALUE, protoString);
+            }
+            case RunningHashes runningHashes -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.RUNNING_HASHES_VALUE, runningHashes);
+            }
+            case ThrottleUsageSnapshots throttleUsageSnapshots -> {
+                return new OneOf<>(
+                        SingletonUpdateChange.NewValueOneOfType.THROTTLE_USAGE_SNAPSHOTS_VALUE, throttleUsageSnapshots);
+            }
+            case Timestamp timestamp -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.TIMESTAMP_VALUE, timestamp);
+            }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
