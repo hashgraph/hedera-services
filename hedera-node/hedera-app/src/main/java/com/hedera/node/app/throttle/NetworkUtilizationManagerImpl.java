@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -59,13 +59,13 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     public void trackTxn(
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant consensusTime,
-            @NonNull final HederaState state) {
+            @NonNull final MerkleState state) {
         backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
         congestionMultipliers.updateMultiplier(consensusTime);
     }
 
     @Override
-    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state) {
+    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final MerkleState state) {
         // Used to update network utilization after charging fees for an invalid transaction
         final var chargingFeesCryptoTransfer = new TransactionInfo(
                 Transaction.DEFAULT,
@@ -91,7 +91,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     @Override
     public boolean shouldThrottle(
             @NonNull final TransactionInfo txnInfo,
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final Instant consensusTime) {
         return backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
     }

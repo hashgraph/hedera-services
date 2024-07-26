@@ -19,7 +19,7 @@ package com.hedera.node.app.throttle;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -40,7 +40,7 @@ public interface NetworkUtilizationManager {
     void trackTxn(
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant consensusTime,
-            @NonNull final HederaState state);
+            @NonNull final MerkleState state);
 
     /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
@@ -48,7 +48,7 @@ public interface NetworkUtilizationManager {
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
-    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
+    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final MerkleState state);
 
     /**
      * Indicates whether the last transaction was throttled by gas.
@@ -76,7 +76,7 @@ public interface NetworkUtilizationManager {
      */
     boolean shouldThrottle(
             @NonNull final TransactionInfo txnInfo,
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final Instant consensusTime);
 
     /**
