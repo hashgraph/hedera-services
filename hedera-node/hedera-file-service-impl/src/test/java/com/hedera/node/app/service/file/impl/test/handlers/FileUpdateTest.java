@@ -18,7 +18,6 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,11 +48,11 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -75,19 +74,14 @@ class FileUpdateTest extends FileTestBase {
     private static final long EXPIRATION_TIMESTAMP = 3_456_789L;
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
-
     @Mock
     private ReadableAccountStore accountStore;
 
     @Mock
-    private Account account;
+    private HandleContext.SavepointStack stack;
 
     @Mock
-    private Account autoRenewAccount;
-
-    @Mock
-    private ExpiryValidator expiryValidator;
+    private SingleTransactionRecordBuilder recordBuilder;
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -280,6 +274,9 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         // expect:
@@ -390,6 +387,9 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
 
         subject.handle(handleContext);
 
@@ -411,6 +411,9 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
 
         subject.handle(handleContext);
 

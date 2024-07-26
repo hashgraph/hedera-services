@@ -190,12 +190,12 @@ public class AddedEventMetrics {
             final Transaction transaction = iterator.next();
             if (transaction.isSystem()) {
                 numSysTrans++;
-                sysSize += transaction.getSerializedLength();
-                avgBytesPerTransactionSys.update(transaction.getSerializedLength());
+                sysSize += transaction.getSize();
+                avgBytesPerTransactionSys.update(transaction.getSize());
             } else {
                 numAppTrans++;
-                appSize += transaction.getSerializedLength();
-                avgBytesPerTransaction.update(transaction.getSerializedLength());
+                appSize += transaction.getSize();
+                avgBytesPerTransaction.update(transaction.getSize());
             }
         }
         avgTransactionsPerEvent.update(numAppTrans);

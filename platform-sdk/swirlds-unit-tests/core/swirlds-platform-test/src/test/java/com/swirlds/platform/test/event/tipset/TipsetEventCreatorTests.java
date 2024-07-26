@@ -71,7 +71,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -212,10 +211,8 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<PayloadOneOfType>> convertedTransactions = Stream.of(newEvent.getTransactions())
-                .map(Transaction::getPayload)
-                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
-                .toList();
+        final List<OneOf<PayloadOneOfType>> convertedTransactions =
+                newEvent.getTransactions().stream().map(Transaction::getPayload).toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {
             final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
