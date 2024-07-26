@@ -192,8 +192,8 @@ public class UnsignedEvent extends AbstractHashable {
         out.writeSerializable(softwareVersion, true);
         out.writeInt(NodeId.ClassVersion.ORIGINAL);
         out.writeLong(eventCore.creatorNodeId());
-        selfParent.serialize(out);
-        EventDescriptorWrapper.serializeList(otherParents, out);
+        EventDescriptorWrapper.serialize(out, selfParent);
+        EventDescriptorWrapper.serializeList(out, otherParents);
         out.writeLong(eventCore.birthRound());
         out.writeInstant(HapiUtils.asInstant(eventCore.timeCreated()));
 

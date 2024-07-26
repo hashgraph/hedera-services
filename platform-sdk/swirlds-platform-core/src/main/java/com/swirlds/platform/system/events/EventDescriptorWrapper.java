@@ -17,9 +17,11 @@
 package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIST_ARRAY_LENGTH;
+import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -29,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -52,6 +55,10 @@ public record EventDescriptorWrapper(
          * @since 0.46.0
          */
         public static final int BIRTH_ROUND = 3;
+
+        public static boolean valid(final int version) {
+            return version >= SELF_SERIALIZABLE_NODE_ID && version <= BIRTH_ROUND;
+        }
     }
 
     public EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor) {
@@ -74,59 +81,105 @@ public record EventDescriptorWrapper(
         };
     }
 
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(ClassVersion.BIRTH_ROUND);
-        serializeOne(out);
+    /**
+     * Get the version of the class.
+     * @return the version of the class
+     */
+    public int getVersion() {
+        return ClassVersion.BIRTH_ROUND;
     }
 
-    private void serializeOne(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeSerializable(hash, false);
-        out.writeSerializable(creator, false);
-        out.writeLong(eventDescriptor.generation());
-        out.writeLong(eventDescriptor.birthRound());
+    /**
+     * Deserialize an {@link EventDescriptorWrapper} from a {@link SerializableDataInputStream}.
+     *
+     * @param out the {@link SerializableDataInputStream} to write to
+     * @param obj the {@link EventDescriptorWrapper} to serialize may be null
+     *
+     * @throws IOException if an IO error occurs
+     */
+    public static void serialize(@NonNull final SerializableDataOutputStream out, @Nullable final EventDescriptorWrapper obj) throws IOException {
+        if (obj == null) {
+            out.writeInt(NULL_VERSION);
+        } else {
+            out.writeInt(ClassVersion.BIRTH_ROUND);
+            serializeObject(out, obj);
+        }
     }
 
-    public static void serializeList(
-            @Nullable final List<EventDescriptorWrapper> descriptorWrapperList,
-            @NonNull final SerializableDataOutputStream out)
-            throws IOException {
-        if (descriptorWrapperList == null) {
+    private static void serializeObject(@NonNull final SerializableDataOutputStream out, @NonNull final EventDescriptorWrapper obj) throws IOException {
+        out.writeSerializable(obj.hash(), false);
+        out.writeSerializable(obj.creator(), false);
+        out.writeLong(obj.eventDescriptor().generation());
+        out.writeLong(obj.eventDescriptor().birthRound());
+    }
+
+    /**
+     * Serialize a list of {@link EventDescriptorWrapper} to a {@link SerializableDataOutputStream}.
+     *
+     * @param out the {@link SerializableDataOutputStream} to write to
+     * @param list the list of {@link EventDescriptorWrapper} to serialize may be null
+     *
+     * @throws IOException if an IO error occurs
+     */
+    public static void serializeList(@NonNull final SerializableDataOutputStream out, @Nullable final List<EventDescriptorWrapper> list) throws IOException {
+        if (list == null) {
             out.writeInt(NULL_LIST_ARRAY_LENGTH);
-            return;
-        }
-        out.writeInt(descriptorWrapperList.size());
-        out.writeBoolean(true); // allSameClass
+        } else {
+            final Iterator<EventDescriptorWrapper> iterator = list.iterator();
+            int size = list.size();
+            out.writeInt(size);
+            if (size != 0) {
+                out.writeBoolean(
+                        true);// if the class ID and version is written only once, we need to write it when we come across
+                // the first non-null member, this variable will keep track of whether its written or not
+                boolean classIdVersionWritten = false;
+                while (iterator.hasNext()) {
+                    final EventDescriptorWrapper serializable = iterator.next();
+                    if (serializable == null) {
+                        out.writeBoolean(true);
+                        continue;
+                    }
+                    out.writeBoolean(false);
+                    if (!classIdVersionWritten) {
+                        // this is the first non-null member, so we write the ID and version
 
-        boolean classIdVersionWritten = false;
-        for (final EventDescriptorWrapper descriptorWrapper : descriptorWrapperList) {
-            if (descriptorWrapper == null) {
-                out.writeBoolean(true);
-                continue;
+                        out.writeInt(serializable.getVersion());
+                        classIdVersionWritten = true;
+                    }
+                    serializeObject(out, serializable);
+                }
             }
-            out.writeBoolean(false);
-            if (!classIdVersionWritten) {
-                // this is the first non-null member, so we write the ID and version
-                out.writeInt(ClassVersion.BIRTH_ROUND);
-                classIdVersionWritten = true;
-            }
-            descriptorWrapper.serializeOne(out);
         }
     }
 
-    @NonNull
+
+    /**
+     * Deserialize an {@link EventDescriptorWrapper} from a {@link SerializableDataInputStream}.
+     *
+     * @param in the {@link SerializableDataInputStream} to read from
+     * @return the deserialized {@link EventDescriptorWrapper} may be null
+     *
+     * @throws IOException if an IO error occurs
+     */
+    @Nullable
     public static EventDescriptorWrapper deserialize(@NonNull final SerializableDataInputStream in) throws IOException {
         final int version = in.readInt();
-        return deserializeOne(in, version);
+        if (version == NULL_VERSION) {
+            return null;
+        }
+
+        return deserializeObject(in, version);
     }
 
     @NonNull
-    private static EventDescriptorWrapper deserializeOne(
-            @NonNull final SerializableDataInputStream in, final int version) throws IOException {
+    private static EventDescriptorWrapper deserializeObject(@NonNull final SerializableDataInputStream in, int version) throws IOException {
+        if (!ClassVersion.valid(version)) {
+            throw new InvalidVersionException(ClassVersion.SELF_SERIALIZABLE_NODE_ID, ClassVersion.BIRTH_ROUND, version);
+        }
         final Hash hash = in.readSerializable(false, Hash::new);
         if (hash == null) {
             throw new IOException("hash cannot be null");
         }
-
         final NodeId creator = in.readSerializable(false, NodeId::new);
         if (creator == null) {
             throw new IOException("creator cannot be null");
@@ -142,35 +195,49 @@ public record EventDescriptorWrapper(
         return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), generation, birthRound));
     }
 
+    /**
+     * Deserialize a list of {@link EventDescriptorWrapper} from a {@link SerializableDataInputStream}.
+     *
+     * @param in the {@link SerializableDataInputStream} to read from
+     * @return the deserialized list of {@link EventDescriptorWrapper} may be null
+     *
+     * @throws IOException if an IO error occurs
+     */
     @Nullable
-    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in)
-            throws IOException {
+    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in) throws IOException {
         final int length = in.readInt();
         if (length == NULL_LIST_ARRAY_LENGTH) {
             return null;
-        }
-        if (length > AddressBook.MAX_ADDRESSES) {
-            throw new IOException(String.format(
-                    "The input stream provided a length of %d for the list/array "
-                            + "which exceeds the maxLength of %d",
-                    length, AddressBook.MAX_ADDRESSES));
-        }
-        in.readBoolean(); // allSameClass
-        final List<EventDescriptorWrapper> list = new ArrayList<>(length);
-        if (length > 0) {
-            int version = -1;
-            for (int i = 0; i < length; i++) {
-                final boolean isNull = in.readBoolean();
-                if (isNull) {
-                    list.add(null);
-                } else {
-                    if (version == -1) {
-                        version = in.readInt();
+        } else {
+            final List<EventDescriptorWrapper> list = new ArrayList<>(length);
+            if (length > AddressBook.MAX_ADDRESSES) {
+                throw new IOException(String.format(
+                        "The input stream provided a length of %d for the list/array "
+                                + "which exceeds the maxLength of %d",
+                        length, AddressBook.MAX_ADDRESSES));
+            }
+            if (length == 0) {
+                return list;
+            } else {
+                final boolean allSameClass = in.readBoolean();
+                int version = -1;
+                for (int i = 0; i < length; i++) {
+
+                    if (allSameClass) {
+                        final boolean isNull = in.readBoolean();
+                        if (isNull) {
+                            list.add(null);
+                        } else {
+                            if (version == -1) {
+                                // this is the first non-null member, so we read the ID and version
+                                version = in.readInt();
+                            }
+                            list.add(deserializeObject(in, version));
+                        }
                     }
-                    list.add(deserializeOne(in, version));
                 }
             }
+            return list;
         }
-        return list;
     }
 }
