@@ -100,7 +100,8 @@ import org.apache.logging.log4j.Logger;
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, State, MerkleRoot {
 
-    private static final int PLATFORM_STATE_INDEX = 0;
+    // PlatformState is a special case, and it always has 0 index
+    static final int PLATFORM_STATE_INDEX = 0;
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -811,8 +812,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void setPlatformState(@NonNull final PlatformState platformState) {
+        INDEX_LOOKUP.clear();
+        // Shift all existing children to the right
         if (getNumberOfChildren() != 0) {
-            throw new IllegalStateException("The PlatformState has to be set as the first child");
+            for (int i = getNumberOfChildren(); i > 0; i--) {
+                MerkleNode child = getChild(i - 1);
+                setChild(i, child.copy());
+                setChild(i - 1, null);
+            }
         }
         setChild(PLATFORM_STATE_INDEX, platformState);
     }
