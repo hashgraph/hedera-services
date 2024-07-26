@@ -152,4 +152,37 @@ message TransactionRecord {
      * This field is populated only when the EVM address is not specified in the related transaction body.
      */
     bytes evm_address = 21;
+
+    /**
+     * A list of pending token airdrops.
+     * Each pending airdrop represents a single requested transfer from a
+     * sending account to a recipient account. These pending transfers are
+     * issued unilaterally by the sending account, and MUST be claimed by the
+     * recipient account before the transfer MAY complete.
+     * A sender MAY cancel a pending airdrop before it is claimed.
+     * An airdrop transaction SHALL emit a pending airdrop when the recipient has no
+     * available automatic association slots available or when the recipient
+     * has set `receiver_sig_required`.
+     */
+    repeated PendingAirdropRecord new_pending_airdrops = 22;
+}
+
+/**
+ * A record of a new pending airdrop.
+ */
+message PendingAirdropRecord {
+    /**
+     * A unique, composite, identifier for a pending airdrop.
+     * This field is REQUIRED.
+     */
+    PendingAirdropId pending_airdrop_id = 1;
+
+    /**
+     * A single pending airdrop amount.
+     * If the pending airdrop is for a fungible/common token this field is REQUIRED
+     * and SHALL be the current amount of tokens offered.
+     * If the pending airdrop is for a non-fungible/unique token, this field SHALL NOT
+     * be set.
+     */
+    PendingAirdropValue pending_airdrop_value = 2;
 }

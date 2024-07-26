@@ -43,7 +43,7 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.HandleOutput;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
@@ -51,7 +51,7 @@ import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
@@ -70,14 +70,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link HederaState} at the time
+ * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link State} at the time
  * the savepoint was created and all the changes made to the state from the time savepoint was created, along with all
  * the stream builders created in the savepoint.
  */
-public class SavepointStackImpl implements HandleContext.SavepointStack, HederaState {
+public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
-
-    private final HederaState root;
+    private final State state;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
     /**
@@ -103,14 +102,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
-     * @param root the root state
+     * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
      * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
-            @NonNull final HederaState root, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
-        return new SavepointStackImpl(root, maxBuildersBeforeUser, maxBuildersAfterUser);
+            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
+        return new SavepointStackImpl(state, maxBuildersBeforeUser, maxBuildersAfterUser);
     }
 
     /**
@@ -134,13 +133,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * Constructs a new root {@link SavepointStackImpl} with the given root state.
      *
-     * @param root the root state
+     * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders to create
      * @param maxBuildersAfterUser the maximum number of following builders to create
      */
     private SavepointStackImpl(
-            @NonNull final HederaState root, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
-        this.root = requireNonNull(root);
+            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
+        this.state = requireNonNull(state);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
@@ -149,7 +148,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * Constructs a new child {@link SavepointStackImpl} with the given parent stack and the provided
      * characteristics of the dispatch.
-     *
      * @param parent the parent stack
      * @param reversingBehavior the reversing behavior of the dispatch
      * @param category the category of the dispatch
@@ -163,7 +161,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         requireNonNull(reversingBehavior);
         requireNonNull(customizer);
         requireNonNull(category);
-        this.root = requireNonNull(parent);
+        this.state = requireNonNull(parent);
         this.builderSink = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
@@ -171,7 +169,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     @Override
     public void createSavepoint() {
-        stack.push(new FollowingSavepoint(new WrappedHederaState(peek().state()), peek()));
+        stack.push(new FollowingSavepoint(new WrappedState(peek().state()), peek()));
     }
 
     @Override
@@ -252,7 +250,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
             if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
-                ((WrappedHederaState) stack.peek().state()).register(listener);
+                ((WrappedState) stack.peek().state()).register(listener);
 
                 stack.pop().commit();
 
@@ -297,7 +295,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      */
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
-        return root.getReadableStates(serviceName);
+        return state.getReadableStates(serviceName);
     }
 
     /**
@@ -307,7 +305,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
      * <p>
-     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * Unlike other {@link State} implementations, the returned {@link ReadableStates} of this implementation
      * must only be used in the handle workflow.
      */
     @Override
@@ -546,10 +544,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
-        if (root instanceof SavepointStackImpl parent) {
-            stack.push(new FirstChildSavepoint(new WrappedHederaState(root), parent.peek(), category));
+        if (state instanceof SavepointStackImpl parent) {
+            stack.push(new FirstChildSavepoint(new WrappedState(state), parent.peek(), category));
         } else {
-            stack.push(new FirstRootSavepoint(new WrappedHederaState(root), requireNonNull(builderSink)));
+            stack.push(new FirstRootSavepoint(new WrappedState(state), requireNonNull(builderSink)));
         }
     }
 }

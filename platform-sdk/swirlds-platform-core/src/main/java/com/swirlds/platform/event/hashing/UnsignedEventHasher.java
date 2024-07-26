@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtualmap;
+package com.swirlds.platform.event.hashing;
+
+import com.swirlds.platform.system.events.UnsignedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Special form of a VirtualKey which is a simple long. This allows much faster special paths in data stores.
+ * Hashes unsigned events.
  */
-public interface VirtualLongKey extends VirtualKey {
+public interface UnsignedEventHasher {
 
     /**
-     * Direct access to the value of this key in its raw long format
+     * Hashes the event and builds the event descriptor.
      *
-     * @return the long value of this key
+     * @param event the event to hash
      */
-    long getKeyAsLong();
+    void hashUnsignedEvent(@NonNull final UnsignedEvent event);
 }

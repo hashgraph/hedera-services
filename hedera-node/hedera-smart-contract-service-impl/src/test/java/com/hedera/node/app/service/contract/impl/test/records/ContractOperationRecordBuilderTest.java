@@ -52,6 +52,11 @@ class ContractOperationRecordBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
             @Override
+            public int getNumAutoAssociations() {
+                return 0;
+            }
+
+            @Override
             public StreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }

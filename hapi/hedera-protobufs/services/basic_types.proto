@@ -1234,6 +1234,21 @@ enum HederaFunctionality {
      * Transfer one or more token balances held by the requesting account to the treasury for each token type.
      */
     TokenReject = 92;
+
+    /**
+     * Airdrop one or more tokens to one or more accounts.
+     */
+    TokenAirdrop = 93;
+
+    /**
+    * Remove one or more pending airdrops from state on behalf of the sender(s) for each airdrop.
+    */
+    TokenCancelAirdrop = 94;
+
+    /**
+      * Claim one or more pending airdrops
+     */
+    TokenClaimAirdrop = 95;
 }
 
 /**
@@ -1691,4 +1706,70 @@ message StakingInfo {
          */
         int64 staked_node_id = 6;
     }
+}
+
+/**
+ * A unique, composite, identifier for a pending airdrop.
+ *
+ * Each pending airdrop SHALL be uniquely identified by a PendingAirdropId.
+ * A PendingAirdropId SHALL be recorded when created and MUST be provided in any transaction
+ * that would modify that pending airdrop (such as a `claimAirdrop` or `cancelAirdrop`).
+ */
+message PendingAirdropId {
+    /**
+     * A sending account.<br/>
+     * This is the account that initiated, and SHALL fund, this pending airdrop.<br/>
+     * This field is REQUIRED.
+     */
+    AccountID sender_id = 1;
+
+    /**
+     * A receiving account.<br/>
+     * This is the ID of the account that SHALL receive the airdrop.<br/>
+     * This field is REQUIRED.
+     */
+    AccountID receiver_id = 2;
+
+    oneof token_reference {
+        /**
+         * A token ID.<br/>
+         * This is the type of token for a fungible/common token airdrop.<br/>
+         * This field is REQUIRED for a fungible/common token and MUST NOT be used for a
+         * non-fungible/unique token.
+         */
+        TokenID fungible_token_type = 3;
+
+        /**
+         * The id of a single NFT, consisting of a Token ID and serial number.<br/>
+         * This is the type of token for a non-fungible/unique token airdrop.<br/>
+         * This field is REQUIRED for a non-fungible/unique token and MUST NOT be used for a
+         * fungible/common token.
+         */
+        NftID non_fungible_token = 4;
+    }
+}
+
+/**
+ * A single pending airdrop value.
+ *
+ * This message SHALL record the airdrop amount for a fungible/common token.<br/>
+ * This message SHOULD be null for a non-fungible/unique token.<br/>
+ * If a non-null `PendingAirdropValue` is set for a non-fungible/unique token, the amount
+ * field MUST be `0`.
+ *
+ * It is RECOMMENDED that implementations store pending airdrop information as a key-value map
+ * from `PendingAirdropId` to `PendingAirdropValue`, with a `null` value used for non-fungible
+ * pending airdrops.
+ */
+message PendingAirdropValue {
+    /**
+     * An amount to transfer for fungible/common tokens.<br/>
+     * This is expressed in the smallest available units for that token
+     * (i.e. 10<sup>-`decimals`</sup> whole tokens).<br/>
+     * This amount SHALL be transferred from the sender to the receiver, if claimed.<br/>
+     * If the token is a fungible/common token, this value MUST be strictly greater than `0`.
+     * If the token is a non-fungible/unique token, this message SHOULD NOT be set, and if
+     * set, this field MUST be `0`.
+     */
+    uint64 amount = 1;
 }

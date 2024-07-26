@@ -625,6 +625,11 @@ public class RecordBuilderImpl
         return this;
     }
 
+    @Override
+    public int getNumAutoAssociations() {
+        return automaticTokenAssociations.size();
+    }
+
     /**
      * Sets the alias.
      *

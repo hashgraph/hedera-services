@@ -304,7 +304,6 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -426,7 +425,6 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -529,7 +527,6 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -599,7 +596,6 @@ public class LazyCreateThroughPrecompileSuite {
                                     successfulTransferFromTxn,
                                     SUCCESS,
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()
@@ -669,7 +665,6 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()

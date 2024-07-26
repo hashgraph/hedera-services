@@ -39,13 +39,12 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
@@ -291,7 +290,7 @@ class MerkleDbDataSourceTest {
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)));
             // check deleted items are no longer there
             for (int i = (incFirstLeafPath + 10); i < (incFirstLeafPath + 20); i++) {
-                final VirtualLongKey key = testType.dataType().createVirtualLongKey(i);
+                final VirtualKey key = testType.dataType().createVirtualLongKey(i);
                 assertEqualsAndPrint(null, dataSource.loadLeafRecord(key));
             }
             // check all remaining leaf data
@@ -327,7 +326,7 @@ class MerkleDbDataSourceTest {
             final VirtualHashRecord vir500 = new VirtualHashRecord(
                     testType.dataType().createVirtualInternalRecord(250).path(), hash(500));
 
-            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> vlr500 =
+            final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> vlr500 =
                     testType.dataType().createVirtualLeafRecord(500);
             vlr500.setPath(250);
             dataSource.saveRecords(
@@ -404,7 +403,7 @@ class MerkleDbDataSourceTest {
         });
 
         // reopen data source and check
-        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource2 =
+        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource2 =
                 testType.dataType().getDataSource(snapshotDbPathRef[0], tableName, false);
         try {
             // check all the leaf data
@@ -460,11 +459,10 @@ class MerkleDbDataSourceTest {
             // Delete all indices
             Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);
             Files.delete(snapshotPaths.pathToDiskLocationInternalNodesFile);
-            Files.deleteIfExists(snapshotPaths.longKeyToPathFile);
             // There is no way to use MerkleDbPaths to get bucket index file path
-            Files.deleteIfExists(snapshotPaths.objectKeyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
+            Files.deleteIfExists(snapshotPaths.keyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
 
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> snapshotDataSource =
                     snapshotDb.getDataSource(tableName, false);
             reinitializeDirectMemoryUsage();
             IntStream.range(0, count * 2).forEach(i -> assertHash(snapshotDataSource, i, i + 1));
@@ -547,24 +545,12 @@ class MerkleDbDataSourceTest {
     @ParameterizedTest
     @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
-    void testKeyIndexTypes(final TestType testType) throws Exception {
-        createAndApplyDataSource(testDirectory, "test11", testType, 1, dataSource -> {
-            assertEquals(
-                    testType.dataType().getKeySerializer().getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS,
-                    dataSource.isLongKeyMode(),
-                    "Data source in expected long key mode.");
-        });
-    }
-
-    @ParameterizedTest
-    @Tag(TIMING_SENSITIVE)
-    @EnumSource(TestType.class)
     void dirtyDeletedLeavesBetweenFlushesOnReconnect(final TestType testType) throws IOException {
         final String tableName = "vm";
         final Path originalDbPath =
                 testDirectory.resolve("merkledb-dirtyDeletedLeavesBetweenFlushesOnReconnect-" + testType);
         createAndApplyDataSource(originalDbPath, tableName, testType, 100, 0, dataSource -> {
-            final List<VirtualLongKey> keys = new ArrayList<>(31);
+            final List<VirtualKey> keys = new ArrayList<>(31);
             for (int i = 0; i < 31; i++) {
                 keys.add(testType.dataType().createVirtualLongKey(i));
             }
@@ -583,10 +569,9 @@ class MerkleDbDataSourceTest {
                     true);
 
             // Load all leaves back from DB
-            final List<VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue>> oldLeaves = new ArrayList<>(11);
+            final List<VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue>> oldLeaves = new ArrayList<>(11);
             for (int i = 10; i < 21; i++) {
-                final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
-                        dataSource.loadLeafRecord(i);
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf = dataSource.loadLeafRecord(i);
                 assertNotNull(leaf);
                 assertEquals(i, leaf.getPath());
                 oldLeaves.add(leaf);
@@ -609,7 +594,7 @@ class MerkleDbDataSourceTest {
                 assertEquals(hash(i + 2), hash, "Wrong hash at path " + i);
             }
             for (int i = 5; i < 16; i++) {
-                final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf =
                         dataSource.loadLeafRecord(keys.get(i));
                 assertNotNull(leaf, "Leaf with key " + i + " not found");
                 // // key 10 is moved to path 15, key 11 is moved to path 16, etc.
@@ -618,7 +603,7 @@ class MerkleDbDataSourceTest {
                 assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
             }
             for (int i = 16; i < 21; i++) {
-                final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf =
                         dataSource.loadLeafRecord(keys.get(i));
                 assertNull(leaf); // no more leafs for keys 16 to 20
             }
@@ -640,7 +625,7 @@ class MerkleDbDataSourceTest {
                 assertEquals(hash(i + 3), hash, "Wrong hash at path " + i);
             }
             for (int i = 5; i < 16; i++) {
-                final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> leaf =
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf =
                         dataSource.loadLeafRecord(keys.get(i));
                 assertNotNull(leaf, "Leaf with key " + i + " not found");
                 // // key 10 was moved to path 15, key 11 is moved to path 16, etc.
@@ -664,7 +649,7 @@ class MerkleDbDataSourceTest {
                     1L,
                     metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "merkledb_count")
                             .get(ValueType.VALUE));
-            final List<VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue>> dirtyLeaves = IntStream.range(
+            final List<VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue>> dirtyLeaves = IntStream.range(
                             15, 30)
                     .mapToObj(t -> new VirtualLeafRecord<>(
                             t,
@@ -702,8 +687,7 @@ class MerkleDbDataSourceTest {
             final String name,
             final TestType testType,
             final int size,
-            CheckedConsumer<MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue>, Exception>
-                    dataSourceConsumer)
+            CheckedConsumer<MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue>, Exception> dataSourceConsumer)
             throws IOException {
         createAndApplyDataSource(testDirectory, name, testType, size, Long.MAX_VALUE, dataSourceConsumer);
     }
@@ -714,10 +698,9 @@ class MerkleDbDataSourceTest {
             final TestType testType,
             final int size,
             final long hashesRamToDiskThreshold,
-            CheckedConsumer<MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue>, Exception>
-                    dataSourceConsumer)
+            CheckedConsumer<MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue>, Exception> dataSourceConsumer)
             throws IOException {
-        MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+        MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
                 testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
         try {
             dataSourceConsumer.accept(dataSource);
@@ -739,7 +722,7 @@ class MerkleDbDataSourceTest {
     }
 
     public static void assertHash(
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i) {
         try {
@@ -752,7 +735,7 @@ class MerkleDbDataSourceTest {
 
     public static void assertLeaf(
             final TestType testType,
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i) {
         assertLeaf(testType, dataSource, path, i, i, i);
@@ -760,15 +743,15 @@ class MerkleDbDataSourceTest {
 
     public static void assertLeaf(
             final TestType testType,
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource,
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource,
             final long path,
             final int i,
             final int hashIndex,
             final int valueIndex) {
         try {
-            final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> expectedRecord =
+            final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> expectedRecord =
                     testType.dataType().createVirtualLeafRecord(path, i, valueIndex);
-            final VirtualLongKey key = testType.dataType().createVirtualLongKey(i);
+            final VirtualKey key = testType.dataType().createVirtualLongKey(i);
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
@@ -795,7 +778,7 @@ class MerkleDbDataSourceTest {
     }
 
     private InterruptRememberingThread slowRecordSavingThread(
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource) {
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource) {
         return new InterruptRememberingThread(() -> {
             try {
                 dataSource.saveRecords(

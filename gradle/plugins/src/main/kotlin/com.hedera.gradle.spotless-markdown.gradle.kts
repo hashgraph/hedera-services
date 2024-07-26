@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    id("java-library")
-    id("com.hedera.gradle.java")
-}
+plugins { id("com.hedera.gradle.spotless") }
 
-group = "com.hedera.storage"
+spotless {
+    flexmark {
+        target("**/*.md")
+        flexmark()
+        trimTrailingWhitespace()
+        indentWithSpaces()
+        endWithNewline()
+    }
+}

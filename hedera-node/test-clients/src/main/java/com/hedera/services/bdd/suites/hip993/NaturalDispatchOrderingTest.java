@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -168,7 +167,7 @@ public class NaturalDispatchOrderingTest {
     @DisplayName("reversible child and removable preceding stream items are as expected")
     final Stream<DynamicTest> reversibleChildAndRemovablePrecedingItemsAsExpected(
             @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken nonFungibleToken,
-            @Account(autoAssociationSlots = 1) SpecAccount beneficiary,
+            @Account(maxAutoAssociations = 1) SpecAccount beneficiary,
             @Contract(contract = "PrecompileAliasXfer", creationGas = 2_000_000) SpecContract transferContract,
             @Contract(contract = "LowLevelCall") SpecContract lowLevelCallContract) {
         final var transferFunction = new Function("transferNFTThanRevertCall(address,address,address,int64)");
@@ -178,7 +177,7 @@ public class NaturalDispatchOrderingTest {
                 nonFungibleToken.treasury().authorizeContract(transferContract),
                 transferContract
                         .call("transferNFTCall", nonFungibleToken, nonFungibleToken.treasury(), beneficiary, 1L)
-                        .andAssert(txn -> txn.via("fullSuccess")),
+                        .andAssert(txn -> txn.gas(2_000_000).via("fullSuccess")),
                 withOpContext((spec, opLog) -> {
                     final var calldata = transferFunction.encodeCallWithArgs(
                             nonFungibleToken.addressOn(spec.targetNetworkOrThrow()),
@@ -225,11 +224,11 @@ public class NaturalDispatchOrderingTest {
     final Stream<DynamicTest> reversibleScheduleAndRemovablePrecedingItemsAsExpected(
             @FungibleToken SpecFungibleToken firstToken,
             @FungibleToken SpecFungibleToken secondToken,
-            @Account(autoAssociationSlots = 2) SpecAccount firstReceiver,
-            @Account(autoAssociationSlots = 2) SpecAccount secondReceiver,
-            @Account(centBalance = 100, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+            @Account(maxAutoAssociations = 2) SpecAccount firstReceiver,
+            @Account(maxAutoAssociations = 2) SpecAccount secondReceiver,
+            @Account(centBalance = 100, maxAutoAssociations = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
                     SpecAccount solventPayer,
-            @Account(centBalance = 7, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+            @Account(centBalance = 7, maxAutoAssociations = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
                     SpecAccount insolventPayer) {
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(
@@ -352,15 +351,8 @@ public class NaturalDispatchOrderingTest {
     private static VisibleItemsValidator reversibleScheduleValidator() {
         return (spec, records) -> {
             final var committedItems = requireNonNull(records.get("committed"), "committed not found");
-            assertScheduledItemsMatch(
-                    committedItems,
-                    0,
-                    3,
-                    ScheduleCreate,
-                    TokenAssociateToAccount,
-                    TokenAssociateToAccount,
-                    CryptoTransfer);
-            assertStatuses(committedItems, SUCCESS, SUCCESS, SUCCESS, SUCCESS);
+            assertScheduledItemsMatch(committedItems, 0, 1, ScheduleCreate, CryptoTransfer);
+            assertStatuses(committedItems, SUCCESS, SUCCESS);
             final var rolledBackItems = requireNonNull(records.get("rolledBack"), "rolledBack not found");
             assertScheduledItemsMatch(rolledBackItems, 0, 1, ScheduleCreate, CryptoTransfer);
             assertStatuses(rolledBackItems, SUCCESS, INSUFFICIENT_PAYER_BALANCE);
@@ -370,8 +362,8 @@ public class NaturalDispatchOrderingTest {
     private static VisibleItemsValidator reversibleChildValidator() {
         return (spec, records) -> {
             final var successItems = requireNonNull(records.get("fullSuccess"), "fullSuccess not found");
-            assertItemsMatch(successItems, 0, ContractCall, TokenAssociateToAccount, CryptoTransfer);
-            assertStatuses(successItems, SUCCESS, SUCCESS, SUCCESS);
+            assertItemsMatch(successItems, 0, ContractCall, CryptoTransfer);
+            assertStatuses(successItems, SUCCESS, SUCCESS);
             final var containedRevert = requireNonNull(records.get("containedRevert"), "containedRevert not found");
             assertItemsMatch(containedRevert, 0, ContractCall, CryptoTransfer);
             assertStatuses(containedRevert, SUCCESS, REVERTED_SUCCESS);

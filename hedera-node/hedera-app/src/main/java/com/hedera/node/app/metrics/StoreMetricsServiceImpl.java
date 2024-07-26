@@ -35,6 +35,7 @@ public class StoreMetricsServiceImpl implements StoreMetricsService {
         this.storeMetricsMap = new EnumMap<>(StoreType.class);
         storeMetricsMap.put(StoreType.TOPIC, new StoreMetricsImpl(metrics, "topics"));
         storeMetricsMap.put(StoreType.ACCOUNT, new StoreMetricsImpl(metrics, "accounts"));
+        storeMetricsMap.put(StoreType.AIRDROP, new StoreMetricsImpl(metrics, "airdrops"));
         storeMetricsMap.put(StoreType.NFT, new StoreMetricsImpl(metrics, "nfts"));
         storeMetricsMap.put(StoreType.TOKEN, new StoreMetricsImpl(metrics, "tokens"));
         storeMetricsMap.put(

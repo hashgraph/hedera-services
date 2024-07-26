@@ -37,7 +37,6 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -46,7 +45,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -111,7 +111,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void startRound(@NonNull final Round round, @NonNull final HederaState state) {
+    public void startRound(@NonNull final Round round, @NonNull final State state) {
         pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
@@ -138,7 +138,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void endRound(@NonNull final HederaState state) {
+    public void endRound(@NonNull final State state) {
         if (!pendingItems.isEmpty()) {
             schedulePendingWork();
         }

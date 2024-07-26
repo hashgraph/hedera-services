@@ -18,7 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
@@ -28,21 +28,21 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link HederaState} that wraps another {@link HederaState} and provides a {@link #commit()} method that
+ * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
  * commits all modifications to the underlying state.
  */
-public class WrappedHederaState implements HederaState {
+public class WrappedState implements State {
 
-    private final HederaState delegate;
+    private final State delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
 
     /**
-     * Constructs a {@link WrappedHederaState} that wraps the given {@link HederaState}.
+     * Constructs a {@link WrappedState} that wraps the given {@link State}.
      *
-     * @param delegate the {@link HederaState} to wrap
+     * @param delegate the {@link State} to wrap
      * @throws NullPointerException if {@code delegate} is {@code null}
      */
-    public WrappedHederaState(@NonNull final HederaState delegate) {
+    public WrappedState(@NonNull final State delegate) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
@@ -54,7 +54,7 @@ public class WrappedHederaState implements HederaState {
     }
 
     /**
-     * Returns {@code true} if the state of this {@link WrappedHederaState} has been modified.
+     * Returns {@code true} if the state of this {@link WrappedState} has been modified.
      *
      * @return {@code true}, if the state has been modified; otherwise {@code false}
      */
@@ -74,7 +74,7 @@ public class WrappedHederaState implements HederaState {
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
      * <p>
-     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * Unlike other {@link State} implementations, the returned {@link ReadableStates} of this implementation
      * must only be used in the handle workflow.
      */
     @Override
@@ -97,7 +97,7 @@ public class WrappedHederaState implements HederaState {
     }
 
     /**
-     * Writes all modifications to the underlying {@link HederaState}.
+     * Writes all modifications to the underlying {@link State}.
      */
     public void commit() {
         for (final var writableStates : writableStatesMap.values()) {

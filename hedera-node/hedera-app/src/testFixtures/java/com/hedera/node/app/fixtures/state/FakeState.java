@@ -19,9 +19,9 @@ package com.hedera.node.app.fixtures.state;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.EmptyWritableStates;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.EmptyReadableStates;
+import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -39,9 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures.
+ * A useful test double for {@link State}. Works together with {@link MapReadableStates} and other fixtures.
  */
-public class FakeHederaState implements HederaState {
+public class FakeState implements State {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
     private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
     private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
@@ -50,7 +50,7 @@ public class FakeHederaState implements HederaState {
     /**
      * Adds to the service with the given name the {@link ReadableKVState} {@code states}
      */
-    public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
+    public FakeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
         // Purge any readable or writable states whose state definitions are now stale,

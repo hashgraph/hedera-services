@@ -26,7 +26,6 @@ import java.util.List;
  * and some additional helper methods
  */
 public interface StateChangesListener {
-
     /**
      * Add a state change so that it can be written to the block stream
      * @param stateChange the state change to be written
@@ -89,26 +88,4 @@ public interface StateChangesListener {
      * @param <V> The type of the value
      */
     <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value);
-
-    /**
-     * Reset end of round state changes
-     */
-    void resetEndOfRoundStateChanges();
-
-    /**
-     * Reset current state changes
-     */
-    void resetStateChanges();
-
-    /**
-     * Check if there are any state changes currently extracted
-     * @return true or false
-     */
-    boolean hasRecordedStateChanges();
-
-    /**
-     * Check if there are any end of round state changes currently extracted
-     * @return true or false
-     */
-    boolean hasRecordedEndOfRoundStateChanges();
 }

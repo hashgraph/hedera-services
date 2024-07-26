@@ -38,8 +38,8 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -101,11 +101,11 @@ final class RecordCacheImplTest extends AppTestBase {
             @Mock final NetworkInfo networkInfo) {
         dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         final var registry = new FakeSchemaRegistry();
-        final var state = new FakeHederaState();
+        final var state = new FakeState();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
-        lenient().when(wsa.getHederaState()).thenReturn(state);
+        lenient().when(wsa.getState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
@@ -191,7 +191,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     // duplicate  user tx
                     new TransactionRecordEntry(3, payer1, transactionRecord(DUPLICATE_TRANSACTION, txId1, 400)));
 
-            final var state = wsa.getHederaState();
+            final var state = wsa.getState();
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
@@ -261,7 +261,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     transactionID().copyBuilder().accountID(oldPayer).build();
             final var oldEntry = new TransactionRecordEntry(0, oldPayer, transactionRecord(SUCCESS, oldTxId, 100));
 
-            final var state = wsa.getHederaState();
+            final var state = wsa.getState();
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
@@ -42,8 +43,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -51,6 +50,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -66,8 +66,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public class StepsBase extends CryptoTokenHandlerTestBase {
-    protected CryptoTransferRecordBuilder xferRecordBuilder = new FakeCryptoTransferRecordBuilder().create();
-    protected CryptoCreateRecordBuilder cryptoCreateRecordBuilder = new FakeCryptoCreateRecordBuilder().create();
+    @Mock
+    protected CryptoTransferRecordBuilder xferRecordBuilder;
+
+    @Mock
+    protected CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected ConfigProvider configProvider;
@@ -184,8 +187,6 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
-        //        given(handleContext.feeCalculator()).willReturn(fees);
-        //        given(fees.computeFees(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }
 
     protected void givenAutoCreationDispatchEffects() {
@@ -203,7 +204,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy = writableAccountStore
@@ -213,10 +215,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(stack.getBaseBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
         given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(StreamBuilder.class)).willReturn(xferRecordBuilder);
     }
 }

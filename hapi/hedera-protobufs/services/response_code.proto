@@ -1534,4 +1534,32 @@ enum ResponseCodeEnum {
      * The token has no metadata or supply key
      */
     TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY = 360;
+
+    /**
+     * The transaction attempted to the use an empty List of `PendingAirdropId`.
+     */
+    EMPTY_PENDING_AIRDROP_ID_LIST = 361;
+
+    /**
+    * The transaction attempted to the same `PendingAirdropId` twice.
+    */
+    PENDING_AIRDROP_ID_REPEATED = 362;
+
+    /**
+    * The transaction attempted to use more than the allowed number of `PendingAirdropId`.
+    */
+    MAX_PENDING_AIRDROP_ID_EXCEEDED = 363;
+
+    /*
+    * A pending airdrop already exists for the specified NFT.
+    */
+    PENDING_NFT_AIRDROP_ALREADY_EXISTS = 364;
+
+    /*
+     * The identified account is sender for one or more pending airdrop(s)
+     * and cannot be deleted.<br/>
+     * Requester should cancel all pending airdrops before resending
+     * this transaction.
+     */
+    ACCOUNT_HAS_PENDING_AIRDROPS = 365;
 }

@@ -49,7 +49,7 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -167,7 +167,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     .commit();
         }
 
-        final var hederaState = app.workingStateAccessor().getHederaState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
                         app.networkInfo().selfNodeInfo(),
@@ -178,7 +178,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -193,7 +193,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
                             fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                            hederaState,
+                            merkleState,
                             mock(PlatformState.class));
                     // check start hash if first transaction
                     if (transactionCount == 0) {
@@ -201,11 +201,11 @@ final class BlockRecordManagerTest extends AppTestBase {
                         assertThat(blockRecordManager.getRunningHash().toHex())
                                 .isEqualTo(STARTING_RUNNING_HASH_OBJ.hash().toHex());
                     }
-                    blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                    blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                     transactionCount++;
                     // pretend rounds happen every 20 transactions
                     if (transactionCount % 20 == 0) {
-                        blockRecordManager.endRound(hederaState);
+                        blockRecordManager.endRound(merkleState);
                     }
                 }
                 assertThat(block - 1).isEqualTo(blockRecordManager.lastBlockNo());
@@ -217,7 +217,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 endOfBlockHashes.add(blockRecordManager.getRunningHash());
             }
             // end the last round
-            blockRecordManager.endRound(hederaState);
+            blockRecordManager.endRound(merkleState);
             // collect info for later validation
             finalRunningHash = blockRecordManager.getRunningHash();
             // try with resources will close the blockRecordManager and result in waiting for background threads to
@@ -261,12 +261,12 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         final Random random = new Random(82792874);
-        final var hederaState = app.workingStateAccessor().getHederaState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = new StreamFileProducerSingleThreaded(
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -289,9 +289,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
                                 fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                                hederaState,
+                                merkleState,
                                 mock(PlatformState.class));
-                        blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                        blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                         transactionCount++;
                         // collect hashes
                         runningHashNMinus3 = runningHashNMinus2;
@@ -311,7 +311,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     j += batchSize;
                     // pretend rounds happen every 20 or so transactions
                     if (transactionCount % 20 == 0) {
-                        blockRecordManager.endRound(hederaState);
+                        blockRecordManager.endRound(merkleState);
                     }
                 }
                 // VALIDATE BLOCK INFO METHODS
@@ -348,7 +348,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 endOfBlockHashes.add(blockRecordManager.getRunningHash());
             }
             // end the last round
-            blockRecordManager.endRound(hederaState);
+            blockRecordManager.endRound(merkleState);
             // collect info for later validation
             finalRunningHash = blockRecordManager.getRunningHash();
             // try with resources will close the blockRecordManager and result in waiting for background threads to
@@ -434,8 +434,8 @@ final class BlockRecordManagerTest extends AppTestBase {
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
     }
 
-    private static HederaState simpleBlockInfoState(final BlockInfo blockInfo) {
-        return new HederaState() {
+    private static State simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new State() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull final String serviceName) {
