@@ -16,17 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -34,14 +28,12 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +55,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Mock
     private HandleContext.SavepointStack stack;
+
+    @Mock
+    private CryptoTransferRecordBuilder builder;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -91,6 +86,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(builder);
 
         subject.doIn(transferContext);
 
@@ -98,17 +95,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
-    }
-
-    @Test
-    void autoAssociationsDispatchSyntheticTransaction() {
-        given(handleContext.savepointStack()).willReturn(stack);
-        final var modifiedConfiguration = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        subject.doIn(transferContext);
-
-        verify(handleContext, times(1)).dispatchRemovablePrecedingTransaction(any(), any(), any(), any());
     }
 
     void givenValidTxn() {
@@ -131,17 +117,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
-                .will((invocation) -> {
-                    final var relation =
-                            new TokenRelation(fungibleTokenId, spenderId, 1, false, true, true, null, null);
-                    final var relation1 =
-                            new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
-                    writableTokenRelStore.put(relation);
-                    writableTokenRelStore.put(relation1);
-                    return new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
-                            .status(ResponseCodeEnum.SUCCESS);
-                });
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {

@@ -70,6 +70,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -112,7 +113,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -172,6 +173,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private AppKeyVerifier verifier;
 
     @Mock
+    private FeeAccumulator feeAccumulator;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -229,7 +233,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private DispatchProcessor dispatchProcessor;
 
     @Mock(strictness = LENIENT)
-    private MerkleState baseState;
+    private State baseState;
 
     @Mock
     private WritableStates writableStates;
@@ -381,7 +385,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             networkInfo,
             childDispatchFactory,
             dispatchProcessor,
-            throttleAdviser
+            throttleAdviser,
+            feeAccumulator
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -534,7 +539,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 G_KEY, GRAPE);
 
         @Mock(strictness = LENIENT)
-        private MerkleState baseState;
+        private State baseState;
 
         @Mock(strictness = LENIENT, answer = Answers.RETURNS_SELF)
         private RecordBuilderImpl childRecordBuilder;
@@ -758,7 +763,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
-                throttleAdviser);
+                throttleAdviser,
+                feeAccumulator);
     }
 
     private void mockNeeded() {

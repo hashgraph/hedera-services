@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.spi.workflows.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -202,6 +205,24 @@ public interface StreamBuilder {
     StreamBuilder congestionMultiplier(long congestionMultiplier);
 
     /**
+     * Returns true if this builder's transaction originated from inside another handler or workflow; and not
+     * a user transaction (or scheduled user transaction).
+     * @return true if this transaction is internal
+     */
+    default boolean isInternalDispatch() {
+        return category() == CHILD || category() == PRECEDING;
+    }
+
+    /**
+     * Returns true if this builder's transaction originated from a user transaction or scheduled user transaction; and
+     * not from inside another handler or workflow.
+     * @return true if this transaction is internal
+     */
+    default boolean isUserDispatch() {
+        return category() == USER || category() == SCHEDULED;
+    }
+
+    /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
      *
      * @param body the transaction body
@@ -223,14 +244,6 @@ public interface StreamBuilder {
      */
     default boolean isPreceding() {
         return category().equals(HandleContext.TransactionCategory.PRECEDING);
-    }
-
-    /**
-     * Returns whether the transaction is an internal dispatch.
-     * @return true if the transaction is an internal dispatch; otherwise false
-     */
-    default boolean isInternalDispatch() {
-        return !category().equals(USER);
     }
 
     /**

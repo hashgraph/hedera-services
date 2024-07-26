@@ -625,11 +625,7 @@ public class RecordBuilderImpl
         return this;
     }
 
-    /**
-     * Returns the number of automatic token associations
-     *
-     * @return the number of associations
-     */
+    @Override
     public int getNumAutoAssociations() {
         return automaticTokenAssociations.size();
     }

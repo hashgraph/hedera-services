@@ -67,7 +67,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -452,12 +452,12 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Get the {@link FakeMerkleState} for the embedded network, if this spec is targeting an embedded network.
+     * Get the {@link FakeState} for the embedded network, if this spec is targeting an embedded network.
      *
      * @return the embedded state
      * @throws IllegalStateException if this spec is not targeting an embedded network
      */
-    public @NonNull FakeMerkleState embeddedStateOrThrow() {
+    public @NonNull FakeState embeddedStateOrThrow() {
         if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
             throw new IllegalStateException("Cannot access embedded state for non-embedded network");
         }
@@ -489,7 +489,7 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
-     * Commits all pending changes to the embedded {@link FakeMerkleState} if this spec is targeting
+     * Commits all pending changes to the embedded {@link FakeState} if this spec is targeting
      * an embedded network.
      */
     public void commitEmbeddedState() {

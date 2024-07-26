@@ -45,7 +45,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -111,7 +111,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void startRound(@NonNull final Round round, @NonNull final MerkleState state) {
+    public void startRound(@NonNull final Round round, @NonNull final State state) {
         pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
@@ -138,7 +138,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void endRound(@NonNull final MerkleState state) {
+    public void endRound(@NonNull final State state) {
         if (!pendingItems.isEmpty()) {
             schedulePendingWork();
         }
