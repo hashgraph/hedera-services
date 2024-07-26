@@ -14,15 +14,31 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi;
+package com.hedera.node.app.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * An interface responsible for observing any state changes occurred on state
  * and some additional helper methods
  */
 public interface StateChangesListener {
+    /**
+     * The types of data structures whose changes can be listened to.
+     */
+    enum DataType {
+        MAP,
+        QUEUE,
+        SINGLETON
+    }
+
+    /**
+     * The target data types that the listener is interested in.
+     * @return the target data types
+     */
+    Set<DataType> targetDataTypes();
+
     /**
      * Save the state change when an entry is added in to a map.
      *

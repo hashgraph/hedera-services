@@ -84,12 +84,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     @Nullable
     private RoundStateChangeListener roundStateChangeListener;
+
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
-     * @param state                    the state
-     * @param maxBuildersBeforeUser    the maximum number of preceding builders with available consensus times
-     * @param maxBuildersAfterUser     the maximum number of following builders with available consensus times
+     * @param state the state
+     * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
+     * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
      * @param roundStateChangeListener
      * @return the root {@link SavepointStackImpl}
      */
@@ -141,6 +142,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * Constructs a new child {@link SavepointStackImpl} with the given parent stack and the provided
      * characteristics of the dispatch.
+     *
      * @param parent the parent stack
      * @param reversingBehavior the reversing behavior of the dispatch
      * @param category the category of the dispatch
@@ -190,6 +192,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * Commits all state changes captured in this stack, without capturing the details
      * for the block stream.
+     *
      * @throws NullPointerException if called on the root stack
      */
     public void commitFullStack() {
@@ -204,6 +207,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * Commits all state changes captured in this stack; and captures the details for
      * the block stream, correlated to the given builder.
+     *
      * @param builder the builder to correlate the state changes to
      */
     public void commitTransaction(@Nullable final StreamBuilder builder) {
@@ -223,17 +227,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * captures those changes as builders with the given cause.
      */
     private void commitFullStack(@NonNull final StreamBuilder causeBuilder) {
-        final var isRoot = builderSink != null;
+        final var isRootStack = builderSink != null && roundStateChangeListener != null;
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
-            if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
-                final var listener = new KVStateChangeListener();
-                ((WrappedState) stack.peek().state()).register(listener);
-                ((WrappedState) stack.peek().state()).register(roundStateChangeListener);
-
+            if (isRootStack && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
+                final var wrappedState = (WrappedState) stack.peek().state();
+                final var kvStateChangeListener = new KVStateChangeListener();
+                wrappedState.register(kvStateChangeListener);
+                wrappedState.register(roundStateChangeListener);
                 stack.pop().commit();
-
-                final var stateChanges = listener.getStateChanges();
+                final var stateChanges = kvStateChangeListener.getStateChanges();
                 log.info("Capturing state changes {}", stateChanges);
                 causeBuilder.stateChanges(stateChanges);
             } else {

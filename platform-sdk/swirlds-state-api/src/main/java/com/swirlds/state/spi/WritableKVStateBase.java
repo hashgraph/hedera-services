@@ -16,6 +16,8 @@
 
 package com.swirlds.state.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -31,8 +33,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * A map of all modified values buffered in this mutable state
      */
     private final Map<K, V> modifications = new LinkedHashMap<>();
-
-    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
+    /**
+     * A list of listeners to be notified of changes to the state.
+     */
+    private final List<KVChangeListener> listeners = new ArrayList<>();
 
     /**
      * Create a new StateBase.
@@ -43,9 +47,13 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         super(stateKey);
     }
 
-    public void register(@NonNull StateChangesListener listener) {
-        Objects.requireNonNull(listener);
-        stateChangesListeners.add(listener);
+    /**
+     * Register a listener to be notified of changes to the state.
+     * @param listener the listener to register
+     */
+    public void registerKvListener(@NonNull final KVChangeListener listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -59,10 +67,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             final var value = entry.getValue();
             if (value == null) {
                 removeFromDataSource(key);
-                stateChangesListeners.forEach(listener -> listener.mapDeleteChange(getStateKey(), key));
+                listeners.forEach(listener -> listener.mapDeleteChange(key));
             } else {
                 putIntoDataSource(key, value);
-                stateChangesListeners.forEach(listener -> listener.mapUpdateChange(getStateKey(), key, value));
+                listeners.forEach(listener -> listener.mapUpdateChange(key, value));
             }
         }
         reset();
@@ -110,7 +118,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     @Nullable
     public final V getForModify(@NonNull final K key) {
-        Objects.requireNonNull(key);
+        requireNonNull(key);
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
         if (modifications.containsKey(key)) {
@@ -136,8 +144,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(value);
+        requireNonNull(key);
+        requireNonNull(value);
         modifications.put(key, value);
     }
 
@@ -146,7 +154,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     @Override
     public final void remove(@NonNull final K key) {
-        Objects.requireNonNull(key);
+        requireNonNull(key);
         modifications.put(key, null);
     }
 

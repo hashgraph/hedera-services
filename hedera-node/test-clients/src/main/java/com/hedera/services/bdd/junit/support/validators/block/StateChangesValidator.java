@@ -20,7 +20,6 @@ import static java.util.Comparator.comparing;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -102,29 +101,21 @@ public class StateChangesValidator {
             final var block = readBlockFromGzip(Path.of(file));
             logger.info("Block: {}", block);
             for (final var item : block.items()) {
-               if(item.hasStateChanges()){
-                   final var stateChanges = item.stateChangesOrThrow().stateChanges();
-                   for(final var stateChange : stateChanges){
-                       switch(stateChange.changeOperation().kind()){
-                           case UNSET -> throw new IllegalStateException("Change operation is not set");
-                           case STATE_ADD -> {
-
-                           }
-                           case STATE_REMOVE -> {
-                           }
-                           case SINGLETON_UPDATE -> {
-                           }
-                           case MAP_UPDATE -> {
-                           }
-                           case MAP_DELETE -> {
-                           }
-                           case QUEUE_PUSH -> {
-                           }
-                           case QUEUE_POP -> {
-                           }
-                       }
-                   }
-               }
+                if (item.hasStateChanges()) {
+                    final var stateChanges = item.stateChangesOrThrow().stateChanges();
+                    for (final var stateChange : stateChanges) {
+                        switch (stateChange.changeOperation().kind()) {
+                            case UNSET -> throw new IllegalStateException("Change operation is not set");
+                            case STATE_ADD -> {}
+                            case STATE_REMOVE -> {}
+                            case SINGLETON_UPDATE -> {}
+                            case MAP_UPDATE -> {}
+                            case MAP_DELETE -> {}
+                            case QUEUE_PUSH -> {}
+                            case QUEUE_POP -> {}
+                        }
+                    }
+                }
             }
         }
     }

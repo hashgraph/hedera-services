@@ -16,10 +16,11 @@
 
 package com.swirlds.state.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -32,7 +33,10 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     private final Consumer<T> backingStoreMutator;
     private boolean modified;
     private T value;
-    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
+    /**
+     * List of listeners to be notified when the singleton changes.
+     */
+    private final List<SingletonChangeListener> listeners = new ArrayList<>();
 
     /**
      * Creates a new instance.
@@ -47,7 +51,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
             @NonNull final Supplier<T> backingStoreAccessor,
             @NonNull final Consumer<T> backingStoreMutator) {
         super(stateKey, backingStoreAccessor);
-        this.backingStoreMutator = Objects.requireNonNull(backingStoreMutator);
+        this.backingStoreMutator = requireNonNull(backingStoreMutator);
     }
 
     @Override
@@ -73,9 +77,13 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         return modified;
     }
 
-    public void register(@NonNull StateChangesListener listener) {
-        Objects.requireNonNull(listener);
-        stateChangesListeners.add(listener);
+    /**
+     * Registers a listener to be notified when the singleton changes.
+     * @param listener The listener to register
+     */
+    public void registerSingletonListener(@NonNull final SingletonChangeListener listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -86,7 +94,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     public void commit() {
         if (modified) {
             backingStoreMutator.accept(value);
-            stateChangesListeners.forEach(l -> l.singletonUpdateChange(getStateKey(), value));
+            listeners.forEach(l -> l.singletonUpdateChange(value));
         }
         reset();
     }

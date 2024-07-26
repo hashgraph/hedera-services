@@ -20,12 +20,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
@@ -46,11 +44,13 @@ public class WrappedState implements State {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
-    public void register(@NonNull StateChangesListener listener) {
-        Objects.requireNonNull(listener);
-        for (final var writableStates : writableStatesMap.values()) {
-            writableStates.register(listener);
-        }
+    /**
+     * Registers the given {@link StateChangesListener} to be notified of changes to this {@link WrappedState}.
+     * @param listener the listener to register
+     */
+    public void register(@NonNull final StateChangesListener listener) {
+        requireNonNull(listener);
+        writableStatesMap.forEach((serviceName, writableStates) -> writableStates.register(serviceName, listener));
     }
 
     /**

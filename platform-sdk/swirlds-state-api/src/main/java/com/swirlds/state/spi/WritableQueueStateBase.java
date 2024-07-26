@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -50,8 +49,10 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     private Iterator<E> dsIterator = null;
     /** The cached most recent peeked element */
     private E peekedElement = null;
-
-    private List<StateChangesListener> stateChangesListeners = new ArrayList<>();
+    /**
+     * A list of listeners that will be notified when the queue changes.
+     */
+    private final List<QueueChangeListener> listeners = new ArrayList<>();
 
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {
@@ -68,27 +69,29 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
         return !readElements.isEmpty() || !addedElements.isEmpty();
     }
 
-    public void register(@NonNull StateChangesListener listener) {
-        Objects.requireNonNull(listener);
-        stateChangesListeners.add(listener);
+    /**
+     * Registers a listener to be notified when the queue changes.
+     * @param listener The listener to register
+     */
+    public void registerQueueListener(@NonNull final QueueChangeListener listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
-     * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
+     * be called by the code that created the {@link WritableQueueStateBase} instance or owns it. Don't
      * cast and commit unless you own the instance!
      */
     public final void commit() {
         for (int i = 0; i < readElements.size(); i++) {
             removeFromDataSource();
-            stateChangesListeners.forEach(listener -> listener.queuePopChange(getStateKey()));
+            listeners.forEach(QueueChangeListener::queuePopChange);
         }
-
         for (final var addedElement : addedElements) {
             addToDataSource(addedElement);
-            stateChangesListeners.forEach(l -> l.queuePushChange(getStateKey(), addedElement));
+            listeners.forEach(l -> l.queuePushChange(addedElement));
         }
-
         reset();
     }
 

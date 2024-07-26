@@ -35,27 +35,35 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.state.StateChangesListener;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.StateChangesListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.jetbrains.annotations.NotNull;
 
 public class RoundStateChangeListener implements StateChangesListener {
+    private static final Set<DataType> TARGET_DATA_TYPES = EnumSet.of(DataType.SINGLETON, DataType.QUEUE);
+
     private SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
     private SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
     private Instant lastUsedConsensusTime = null;
 
     @Override
-    public <V> void queuePushChange(String stateName, V value) {
-        requireNonNull(stateName, "stateKey must not be null");
-        requireNonNull(value, "value must not be null");
+    public Set<DataType> targetDataTypes() {
+        return TARGET_DATA_TYPES;
+    }
 
+    @Override
+    public <V> void queuePushChange(@NonNull final String stateName, @NonNull final V value) {
+        requireNonNull(stateName);
+        requireNonNull(value);
         final var stateChange = StateChange.newBuilder()
                 .stateName(stateName)
                 .queuePush(new QueuePushChange(queuePushChangeValueFor(value)))
@@ -64,7 +72,7 @@ public class RoundStateChangeListener implements StateChangesListener {
     }
 
     @Override
-    public void queuePopChange(String stateName) {
+    public void queuePopChange(@NonNull final String stateName) {
         requireNonNull(stateName, "stateName must not be null");
 
         final var stateChange = StateChange.newBuilder()
