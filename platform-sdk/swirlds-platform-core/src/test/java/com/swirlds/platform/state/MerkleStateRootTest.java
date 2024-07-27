@@ -873,7 +873,6 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState1);
             final var platformState2 = new PlatformState();
             platformState2.setRound(nextLong());
-            platformState2.reserve();
             stateRoot.setPlatformState(platformState2);
             assertThat(stateRoot.getPlatformState())
                     .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
