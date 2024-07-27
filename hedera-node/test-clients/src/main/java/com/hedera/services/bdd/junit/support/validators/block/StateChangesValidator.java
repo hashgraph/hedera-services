@@ -171,7 +171,12 @@ public class StateChangesValidator implements BlockStreamValidator {
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
                 if (!expectedHash.equals(actualHash)) {
-                    errorMsg.append("\n  * ").append(stateName);
+                    errorMsg.append("\n  * ")
+                            .append(stateName)
+                            .append(" - expected ")
+                            .append(expectedHash)
+                            .append(", was ")
+                            .append(actualHash);
                 }
             });
             Assertions.fail(errorMsg.toString());
