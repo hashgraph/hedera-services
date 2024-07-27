@@ -53,7 +53,11 @@ public class RoundStateChangeListener implements StateChangesListener {
 
     private SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
     private SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
-    private Instant lastUsedConsensusTime = null;
+    private Instant lastUsedConsensusTime;
+
+    public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
+        this.lastUsedConsensusTime = requireNonNull(lastUsedConsensusTime);
+    }
 
     @Override
     public Set<DataType> targetDataTypes() {
@@ -92,6 +96,25 @@ public class RoundStateChangeListener implements StateChangesListener {
                 .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value)))
                 .build();
         singletonUpdates.put(stateName, stateChange);
+    }
+
+    public BlockItem stateChanges() {
+        final var allStateChanges = new LinkedList<StateChange>();
+        for (final var entry : singletonUpdates.entrySet()) {
+            allStateChanges.add(entry.getValue());
+        }
+        for (final var entry : queueUpdates.entrySet()) {
+            allStateChanges.addAll(entry.getValue());
+        }
+        final var stateChanges = StateChanges.newBuilder()
+                .stateChanges(allStateChanges)
+                .consensusTimestamp(asTimestamp(lastUsedConsensusTime.plusNanos(1)))
+                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
+        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+    }
+
+    public void setLastUsedConsensusTime(final Instant nextAvailableConsensusTime) {
+        this.lastUsedConsensusTime = nextAvailableConsensusTime;
     }
 
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
@@ -150,24 +173,5 @@ public class RoundStateChangeListener implements StateChangesListener {
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
-    }
-
-    public BlockItem stateChanges() {
-        final var allStateChanges = new LinkedList<StateChange>();
-        for (final var entry : singletonUpdates.entrySet()) {
-            allStateChanges.add(entry.getValue());
-        }
-        for (final var entry : queueUpdates.entrySet()) {
-            allStateChanges.addAll(entry.getValue());
-        }
-        final var stateChanges = StateChanges.newBuilder()
-                .stateChanges(allStateChanges)
-                .consensusTimestamp(asTimestamp(lastUsedConsensusTime.plusNanos(1)))
-                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
-        return BlockItem.newBuilder().stateChanges(stateChanges).build();
-    }
-
-    public void setLastUsedConsensusTime(final Instant nextAvailableConsensusTime) {
-        this.lastUsedConsensusTime = nextAvailableConsensusTime;
     }
 }

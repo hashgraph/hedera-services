@@ -114,9 +114,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        roundStateChangeListener = new RoundStateChangeListener();
-        pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
+        // If there are no other changes to state, we can just use the round's consensus timestamp as the
+        // last-assigned consensus time for externalizing the PUT to the block stream info singleton
+        roundStateChangeListener = new RoundStateChangeListener(blockTimestamp);
+        pendingItems = new ArrayList<>();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
                 .get();
@@ -142,10 +144,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void endRound(@NonNull final State state) {
-        log.info(
-                "Capturing end of round state changes for block {} with {}",
-                blockNumber,
-                roundStateChangeListener.stateChanges());
+        //        log.info(
+        //                "Capturing end of round state changes for block {} with {}",
+        //                blockNumber,
+        //                roundStateChangeListener.stateChanges());
         pendingItems.add(roundStateChangeListener.stateChanges());
 
         if (!pendingItems.isEmpty()) {

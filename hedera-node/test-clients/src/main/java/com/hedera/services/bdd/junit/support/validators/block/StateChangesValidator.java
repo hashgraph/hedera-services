@@ -17,10 +17,11 @@
 package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -53,6 +54,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,10 +64,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.InstantSource;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,15 +83,22 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
 
     private static final int HASH_SIZE = 48;
+    private static final int VISUALIZATION_HASH_DEPTH = 5;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
+    private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
 
+    private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
     private final MerkleStateRoot state = new MerkleStateRoot();
+    private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     public static void main(String[] args) throws IOException {
+        final var sampleSwirldsLog =
+                "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
         final var testBlocksLoc = "/Users/michaeltinker/Dev/hedera-services/some-blocks";
         final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Paths.get(testBlocksLoc));
-        final var validator = new StateChangesValidator(Bytes.EMPTY);
+        final var validator = new StateChangesValidator(Bytes.EMPTY, Paths.get(sampleSwirldsLog));
         validator.validateBlocks(blocks);
     }
 
@@ -109,16 +119,18 @@ public class StateChangesValidator implements BlockStreamValidator {
         if (rootHash == null) {
             throw new AssertionError("No root hash found in state metadata file");
         }
-        return new StateChangesValidator(rootHash);
+        return new StateChangesValidator(
+                rootHash,
+                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG));
     }
 
-    public StateChangesValidator(@NonNull final Bytes expectedRootHash) {
+    public StateChangesValidator(@NonNull final Bytes expectedRootHash, @NonNull final Path pathToNode0SwirldsLog) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
+        this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
         registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
-
         final var currentVersion =
                 bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
         final var migrator = new OrderedServiceMigrator();
@@ -130,6 +142,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ConfigProviderImpl().getConfiguration(),
                 new FakeNetworkInfo(),
                 new NoOpMetrics());
+
         logger.info("Registered all Service and migrated state definitions to version {}", currentVersion);
     }
 
@@ -143,9 +156,26 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
             }
         }
+        logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);
         final var rootHash = state.getHash().getBytes();
-        assertEquals(expectedRootHash, rootHash, "Root hash mismatch");
+        if (!expectedRootHash.equals(rootHash)) {
+            final var expectedHashes = getMaybeLastHashMnemonics(pathToNode0SwirldsLog);
+            if (expectedHashes == null) {
+                throw new AssertionError("No expected hashes found in " + pathToNode0SwirldsLog);
+            }
+            final var sb = new StringBuilder();
+            new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
+            final var actualHashes = hashesByName(sb.toString());
+            final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
+            expectedHashes.forEach((stateName, expectedHash) -> {
+                final var actualHash = actualHashes.get(stateName);
+                if (!expectedHash.equals(actualHash)) {
+                    errorMsg.append("\n  * ").append(stateName);
+                }
+            });
+            Assertions.fail(errorMsg.toString());
+        }
     }
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
@@ -167,6 +197,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     singletonState.put(requireNonNull(stateChange.singletonUpdate())
                             .newValue()
                             .value());
+                    stateChangesSummary.countSingletonPut(serviceName, stateKey);
                 }
                 case MAP_UPDATE -> {
                     final var mapState = writableStates.get(stateKey);
@@ -179,6 +210,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                     .valueOrThrow()
                                     .valueChoice()
                                     .value());
+                    stateChangesSummary.countMapUpdate(serviceName, stateKey);
                 }
                 case MAP_DELETE -> {
                     final var mapState = writableStates.get(stateKey);
@@ -186,15 +218,18 @@ public class StateChangesValidator implements BlockStreamValidator {
                             .keyOrThrow()
                             .keyChoice()
                             .value());
+                    stateChangesSummary.countMapDelete(serviceName, stateKey);
                 }
                 case QUEUE_PUSH -> {
                     final var queueState = writableStates.getQueue(stateKey);
                     queueState.add(
                             requireNonNull(stateChange.queuePush()).value().value());
+                    stateChangesSummary.countQueuePush(serviceName, stateKey);
                 }
                 case QUEUE_POP -> {
                     final var queueState = writableStates.getQueue(stateKey);
                     queueState.poll();
+                    stateChangesSummary.countQueuePop(serviceName, stateKey);
                 }
             }
         }
@@ -206,13 +241,52 @@ public class StateChangesValidator implements BlockStreamValidator {
             Map<String, Long> mapDeletes,
             Map<String, Long> queuePushes,
             Map<String, Long> queuePops) {
+        private static final String PREFIX = "    * ";
+
         public static ServiceChangesSummary newSummary(@NonNull final String serviceName) {
             return new ServiceChangesSummary(
-                    new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
+                    new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>(), new TreeMap<>());
+        }
+
+        @Override
+        public String toString() {
+            final var sb = new StringBuilder();
+            singletonPuts.forEach((stateKey, count) -> sb.append(PREFIX)
+                    .append(stateKey)
+                    .append(" singleton put ")
+                    .append(count)
+                    .append(" times")
+                    .append('\n'));
+            mapUpdates.forEach((stateKey, count) -> sb.append(PREFIX)
+                    .append(stateKey)
+                    .append(" map updated ")
+                    .append(count)
+                    .append(" times, deleted ")
+                    .append(mapDeletes.getOrDefault(stateKey, 0L))
+                    .append(" times")
+                    .append('\n'));
+            queuePushes.forEach((stateKey, count) -> sb.append(PREFIX)
+                    .append(stateKey)
+                    .append(" queue pushed ")
+                    .append(count)
+                    .append(" times, popped ")
+                    .append(queuePops.getOrDefault(stateKey, 0L))
+                    .append(" times")
+                    .append('\n'));
+            return sb.toString();
         }
     }
 
     private record StateChangesSummary(Map<String, ServiceChangesSummary> serviceChanges) {
+        @Override
+        public String toString() {
+            final var sb = new StringBuilder();
+            serviceChanges.forEach((serviceName, summary) -> {
+                sb.append("- ").append(serviceName).append(" -\n").append(summary);
+            });
+            return sb.toString();
+        }
+
         public void countSingletonPut(String serviceName, String stateKey) {
             serviceChanges
                     .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
@@ -322,5 +396,47 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static boolean isNumberDirectory(@NonNull final Path path) {
         return path.toFile().isDirectory()
                 && NUMBER_PATTERN.matcher(path.getFileName().toString()).matches();
+    }
+
+    private static @Nullable Map<String, String> getMaybeLastHashMnemonics(final Path path) {
+        StringBuilder sb = null;
+        boolean sawPlatformStateHash = false;
+        try {
+            final var lines = Files.readAllLines(path);
+            for (final var line : lines) {
+                if (line.startsWith("(root) State")) {
+                    sb = new StringBuilder();
+                    sawPlatformStateHash = false;
+                } else if (sb != null) {
+                    sawPlatformStateHash = sawPlatformStateHash || line.contains("PlatformState");
+                    if (!sawPlatformStateHash) {
+                        sb.append(line).append('\n');
+                    }
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Could not read hashes from {}", path, e);
+            return null;
+        }
+        return sb == null ? null : hashesByName(sb.toString());
+    }
+
+    private static Map<String, String> hashesByName(@NonNull final String visualization) {
+        final var lines = visualization.split("\\n");
+        final Map<String, String> hashes = new LinkedHashMap<>();
+        for (final var line : lines) {
+            final var stateRootMatcher = STATE_ROOT_PATTERN.matcher(line);
+            if (stateRootMatcher.matches()) {
+                hashes.put("MerkleStateRoot", stateRootMatcher.group(1));
+            } else {
+                final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
+                if (childStateMatcher.matches()) {
+                    hashes.put(childStateMatcher.group(1), childStateMatcher.group(2));
+                } else {
+                    logger.warn("Ignoring visualization line '{}'", line);
+                }
+            }
+        }
+        return hashes;
     }
 }

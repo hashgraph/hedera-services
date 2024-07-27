@@ -115,6 +115,15 @@ public class StreamValidationOp extends UtilOp {
                                     sleepFor(8 * BUFFER_MS));
                             final var data = requireNonNull(dataRef.get());
                             // TODO - append the final record file to the record stream data
+                            final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
+                                    .map(factory -> factory.apply(spec))
+                                    .flatMap(v -> v.validationErrorsIn(blocks, data))
+                                    .map(Throwable::getMessage)
+                                    .collect(joining(ERROR_PREFIX));
+                            if (!maybeErrors.isBlank()) {
+                                throw new AssertionError(
+                                        "Block stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                            }
                         },
                         () -> Assertions.fail("No block streams found"));
         return false;

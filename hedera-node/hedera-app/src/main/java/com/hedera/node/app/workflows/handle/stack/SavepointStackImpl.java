@@ -237,7 +237,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 wrappedState.register(roundStateChangeListener);
                 stack.pop().commit();
                 final var stateChanges = kvStateChangeListener.getStateChanges();
-                log.info("Capturing state changes {}", stateChanges);
+                //                log.info("Capturing state changes {}", stateChanges);
                 causeBuilder.stateChanges(stateChanges);
             } else {
                 stack.pop().commit();
