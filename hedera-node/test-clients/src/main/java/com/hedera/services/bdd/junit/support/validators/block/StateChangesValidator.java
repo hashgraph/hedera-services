@@ -24,7 +24,12 @@ import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STRE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.output.MapChangeKey;
+import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -57,6 +62,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -64,6 +71,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.InstantSource;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +84,7 @@ import org.junit.jupiter.api.Assertions;
 
 /**
  * A validator that asserts the state changes in the block stream, when applied directly to a {@link MerkleStateRoot}
- * initialized with the genesis {@link com.swirlds.state.spi.Service} schemas, result in the given root hash.
+ * initialized with the genesis {@link Service} schemas, result in the given root hash.
  */
 public class StateChangesValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
@@ -90,6 +98,7 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
+    private final Set<String> servicesWritten = new HashSet<>();
     private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
@@ -150,11 +159,13 @@ public class StateChangesValidator implements BlockStreamValidator {
     public void validateBlocks(@NonNull final List<Block> blocks) {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
         for (final var block : blocks) {
+            servicesWritten.clear();
             for (final var item : block.items()) {
                 if (item.hasStateChanges()) {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
             }
+            servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);
@@ -171,7 +182,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
                 if (!expectedHash.equals(actualHash)) {
-                    errorMsg.append("\n  * ")
+                    errorMsg.append("\n    * ")
                             .append(stateName)
                             .append(" - expected ")
                             .append(expectedHash)
@@ -191,6 +202,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final var serviceName = stateChange.stateName().substring(0, delimIndex);
             final var writableStates = state.getWritableStates(serviceName);
+            servicesWritten.add(serviceName);
             final var stateKey = stateChange.stateName().substring(delimIndex + 1);
             switch (stateChange.changeOperation().kind()) {
                 case UNSET -> throw new IllegalStateException("Change operation is not set");
@@ -199,36 +211,28 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
                 case SINGLETON_UPDATE -> {
                     final var singletonState = writableStates.getSingleton(stateKey);
-                    singletonState.put(requireNonNull(stateChange.singletonUpdate())
-                            .newValue()
-                            .value());
+                    singletonState.put(
+                            stateChange.singletonUpdateOrThrow().newValue().value());
+                    if ("ENTITY_ID".equals(stateKey)) {
+                        logger.info("Entity ID updated to {}", singletonState.get());
+                    }
                     stateChangesSummary.countSingletonPut(serviceName, stateKey);
                 }
                 case MAP_UPDATE -> {
                     final var mapState = writableStates.get(stateKey);
                     mapState.put(
-                            requireNonNull(stateChange.mapUpdate())
-                                    .keyOrThrow()
-                                    .keyChoice()
-                                    .value(),
-                            requireNonNull(stateChange.mapUpdate())
-                                    .valueOrThrow()
-                                    .valueChoice()
-                                    .value());
+                            mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()),
+                            mapValueFor(stateChange.mapUpdateOrThrow().valueOrThrow()));
                     stateChangesSummary.countMapUpdate(serviceName, stateKey);
                 }
                 case MAP_DELETE -> {
                     final var mapState = writableStates.get(stateKey);
-                    mapState.remove(requireNonNull(stateChange.mapDelete())
-                            .keyOrThrow()
-                            .keyChoice()
-                            .value());
+                    mapState.remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
                     stateChangesSummary.countMapDelete(serviceName, stateKey);
                 }
                 case QUEUE_PUSH -> {
                     final var queueState = writableStates.getQueue(stateKey);
-                    queueState.add(
-                            requireNonNull(stateChange.queuePush()).value().value());
+                    queueState.add(stateChange.queuePushOrThrow().value().value());
                     stateChangesSummary.countQueuePush(serviceName, stateKey);
                 }
                 case QUEUE_POP -> {
@@ -443,5 +447,43 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
         }
         return hashes;
+    }
+
+    private static Object mapKeyFor(@NonNull final MapChangeKey mapChangeKey) {
+        return switch (mapChangeKey.keyChoice().kind()) {
+            case UNSET -> throw new IllegalStateException("Key choice is not set for " + mapChangeKey);
+            case ACCOUNT_ID_KEY -> mapChangeKey.accountIdKeyOrThrow();
+            case ENTITY_ID_PAIR_KEY -> mapChangeKey.entityIdPairKeyOrThrow();
+            case ENTITY_NUMBER_KEY -> mapChangeKey.entityNumberKeyOrThrow();
+            case FILE_ID_KEY -> mapChangeKey.fileIdKeyOrThrow();
+            case NFT_ID_KEY -> mapChangeKey.nftIdKeyOrThrow();
+            case PROTO_BYTES_KEY -> new ProtoBytes(mapChangeKey.protoBytesKeyOrThrow());
+            case PROTO_LONG_KEY -> new ProtoLong(mapChangeKey.protoLongKeyOrThrow());
+            case PROTO_STRING_KEY -> new ProtoString(mapChangeKey.protoStringKeyOrThrow());
+            case SCHEDULE_ID_KEY -> mapChangeKey.scheduleIdKeyOrThrow();
+            case SLOT_KEY_KEY -> mapChangeKey.slotKeyKeyOrThrow();
+            case TOKEN_ID_KEY -> mapChangeKey.tokenIdKeyOrThrow();
+            case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
+            case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
+        };
+    }
+
+    private static Object mapValueFor(@NonNull final MapChangeValue mapChangeValue) {
+        return switch (mapChangeValue.valueChoice().kind()) {
+            case UNSET -> throw new IllegalStateException("Value choice is not set for " + mapChangeValue);
+            case ACCOUNT_VALUE -> mapChangeValue.accountValueOrThrow();
+            case ACCOUNT_ID_VALUE -> mapChangeValue.accountIdValueOrThrow();
+            case BYTECODE_VALUE -> mapChangeValue.bytecodeValueOrThrow();
+            case FILE_VALUE -> mapChangeValue.fileValueOrThrow();
+            case NFT_VALUE -> mapChangeValue.nftValueOrThrow();
+            case PROTO_STRING_VALUE -> new ProtoString(mapChangeValue.protoStringValueOrThrow());
+            case SCHEDULE_VALUE -> mapChangeValue.scheduleValueOrThrow();
+            case SCHEDULE_LIST_VALUE -> mapChangeValue.scheduleListValueOrThrow();
+            case SLOT_VALUE_VALUE -> mapChangeValue.slotValueValueOrThrow();
+            case STAKING_NODE_INFO_VALUE -> mapChangeValue.stakingNodeInfoValueOrThrow();
+            case TOKEN_VALUE -> mapChangeValue.tokenValueOrThrow();
+            case TOKEN_RELATION_VALUE -> mapChangeValue.tokenRelationValueOrThrow();
+            case TOPIC_VALUE -> mapChangeValue.topicValueOrThrow();
+        };
     }
 }
