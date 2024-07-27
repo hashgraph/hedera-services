@@ -810,12 +810,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * Set the platform state. This method shifts existing children to the right to insert
      * {@link PlatformState} instance at the {@code PLATFORM_STATE_INDEX} index.
-     * Also, if the platform state is already present, it will be replaced with a copy of the argument.
+     * If the platform state is already present, it doesn't do the shifting.
      */
     @Override
     public void setPlatformState(@NonNull final PlatformState platformState) {
         if (getChild(PLATFORM_STATE_INDEX) instanceof PlatformState) {
-            setChild(PLATFORM_STATE_INDEX, platformState.copy());
+            setChild(PLATFORM_STATE_INDEX, platformState);
             return;
         }
 

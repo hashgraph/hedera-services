@@ -95,12 +95,22 @@ class StateTest {
         PlatformState expectedPlatformState = state.getPlatformState().copy();
         // expected platform state will have reservation count = 1
         expectedPlatformState.reserve();
-        MerkleNode newRoot = state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
-        MerkleStateRoot stateRoot = (MerkleStateRoot) state.getSwirldState();
-        assertSame(newRoot, stateRoot, "migrate should return a new root");
+        MerkleStateRoot oldRoot = (MerkleStateRoot) state.getSwirldState();
+        MerkleStateRoot newRoot = (MerkleStateRoot) state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
+        assertNotSame(newRoot, oldRoot, "migrate should return a new root");
+        assertThat(oldRoot.isImmutable()).isTrue();
+        assertThat(oldRoot.getReservationCount()).isEqualTo(1);
+        assertThat(newRoot)
+                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("immutable", "registryRecord.creationTime", "reservationCount")
+                        .build())
+                .isEqualTo(oldRoot);
+        assertThat(newRoot.getReservationCount()).isEqualTo(0);
+        assertThat(newRoot.isMutable()).isTrue();
+
         assertNull(state.getPlatformState(), "platform state should be null in the old root");
 
-        assertThat(stateRoot.getPlatformState())
+        assertThat(newRoot.getPlatformState())
                 .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
                         .withIgnoredFields("route")
                         .build())

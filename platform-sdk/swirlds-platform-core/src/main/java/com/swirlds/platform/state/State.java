@@ -107,7 +107,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             setChild(ChildIndices.PLATFORM_STATE, null);
             merkleStateRoot.setPlatformState(platformState);
 
-            return merkleStateRoot;
+            return merkleStateRoot.copy();
         }
 
         return this;
