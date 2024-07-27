@@ -356,33 +356,37 @@ The current startup procedure will be altered as follows
 
 The current network Transplant procedure is manual.
 DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
-the `config.txt` file using that state. This will change as follows:
+the `config.txt` file using that state. This will change to the use of a Genesis Roster.
 
 #### Genesis Roster
 
 A `Genesis Roster` is an optional Roster that DevOps may provide to either start a Genesis Network process or Transplant
-an existing network.
-It is essential to distinguish the Genesis Roster from the Candidate or Active rosters.
-The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network. However, it's structure is
-exactly the same.
+an existing network. It is essential to distinguish the Genesis Roster from the Candidate or Active rosters.
+The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network. However, its structure is
+exactly the same as the Active or Candidate Rosters.
 The equivalent of the Genesis Roster in the current network is the `config.txt` file.
 DevOps and Services may choose to create the Genesis Roster from the `config.txt` file or some other mechanism.
 
 A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
+In most cases, this Genesis Roster will be null.
 
 ```java
-    //in PlatformBuilder
-    /**
-     * Set the Genesis Roster for the network.
-     * <p>
-     * This method is used to set the Genesis Roster for the network.
-     * The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network.
-     * The Genesis Roster is immutable and will be used to start a Genesis network Process or Network Transplant process.
-     * <p>
-     * @param genesisRoster the Genesis Roster for the network.
-     */
-    void withGenesisRoster(@NonNull final Roster genesisRoster);
-``` 
+//in PlatformBuilder
+
+/*
+  Set the Genesis Roster for the network.
+  <p>
+  This method is used to set the optional Genesis Roster for the network.
+  The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network.
+  The Genesis Roster, if set, is immutable and will be used to start a Genesis network Process or Network Transplant process.
+  <p>
+  @param genesisRoster the Genesis Roster for the network.
+ */
+void withGenesisRoster(@NonNull final Roster genesisRoster);
+```
+
+The logic to determine whether to invoke this method could be determined by a config flag,
+but this is yet to be implemented.
 
 #### New Transplant Procedure
 The App will decide a network transplant sequence based on the following heuristics:
