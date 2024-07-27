@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.RECORD_STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.UPGRADE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.Hedera;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
@@ -69,7 +71,7 @@ public abstract class AbstractNode implements HederaNode {
     }
 
     @Override
-    public Path getExternalPath(@NonNull ExternalPath path) {
+    public Path getExternalPath(@NonNull final ExternalPath path) {
         requireNonNull(path);
         final var workingDir = requireNonNull(metadata.workingDir());
         return switch (path) {
@@ -97,6 +99,12 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(DATA_DIR)
                     .resolve(UPGRADE_DIR)
                     .resolve(CURRENT_DIR);
+            case SAVED_STATES_DIR -> workingDir
+                    .resolve(DATA_DIR)
+                    .resolve(SAVED_STATES_DIR)
+                    .resolve(Hedera.APP_NAME)
+                    .resolve("" + getNodeId())
+                    .resolve(Hedera.SWIRLD_NAME);
         };
     }
 

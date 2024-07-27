@@ -16,11 +16,14 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static java.util.Comparator.comparing;
-import static org.junit.jupiter.api.Assertions.fail;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
+import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -43,101 +46,207 @@ import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.support.BlockStreamValidator;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.MerkleStateRoot;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.InstantSource;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
-public class StateChangesValidator {
+/**
+ * A validator that asserts the state changes in the block stream, when applied directly to a {@link MerkleStateRoot}
+ * initialized with the genesis {@link com.swirlds.state.spi.Service} schemas, result in the given root hash.
+ */
+public class StateChangesValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
-    final MerkleStateRoot state = new MerkleStateRoot();
+    private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
+
+    private static final int HASH_SIZE = 48;
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
+
+    private final Bytes expectedRootHash;
+    private final MerkleStateRoot state = new MerkleStateRoot();
 
     public static void main(String[] args) throws IOException {
-        final var path = "hedera-node/test-clients/src/main/resource/block-streams/blocks";
-        final var validator = new StateChangesValidator();
-        validator.validateStreams(path);
+        final var testBlocksLoc = "/Users/michaeltinker/Dev/hedera-services/some-blocks";
+        final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Paths.get(testBlocksLoc));
+        final var validator = new StateChangesValidator(Bytes.EMPTY);
+        validator.validateBlocks(blocks);
     }
 
-    public StateChangesValidator() {
-        final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+    /**
+     * Constructs a validator that will assert the state changes in the block stream are consistent with the
+     * root hash found in the latest saved state directory from a node targeted by the given spec.
+     *
+     * @param spec the spec
+     * @return the validator
+     */
+    public static StateChangesValidator newValidatorFor(@NonNull final HapiSpec spec) {
+        requireNonNull(spec);
+        final var latestStateDir = findMaybeLatestSavedStateFor(spec);
+        if (latestStateDir == null) {
+            throw new AssertionError("No saved state directory found");
+        }
+        final var rootHash = findRootHashFrom(latestStateDir.resolve(STATE_METADATA_FILE));
+        if (rootHash == null) {
+            throw new AssertionError("No root hash found in state metadata file");
+        }
+        return new StateChangesValidator(rootHash);
+    }
+
+    public StateChangesValidator(@NonNull final Bytes expectedRootHash) {
+        this.expectedRootHash = requireNonNull(expectedRootHash);
+
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
-        final ServicesRegistry.Factory registryFactory = ServicesRegistryImpl::new;
-        final var servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
+        final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
+        registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
+
+        final var currentVersion =
+                bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
         final var migrator = new OrderedServiceMigrator();
-        final var instantSource = InstantSource.system();
-
-        registerServices(instantSource, servicesRegistry, bootstrapConfig);
-
         migrator.doMigrations(
                 state,
                 servicesRegistry,
                 null,
-                SemanticVersion.newBuilder().major(80).build(),
+                currentVersion,
                 new ConfigProviderImpl().getConfiguration(),
                 new FakeNetworkInfo(),
                 new NoOpMetrics());
-
-        logger.info("Registered all Service and migrated to version 80");
+        logger.info("Registered all Service and migrated state definitions to version {}", currentVersion);
     }
 
-    public void validateStreams(String blockFileDir) throws IOException {
-        logger.info("Validating streams at dir {}", blockFileDir);
-
-        final var list = Files.walk(Path.of(blockFileDir))
-                .map(Path::toString)
-                .filter(f -> f.endsWith(".blk.gz"))
-                .sorted(comparing(this::extractBlockNumber))
-                .toList();
-
-        for (final var file : list) {
-            final var block = readBlockFromGzip(Path.of(file));
-            logger.info("Block: {}", block);
+    @Override
+    public void validateBlocks(@NonNull final List<Block> blocks) {
+        logger.info("Beginning validation of expected root hash {}", expectedRootHash);
+        for (final var block : blocks) {
             for (final var item : block.items()) {
                 if (item.hasStateChanges()) {
-                    final var stateChanges = item.stateChangesOrThrow().stateChanges();
-                    for (final var stateChange : stateChanges) {
-                        switch (stateChange.changeOperation().kind()) {
-                            case UNSET -> throw new IllegalStateException("Change operation is not set");
-                            case STATE_ADD -> {}
-                            case STATE_REMOVE -> {}
-                            case SINGLETON_UPDATE -> {}
-                            case MAP_UPDATE -> {}
-                            case MAP_DELETE -> {}
-                            case QUEUE_PUSH -> {}
-                            case QUEUE_POP -> {}
-                        }
-                    }
+                    applyStateChanges(item.stateChangesOrThrow());
+                }
+            }
+        }
+        CRYPTO.digestTreeSync(state);
+        final var rootHash = state.getHash().getBytes();
+        assertEquals(expectedRootHash, rootHash, "Root hash mismatch");
+    }
+
+    private void applyStateChanges(@NonNull final StateChanges stateChanges) {
+        for (final var stateChange : stateChanges.stateChanges()) {
+            final var delimIndex = stateChange.stateName().indexOf('.');
+            if (delimIndex == -1) {
+                Assertions.fail("State name " + stateChange.stateName() + " is not in the correct format");
+            }
+            final var serviceName = stateChange.stateName().substring(0, delimIndex);
+            final var writableStates = state.getWritableStates(serviceName);
+            final var stateKey = stateChange.stateName().substring(delimIndex + 1);
+            switch (stateChange.changeOperation().kind()) {
+                case UNSET -> throw new IllegalStateException("Change operation is not set");
+                case STATE_ADD, STATE_REMOVE -> {
+                    // No-op
+                }
+                case SINGLETON_UPDATE -> {
+                    final var singletonState = writableStates.getSingleton(stateKey);
+                    singletonState.put(requireNonNull(stateChange.singletonUpdate())
+                            .newValue()
+                            .value());
+                }
+                case MAP_UPDATE -> {
+                    final var mapState = writableStates.get(stateKey);
+                    mapState.put(
+                            requireNonNull(stateChange.mapUpdate())
+                                    .keyOrThrow()
+                                    .keyChoice()
+                                    .value(),
+                            requireNonNull(stateChange.mapUpdate())
+                                    .valueOrThrow()
+                                    .valueChoice()
+                                    .value());
+                }
+                case MAP_DELETE -> {
+                    final var mapState = writableStates.get(stateKey);
+                    mapState.remove(requireNonNull(stateChange.mapDelete())
+                            .keyOrThrow()
+                            .keyChoice()
+                            .value());
+                }
+                case QUEUE_PUSH -> {
+                    final var queueState = writableStates.getQueue(stateKey);
+                    queueState.add(
+                            requireNonNull(stateChange.queuePush()).value().value());
+                }
+                case QUEUE_POP -> {
+                    final var queueState = writableStates.getQueue(stateKey);
+                    queueState.poll();
                 }
             }
         }
     }
 
-    public static Block readBlockFromGzip(Path file) {
-        try (final GZIPInputStream in = new GZIPInputStream(Files.newInputStream(file))) {
-            return Block.PROTOBUF.parse(Bytes.wrap(in.readAllBytes()));
-        } catch (Exception e) {
-            fail("Unknown file type: " + file.getFileName());
-            return null;
+    private record ServiceChangesSummary(
+            Map<String, Long> singletonPuts,
+            Map<String, Long> mapUpdates,
+            Map<String, Long> mapDeletes,
+            Map<String, Long> queuePushes,
+            Map<String, Long> queuePops) {
+        public static ServiceChangesSummary newSummary(@NonNull final String serviceName) {
+            return new ServiceChangesSummary(
+                    new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
         }
     }
 
-    private long extractBlockNumber(String fileName) {
-        String lastPart = fileName.substring(fileName.lastIndexOf('/') + 1);
-        String numberPart = lastPart.substring(0, lastPart.indexOf(".blk.gz"));
-        try {
-            return Long.parseLong(numberPart);
-        } catch (NumberFormatException e) {
-            logger.warn("Unable to parse block number from file name: {}", fileName);
+    private record StateChangesSummary(Map<String, ServiceChangesSummary> serviceChanges) {
+        public void countSingletonPut(String serviceName, String stateKey) {
+            serviceChanges
+                    .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
+                    .singletonPuts()
+                    .merge(stateKey, 1L, Long::sum);
         }
-        return -1;
+
+        public void countMapUpdate(String serviceName, String stateKey) {
+            serviceChanges
+                    .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
+                    .mapUpdates()
+                    .merge(stateKey, 1L, Long::sum);
+        }
+
+        public void countMapDelete(String serviceName, String stateKey) {
+            serviceChanges
+                    .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
+                    .mapDeletes()
+                    .merge(stateKey, 1L, Long::sum);
+        }
+
+        public void countQueuePush(String serviceName, String stateKey) {
+            serviceChanges
+                    .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
+                    .queuePushes()
+                    .merge(stateKey, 1L, Long::sum);
+        }
+
+        public void countQueuePop(String serviceName, String stateKey) {
+            serviceChanges
+                    .computeIfAbsent(serviceName, ServiceChangesSummary::newSummary)
+                    .queuePops()
+                    .merge(stateKey, 1L, Long::sum);
+        }
     }
 
     private void registerServices(
@@ -164,5 +273,54 @@ public class StateChangesValidator {
                 .forEach(servicesRegistry::register);
     }
 
-    public void validate() {}
+    private static @Nullable Bytes findRootHashFrom(@NonNull final Path stateMetadataPath) {
+        try (final var lines = Files.lines(stateMetadataPath)) {
+            return lines.filter(line -> line.startsWith("HASH:"))
+                    .map(line -> line.substring(line.length() - 2 * HASH_SIZE))
+                    .map(Bytes::fromHex)
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            logger.error("Failed to read state metadata file {}", stateMetadataPath, e);
+            return null;
+        }
+    }
+
+    private static @Nullable Path findMaybeLatestSavedStateFor(@NonNull final HapiSpec spec) {
+        final var savedStateDirs = spec.getNetworkNodes().stream()
+                .map(node -> node.getExternalPath(SAVED_STATES_DIR))
+                .map(Path::toAbsolutePath)
+                .toList();
+        for (final var savedStatesDir : savedStateDirs) {
+            try {
+                final var latestRoundPath = findLargestNumberDirectory(savedStatesDir);
+                if (latestRoundPath != null) {
+                    return latestRoundPath;
+                }
+            } catch (IOException e) {
+                logger.error("Failed to find the latest saved state directory in {}", savedStatesDir, e);
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable Path findLargestNumberDirectory(@NonNull final Path savedStatesDir) throws IOException {
+        long latestRound = -1;
+        Path latestRoundPath = null;
+        try (final var stream = Files.newDirectoryStream(savedStatesDir, StateChangesValidator::isNumberDirectory)) {
+            for (final var numberDirectory : stream) {
+                final var round = Long.parseLong(numberDirectory.getFileName().toString());
+                if (round > latestRound) {
+                    latestRound = round;
+                    latestRoundPath = numberDirectory;
+                }
+            }
+        }
+        return latestRoundPath;
+    }
+
+    private static boolean isNumberDirectory(@NonNull final Path path) {
+        return path.toFile().isDirectory()
+                && NUMBER_PATTERN.matcher(path.getFileName().toString()).matches();
+    }
 }

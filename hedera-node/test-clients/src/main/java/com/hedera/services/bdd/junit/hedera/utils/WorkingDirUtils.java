@@ -57,6 +57,7 @@ public class WorkingDirUtils {
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
+    public static final String STATE_METADATA_FILE = "stateMetadata.txt";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);

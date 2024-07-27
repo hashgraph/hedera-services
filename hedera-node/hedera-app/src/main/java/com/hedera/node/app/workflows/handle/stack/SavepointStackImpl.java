@@ -500,7 +500,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 }
             }
         }
-        requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
+        if (HandleWorkflow.STREAM_MODE != RECORDS) {
+            requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
+        }
         return new HandleOutput(blockItems, records);
     }
 
