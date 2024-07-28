@@ -16,10 +16,13 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithCert;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +37,9 @@ import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
@@ -48,7 +53,6 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
@@ -61,9 +65,13 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -78,6 +86,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -103,12 +112,19 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     public static void main(String[] args) throws IOException {
-        final var sampleSwirldsLog =
-                "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
-        final var testBlocksLoc = "/Users/michaeltinker/Dev/hedera-services/some-blocks";
+        //        final var sampleSwirldsLog =
+        //
+        // "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
+        final var testBlocksLoc =
+                "/Users/neeharikasompalli/Documents/Hedera/Repos/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
         final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Paths.get(testBlocksLoc));
-        final var validator = new StateChangesValidator(Bytes.EMPTY, Paths.get(sampleSwirldsLog));
-        validator.validateBlocks(blocks);
+        //        final var validator = new StateChangesValidator(Bytes.EMPTY, Paths.get(sampleSwirldsLog));
+        //        validator.validateBlocks(blocks);
+        System.out.println("465 Block" + blocks.get(465));
+        blocks.get(465).items().stream()
+                .filter(b -> b.hasTransaction())
+                .map(b -> TransactionParts.from(fromPbj(b.transaction())))
+                .forEach(System.out::println);
     }
 
     /**
@@ -130,10 +146,14 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
         return new StateChangesValidator(
                 rootHash,
-                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG));
+                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG),
+                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(ADDRESS_BOOK));
     }
 
-    public StateChangesValidator(@NonNull final Bytes expectedRootHash, @NonNull final Path pathToNode0SwirldsLog) {
+    public StateChangesValidator(
+            @NonNull final Bytes expectedRootHash,
+            @NonNull final Path pathToNode0SwirldsLog,
+            @NonNull final Path pathToAddressBook) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
@@ -143,13 +163,47 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var currentVersion =
                 bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
         final var migrator = new OrderedServiceMigrator();
+
+        final var addressBook = loadAddressBookWithCert(pathToAddressBook);
+        final var networkInfo = new NetworkInfo() {
+            @NonNull
+            @Override
+            public Bytes ledgerId() {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @NonNull
+            @Override
+            public SelfNodeInfo selfNodeInfo() {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @NonNull
+            @Override
+            public List<NodeInfo> addressBook() {
+                return StreamSupport.stream(addressBook.spliterator(), false)
+                        .map(NodeInfoImpl::fromAddress)
+                        .toList();
+            }
+
+            @Nullable
+            @Override
+            public NodeInfo nodeInfo(final long nodeId) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public boolean containsNode(final long nodeId) {
+                return addressBook.contains(new NodeId(nodeId));
+            }
+        };
         migrator.doMigrations(
                 state,
                 servicesRegistry,
                 null,
                 currentVersion,
                 new ConfigProviderImpl().getConfiguration(),
-                new FakeNetworkInfo(),
+                networkInfo,
                 new NoOpMetrics());
 
         logger.info("Registered all Service and migrated state definitions to version {}", currentVersion);

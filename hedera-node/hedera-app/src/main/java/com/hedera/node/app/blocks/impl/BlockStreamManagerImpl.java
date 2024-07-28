@@ -169,6 +169,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 blockTimestamp(),
                 runningHashManager.latestHashes(),
                 blockHashManager.hashesAfterLatest(blockHash)));
+
         ((CommittableWritableStates) writableState).commit();
         writer.closeBlock();
     }

@@ -101,18 +101,15 @@ public class StreamValidationOp extends UtilOp {
                             dataRef.set(data);
                         },
                         () -> Assertions.fail("No record stream data found"));
+        // Freeze the network
+        allRunFor(
+                spec,
+                freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
+                // Wait for the final stream files to be created
+                sleepFor(8 * BUFFER_MS));
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {
-                            // Freeze the network
-                            allRunFor(
-                                    spec,
-                                    freezeOnly()
-                                            .payingWith(GENESIS)
-                                            .startingIn(2)
-                                            .seconds(),
-                                    // Wait for the final stream files to be created
-                                    sleepFor(8 * BUFFER_MS));
                             final var data = requireNonNull(dataRef.get());
                             // TODO - append the final record file to the record stream data
                             final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()

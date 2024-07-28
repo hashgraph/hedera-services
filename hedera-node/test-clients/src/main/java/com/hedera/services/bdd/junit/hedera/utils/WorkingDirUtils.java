@@ -22,6 +22,7 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -320,5 +321,17 @@ public class WorkingDirUtils {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
+    }
+
+    public static AddressBook loadAddressBookWithCert(@NonNull Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
     }
 }
