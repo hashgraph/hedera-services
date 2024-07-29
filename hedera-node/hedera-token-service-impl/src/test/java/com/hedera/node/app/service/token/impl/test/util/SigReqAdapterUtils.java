@@ -105,8 +105,8 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -531,6 +531,7 @@ public class SigReqAdapterUtils {
                 fungibleTokenAllowances,
                 2,
                 false,
+                null,
                 null);
     }
 }

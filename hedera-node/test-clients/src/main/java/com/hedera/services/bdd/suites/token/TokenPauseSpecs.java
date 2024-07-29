@@ -77,8 +77,6 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class TokenPauseSpecs {
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
-
     private static final String PAUSE_KEY = "pauseKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";

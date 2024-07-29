@@ -16,13 +16,19 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.types.LongPair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -35,7 +41,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -110,7 +115,7 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
             System.out.println("Unable to parse service endpoint from property: " + property);
         }
-        return ServiceEndpoint.getDefaultInstance();
+        return ServiceEndpoint.DEFAULT;
     }
 
     default ContractID getContract(String property) {
@@ -139,6 +144,15 @@ public interface HapiPropertySource {
 
     default long getLong(String property) {
         return Long.parseLong(get(property));
+    }
+
+    /**
+     * Returns a {@link LongPair} from the given property.
+     * @param property the property to get the value from
+     * @return the {@link LongPair} value
+     */
+    default LongPair getLongPair(@NonNull final String property) {
+        return new LongPairConverter().convert(get(property));
     }
 
     default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
@@ -186,7 +200,7 @@ public interface HapiPropertySource {
                 .map(s -> (s instanceof HapiPropertySource)
                         ? s
                         : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
+                .toArray(HapiPropertySource[]::new);
     }
 
     static TokenID asToken(String v) {
@@ -244,8 +258,23 @@ public interface HapiPropertySource {
     static ServiceEndpoint asServiceEndpoint(String v) {
         String[] parts = v.split(":");
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
-                .setPort(Integer.parseInt(parts[1]))
+                .ipAddressV4(fromByteString(asOctets(parts[0])))
+                .port(Integer.parseInt(parts[1]))
+                .build();
+    }
+
+    static ServiceEndpoint invalidServiceEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .ipAddressV4(Bytes.wrap(new byte[3]))
+                .port(33)
+                .build();
+    }
+
+    static ServiceEndpoint asDnsServiceEndpoint(String v) {
+        String[] parts = v.split(":");
+        return ServiceEndpoint.newBuilder()
+                .domainName(parts[0])
+                .port(Integer.parseInt(parts[1]))
                 .build();
     }
 

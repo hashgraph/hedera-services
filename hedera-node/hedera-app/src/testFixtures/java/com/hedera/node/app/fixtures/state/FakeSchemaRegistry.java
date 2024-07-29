@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
+import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -68,9 +68,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     @SuppressWarnings("rawtypes")
     public void migrate(
-            @NonNull final String serviceName,
-            @NonNull final FakeHederaState state,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
         migrate(
                 serviceName,
                 state,
@@ -83,7 +81,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     public void migrate(
             @NonNull final String serviceName,
-            @NonNull final FakeHederaState state,
+            @NonNull final FakeState state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
@@ -145,7 +143,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final String serviceName,
             @NonNull final Schema schema,
             @NonNull final Configuration configuration,
-            @NonNull final FakeHederaState state) {
+            @NonNull final FakeState state) {
         final Map<String, Object> stateDataSources = new HashMap<>();
         schema.statesToCreate(configuration).forEach(def -> {
             final var stateKey = def.stateKey();

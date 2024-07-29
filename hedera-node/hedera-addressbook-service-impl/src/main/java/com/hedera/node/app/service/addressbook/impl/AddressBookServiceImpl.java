@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl;
 
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,10 +26,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link AddressBookService} {@link RpcService}.
  */
 public final class AddressBookServiceImpl implements AddressBookService {
-    public static final String NODES_KEY = "NODES";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new V052AddressBookSchema());
+        registry.register(new V053AddressBookSchema());
     }
 }

@@ -52,8 +52,6 @@ public class EventMetadata implements Clearable {
      * calculation, this field may or may not store the final consensus time.
      */
     private Instant preliminaryConsensusTimestamp;
-    /** the local time (not consensus time) at which the event reached consensus */
-    private Instant reachedConsTimestamp;
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
     private EventImpl[] lastSee;
     /**
@@ -226,21 +224,6 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @return the local time (not consensus time) at which the event reached consensus
-     */
-    public @Nullable Instant getReachedConsTimestamp() {
-        return reachedConsTimestamp;
-    }
-
-    /**
-     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached
-     *     consensus
-     */
-    public void setReachedConsTimestamp(@NonNull final Instant reachedConsTimestamp) {
-        this.reachedConsTimestamp = reachedConsTimestamp;
-    }
-
-    /**
      * @param m the member ID
      * @return last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
      */
@@ -284,6 +267,14 @@ public class EventMetadata implements Clearable {
      */
     public @Nullable EventImpl getStronglySeeP(final int m) {
         return stronglySeeP[m];
+    }
+
+    /**
+     * @return strongly-seen witness in parent round (memoizes stronglySeeP function from
+     *     Swirlds-TR-2020-01)
+     */
+    public EventImpl[] getStronglySeeP() {
+        return stronglySeeP;
     }
 
     /**

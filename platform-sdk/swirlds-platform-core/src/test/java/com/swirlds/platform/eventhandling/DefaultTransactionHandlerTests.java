@@ -41,7 +41,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,20 +75,21 @@ class DefaultTransactionHandlerTests {
             @NonNull final List<EventImpl> events,
             final long roundNumber,
             final boolean pcesRound) {
-        final ArrayList<DetailedConsensusEvent> streamedEvents = new ArrayList<>();
+        final ArrayList<CesEvent> streamedEvents = new ArrayList<>();
         for (final Iterator<EventImpl> iterator = events.iterator(); iterator.hasNext(); ) {
             final EventImpl event = iterator.next();
-            final DetailedConsensusEvent detailedConsensusEvent =
-                    new DetailedConsensusEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
-            streamedEvents.add(detailedConsensusEvent);
-            detailedConsensusEvent.getRunningHash().setHash(mock(Hash.class));
+            final CesEvent cesEvent = new CesEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
+            streamedEvents.add(cesEvent);
+            cesEvent.getRunningHash().setHash(mock(Hash.class));
         }
 
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
-        when(consensusRound.getConsensusEvents()).thenReturn(events);
+        when(consensusRound.getConsensusEvents())
+                .thenReturn(events.stream().map(EventImpl::getBaseEvent).collect(Collectors.toList()));
+        when(consensusRound.getNumEvents()).thenReturn(events.size());
         when(consensusRound.getConsensusTimestamp())
                 .thenReturn(Time.getCurrent().now());
-        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent);
+        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent.getBaseEvent());
         when(consensusRound.getRoundNum()).thenReturn(roundNumber);
         when(consensusRound.isEmpty()).thenReturn(events.isEmpty());
         when(consensusRound.isPcesRound()).thenReturn(pcesRound);
@@ -118,14 +120,16 @@ class DefaultTransactionHandlerTests {
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent()
+                .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNotNull(
                         transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent()
+                .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
                         transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }

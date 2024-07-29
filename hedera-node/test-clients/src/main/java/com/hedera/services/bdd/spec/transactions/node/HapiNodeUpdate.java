@@ -16,30 +16,39 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asPosNodeId;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,110 +56,75 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     private static final Logger LOG = LogManager.getLogger(HapiNodeUpdate.class);
 
     private final String nodeName;
-    private Optional<AccountID> accountId = Optional.empty();
-    private Optional<String> description = Optional.empty();
-    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
-    private List<ServiceEndpoint> serviceEndpoints = Collections.emptyList();
-    private Optional<byte[]> gossipCaCertificate = Optional.empty();
-    private Optional<byte[]> grpcCertificateHash = Optional.empty();
+    private Optional<String> newAccountId = Optional.empty();
 
-    private Optional<Consumer<Long>> preUpdateCb = Optional.empty();
-    private Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
+    private Optional<AccountID> newAccountAlias = Optional.empty();
+    private Optional<String> newDescription = Optional.empty();
+    private List<ServiceEndpoint> newGossipEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> newServiceEndpoints = Collections.emptyList();
+
+    @Nullable
+    private byte[] newGossipCaCertificate;
+
+    @Nullable
+    private byte[] newGrpcCertificateHash;
+
+    private Optional<Key> newAdminKey = Optional.empty();
+    private Optional<String> newAdminKeyName = Optional.empty();
 
     public HapiNodeUpdate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
-    @Override
-    public HederaFunctionality type() {
-        return HederaFunctionality.NodeUpdate;
+    public HapiNodeUpdate accountId(@NonNull final String accountId) {
+        this.newAccountId = Optional.of(accountId);
+        return this;
     }
 
-    public HapiNodeUpdate accountId(@NonNull final AccountID accountId) {
-        this.accountId = Optional.of(accountId);
+    public HapiNodeUpdate aliasAccountId(@NonNull final String alias) {
+        this.newAccountAlias = Optional.of(
+                AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build());
         return this;
     }
 
     public HapiNodeUpdate description(@NonNull final String description) {
-        this.description = Optional.of(description);
+        this.newDescription = Optional.of(description);
         return this;
     }
 
     public HapiNodeUpdate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoints = gossipEndpoint;
+        this.newGossipEndpoints = gossipEndpoint;
         return this;
     }
 
     public HapiNodeUpdate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.serviceEndpoints = serviceEndpoint;
+        this.newServiceEndpoints = serviceEndpoint;
         return this;
     }
 
     public HapiNodeUpdate gossipCaCertificate(@NonNull final byte[] gossipCaCertificate) {
-        this.gossipCaCertificate = Optional.of(gossipCaCertificate);
+        this.newGossipCaCertificate = gossipCaCertificate;
         return this;
     }
 
     public HapiNodeUpdate grpcCertificateHash(@NonNull final byte[] grpcCertificateHash) {
-        this.grpcCertificateHash = Optional.of(grpcCertificateHash);
+        this.newGrpcCertificateHash = grpcCertificateHash;
         return this;
     }
 
-    private static Setting asSetting(final String name, final String value) {
-        return Setting.newBuilder().setName(name).setValue(value).build();
-    }
-
-    public HapiNodeUpdate alertingPre(@NonNull final Consumer<Long> preCb) {
-        preUpdateCb = Optional.of(preCb);
+    public HapiNodeUpdate adminKey(final String name) {
+        newAdminKeyName = Optional.of(name);
         return this;
     }
 
-    public HapiNodeUpdate alertingPost(@NonNull final Consumer<ResponseCodeEnum> postCb) {
-        postUpdateCb = Optional.of(postCb);
+    public HapiNodeUpdate adminKey(final Key key) {
+        newAdminKey = Optional.of(key);
         return this;
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
-        NodeUpdateTransactionBody opBody = spec.txns()
-                .<NodeUpdateTransactionBody, NodeUpdateTransactionBody.Builder>body(
-                        NodeUpdateTransactionBody.class, builder -> {
-                            builder.setNodeId(nodeId);
-                            accountId.ifPresent(builder::setAccountId);
-                            description.ifPresent(s -> builder.setDescription(StringValue.of(s)));
-                            builder.addAllGossipEndpoint(gossipEndpoints);
-                            builder.addAllServiceEndpoint(serviceEndpoints);
-
-                            gossipCaCertificate.ifPresent(s -> {
-                                try {
-                                    builder.setGossipCaCertificate(BytesValue.parseFrom(s));
-                                } catch (InvalidProtocolBufferException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                            grpcCertificateHash.ifPresent(s -> {
-                                try {
-                                    builder.setGrpcCertificateHash(BytesValue.parseFrom(s));
-                                } catch (InvalidProtocolBufferException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                        });
-        preUpdateCb.ifPresent(cb -> cb.accept(nodeId));
-        return builder -> builder.setNodeUpdate(opBody);
-    }
-
-    @Override
-    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        // TODO issue #13670
-        // This is a placeholder implementation until the actual fee estimation is implemented.
-        return FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder().setBpr(0))
-                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
-                .setServicedata(FeeComponents.newBuilder().setBpr(0))
-                .build()
-                .getSerializedSize();
+    public HederaFunctionality type() {
+        return ConsensusUpdateTopic;
     }
 
     @Override
@@ -163,17 +137,100 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         if (actualStatus != SUCCESS) {
             return;
         }
+        newAdminKey.ifPresent(k -> {
+            if (newAdminKey.get() == EMPTY_KEY) {
+                spec.registry().removeKey(nodeName);
+            } else {
+                spec.registry().saveKey(nodeName, k);
+            }
+        });
+        try {
+            final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
+            spec.registry().saveNodeMeta(nodeName, txn.getNodeUpdate());
+        } catch (final Exception impossible) {
+            throw new IllegalStateException(impossible);
+        }
 
         if (verboseLoggingOn) {
             LOG.info("Updated node {} with ID {}.", nodeName, lastReceipt.getNodeId());
         }
     }
 
+    private void setNewAccountId(
+            @NonNull String accountIdStr, @NonNull final HapiSpec spec, NodeUpdateTransactionBody.Builder builder) {
+        if (accountIdStr.isEmpty()) {
+            builder.setAccountId(AccountID.getDefaultInstance());
+        } else builder.setAccountId(asId(accountIdStr, spec));
+    }
+
+    @Override
+    protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
+        newAdminKeyName.ifPresent(
+                name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
+        NodeUpdateTransactionBody opBody = spec.txns()
+                .<NodeUpdateTransactionBody, NodeUpdateTransactionBody.Builder>body(
+                        NodeUpdateTransactionBody.class, builder -> {
+                            builder.setNodeId(asPosNodeId(nodeName, spec));
+                            newAccountId.ifPresent(id -> setNewAccountId(id, spec, builder));
+                            newAccountAlias.ifPresent(builder::setAccountId);
+                            newDescription.ifPresent(s -> builder.setDescription(StringValue.of(s)));
+                            newAdminKey.ifPresent(builder::setAdminKey);
+                            builder.addAllGossipEndpoint(newGossipEndpoints.stream()
+                                    .map(CommonPbjConverters::fromPbj)
+                                    .toList());
+                            builder.addAllServiceEndpoint(newServiceEndpoints.stream()
+                                    .map(CommonPbjConverters::fromPbj)
+                                    .toList());
+                            if (newGossipCaCertificate != null) {
+                                builder.setGossipCaCertificate(
+                                        BytesValue.of(ByteString.copyFrom(newGossipCaCertificate)));
+                            }
+                            if (newGrpcCertificateHash != null) {
+                                builder.setGrpcCertificateHash(
+                                        BytesValue.of(ByteString.copyFrom(newGrpcCertificateHash)));
+                            }
+                        });
+        return builder -> builder.setNodeUpdate(opBody);
+    }
+
+    @Override
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+        signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        signers.add(
+                spec -> spec.registry().hasKey(nodeName)
+                        ? spec.registry().getKey(nodeName)
+                        : Key.getDefaultInstance() // same as no key
+                );
+        newAdminKey.ifPresent(key -> {
+            if (key != EMPTY_KEY) {
+                signers.add(ignored -> key);
+            }
+        });
+
+        return signers;
+    }
+
+    @Override
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.NodeUpdate, this::usageEstimate, txn, numPayerKeys);
+    }
+
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
+        final UsageAccumulator accumulator = new UsageAccumulator();
+        accumulator.addVpt(Math.max(0, svo.getTotalSigCount() - 1));
+        return AdapterUtils.feeDataFrom(accumulator);
+    }
+
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         final MoreObjects.ToStringHelper helper = super.toStringHelper().add("nodeId", nodeName);
-        accountId.ifPresent(a -> helper.add("accountId", a));
-        description.ifPresent(d -> helper.add("description", d));
+        newAccountId.ifPresent(a -> helper.add("newAccountId", a));
+        newDescription.ifPresent(d -> helper.add("description", d));
         return helper;
+    }
+
+    public Key getAdminKey() {
+        return newAdminKey.orElse(null);
     }
 }

@@ -16,28 +16,20 @@
 
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.copyUnchecked;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.util.HapiUtils;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -53,123 +45,33 @@ import java.util.zip.ZipOutputStream;
  *     <li><b>(Optional)</b> A <i>settings.txt</i> at the given path.</li>
  *     <li><b>(Optional)</b> A <i>config.txt</i> obtained by removing a requested
  *     node from the target network's current <i>config.txt</i>. If this is specified,
- *     the target network must be a {@link SubProcessNetwork}</li>, since this is
+ *     the target network must be a {@link SubProcessNetwork}, since this is
  *     the only case in which the test can meaningfully inspect and change the
- *     address book.
+ *     address book.</li>
  * </ol>
  */
 public class BuildUpgradeZipOp extends UtilOp {
-    private static final String SEM_VER_FILE = "semantic-version.properties";
-    private static final String SERVICES_VERSION_PROP = "hedera.services.version";
     private static final Path WORKING_PATH = Path.of("build");
     private static final Path UPGRADE_ZIP_PATH = WORKING_PATH.resolve("upgrade");
-    private static final Path EXPLODED_ZIP_PATH = WORKING_PATH.resolve("exploded");
-    private static final Path NEW_JAR_PATH = UPGRADE_ZIP_PATH.resolve(WorkingDirUtils.JAR_FILE);
+    public static final Path FAKE_UPGRADE_ZIP_LOC = WORKING_PATH.resolve("upgrade.zip");
 
-    public static final Path CURRENT_JAR_PATH =
-            Path.of("../").resolve("data").resolve("apps").resolve(WorkingDirUtils.JAR_FILE);
-    public static final Path DEFAULT_UPGRADE_ZIP_LOC = WORKING_PATH.resolve("upgrade.zip");
+    private final Path path;
 
-    /**
-     * The path of the {@code HederaNode.jar} currently running in the network.
-     */
-    private final Path runningJarLoc;
-    /**
-     * The new version to use in the <i>semantic-version.properties</i> in the repackaged {@code HederaNode.jar}.
-     */
-    private final SemanticVersion newVersion;
-    /**
-     * The path at which to create the upgrade zip for file {@code 0.0.150}.
-     */
-    private final Path upgradeZipLoc;
-
-    @Nullable
-    private final NodeId nodeIdToRemove;
-
-    @Nullable
-    private final Path newSettingsLoc;
-
-    public BuildUpgradeZipOp(
-            @NonNull final Path runningJarLoc,
-            @NonNull final SemanticVersion newVersion,
-            @NonNull final Path upgradeZipLoc) {
-        this(runningJarLoc, newVersion, upgradeZipLoc, null, null);
-    }
-
-    public BuildUpgradeZipOp(
-            @NonNull final Path runningJarLoc,
-            @NonNull final SemanticVersion newVersion,
-            @NonNull final Path upgradeZipLoc,
-            @NonNull NodeId nodeIdToRemove) {
-        this(runningJarLoc, newVersion, upgradeZipLoc, requireNonNull(nodeIdToRemove), null);
-    }
-
-    private BuildUpgradeZipOp(
-            @NonNull final Path runningJarLoc,
-            @NonNull final SemanticVersion newVersion,
-            @NonNull final Path upgradeZipLoc,
-            @Nullable NodeId nodeIdToRemove,
-            @Nullable Path newSettingsLoc) {
-        this.runningJarLoc = requireNonNull(runningJarLoc);
-        this.newVersion = requireNonNull(newVersion);
-        this.upgradeZipLoc = requireNonNull(upgradeZipLoc);
-        this.nodeIdToRemove = nodeIdToRemove;
-        this.newSettingsLoc = newSettingsLoc;
+    public BuildUpgradeZipOp(@NonNull final Path path) {
+        this.path = requireNonNull(path);
     }
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        if (nodeIdToRemove != null) {
-            assertTargetsSubProcessNetwork(spec);
-        }
         try {
-            repackageJarWithNewServicesVersion(runningJarLoc, newVersion);
-            zipDirectory(upgradeZipLoc);
+            rm(UPGRADE_ZIP_PATH);
+            rm(FAKE_UPGRADE_ZIP_LOC);
+            copyFakeAssets(path, guaranteedExtantDir(UPGRADE_ZIP_PATH));
+            zipDirectory(FAKE_UPGRADE_ZIP_LOC);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         return false;
-    }
-
-    private void assertTargetsSubProcessNetwork(@NonNull final HapiSpec spec) {
-        if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork)) {
-            throw new IllegalStateException("Can only build upgrade zip for a SubProcessNetwork");
-        }
-    }
-
-    private static void repackageJarWithNewServicesVersion(
-            @NonNull final Path initialJarPath, @NonNull final SemanticVersion overrideVersion) throws IOException {
-        // Avoid FileAlreadyExistsExceptions
-        if (EXPLODED_ZIP_PATH.toFile().exists()) {
-            rm(EXPLODED_ZIP_PATH);
-        }
-        final var extractionPath = Files.createDirectories(EXPLODED_ZIP_PATH);
-        try (final var jarFile =
-                new JarFile(initialJarPath.normalize().toAbsolutePath().toFile())) {
-            extractTo(jarFile, extractionPath);
-            overwriteProperties(
-                    extractionPath.resolve(SEM_VER_FILE),
-                    SERVICES_VERSION_PROP,
-                    HapiUtils.toString(overrideVersion).substring(1));
-            Files.createDirectories(UPGRADE_ZIP_PATH);
-            try (final var jos = new JarOutputStream(new FileOutputStream(NEW_JAR_PATH.toFile()))) {
-                try (final var files = Files.walk(extractionPath)) {
-                    files.filter(path -> !Files.isDirectory(path)).forEach(path -> {
-                        final var entryName =
-                                extractionPath.relativize(path).toString().replace(File.separatorChar, '/');
-                        try (final var in = Files.newInputStream(path)) {
-                            jos.putNextEntry(new JarEntry(entryName));
-                            in.transferTo(jos);
-                            jos.closeEntry();
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
-                }
-            }
-        } finally {
-            rm(EXPLODED_ZIP_PATH);
-        }
     }
 
     private static void zipDirectory(@NonNull final Path zipPath) throws IOException {
@@ -190,35 +92,13 @@ public class BuildUpgradeZipOp extends UtilOp {
         }
     }
 
-    private static void overwriteProperties(
-            @NonNull final Path path, @NonNull final String key, @NonNull final String value) throws IOException {
-        final var properties = new Properties();
-        try (final var in = Files.newInputStream(path)) {
-            properties.load(in);
+    private static void copyFakeAssets(@NonNull final Path from, @NonNull final Path to) {
+        try (var files = Files.walk(from)) {
+            files.filter(file -> !file.equals(from))
+                    .forEach(file ->
+                            copyUnchecked(file, to.resolve(file.getFileName().toString())));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        properties.setProperty(key, value);
-        try (final var out = Files.newOutputStream(path)) {
-            properties.store(out, null);
-        }
-    }
-
-    private static void extractTo(@NonNull final JarFile jarFile, @NonNull final Path extractionPath) {
-        jarFile.stream().forEach(entry -> {
-            final var entryPath = extractionPath.resolve(entry.getName());
-            if (entry.isDirectory()) {
-                try {
-                    Files.createDirectories(entryPath);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            } else {
-                try (final var in = jarFile.getInputStream(entry)) {
-                    Files.createDirectories(entryPath.getParent());
-                    Files.copy(in, entryPath);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        });
     }
 }

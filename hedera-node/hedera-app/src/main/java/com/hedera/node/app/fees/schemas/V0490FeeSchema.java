@@ -26,12 +26,9 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class V0490FeeSchema extends Schema {
     public static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
-    private static final Logger log = LogManager.getLogger(V0490FeeSchema.class);
 
     /**
      * The version of the schema.

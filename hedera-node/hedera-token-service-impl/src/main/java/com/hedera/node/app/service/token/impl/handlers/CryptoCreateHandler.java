@@ -272,7 +272,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         final var createdAccountID = accountCreated.accountIdOrThrow();
-        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoCreateRecordBuilder.class);
         recordBuilder.accountID(createdAccountID);
 
         // Put if any new alias is associated with the account into account store
@@ -368,13 +368,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         cryptoCreateValidator.validateKey(
                 op.keyOrThrow(), // cannot be null by this point
                 context.attributeValidator(),
-                context.recordBuilders()
-                        .getOrCreate(SingleTransactionRecordBuilder.class)
+                context.savepointStack()
+                        .getBaseBuilder(SingleTransactionRecordBuilder.class)
                         .isInternalDispatch());
 
         // Validate the staking information included in this account creation.
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            stakingValidator.validateStakedIdForCreation(
+            StakingValidator.validateStakedIdForCreation(
                     context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                     op.declineReward(),
                     op.stakedId().kind().name(),

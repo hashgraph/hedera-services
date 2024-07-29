@@ -107,8 +107,6 @@ public class MerkleDbStatistics {
     private IntegerGauge offHeapHashesIndexMb;
     /** Off-heap usage in MB of leaves store index */
     private IntegerGauge offHeapLeavesIndexMb;
-    /** Off-heap usage in MB of leaf keys store index */
-    private IntegerGauge offHeapLongKeysIndexMb;
     /** Off-heap usage in MB of object keys store bucket index */
     private IntegerGauge offHeapObjectKeyBucketsIndexMb;
     /** Off-heap usage in MB of hashes list in RAM */
@@ -288,9 +286,6 @@ public class MerkleDbStatistics {
         offHeapLeavesIndexMb = metrics.getOrCreate(
                 new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "leavesIndexMb_" + label)
                         .withDescription("Off-heap usage, leaves store index, " + label + ", Mb"));
-        offHeapLongKeysIndexMb = metrics.getOrCreate(
-                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "longKeysIndexMb_" + label)
-                        .withDescription("Off-heap usage, long leaf keys store index, " + label + ", Mb"));
         offHeapObjectKeyBucketsIndexMb = metrics.getOrCreate(
                 new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "objectKeyBucketsIndexMb_" + label)
                         .withDescription("Off-heap usage, object leaf key buckets store index, " + label + ", Mb"));
@@ -607,17 +602,6 @@ public class MerkleDbStatistics {
     public void setOffHeapHashesIndexMb(final int value) {
         if (offHeapHashesIndexMb != null) {
             offHeapHashesIndexMb.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the {@link #offHeapLongKeysIndexMb} stat
-     *
-     * @param value the value to set
-     */
-    public void setOffHeapLongKeysIndexMb(final int value) {
-        if (offHeapLongKeysIndexMb != null) {
-            offHeapLongKeysIndexMb.set(value);
         }
     }
 

@@ -21,8 +21,8 @@ import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTyp
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,9 +32,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class CallContractOperation extends AbstractSpecTransaction<CallContractOperation, HapiContractCall>
         implements SpecOperation {
+    private static final long DEFAULT_GAS = 100_000;
+
     private final SpecContract target;
     private final String function;
     private final Object[] parameters;
+    private long gas = DEFAULT_GAS;
 
     public CallContractOperation(
             @NonNull final SpecContract target, @NonNull final String function, @NonNull final Object... parameters) {
@@ -47,10 +50,21 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
-        final var op =
-                contractCall(target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters));
+        final var op = contractCall(
+                        target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters))
+                .gas(gas);
         maybeAssertions().ifPresent(a -> a.accept(op));
         return op;
+    }
+
+    /**
+     * Sets the gas to be used for the call.
+     * @param gas the gas
+     * @return this
+     */
+    public CallContractOperation gas(final long gas) {
+        this.gas = gas;
+        return this;
     }
 
     @Override

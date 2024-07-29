@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -34,14 +34,14 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Function;
@@ -88,6 +88,9 @@ public class AddressBookTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
+    protected final Bytes defauleAdminKeyBytes =
+            Bytes.wrap("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
+
     final Key invalidKey = Key.newBuilder()
             .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
             .build();
@@ -109,15 +112,17 @@ public class AddressBookTestBase {
     protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
     protected final AccountID alias =
             AccountID.newBuilder().alias(edKeyAlias.value()).build();
-    protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e26");
 
-    protected final ServiceEndpoint endpoint1 = new ServiceEndpoint(Bytes.wrap("127.0.0.1"), 1234, null);
+    protected final ServiceEndpoint endpoint1 = V053AddressBookSchema.endpointFor("127.0.0.1", 1234);
 
-    protected final ServiceEndpoint endpoint2 = new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 2345, null);
+    protected final ServiceEndpoint endpoint2 = V053AddressBookSchema.endpointFor("127.0.0.2", 2345);
 
-    protected final ServiceEndpoint endpoint3 = new ServiceEndpoint(Bytes.EMPTY, 3456, "test.domain.com");
+    protected final ServiceEndpoint endpoint3 = V053AddressBookSchema.endpointFor("test.domain.com", 3456);
 
-    protected final ServiceEndpoint endpoint4 = new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 2345, "test.domain.com");
+    protected final ServiceEndpoint endpoint4 = V053AddressBookSchema.endpointFor("test.domain.com", 2345)
+            .copyBuilder()
+            .ipAddressV4(endpoint1.ipAddressV4())
+            .build();
 
     protected final ServiceEndpoint endpoint5 = new ServiceEndpoint(Bytes.EMPTY, 2345, null);
 
@@ -125,6 +130,10 @@ public class AddressBookTestBase {
     protected final ServiceEndpoint endpoint7 = new ServiceEndpoint(null, 123, null);
 
     protected final ServiceEndpoint endpoint8 = new ServiceEndpoint(Bytes.wrap("345.0.0.1"), 1234, null);
+    protected final ServiceEndpoint endpoint9 = new ServiceEndpoint(Bytes.wrap("1.0.0.0"), 1234, null);
+
+    private final byte[] invalidIPBytes = {49, 46, 48, 46, 48, 46, 48};
+    protected final ServiceEndpoint endpoint10 = new ServiceEndpoint(Bytes.wrap(invalidIPBytes), 1234, null);
 
     protected Node node;
 
@@ -211,8 +220,8 @@ public class AddressBookTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNumber, Node> emptyReadableNodeState() {
-        return MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+    protected MapReadableKVState.Builder<EntityNumber, Node> emptyReadableNodeStateBuilder() {
+        return MapReadableKVState.builder(NODES_KEY);
     }
 
     protected void givenValidNode() {

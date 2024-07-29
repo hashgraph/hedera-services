@@ -179,7 +179,7 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
+        verifyHalt(CustomExceptionalHaltReason.INVALID_CONTRACT_ID);
     }
 
     @Test

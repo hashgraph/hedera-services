@@ -60,7 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,20 +86,16 @@ public class StakingSuite {
     private static final String ALICE = "alice";
     private static final String BOB = "bob";
     private static final String CAROL = "carol";
-    public static final String STAKING_START_THRESHOLD = "staking.startThreshold";
-    public static final String REWARD_BALANCE_THRESHOLD = "staking.rewardBalanceThreshold";
-    public static final String PER_HBAR_REWARD_RATE = "staking.perHbarRewardRate";
-    public static final String STAKING_REWARD_RATE = "staking.perHbarRewardRate";
     public static final String FIRST_TRANSFER = "firstTransfer";
     private static final long STAKING_PERIOD_MINS = 1L;
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        testLifecycle.doAdhoc(
                 overridingThree(
-                        STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR,
-                        PER_HBAR_REWARD_RATE, "" + SUITE_PER_HBAR_REWARD_RATE,
-                        REWARD_BALANCE_THRESHOLD, "" + 0),
+                        "staking.startThreshold", "" + 10 * ONE_HBAR,
+                        "staking.perHbarRewardRate", "" + SUITE_PER_HBAR_REWARD_RATE,
+                        "staking.rewardBalanceThreshold", "0"),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
     }
 
@@ -428,7 +424,7 @@ public class StakingSuite {
                                 .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE))));
     }
 
-    @LeakyHapiTest(NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS)
     final Stream<DynamicTest> endOfStakingPeriodRecTest() {
         return hapiTest(
                 waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),

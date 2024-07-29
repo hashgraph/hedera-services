@@ -77,11 +77,11 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
-        final var hederaState = state.getHederaState();
-        if (hederaState == null) {
-            throw new IllegalStateException("Hedera state is null");
+        final var merkleState = state.getState();
+        if (merkleState == null) {
+            throw new IllegalStateException("Merkle state is null");
         }
-        return new BlockRecordManagerImpl(configProvider, hederaState, streamFileProducer);
+        return new BlockRecordManagerImpl(configProvider, merkleState, streamFileProducer);
     }
 
     @Provides

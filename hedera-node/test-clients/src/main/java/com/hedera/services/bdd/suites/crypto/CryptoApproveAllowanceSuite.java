@@ -18,11 +18,20 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -48,10 +57,13 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -59,7 +71,21 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.APPROVE;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.ERC_20_CONTRACT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECIPIENT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_FROM;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_SIGNATURE;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_SIG_NAME;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -82,11 +108,15 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -119,6 +149,127 @@ public class CryptoApproveAllowanceSuite {
     public static final String FREEZE_KEY = "freezeKey";
     public static final String KYC_KEY = "kycKey";
     public static final String PAUSE_KEY = "pauseKey";
+
+    @HapiTest
+    final Stream<DynamicTest> transferErc20TokenFromContractWithApproval() {
+        final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
+        final var nestedContract = "NestedERC20Contract";
+
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
+                cryptoCreate(RECIPIENT),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(35)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY),
+                uploadInitCode(ERC_20_CONTRACT, nestedContract),
+                newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
+                contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
+                contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(nestedContract, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, ERC_20_CONTRACT))
+                                .payingWith(ACCOUNT),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        APPROVE,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        BigInteger.valueOf(20))
+                                .gas(1_000_000)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
+                                .via(TRANSFER_TXN)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+                                .via(transferFromOtherContractWithSignaturesTxn))),
+                getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
+                getContractInfo(nestedContract).saveToRegistry(nestedContract),
+                withOpContext((spec, log) -> {
+                    final var sender =
+                            spec.registry().getContractInfo(ERC_20_CONTRACT).getContractID();
+                    final var receiver =
+                            spec.registry().getContractInfo(nestedContract).getContractID();
+
+                    var transferRecord = getTxnRecord(TRANSFER_TXN)
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .logs(inOrder(logWith()
+                                                    .withTopicsInOrder(List.of(
+                                                            eventSignatureOf(TRANSFER_SIGNATURE),
+                                                            parsedToByteString(sender.getContractNum()),
+                                                            parsedToByteString(receiver.getContractNum())))
+                                                    .longValue(5)))))
+                            .andAllChildRecords();
+
+                    var transferFromOtherContractWithSignaturesTxnRecord = getTxnRecord(
+                                    transferFromOtherContractWithSignaturesTxn)
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .logs(inOrder(logWith()
+                                                    .withTopicsInOrder(List.of(
+                                                            eventSignatureOf(TRANSFER_SIGNATURE),
+                                                            parsedToByteString(sender.getContractNum()),
+                                                            parsedToByteString(receiver.getContractNum())))
+                                                    .longValue(5)))))
+                            .andAllChildRecords();
+
+                    allRunFor(spec, transferRecord, transferFromOtherContractWithSignaturesTxnRecord);
+                }),
+                childRecordsCheck(
+                        TRANSFER_TXN,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(ParsingConstants.FunctionType.ERC_TRANSFER)
+                                                .withErcFungibleTransferStatus(true)))),
+                childRecordsCheck(
+                        transferFromOtherContractWithSignaturesTxn,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(ParsingConstants.FunctionType.ERC_TRANSFER)
+                                                .withErcFungibleTransferStatus(true)))),
+                getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+    }
 
     @HapiTest
     final Stream<DynamicTest> cannotPayForAnyTransactionWithContractAccount() {
