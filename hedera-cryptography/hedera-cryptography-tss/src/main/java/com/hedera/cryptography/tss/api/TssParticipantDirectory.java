@@ -24,10 +24,10 @@ import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
 import com.hedera.cryptography.pairings.signatures.api.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -152,8 +152,9 @@ public final class TssParticipantDirectory {
      */
     @NonNull
     public List<TssShareId> getShareIds() {
-        return shareAllocationMap.keySet().stream()
-                .sorted(Comparator.comparing(TssShareId::idElement))
+        return shareAllocationMap.entrySet().stream()
+                .sorted(Entry.comparingByValue())
+                .map(Entry::getKey)
                 .toList();
     }
 
