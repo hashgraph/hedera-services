@@ -20,7 +20,6 @@ import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
