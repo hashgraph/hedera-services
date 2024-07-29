@@ -250,7 +250,7 @@ public final class TssParticipantDirectory {
             }
 
             // Get the total number of shares of to distribute in the protocol
-            int totalShares = participantEntries.values().stream()
+            final int totalShares = participantEntries.values().stream()
                     .map(ParticipantEntry::shareCount)
                     .reduce(0, Integer::sum);
 
@@ -277,18 +277,18 @@ public final class TssParticipantDirectory {
             final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap =
                     new HashMap<>(); /*The encryption key of each participant*/
 
-            AtomicInteger assignedShares = new AtomicInteger(0); /*Counter for assigned shares*/
+            final AtomicInteger assignedShares = new AtomicInteger(0); /*Counter for assigned shares*/
 
             // Iteration of the sorted int representation to make sure we assign the shares deterministically.
             sortedParticipantIds.forEach(participantId -> {
-                ParticipantEntry entry = participantEntries.get(participantId);
+                final ParticipantEntry entry = participantEntries.get(participantId);
 
-                // Ad the public encryption key for each participant id in the iteration.
+                // Add the public encryption key for each participant id in the iteration.
                 // here the order is not important, but we reuse the iteration.
                 tssEncryptionPublicKeyMap.put(participantId, entry.tssEncryptionPublicKey());
 
                 IntStream.range(0, entry.shareCount()).forEach(i -> {
-                    TssShareId tssShareId = ids.get(assignedShares.getAndIncrement());
+                    final TssShareId tssShareId = ids.get(assignedShares.getAndIncrement());
                     sharesAllocationMap.put(tssShareId, participantId);
                     // Keep a separated collection for the current participant shares
                     if (participantId.equals(selfEntry.participantId())) {
@@ -313,10 +313,11 @@ public final class TssParticipantDirectory {
     private static class PrivateKeyStore {
         transient PairingPrivateKey privateKey;
 
-        public PrivateKeyStore(PairingPrivateKey privateKey) {
+        public PrivateKeyStore(@NonNull final PairingPrivateKey privateKey) {
             this.privateKey = privateKey;
         }
 
+        @NonNull
         private PairingPrivateKey getPrivateKey() {
             return privateKey;
         }
