@@ -21,7 +21,7 @@ import java.time.InstantSource;
 
 /**
  * Gives context to {@link com.swirlds.state.spi.Service} implementations on how the application workflows will do
- * shared functions like signature verification or computing the current instant.
+ * shared functions like verifying signatures or computing the current instant.
  */
 public interface AppContext {
     /**
