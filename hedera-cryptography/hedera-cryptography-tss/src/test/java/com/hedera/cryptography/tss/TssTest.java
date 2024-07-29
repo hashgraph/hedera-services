@@ -200,7 +200,7 @@ class TssTest {
         // then:
         final List<TssMessage> p0Messages = new ArrayList<>();
         for (TssPrivateShare privateShare : oldP0PrivateShares) {
-            p0Messages.add(tssService.generateTssMessages(p0sDirectory, privateShare));
+            p0Messages.add(tssService.generateTssMessage(p0sDirectory, privateShare));
         }
         // Collect other participants messages
         final List<TssMessage> p1Messages = List.of(mock(TssMessage.class));

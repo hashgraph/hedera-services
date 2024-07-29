@@ -26,17 +26,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 /**
  * Represents a directory of participants in a Threshold Signature Scheme (TSS).
- * Each participant has associated id, shares count and a tss encryption public keys.
- * It also includes current participant's tss decryption private key.
- *
+ *<p>Each participant has an associated id {@code participantId}, shares count and a tss encryption public key.</p>
+ *<p>The current participant is represented by a {@code self} entry, and includes {@code participantId}'s id and the tss decryption private key.</p>
+ *<p>The expected {@code participantId} is the unique {@link Integer} identification for each participant executing the scheme.</p>
  * <pre>{@code
  * PairingPrivateKey tssDecryptionPrivateKey = ...;
  * List<PairingPublicKey> tssEncryptionPublicKeys = ...;
@@ -76,10 +76,12 @@ public final class TssParticipantDirectory {
             @NonNull final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap,
             @NonNull final PairingPrivateKey tssEncryptionPrivateKey,
             final int threshold) {
-        this.ownedShareIds = ownedShareIds;
-        this.shareOwnersMap = shareOwnersMap;
-        this.publicKeyMap = tssEncryptionPublicKeyMap;
-        this.persistentPairingPrivateKey = tssEncryptionPrivateKey;
+        this.ownedShareIds = Objects.requireNonNull(ownedShareIds, "ownedShareIds must not be null");
+        this.shareOwnersMap = Objects.requireNonNull(shareOwnersMap, "shareOwnersMap must not be null");
+        this.publicKeyMap =
+                Objects.requireNonNull(tssEncryptionPublicKeyMap, "tssEncryptionPublicKeyMap must not be null");
+        this.persistentPairingPrivateKey =
+                Objects.requireNonNull(tssEncryptionPrivateKey, "tssEncryptionPrivateKey must not be null");
         this.threshold = threshold;
     }
 
@@ -137,7 +139,7 @@ public final class TssParticipantDirectory {
         /**
          * Sets the self entry for the builder.
          *
-         * @param participantId the participant ID
+         * @param participantId the participant unique {@link Integer} representation
          * @param tssEncryptionPrivateKey the pairing private key used to decrypt tss share portions
          * @return the builder instance
          */
@@ -169,7 +171,7 @@ public final class TssParticipantDirectory {
         /**
          * Adds a participant entry to the builder.
          *
-         * @param participantId the participant ID
+         * @param participantId the participant unique {@link Integer} representation
          * @param numberOfShares the number of shares
          * @param tssEncryptionPublicKey the pairing public key used to encrypt tss share portions designated to the participant represented by this entry
          * @return the builder instance
@@ -215,6 +217,7 @@ public final class TssParticipantDirectory {
                         "The participant list does not contain a reference to the current participant");
             }
 
+            // Get the total number of shares of to distribute in the protocol
             int totalShares = participantEntries.values().stream()
                     .map(ParticipantEntry::shareCount)
                     .reduce(0, Integer::sum);
@@ -223,37 +226,48 @@ public final class TssParticipantDirectory {
                 throw new IllegalStateException("Threshold exceeds the number of shares");
             }
 
+            // Create a sorted list of ShareId's from 1 to totalShares + 1
             final List<TssShareId> ids = IntStream.range(1, totalShares + 1)
                     .boxed()
+                    // In the future, when paring api is implemented, we need to:
                     // .map(schema.getField()::elementFromLong)
                     .map(TssShareId::new)
                     .toList();
 
-            final Iterator<TssShareId> elementIterator = ids.iterator();
-            final Map<TssShareId, Integer> shareOwnersMap = new HashMap<>();
-            final List<TssShareId> currentParticipantOwnedShareIds = new ArrayList<>();
+            // Create a sorted list of participants to make sure we assign the shares in the right order.
             final List<Integer> sortedParticipantIds =
                     participantEntries.keySet().stream().sorted().toList();
-            final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap = new HashMap<>();
 
-            for (final Integer participantId : sortedParticipantIds) {
-                final ParticipantEntry entry = participantEntries.get(participantId);
+            final Map<TssShareId, Integer> shareOwnersMap = new HashMap<>(); /*To keep track of each share id owner*/
+            final List<TssShareId> currentParticipantOwnedShareIds =
+                    new ArrayList<>(); /*To keep track of the shares owned by the creator of this directory*/
+            final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap =
+                    new HashMap<>(); /*The encryption key of each participant*/
+
+            AtomicInteger assignedShares = new AtomicInteger(0); /*Counter for assigned shares*/
+
+            // Iteration of the sorted int representation to make sure we assign the shares deterministically.
+            sortedParticipantIds.forEach(participantId -> {
+                ParticipantEntry entry = participantEntries.get(participantId);
+
+                // Ad the public encryption key for each participant id in the iteration.
+                // here the order is not important, but we reuse the iteration.
                 tssEncryptionPublicKeyMap.put(participantId, entry.tssEncryptionPublicKey());
-                for (int i = 0; i < entry.shareCount(); i++) {
-                    if (elementIterator.hasNext()) {
-                        final TssShareId tssShareId = elementIterator.next();
-                        shareOwnersMap.put(tssShareId, participantId);
-                        if (participantId == selfEntry.participantId()) {
-                            currentParticipantOwnedShareIds.add(tssShareId);
-                        }
+
+                IntStream.range(0, entry.shareCount()).forEach(i -> {
+                    TssShareId tssShareId = ids.get(assignedShares.getAndIncrement());
+                    shareOwnersMap.put(tssShareId, participantId);
+                    // Keep a separated collection for the current participant shares
+                    if (participantId.equals(selfEntry.participantId())) {
+                        currentParticipantOwnedShareIds.add(tssShareId);
                     }
-                }
-            }
+                });
+            });
 
             return new TssParticipantDirectory(
-                    List.copyOf(currentParticipantOwnedShareIds),
-                    Map.copyOf(shareOwnersMap),
-                    Map.copyOf(tssEncryptionPublicKeyMap),
+                    currentParticipantOwnedShareIds,
+                    shareOwnersMap,
+                    tssEncryptionPublicKeyMap,
                     selfEntry.tssEncryptionPrivateKey,
                     threshold);
         }

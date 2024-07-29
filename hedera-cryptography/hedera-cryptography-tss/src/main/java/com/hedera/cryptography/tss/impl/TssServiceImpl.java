@@ -27,7 +27,6 @@ import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.cryptography.tss.api.TssService;
 import com.hedera.cryptography.tss.api.TssShareSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -53,7 +52,7 @@ public class TssServiceImpl implements TssService {
 
     @NonNull
     @Override
-    public TssMessage generateTssMessages(
+    public TssMessage generateTssMessage(
             @NonNull final TssParticipantDirectory pendingParticipantDirectory,
             @NonNull final TssPrivateShare privateShare) {
         return new TssMessage(new byte[] {});
@@ -67,11 +66,11 @@ public class TssServiceImpl implements TssService {
 
     @Override
     public boolean verifyTssMessage(
-            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessages) {
+            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessage) {
         return true;
     }
 
-    @Nullable
+    @NonNull
     @Override
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull final TssParticipantDirectory participantDirectory,
@@ -87,7 +86,7 @@ public class TssServiceImpl implements TssService {
         return PairingPrivateKey.create(this.signatureSchema, this.random);
     }
 
-    @Nullable
+    @NonNull
     @Override
     public List<TssPublicShare> computePublicShares(
             @NonNull final TssParticipantDirectory participantDirectory, @NonNull final List<TssMessage> tssMessages) {
