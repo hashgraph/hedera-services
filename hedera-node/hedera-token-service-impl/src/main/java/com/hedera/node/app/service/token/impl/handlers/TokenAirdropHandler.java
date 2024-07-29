@@ -66,6 +66,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -160,7 +161,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                         continue;
                     }
                     final var receiver = transfer.accountID();
-                    if (!skipCustomFeeValidation(token.customFees(), receiver, token.treasuryAccountId())) {
+                    if (!skipCustomFeeValidation(token, receiver)) {
                         validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
                     }
                 }
@@ -221,7 +222,7 @@ public class TokenAirdropHandler implements TransactionHandler {
             if (!xfers.nftTransfers().isEmpty()) {
                 for (var transfer : xfers.nftTransfers()) {
                     final var receiver = transfer.receiverAccountID();
-                    if (!skipCustomFeeValidation(token.customFees(), receiver, token.treasuryAccountId())) {
+                    if (!skipCustomFeeValidation(token, receiver)) {
                         validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
                     }
                 }
@@ -277,27 +278,13 @@ public class TokenAirdropHandler implements TransactionHandler {
      * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
      * This method returns if the receiver is the fee collector or the treasury account.
      */
-    private static boolean skipCustomFeeValidation(
-            List<CustomFee> customFees, AccountID receiverId, AccountID treasuryId) {
-        var theReceiverIsTheTreasury = receiverId.equals(treasuryId);
-        return thereIsASingleFeeCollectorAndItIsTheReceiver(customFees, receiverId) || theReceiverIsTheTreasury;
-    }
-
-    private static boolean thereIsASingleFeeCollectorAndItIsTheReceiver(
-            List<CustomFee> customFees, AccountID receiverId) {
-        if (customFees.isEmpty()) {
-            return false;
+    private static boolean skipCustomFeeValidation(Token token, AccountID receiverId) {
+        for (var customFee : token.customFees()) {
+            if (CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId)) {
+                return true;
+            }
         }
-
-        var uniqueFeeCollectors =
-                customFees.stream().map(CustomFee::feeCollectorAccountId).collect(Collectors.toSet());
-
-        // if there are more than one unique fee collectors then the receiver is not the only fee collector
-        if (uniqueFeeCollectors.size() > 1) {
-            return false;
-        }
-
-        return receiverId.equals(uniqueFeeCollectors.iterator().next());
+        return false;
     }
 
     private void validateNftTransfers(
