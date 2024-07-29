@@ -184,7 +184,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                 fungibleLists.pendingFungibleAmounts().forEach(accountAmount -> {
                     final var receiver = accountAmount.accountID();
                     final var pendingId = createFungibleTokenPendingAirdropId(
-                        tokenId, senderOptionalAmount.orElseThrow().accountID(), receiver);
+                            tokenId, senderOptionalAmount.orElseThrow().accountID(), receiver);
                     final var pendingValue = PendingAirdropValue.newBuilder()
                             .amount(accountAmount.amount())
                             .build();
@@ -232,13 +232,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                 final var senderAccount = accountStore.get(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 validateNftTransfers(
-                        context.payer(),
-                        senderAccount,
-                        tokenId,
-                        xfers.nftTransfers(),
-                        tokenRelStore,
-                    token,
-                        nftStore);
+                        context.payer(), senderAccount, tokenId, xfers.nftTransfers(), tokenRelStore, token, nftStore);
                 // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
@@ -277,29 +271,26 @@ public class TokenAirdropHandler implements TransactionHandler {
     }
 
     /**
-     * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver. 
+     * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver.
      * If there are, an error is returned.
-     * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account 
+     * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account
      * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
      * This method returns if the receiver is the fee collector or the treasury account.
      */
     private static boolean skipCustomFeeValidation(
-        List<CustomFee> customFees,
-        AccountID receiverId,
-        AccountID treasuryId) {
+            List<CustomFee> customFees, AccountID receiverId, AccountID treasuryId) {
         var theReceiverIsTheTreasury = receiverId.equals(treasuryId);
         return thereIsASingleFeeCollectorAndItIsTheReceiver(customFees, receiverId) || theReceiverIsTheTreasury;
     }
 
-    private static boolean thereIsASingleFeeCollectorAndItIsTheReceiver(List<CustomFee> customFees,
-        AccountID receiverId) {
+    private static boolean thereIsASingleFeeCollectorAndItIsTheReceiver(
+            List<CustomFee> customFees, AccountID receiverId) {
         if (customFees.isEmpty()) {
             return false;
         }
 
-        var uniqueFeeCollectors = customFees.stream()
-            .map(CustomFee::feeCollectorAccountId)
-            .collect(Collectors.toSet());
+        var uniqueFeeCollectors =
+                customFees.stream().map(CustomFee::feeCollectorAccountId).collect(Collectors.toSet());
 
         // if there are more than one unique fee collectors then the receiver is not the only fee collector
         if (uniqueFeeCollectors.size() > 1) {
@@ -315,7 +306,7 @@ public class TokenAirdropHandler implements TransactionHandler {
             TokenID tokenId,
             List<NftTransfer> nftTransfers,
             ReadableTokenRelationStore tokenRelStore,
-        Token token,
+            Token token,
             ReadableNftStore nftStore) {
         final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

@@ -353,8 +353,7 @@ public class TokenAirdropTest {
                                     .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, tokenTotal - htsFee)
                                     .hasTokenBalance(DENOM_TOKEN, tokenTotal - htsFee),
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                                .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0)
-                    );
+                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0));
         }
 
         @HapiTest
@@ -391,66 +390,53 @@ public class TokenAirdropTest {
         @DisplayName("NFT with royalty fee with fee collector as receiver")
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
             return hapiTest(
-                cryptoCreate(OWNER),
-                tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
-                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                cryptoTransfer(
-                    movingUnique(NFT_WITH_ROYALTY_FEE, 2L)
-                        .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
-                tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 2L)
-                    .between(OWNER, HTS_COLLECTOR))
-                    .signedByPayerAnd(HTS_COLLECTOR, OWNER)
-
-            );
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
+                    mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                    cryptoTransfer(
+                            movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(OWNER, HTS_COLLECTOR))
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
         }
 
         @HapiTest
         @DisplayName("FT with royalty fee with fee collector as receiver")
         final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
             return hapiTest(
-                cryptoCreate(OWNER),
-                tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
-                tokenAssociate(OWNER, DENOM_TOKEN),
-                cryptoTransfer(
-                    moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
-                    moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
-                ),
-                tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE)
-                    .between(OWNER, HTS_COLLECTOR))
-                    .signedByPayerAnd(HTS_COLLECTOR, OWNER)
-            );
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
+                    tokenAssociate(OWNER, DENOM_TOKEN),
+                    cryptoTransfer(
+                            moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, HTS_COLLECTOR))
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
         }
 
         @HapiTest
         @DisplayName("NFT with royalty fee with treasury as receiver")
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
             return hapiTest(
-                cryptoCreate(OWNER),
-                tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
-                cryptoTransfer(
-                    movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
-                tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 3L)
-                    .between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                    .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
-
-            );
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
+                    cryptoTransfer(
+                            movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
         }
 
         @HapiTest
         @DisplayName("FT with royalty fee with treasury as receiver")
         final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
             return hapiTest(
-                cryptoCreate(OWNER),
-                tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
-                tokenAssociate(OWNER, DENOM_TOKEN),
-                cryptoTransfer(
-                    moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
-                    moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
-                ),
-                tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE)
-                    .between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                    .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
-            );
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
+                    tokenAssociate(OWNER, DENOM_TOKEN),
+                    cryptoTransfer(
+                            moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
         }
     }
 
@@ -780,7 +766,7 @@ public class TokenAirdropTest {
                         .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), TREASURY_FOR_CUSTOM_FEE_TOKENS))
                         .initialSupply(Long.MAX_VALUE),
                 tokenCreate(NFT_WITH_ROYALTY_FEE)
-                    .maxSupply(100L)
+                        .maxSupply(100L)
                         .initialSupply(0)
                         .supplyType(TokenSupplyType.FINITE)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -788,7 +774,7 @@ public class TokenAirdropTest {
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .withCustom(
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
-            tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE)));
+                tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE)));
 
         // mint 99 NFTs
         for (int i = 0; i < 99; i++) {
