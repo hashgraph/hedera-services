@@ -511,7 +511,7 @@ The state needs to store the relevant ledger id and TSS Data (key material and v
 
 The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by the platform and other
 entities outside the consensus node. This value should not change during normal address book changes and its value does
-not change unless the network goes through another TSS bootstrap process. When the value is changes, to transfer trust,
+not change unless the network goes through another TSS bootstrap process. When the value changes, to transfer trust,
 the old ledger private key should sign the new ledger id. This signature should be stored along with the round
 value for when the new ledger id becomes active. Triples of ledger id, signature, and round are stored in a queue in
 the state to record the history of ledger ids on the network. The first ledger id will not have a signature.
