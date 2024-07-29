@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.signature;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.spi.signatures.SimpleKeyCount;
 import com.hedera.node.app.spi.signatures.SimpleKeyVerification;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,18 +42,18 @@ public class SpiSignatureVerifier implements SignatureVerifier {
     private static final int EDDSA_COUNT_INDEX = 0;
     private static final int ECDSA_COUNT_INDEX = 1;
 
-    private final ConfigProvider configProvider;
+    private final HederaConfig hederaConfig;
     private final SignatureExpander signatureExpander;
     private final com.hedera.node.app.signature.SignatureVerifier signatureVerifier;
 
     @Inject
     public SpiSignatureVerifier(
-            @NonNull final ConfigProvider configProvider,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final com.hedera.node.app.signature.SignatureVerifier signatureVerifier) {
-        this.configProvider = configProvider;
-        this.signatureExpander = signatureExpander;
-        this.signatureVerifier = signatureVerifier;
+        this.hederaConfig = requireNonNull(hederaConfig);
+        this.signatureExpander = requireNonNull(signatureExpander);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
     }
 
     @Override
@@ -64,10 +65,12 @@ public class SpiSignatureVerifier implements SignatureVerifier {
         final Set<ExpandedSignaturePair> sigPairs = new HashSet<>();
         signatureExpander.expand(key, signatureMap.sigPair(), sigPairs);
         final var results = signatureVerifier.verify(bytes, sigPairs);
-        final var verifier =
-                new DefaultKeyVerifier(0, configProvider.getConfiguration().getConfigData(HederaConfig.class), results);
+        final var verifier = new DefaultKeyVerifier(0, hederaConfig, results);
         return simpleKeyVerifier == null
                 ? verifier.verificationFor(key).passed()
+                // The "verification assistant" callback here receives a simple key and its cryptographic
+                // verification (if present); we fall back to that verification if our simpleKeyVerifier
+                // returns the ONLY_IF_CRYPTO_SIG_VALID decision
                 : verifier.verificationFor(key, (k, v) -> switch (simpleKeyVerifier.apply(k)) {
                             case VALID -> true;
                             case INVALID -> false;
@@ -88,7 +91,10 @@ public class SpiSignatureVerifier implements SignatureVerifier {
             case ED25519 -> counts[EDDSA_COUNT_INDEX]++;
             case ECDSA_SECP256K1 -> counts[ECDSA_COUNT_INDEX]++;
             case KEY_LIST -> key.keyListOrThrow().keys().forEach(k -> countSimpleKeys(k, counts));
-            case THRESHOLD_KEY -> key.thresholdKeyOrThrow().keys().keys().forEach(k -> countSimpleKeys(k, counts));
+            case THRESHOLD_KEY -> key.thresholdKeyOrThrow()
+                    .keysOrThrow()
+                    .keys()
+                    .forEach(k -> countSimpleKeys(k, counts));
             default -> {
                 // No-op, we only count these two key types
             }

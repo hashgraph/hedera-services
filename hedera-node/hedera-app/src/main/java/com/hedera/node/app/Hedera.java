@@ -56,8 +56,12 @@ import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.signature.SpiSignatureVerifier;
+import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
+import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
@@ -259,7 +263,14 @@ public final class Hedera implements SwirldMain {
                 () -> version.readableServicesVersion(),
                 () -> HapiUtils.toString(version.getHapiVersion()));
         fileServiceImpl = new FileServiceImpl();
-        contractServiceImpl = new ContractServiceImpl(instantSource);
+
+        final var appContext = new AppContextImpl(
+                instantSource,
+                new SpiSignatureVerifier(
+                        bootstrapConfig.getConfigData(HederaConfig.class),
+                        new SignatureExpanderImpl(),
+                        new SignatureVerifierImpl(CryptographyHolder.get())));
+        contractServiceImpl = new ContractServiceImpl(appContext);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),

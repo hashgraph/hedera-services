@@ -33,8 +33,6 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.SimpleKeyCount;
 import com.hedera.node.app.spi.signatures.SimpleKeyVerification;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -71,9 +69,6 @@ class SpiSignatureVerifierTest {
     private com.hedera.node.app.signature.SignatureVerifier signatureVerifier;
 
     @Mock
-    private ConfigProvider configProvider;
-
-    @Mock
     private SignatureVerification verification;
 
     @Mock
@@ -83,7 +78,8 @@ class SpiSignatureVerifierTest {
 
     @BeforeEach
     void setUp() {
-        subject = new SpiSignatureVerifier(configProvider, signatureExpander, signatureVerifier);
+        subject = new SpiSignatureVerifier(
+                DEFAULT_CONFIG.getConfigData(HederaConfig.class), signatureExpander, signatureVerifier);
     }
 
     @Test
@@ -102,7 +98,6 @@ class SpiSignatureVerifierTest {
         given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
                 .willReturn(verification);
         given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 0L));
 
         assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, null))
                 .isTrue();
@@ -126,7 +121,6 @@ class SpiSignatureVerifierTest {
         given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
                 .willReturn(verification);
         given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 0L));
 
         assertThat(subject.verifySignature(
                         TEST_KEY,
@@ -153,7 +147,6 @@ class SpiSignatureVerifierTest {
                 .expand(eq(TEST_KEY), eq(SignatureMap.DEFAULT.sigPair()), any(Set.class));
 
         given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 0L));
 
         assertThat(subject.verifySignature(
                         TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, key -> SimpleKeyVerification.INVALID))
