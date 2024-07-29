@@ -24,14 +24,14 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DetailedConsensusEventTest {
+public class CesEventTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -46,22 +46,22 @@ public class DetailedConsensusEventTest {
 
     @Test
     public void serializeAndDeserializeConsensusEvent() throws IOException {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
+        CesEvent consensusEvent = generateConsensusEvent();
         try (final InputOutputStream io = new InputOutputStream()) {
             io.getOutput().writeSerializable(consensusEvent, true);
             io.startReading();
 
-            final DetailedConsensusEvent deserialized = io.getInput().readSerializable();
+            final CesEvent deserialized = io.getInput().readSerializable();
             assertEquals(consensusEvent, deserialized);
         }
     }
 
-    private DetailedConsensusEvent generateConsensusEvent() {
+    private CesEvent generateConsensusEvent() {
         final Randotron random = Randotron.create(68651684861L);
         final PlatformEvent platformEvent = new TestingEventBuilder(random)
                 .setConsensusTimestamp(random.nextInstant())
                 .build();
 
-        return new DetailedConsensusEvent(platformEvent, random.nextPositiveLong(), random.nextBoolean());
+        return new CesEvent(platformEvent, random.nextPositiveLong(), random.nextBoolean());
     }
 }
