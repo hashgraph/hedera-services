@@ -59,7 +59,7 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.signature.SpiSignatureVerifier;
+import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
@@ -266,7 +266,7 @@ public final class Hedera implements SwirldMain {
 
         final var appContext = new AppContextImpl(
                 instantSource,
-                new SpiSignatureVerifier(
+                new AppSignatureVerifier(
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));

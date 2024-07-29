@@ -32,7 +32,7 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.signature.SpiSignatureVerifier;
+import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -92,7 +92,7 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
-                new SpiSignatureVerifier(
+                new AppSignatureVerifier(
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));

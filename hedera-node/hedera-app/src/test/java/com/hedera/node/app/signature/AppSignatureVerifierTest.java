@@ -48,7 +48,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SpiSignatureVerifierTest {
+class AppSignatureVerifierTest {
     private static final Key A_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
@@ -74,11 +74,11 @@ class SpiSignatureVerifierTest {
     @Mock
     private SignatureVerificationFuture future;
 
-    private SpiSignatureVerifier subject;
+    private AppSignatureVerifier subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SpiSignatureVerifier(
+        subject = new AppSignatureVerifier(
                 DEFAULT_CONFIG.getConfigData(HederaConfig.class), signatureExpander, signatureVerifier);
     }
 

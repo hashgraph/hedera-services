@@ -38,7 +38,7 @@ import javax.inject.Singleton;
  * as used by the app workflows.
  */
 @Singleton
-public class SpiSignatureVerifier implements SignatureVerifier {
+public class AppSignatureVerifier implements SignatureVerifier {
     private static final int EDDSA_COUNT_INDEX = 0;
     private static final int ECDSA_COUNT_INDEX = 1;
 
@@ -47,7 +47,7 @@ public class SpiSignatureVerifier implements SignatureVerifier {
     private final com.hedera.node.app.signature.SignatureVerifier signatureVerifier;
 
     @Inject
-    public SpiSignatureVerifier(
+    public AppSignatureVerifier(
             @NonNull final HederaConfig hederaConfig,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final com.hedera.node.app.signature.SignatureVerifier signatureVerifier) {
