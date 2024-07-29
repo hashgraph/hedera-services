@@ -30,7 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.PayloadWrapper;
@@ -211,7 +211,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      *
      * @return the descriptor for the event
      */
-    public EventDescriptor getDescriptor() {
+    public EventDescriptorWrapper getDescriptor() {
         return unsignedEvent.getDescriptor();
     }
 
@@ -404,7 +404,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the event descriptor for the self parent
      */
     @Nullable
-    public EventDescriptor getSelfParent() {
+    public EventDescriptorWrapper getSelfParent() {
         return unsignedEvent.getSelfParent();
     }
 
@@ -414,13 +414,13 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the event descriptors for the other parents
      */
     @NonNull
-    public List<EventDescriptor> getOtherParents() {
+    public List<EventDescriptorWrapper> getOtherParents() {
         return unsignedEvent.getOtherParents();
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
     @NonNull
-    public List<EventDescriptor> getAllParents() {
+    public List<EventDescriptorWrapper> getAllParents() {
         return unsignedEvent.getAllParents();
     }
 
@@ -432,7 +432,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         stringBuilder.append("\n");
         stringBuilder.append("    sp: ");
 
-        final EventDescriptor selfParent = unsignedEvent.getSelfParent();
+        final EventDescriptorWrapper selfParent = unsignedEvent.getSelfParent();
         if (selfParent != null) {
             stringBuilder.append(selfParent);
         } else {
@@ -441,7 +441,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         stringBuilder.append("\n");
 
         int otherParentCount = 0;
-        for (final EventDescriptor otherParent : unsignedEvent.getOtherParents()) {
+        for (final EventDescriptorWrapper otherParent : unsignedEvent.getOtherParents()) {
             stringBuilder.append("    op");
             stringBuilder.append(otherParentCount);
             stringBuilder.append(": ");
