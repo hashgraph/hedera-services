@@ -46,7 +46,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
-        @ConfigProperty(defaultValue = "true") boolean useOldStyleIntakeQueue,
+        @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
         @ConfigProperty(defaultValue = "true") boolean migrateEventHashing) {
 
     /**

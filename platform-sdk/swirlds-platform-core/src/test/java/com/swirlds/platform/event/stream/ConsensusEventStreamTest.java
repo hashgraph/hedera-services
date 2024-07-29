@@ -27,7 +27,7 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.wiring.component.ComponentWiring;
 import com.swirlds.wiring.model.WiringModel;
 import com.swirlds.wiring.model.WiringModelBuilder;
@@ -39,17 +39,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ConsensusEventStreamTest {
-    private static final MultiStream<DetailedConsensusEvent> multiStreamMock = mock(MultiStream.class);
+    private static final MultiStream<CesEvent> multiStreamMock = mock(MultiStream.class);
     private static final ConsensusEventStream CONSENSUS_EVENT_STREAM = new DefaultConsensusEventStream(
             Time.getCurrent(), multiStreamMock, ConsensusEventStreamTest::isFreezeEvent);
 
-    private static final DetailedConsensusEvent freezeEvent = mock(DetailedConsensusEvent.class);
+    private static final CesEvent freezeEvent = mock(CesEvent.class);
 
     @Test
     void addEventTest() {
         final int nonFreezeEventsNum = 10;
         for (int i = 0; i < nonFreezeEventsNum; i++) {
-            final DetailedConsensusEvent event = mock(DetailedConsensusEvent.class);
+            final CesEvent event = mock(CesEvent.class);
             CONSENSUS_EVENT_STREAM.addEvents(List.of(event));
 
             verify(multiStreamMock).addObject(event);
@@ -74,7 +74,7 @@ class ConsensusEventStreamTest {
         // for freeze event, multiStream should be closed after adding it
         verify(multiStreamMock).close();
 
-        final DetailedConsensusEvent eventAddAfterFrozen = mock(DetailedConsensusEvent.class);
+        final CesEvent eventAddAfterFrozen = mock(CesEvent.class);
         CONSENSUS_EVENT_STREAM.addEvents(List.of(eventAddAfterFrozen));
         // after frozen, when adding event to the EventStreamManager, multiStream.add(event) should not be called
         verify(multiStreamMock, never()).addObject(eventAddAfterFrozen);
@@ -109,7 +109,7 @@ class ConsensusEventStreamTest {
      * @param event the event to be added
      * @return whether
      */
-    private static boolean isFreezeEvent(final DetailedConsensusEvent event) {
+    private static boolean isFreezeEvent(final CesEvent event) {
         return event == freezeEvent;
     }
 }
