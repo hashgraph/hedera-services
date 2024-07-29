@@ -27,6 +27,8 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -55,8 +57,8 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
@@ -109,7 +111,7 @@ public class HandleWorkflow {
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
     private final HollowAccountCompletions hollowAccountCompletions;
-    private final GenesisSetup genesisSetup;
+    private final SystemSetup systemSetup;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -134,7 +136,7 @@ public class HandleWorkflow {
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final HollowAccountCompletions hollowAccountCompletions,
-            @NonNull final GenesisSetup genesisSetup,
+            @NonNull final SystemSetup systemSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
@@ -156,7 +158,7 @@ public class HandleWorkflow {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
-        this.genesisSetup = requireNonNull(genesisSetup);
+        this.systemSetup = requireNonNull(systemSetup);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -246,10 +248,9 @@ public class HandleWorkflow {
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
-
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var streamItems = execute(userTxn);
-        blockRecordManager.endUserTransaction(streamItems, state);
+        final var recordStream = execute(userTxn);
+        blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -317,17 +318,19 @@ public class HandleWorkflow {
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitFullStack();
             } else {
-                if (userTxn.isGenesisTxn()) {
+                if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
-                    genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
+                    systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
                 blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
-                if (userTxn.isGenesisTxn()) {
-                    genesisSetup.createSystemEntities(dispatch);
+                if (userTxn.type() == GENESIS_TRANSACTION) {
+                    systemSetup.doGenesisSetup(dispatch);
+                } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    systemSetup.doPostUpgradeSetup(dispatch);
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
@@ -376,7 +379,7 @@ public class HandleWorkflow {
      * Updates the metrics for the handle workflow.
      */
     private void updateWorkflowMetrics(@NonNull final UserTxn userTxn) {
-        if (userTxn.isGenesisTxn()
+        if (userTxn.type() == GENESIS_TRANSACTION
                 || userTxn.consensusNow().getEpochSecond()
                         > userTxn.lastHandledConsensusTime().getEpochSecond()) {
             handleWorkflowMetrics.switchConsensusSecond();
@@ -437,7 +440,8 @@ public class HandleWorkflow {
 
     private void updateNodeStakes(@NonNull final UserTxn userTxn) {
         try {
-            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl(), userTxn.isGenesisTxn());
+            nodeStakeUpdates.process(
+                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION);
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never
@@ -464,7 +468,7 @@ public class HandleWorkflow {
      * @param userTxn the user transaction
      */
     private void expireSchedules(@NonNull UserTxn userTxn) {
-        if (userTxn.isGenesisTxn()) {
+        if (userTxn.type() == GENESIS_TRANSACTION) {
             return;
         }
         final var lastHandledTxnTime = userTxn.lastHandledConsensusTime();

@@ -436,10 +436,6 @@ public final class Hedera implements SwirldMain {
                 networkInfo,
                 metrics);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
-            // (FUTURE) We should probably remove this mono-service vestige, as it not currently used anywhere and
-            // is hard to reconcile with a form of migration compatible with block streams and zero-downtime
-            // upgrades, where we would want very much to avoid changing state in a way that does not look like
-            // dispatching a transaction in the context of a block
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");
@@ -694,7 +690,7 @@ public final class Hedera implements SwirldMain {
             daggerApp.throttleServiceManager().init(state, throttleDefinitionsFrom(state));
         } else {
             // Otherwise initialize facilities from the pending genesis file contents
-            final var schema = fileServiceImpl.genesisSchema();
+            final var schema = fileServiceImpl.fileSchema();
             daggerApp.exchangeRateManager().init(state, schema.genesisExchangeRates(bootstrapConfig));
             daggerApp.feeManager().update(schema.genesisFeeSchedules(bootstrapConfig));
             daggerApp.throttleServiceManager().init(state, schema.genesisThrottleDefinitions(bootstrapConfig));
@@ -804,7 +800,7 @@ public final class Hedera implements SwirldMain {
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
         blockInfoState.put(nextBlockInfo);
-        logger.info("Unmarked migration records streamed");
+        logger.info("Unmarked post-upgrade work as done");
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 

@@ -39,10 +39,10 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
- * information.
+ * A wrapper around a {@link PlatformEvent} that holds additional information required by the
+ * {@link com.swirlds.platform.event.stream.ConsensusEventStream}.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable
+public class CesEvent extends AbstractSerializableHashable
         implements RunningHashable, StreamAligned, Timestamped, ConsensusEvent {
     /** Value used to indicate that it is undefined*/
     public static final long UNDEFINED = -1;
@@ -62,7 +62,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     /**
      * Creates an empty instance
      */
-    public DetailedConsensusEvent() {}
+    public CesEvent() {}
 
     /**
      * Create a new instance with the provided data.
@@ -72,7 +72,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      * @param lastInRoundReceived true if this event is the last in consensus order of all those with the same received
      *                            round
      */
-    public DetailedConsensusEvent(
+    public CesEvent(
             @NonNull final PlatformEvent platformEvent, final long roundReceived, final boolean lastInRoundReceived) {
         Objects.requireNonNull(platformEvent);
         this.platformEvent = platformEvent;
@@ -143,6 +143,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     }
 
     @Override
+    @NonNull
     public Iterator<ConsensusTransaction> consensusTransactionIterator() {
         return platformEvent.consensusTransactionIterator();
     }
@@ -243,7 +244,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        final DetailedConsensusEvent that = (DetailedConsensusEvent) other;
+        final CesEvent that = (CesEvent) other;
         return Objects.equals(platformEvent, that.platformEvent)
                 && roundReceived == that.roundReceived
                 && lastInRoundReceived == that.lastInRoundReceived;
