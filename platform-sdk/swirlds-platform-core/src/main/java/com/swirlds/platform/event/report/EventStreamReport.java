@@ -26,7 +26,7 @@ import com.swirlds.common.formatting.HorizontalAlignment;
 import com.swirlds.common.formatting.TextHistogram;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.time.Duration;
 import java.util.List;
 
@@ -96,8 +96,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                 .render(sb);
         sb.append("\n");
 
-        final DetailedConsensusEvent firstEvent = summary.firstEvent();
-        final DetailedConsensusEvent lastEvent = summary.lastEvent();
+        final CesEvent firstEvent = summary.firstEvent();
+        final CesEvent lastEvent = summary.lastEvent();
         new TextTable()
                 .setTitle("First/Last Event Info")
                 .addTitleEffects(BRIGHT_CYAN)

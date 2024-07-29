@@ -19,7 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,7 +28,7 @@ import java.util.NoSuchElementException;
 /**
  * An iterator that walks over events in a single event stream file.
  */
-public class EventStreamSingleFileIterator implements IOIterator<DetailedConsensusEvent> {
+public class EventStreamSingleFileIterator implements IOIterator<CesEvent> {
 
     private final ObjectStreamIterator<SelfSerializable> iterator;
 
@@ -117,7 +117,7 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
             return false;
         }
 
-        if (next.getClassId() != DetailedConsensusEvent.CLASS_ID) {
+        if (next.getClassId() != CesEvent.CLASS_ID) {
             throw new IOException(
                     "Invalid object type found in event stream file `%s`: ".formatted(filePath) + next.getClass());
         }
@@ -129,22 +129,22 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent peek() throws IOException {
+    public CesEvent peek() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        return (DetailedConsensusEvent) iterator.peek();
+        return (CesEvent) iterator.peek();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent next() throws IOException {
+    public CesEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        return (DetailedConsensusEvent) iterator.next();
+        return (CesEvent) iterator.next();
     }
 
     /**
