@@ -8,7 +8,7 @@ This proposal outlines the design specification of rosters to support Threshold 
 It details the roster's lifecycle, data storage, API, DevOps workflow, and changes necessary changes to associated
 components within the platform.
 
-| Metadata           | Entities                                      | 
+|      Metadata      |                   Entities                    |
 |--------------------|-----------------------------------------------|
 | Designers          | Kore, Anthony, Ed, Austin                     |
 | Functional Impacts | TSS, Address Book, Reconnect,                 |
@@ -59,6 +59,7 @@ The mechanism for doing so is detailed below.
 ### Roster Public API
 
 #### Setting the Candidate Roster
+
 A new method will be added to the platform state to allow the App to submit a Candidate Roster to the platform:
 
 ```java
@@ -109,6 +110,7 @@ RosterEntry "1" *-- "many" ServiceEndpoint
 ### Protobuf
 
 #### Roster
+
 The protobuf definition for the Roster will look as follows:
 
 ```proto
@@ -125,7 +127,7 @@ message Roster {
      * This map SHALL contain roster entries in natural order of ascending node ids.
      * The node Id key SHALL match the node Id in the value.
      * This map SHALL NOT be empty.<br/>
-     */  
+     */
     map<uint64, RosterEntry> mapInt32ToString = 1;
 }
 ```
@@ -133,6 +135,7 @@ message Roster {
 #### RosterEntry
 
 A roster entry will look as follows:
+
 ```proto
 /**
  * A single roster entry in the network state.
@@ -277,6 +280,7 @@ message RoundRosterPair {
     byte active_roster_hash = 2;
 }
 ```
+
 It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
 This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, and an
 optional current Candidate Roster. Insertion of rosters will be controlled by ensuring that the acceptance of a new
@@ -342,7 +346,7 @@ However, it is at the discretion of the Services team to manage the lifecycle of
 
 There will not be any other separate artifacts from this proposal stored directly on disk.
 
-## Services changes (Inversion of control)
+## Services and DevOps changes (Inversion of control)
 
 The current startup procedure will be altered as follows
 
@@ -352,19 +356,18 @@ The current startup procedure will be altered as follows
   App) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
   AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
 
-### DevOps Workflow changes
-
 The current network Transplant procedure is manual.
 DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
 the `config.txt` file using that state. This will change to the use of a Genesis Roster.
 
 #### Genesis Roster
 
+![](Proposed%20Network%20Transplant%20flow.drawio.svg)
 A `Genesis Roster` is an optional Roster that DevOps may provide to either start a Genesis Network process or Transplant
 an existing network. It is essential to distinguish the Genesis Roster from the Candidate or Active rosters.
 The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network. However, its structure is
 exactly the same as the Active or Candidate Rosters.
-The equivalent of the Genesis Roster in the current network is the `config.txt` file.
+The equivalent of the Genesis Roster in the current DevOps flow is the `config.txt` file.
 DevOps and Services may choose to create the Genesis Roster from the `config.txt` file or some other mechanism.
 
 A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
@@ -385,10 +388,11 @@ In most cases, this Genesis Roster will be null.
 void withGenesisRoster(@NonNull final Roster genesisRoster);
 ```
 
-The logic to determine whether to invoke this method could be determined by a config flag,
-but this is yet to be implemented.
+The logic to determine whether to invoke this method could be determined by a config flag, or some other mechanism
+Services deem appropriate.
 
 #### New Transplant Procedure
+
 The App will decide a network transplant sequence based on the following heuristics:
 
 * Network Transplant process == Genesis Roster AND State provided
@@ -409,7 +413,7 @@ The App will decide a network transplant sequence based on the following heurist
   If only a state is provided without a roster, the node will retain its existing network settings, including the active
   roster.
   This will be the typical behavior for a node restarting within an established network.
-  ![](Proposed%20Network%20Transplant%20flow.drawio.svg)
+
 ## Core Behaviors, in summary
 
 - Roster Creation: Hedera App will create a Candidate Roster from the Address Book.
