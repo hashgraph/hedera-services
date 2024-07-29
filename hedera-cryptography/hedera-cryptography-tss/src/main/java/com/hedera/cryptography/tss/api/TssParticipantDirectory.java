@@ -310,7 +310,7 @@ public final class TssParticipantDirectory {
     /**
      * A class for storing the private key as protection for unintentional serialization or exposition of the data.
      */
-    private static class PrivateKeyStore {
+    private static final class PrivateKeyStore {
         transient PairingPrivateKey privateKey;
 
         public PrivateKeyStore(@NonNull final PairingPrivateKey privateKey) {
