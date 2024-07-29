@@ -60,7 +60,7 @@ public class TssServiceImpl implements TssService {
 
     @NonNull
     @Override
-    public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory pendingParticipantDirectory) {
+    public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory tssParticipantDirectory) {
         return new TssMessage(new byte[] {});
     }
 
@@ -75,7 +75,7 @@ public class TssServiceImpl implements TssService {
     public List<TssPrivateShare> decryptPrivateShares(
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssMessage> validTssMessages) {
-        return participantDirectory.getOwnedShareIds().stream()
+        return participantDirectory.getCurrentParticipantOwnedShares().stream()
                 .map(sid -> new TssPrivateShare(sid, new PairingPrivateKey()))
                 .toList();
     }

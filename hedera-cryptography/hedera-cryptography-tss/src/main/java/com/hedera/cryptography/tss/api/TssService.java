@@ -44,25 +44,25 @@ import java.util.Random;
 public interface TssService {
 
     /**
-     * Generate a {@link TssMessage} for a {@code pendingParticipantDirectory}, from a random private share.
+     * Generate a {@link TssMessage} for a {@code tssParticipantDirectory}, from a random private share.
      * This method can be used to bootstrap the protocol as it does not need the existence of a previous {@link TssPrivateShare}
      *
-     * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
+     * @param tssParticipantDirectory the participant directory that we should generate the message for
      * @return a {@link TssMessage} produced out of a random share.
      */
     @NonNull
-    TssMessage generateTssMessage(@NonNull TssParticipantDirectory pendingParticipantDirectory);
+    TssMessage generateTssMessage(@NonNull TssParticipantDirectory tssParticipantDirectory);
 
     /**
-     * Generate a TSS message for a pendingParticipantDirectory, for the specified {@link TssPrivateShare}.
+     * Generate a {@link TssMessage} for a {@code tssParticipantDirectory}, for the specified {@link TssPrivateShare}.
      *
-     * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
+     * @param tssParticipantDirectory the participant directory that we should generate the message for
      * @param privateShare       the secret to use for generating new keys
      * @return a TssMessage for the requested share.
      */
     @NonNull
     TssMessage generateTssMessage(
-            @NonNull TssParticipantDirectory pendingParticipantDirectory, @NonNull TssPrivateShare privateShare);
+            @NonNull TssParticipantDirectory tssParticipantDirectory, @NonNull TssPrivateShare privateShare);
 
     /**
      * Verify that a {@link TssMessage} is valid.
