@@ -96,6 +96,7 @@ import org.apache.logging.log4j.Logger;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
+@ConstructableIgnored
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, State, MerkleRoot {
 

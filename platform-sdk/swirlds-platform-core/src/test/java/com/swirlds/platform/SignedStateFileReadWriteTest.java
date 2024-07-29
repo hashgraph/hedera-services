@@ -69,9 +69,7 @@ class SignedStateFileReadWriteTest {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        final var registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.platform");
+        ConstructableRegistry.getInstance().registerConstructables("");
     }
 
     @BeforeEach
