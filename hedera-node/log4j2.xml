@@ -206,7 +206,7 @@
     </Logger>
 
     <!-- Send state logs to their own appender   -->
-    <Logger name="com.swirlds.platform.state.merkle.logging.StateLogger" level="info" additivity="false">
+    <Logger name="com.swirlds.state.merkle.logging.StateLogger" level="info" additivity="false">
       <AppenderRef ref="StateLogs"/>
     </Logger>
 

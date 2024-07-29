@@ -24,6 +24,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.DEFAULT_MEMO;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -54,6 +56,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.LongPair;
@@ -257,13 +260,23 @@ public class FileUpdateHandler implements TransactionHandler {
 
     private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
         if (op.hasExpirationTime()) {
-            final long startSeconds =
-                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final var category = handleContext
+                    .savepointStack()
+                    .getBaseBuilder(SingleTransactionRecordBuilder.class)
+                    .category();
+            final var isInternalDispatch = category == CHILD || category == PRECEDING;
+            final long startSeconds = isInternalDispatch
+                    ? handleContext.consensusNow().getEpochSecond()
+                    : handleContext
+                            .body()
+                            .transactionID()
+                            .transactionValidStart()
+                            .seconds();
             final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
 
-            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
-            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+            final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = ledgerConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = ledgerConfig.autoRenewPeriodMinDuration();
 
             validateTrue(
                     effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,

@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.test.fixtures.state.TestBase;
+import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;

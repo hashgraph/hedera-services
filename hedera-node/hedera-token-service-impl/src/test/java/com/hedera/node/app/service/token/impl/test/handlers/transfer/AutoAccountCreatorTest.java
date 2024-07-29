@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,7 +82,8 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -111,7 +113,8 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -142,7 +145,8 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

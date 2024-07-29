@@ -33,8 +33,8 @@ import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
@@ -104,11 +104,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
     private final boolean waitForPrehandle;
 
     /**
-     * Whether this is the first round being handled.
-     */
-    private boolean firstRound = true;
-
-    /**
      * Constructor
      *
      * @param platformContext       contains various platform utilities
@@ -159,8 +154,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
     @Override
     @Nullable
     public StateAndRound handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
-        validateThreadName();
-
         // consensus rounds with no events are ignored
         if (consensusRound.isEmpty()) {
             // Future work: the long term goal is for empty rounds to not be ignored here. For now, the way that the
@@ -190,8 +183,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
-            for (final EventImpl event : consensusRound.getConsensusEvents()) {
-                event.getBaseEvent().setConsensusTimestampsOnPayloads();
+            for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
+                event.setConsensusTimestampsOnPayloads();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
@@ -201,8 +194,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             if (waitForPrehandle) {
                 handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-                consensusRound.forEach(
-                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+                consensusRound.getConsensusEvents().forEach(PlatformEvent::awaitPrehandleCompletion);
             }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
@@ -219,24 +211,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
             return null;
         } finally {
             handlerMetrics.setPhase(IDLE);
-        }
-    }
-
-    /**
-     * Services currently relies on the name of this thread. Do a sanity check that we are running on the correct
-     * thread.
-     */
-    private void validateThreadName() {
-        if (firstRound) {
-            final String threadName = Thread.currentThread().getName();
-            if (!threadName.equals(TRANSACTION_HANDLING_THREAD_NAME)) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "TransactionHandler is running on the wrong thread. Expected: {}, Actual: {}",
-                        TRANSACTION_HANDLING_THREAD_NAME,
-                        threadName);
-            }
-            firstRound = false;
         }
     }
 

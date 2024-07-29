@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,12 +54,16 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class CustomFeeAssessmentStepTest extends StepsBase {
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
     private Token fungibleWithNoKyc;
     private Token nonFungibleWithNoKyc;
+
+    @Mock
+    private CryptoTransferRecordBuilder builder;
 
     @BeforeEach
     public void setUp() {
@@ -72,7 +77,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
                 });
 
         refreshWritableStores();
@@ -80,7 +85,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
@@ -174,8 +179,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -254,8 +257,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -367,8 +368,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -394,7 +393,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(fungibleTokenIDB, payerId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
                 });
         givenDifferentTxn(body, payerId);
 
@@ -446,6 +445,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
         givenAutoCreationDispatchEffects(payerId);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);

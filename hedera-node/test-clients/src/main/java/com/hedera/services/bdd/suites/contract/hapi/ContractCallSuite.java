@@ -136,7 +136,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -171,10 +170,6 @@ public class ContractCallSuite {
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
 
     private static final String ALICE = "Alice";
-
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION = "ledger.autoRenewPeriod.maxDuration";
-    public static final String DEFAULT_MAX_AUTO_RENEW_PERIOD =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION);
 
     private static final long DEPOSIT_AMOUNT = 1000;
     private static final long GAS_TO_OFFER = 2_000_000L;
@@ -2495,7 +2490,7 @@ public class ContractCallSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                        .consensusTimeImpliedByOffset(parentConsTime.get(), 1))));
     }
 
     @HapiTest

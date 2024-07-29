@@ -20,15 +20,18 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.working
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.StreamSupport.stream;
 
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -36,10 +39,8 @@ import java.util.stream.Stream;
  */
 public class AddressBookUtils {
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
-    public static final String[] CLASSIC_NODE_NAMES = new String[] {
-        "Alice", "Bob", "Carol", "Dave", "Eve", "Faythe", "Grace", "Heidi", "Ivy", "Judy", "Kathy", "Lana",
-        "Mallory", "Nadia", "Olivia", "Peggy", "Quinn", "Rita", "Sue", "Tina", "Ursula", "Vera", "Wendy", "Xena",
-    };
+    public static final String[] CLASSIC_NODE_NAMES =
+            new String[] {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"};
 
     private AddressBookUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -135,5 +136,29 @@ public class AddressBookUtils {
      */
     public static Stream<Long> nodeIdsFrom(AddressBook addressBook) {
         return stream(addressBook.spliterator(), false).map(Address::getNodeId).map(NodeId::id);
+    }
+
+    /**
+     *  Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
+     *
+     * @param host is an ip or domain name, do not pass in an invalid ip such as "130.0.0.1", will set it as domain name otherwise.
+     * @param port
+     * @return ServiceEndpoint
+     */
+    public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
+        final var builder = ServiceEndpoint.newBuilder().setPort(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.setIpAddressV4(ByteString.copyFrom((new byte[] {
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
+            })));
+        } else {
+            builder.setDomainName(host);
+        }
+        return builder.build();
     }
 }

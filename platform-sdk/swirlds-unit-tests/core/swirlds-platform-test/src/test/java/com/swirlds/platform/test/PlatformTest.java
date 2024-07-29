@@ -122,6 +122,7 @@ public abstract class PlatformTest {
     protected void assertMarkerFile(@NonNull final String markerFileName, final boolean exists) {
         assertEquals(
                 exists,
-                getMarkerFileDirectory().resolve(markerFileName).toFile().exists());
+                getMarkerFileDirectory().resolve(markerFileName).toFile().exists(),
+                "Marker file " + markerFileName + " should " + (exists ? "" : "not ") + "exist");
     }
 }

@@ -27,7 +27,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.events.UnsignedEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -49,7 +49,7 @@ public class RandomEventUtils {
             final NodeId creatorId,
             final Instant timestamp,
             final long birthRound,
-            final ConsensusTransactionImpl[] transactions,
+            final PayloadWrapper[] transactions,
             final EventImpl selfParent,
             final EventImpl otherParent,
             final boolean fakeHash) {
@@ -72,7 +72,7 @@ public class RandomEventUtils {
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
             final long birthRound,
-            @Nullable final ConsensusTransactionImpl[] transactions,
+            @Nullable final PayloadWrapper[] transactions,
             @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent,
             final boolean fakeHash) {
@@ -94,10 +94,7 @@ public class RandomEventUtils {
 
         final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
-            Stream.of(transactions)
-                    .map(ConsensusTransactionImpl::getPayload)
-                    .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
-                    .forEach(convertedTransactions::add);
+            Stream.of(transactions).map(PayloadWrapper::getPayload).forEach(convertedTransactions::add);
         }
         final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 new BasicSoftwareVersion(1),
@@ -111,7 +108,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashEvent(unsignedEvent);
+            new StatefulEventHasher().hashUnsignedEvent(unsignedEvent);
         }
         return unsignedEvent;
     }

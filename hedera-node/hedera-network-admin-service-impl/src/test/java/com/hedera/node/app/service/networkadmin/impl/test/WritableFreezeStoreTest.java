@@ -31,7 +31,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.impl.ReadableFreezeStoreImpl;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;

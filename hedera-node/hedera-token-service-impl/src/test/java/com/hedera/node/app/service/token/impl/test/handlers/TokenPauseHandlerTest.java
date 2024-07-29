@@ -52,12 +52,11 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +86,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private TokenBaseRecordBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     @BeforeEach
     void setUp() throws PreCheckException {
@@ -101,8 +100,8 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
     }
 
     @Test

@@ -18,6 +18,7 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Objects.requireNonNull;
@@ -28,14 +29,12 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import javax.inject.Inject;
 
 /**
  * Default implementation of {@link ThrottleAdviser}.
@@ -44,18 +43,14 @@ public class AppThrottleAdviser implements ThrottleAdviser {
 
     private final NetworkUtilizationManager networkUtilizationManager;
     private final Instant consensusNow;
-    private final RecordListBuilder recordListBuilder;
     private final SavepointStackImpl stack;
 
-    @Inject
     public AppThrottleAdviser(
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final Instant consensusNow,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SavepointStackImpl stack) {
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.consensusNow = requireNonNull(consensusNow);
-        this.recordListBuilder = requireNonNull(recordListBuilder);
         this.stack = requireNonNull(stack);
     }
 
@@ -68,9 +63,10 @@ public class AppThrottleAdviser implements ThrottleAdviser {
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
-        final var childRecords = recordListBuilder.childRecordBuilders();
+        final var childRecords = stack.getChildBuilders();
         @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
+        int numAutoAssociations = 0;
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);
             if (Objects.equals(childRecord.status(), SUCCESS)) {
@@ -101,7 +97,12 @@ public class AppThrottleAdviser implements ThrottleAdviser {
                 if (shouldThrottleTxn) {
                     isAllowed = false;
                 }
+                numAutoAssociations += childRecord.getNumAutoAssociations();
             }
+        }
+        if (isAllowed && numAutoAssociations > 0) {
+            isAllowed = !networkUtilizationManager.shouldThrottleNOfUnscaled(
+                    numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT, consensusNow);
         }
         if (!isAllowed) {
             networkUtilizationManager.resetUsageThrottlesTo(snapshotsIfNeeded);

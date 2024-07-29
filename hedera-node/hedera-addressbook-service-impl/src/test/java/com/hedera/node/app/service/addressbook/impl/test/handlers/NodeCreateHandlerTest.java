@@ -56,7 +56,6 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -391,6 +390,31 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
+    void failsWhenEndpointHaveInvalidIp2() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint9))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveInvalidIp3() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint10))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
     void failsWhenServiceEndpointTooLarge() {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
@@ -405,7 +429,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
+        assertEquals(ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
     }
 
     @Test
@@ -517,9 +541,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        final var recordBuilders = mock(RecordBuilders.class);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        final var stack = mock(HandleContext.SavepointStack.class);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);

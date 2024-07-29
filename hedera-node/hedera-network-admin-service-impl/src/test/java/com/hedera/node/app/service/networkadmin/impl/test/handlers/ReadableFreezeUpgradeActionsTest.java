@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
@@ -40,6 +41,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
@@ -54,7 +56,8 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -66,7 +69,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -135,17 +137,26 @@ class ReadableFreezeUpgradeActionsTest {
     private WritableUpgradeFileStore upgradeFileStore;
 
     @Mock
-    private ReadableNodeStore nodeStore;
+    private ReadableStakingInfoStore stakingInfoStore;
 
     @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
+    protected ReadableStates readableStates;
+
+    private ReadableNodeStore nodeStore;
+
+    private Executor freezeExecutor;
 
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        final Executor freezeExecutor = new ForkJoinPool(
+        final var readableNodeState =
+                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+
+        freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
                 adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
@@ -169,7 +180,6 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
@@ -185,7 +195,6 @@ class ReadableFreezeUpgradeActionsTest {
     @Test
     void preparesForUpgrade() throws IOException {
         setupNoiseFiles();
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
@@ -423,17 +432,16 @@ class ReadableFreezeUpgradeActionsTest {
                 8,
                 false,
                 A_COMPLEX_KEY);
-        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder("NODES")
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)
                 .value(new EntityNumber(3), node3)
                 .value(new EntityNumber(1), node1)
                 .build();
-        given(nodeStore.keys()).willReturn(readableNodeState.keys());
-        given(nodeStore.get(1)).willReturn(node1);
-        given(nodeStore.get(2)).willReturn(node2);
-        given(nodeStore.get(3)).willReturn(node3);
-        given(nodeStore.get(4)).willReturn(node4);
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+        subject = new FreezeUpgradeActions(
+                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);

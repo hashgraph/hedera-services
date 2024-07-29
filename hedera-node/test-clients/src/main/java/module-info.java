@@ -41,6 +41,7 @@ module com.hedera.node.test.clients {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
+    requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.platform.core;
@@ -56,13 +57,12 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.jupiter.api;
     requires transitive org.testcontainers;
     requires transitive tuweni.bytes;
-    requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
-    requires com.hedera.node.config;
+    requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.config.api;

@@ -38,7 +38,7 @@ import java.util.function.UnaryOperator;
  */
 @FunctionalInterface
 public interface ExternalizedRecordCustomizer extends UnaryOperator<Transaction> {
-    ExternalizedRecordCustomizer NOOP_EXTERNALIZED_RECORD_CUSTOMIZER = tx -> tx;
+    ExternalizedRecordCustomizer NOOP_RECORD_CUSTOMIZER = tx -> tx;
 
     ExternalizedRecordCustomizer SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER = new ExternalizedRecordCustomizer() {
         @Override

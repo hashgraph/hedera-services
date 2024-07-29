@@ -395,6 +395,7 @@ class FreezeHandlerTest {
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
         given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
+        given(nodeStore.sizeOfState()).willReturn(1L);
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
@@ -424,6 +425,7 @@ class FreezeHandlerTest {
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(anotherFileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
         given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
+        given(nodeStore.sizeOfState()).willReturn(1L);
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)

@@ -186,17 +186,17 @@ public class AddedEventMetrics {
         int numAppTrans = 0;
         int numSysTrans = 0;
 
-        final Iterator<Transaction> iterator = event.transactionIterator();
+        final Iterator<Transaction> iterator = event.getBaseEvent().transactionIterator();
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
             if (transaction.isSystem()) {
                 numSysTrans++;
-                sysSize += transaction.getSerializedLength();
-                avgBytesPerTransactionSys.update(transaction.getSerializedLength());
+                sysSize += transaction.getSize();
+                avgBytesPerTransactionSys.update(transaction.getSize());
             } else {
                 numAppTrans++;
-                appSize += transaction.getSerializedLength();
-                avgBytesPerTransaction.update(transaction.getSerializedLength());
+                appSize += transaction.getSize();
+                avgBytesPerTransaction.update(transaction.getSize());
             }
         }
         avgTransactionsPerEvent.update(numAppTrans);
