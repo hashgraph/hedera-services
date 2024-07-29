@@ -605,8 +605,8 @@ public class TokenAirdropTest {
         final Stream<DynamicTest> airdropNFTNotAssociatedWithSender() {
             final String OWNER_TWO = "owner2";
             return hapiTest(
-                    cryptoCreate("owner_two").balance(ONE_HUNDRED_HBARS),
-                    tokenAirdrop(moving(50, NON_FUNGIBLE_TOKEN).between(OWNER_TWO, ASSOCIATED_RECEIVER))
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER_TWO, ASSOCIATED_RECEIVER))
                             .signedByPayerAnd(OWNER_TWO)
                             .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
@@ -617,7 +617,7 @@ public class TokenAirdropTest {
             final String OWNER_TWO = "owner2";
             return hapiTest(
                     cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
-                    tokenAirdrop(moving(50, NON_FUNGIBLE_TOKEN).between(OWNER, ASSOCIATED_RECEIVER))
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, ASSOCIATED_RECEIVER))
                             .signedByPayerAnd(OWNER_TWO)
                             .hasKnownStatus(INVALID_SIGNATURE));
         }
