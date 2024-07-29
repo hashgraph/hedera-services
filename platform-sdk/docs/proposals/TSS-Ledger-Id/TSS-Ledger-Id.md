@@ -202,7 +202,7 @@ for share index `0`.
 
 ![TSS re-keying next consensus roster](./Groth21-re-keying-shares-of-shares.drawio.svg)
 
-This process of keying the candidate roster during an address book change asynchronous and takes an
+This process of keying the candidate roster during an address book change is asynchronous and takes an
 indeterminate amount of time through multiple rounds of consensus to complete. This requires saving incremental
 progress in the state to ensure that the process can resume from any point if a node or the network restarts.
 Switching to the candidate roster must not happen until enough nodes have voted that they have verified a threshold
