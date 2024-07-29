@@ -25,14 +25,16 @@ description = "Hedera API"
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-deprecation,-removal")
+}
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
-    //    tag = "v0.51.0"
+    tag = "v0.53.0"
     // uncomment below to use a specific branch
-    branch = "main"
+    // branch = "main"
 }
 
 sourceSets {

@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -352,15 +351,8 @@ public class NaturalDispatchOrderingTest {
     private static VisibleItemsValidator reversibleScheduleValidator() {
         return (spec, records) -> {
             final var committedItems = requireNonNull(records.get("committed"), "committed not found");
-            assertScheduledItemsMatch(
-                    committedItems,
-                    0,
-                    3,
-                    ScheduleCreate,
-                    TokenAssociateToAccount,
-                    TokenAssociateToAccount,
-                    CryptoTransfer);
-            assertStatuses(committedItems, SUCCESS, SUCCESS, SUCCESS, SUCCESS);
+            assertScheduledItemsMatch(committedItems, 0, 1, ScheduleCreate, CryptoTransfer);
+            assertStatuses(committedItems, SUCCESS, SUCCESS);
             final var rolledBackItems = requireNonNull(records.get("rolledBack"), "rolledBack not found");
             assertScheduledItemsMatch(rolledBackItems, 0, 1, ScheduleCreate, CryptoTransfer);
             assertStatuses(rolledBackItems, SUCCESS, INSUFFICIENT_PAYER_BALANCE);
@@ -370,8 +362,8 @@ public class NaturalDispatchOrderingTest {
     private static VisibleItemsValidator reversibleChildValidator() {
         return (spec, records) -> {
             final var successItems = requireNonNull(records.get("fullSuccess"), "fullSuccess not found");
-            assertItemsMatch(successItems, 0, ContractCall, TokenAssociateToAccount, CryptoTransfer);
-            assertStatuses(successItems, SUCCESS, SUCCESS, SUCCESS);
+            assertItemsMatch(successItems, 0, ContractCall, CryptoTransfer);
+            assertStatuses(successItems, SUCCESS, SUCCESS);
             final var containedRevert = requireNonNull(records.get("containedRevert"), "containedRevert not found");
             assertItemsMatch(containedRevert, 0, ContractCall, CryptoTransfer);
             assertStatuses(containedRevert, SUCCESS, REVERTED_SUCCESS);
