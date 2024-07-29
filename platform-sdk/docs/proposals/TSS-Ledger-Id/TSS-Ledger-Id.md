@@ -512,11 +512,11 @@ The state needs to store the relevant ledger id and TSS Data (key material and v
 The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by the platform and other
 entities outside the consensus node. This value should not change during normal address book changes and its value does
 not change unless the network goes through another TSS bootstrap process. When the value changes, to transfer trust,
-the old ledger private key should sign the new ledger id. This signature should be stored along with the round
-value for when the new ledger id becomes active. Triples of ledger id, signature, and round are stored in a queue in
-the state to record the history of ledger ids on the network. The first ledger id will not have a signature.
+the old ledger private key should sign the new ledger id or the nodes should sign the new ledger id with their RSA
+signing keys, or both. Quads of (ledger id, round, ledger signature, map<nodeid, node_signature>) are stored in a
+list in a singleton to record the history of ledger ids on the network.
 
-NOTE: The process for updating the ledger id can be found in the `TSS-Ledger-ID-Updates` proposal.
+NOTE: The detailed processes for updating the ledger id can be found in the `TSS-Ledger-ID-Updates` proposal.
 
 ```protobuf
 /**
@@ -558,7 +558,7 @@ Keys in the `TssMessageMap` have the following structure:
 
 ```protobuf
 /**
-  * A key for use in the TssDataMaps.
+  * A key for use in the TssMessageMaps.
   */
 message TssMessageMapKey {
 
@@ -581,9 +581,9 @@ Keys in the `TssVoteMap` have the following structure:
 
 ```protobuf
 /**
-  * A key for use in the TssDataMaps.
+  * A key for use in the TssVoteMaps.
   */
-message TssMessageMapKey {
+message TssDataMapKey {
 
   /**
    * The roster hash is the hash of the target roster that the value in the tss data map is related to.
@@ -622,7 +622,7 @@ roster and then restart the network from round 0 with the new key material and l
 The following startup sequence on new networks is modified from existing practices.
 
 1. The app reads the genesis address book and cryptography from disk.
-2. The app hands a genesis state, genesis roster, and private keys to the platform.
+2. The app hands an optional state, genesis roster, and private keys to the platform.
 3. The platform validates that its private `tssEncryptionKey` matches its public `tssEncryptionKey` in the genesis
    roster. If there is a mismatch, a critical error is logged and the node shuts down.
 4. The platform copies the genesis state and starts gossiping with peers in a pre-genesis mode with the following
@@ -661,16 +661,9 @@ The release supporting the addition of the `tssEncryptionKey` to the roster also
 transactions for updating the address book with a node's `tssEncryptionKey`. Until the next software upgrade, only
 the candidate roster will have the `tssEncryptionKey` possibly set in roster entries.
 
-The following startup sequence change is included in this software release:
-
-1. The app reads the state and cryptography from disk (including support for reading the private `tssEncryptionKey`)
-2. The app hands the state and private keys to the platform.
-3. If a software upgrade is detected, if the candidate roster is set, it is adopted immediately. If there is no
-   candidate roster, the existing active roster in the state remains the active roster.
-4. If a new active roster is set and the node's entry in the new active roster contains a public `tssEncryptionKey`,
-   it is validated against the loaded private `tssEncryptionKey`. If there is a mismatch, or the private key was
-   not loaded, a critical error is logged and the node shuts down.
-5. The rest of the startup sequence is consistent with the TSS-Roster proposal.
+The only change to the startup sequence is that the `tssEncryptionKey` private key is read from disk, provided to
+the platform through the `PlatformBuilder` and validated against the public `tssEncryptionKey` in the active roster.
+A mismatch is a critical error that will cause the node to shut down.
 
 ##### The Release Containing the TSS Bootstrap Process
 
