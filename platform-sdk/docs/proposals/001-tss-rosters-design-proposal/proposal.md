@@ -19,7 +19,7 @@ components within the platform.
 
 The introduction of the Threshold Signature Scheme (TSS) requires a new mechanism for managing node participation in
 consensus and block signing.
-The Roster, an immutable subset of the address book, will provide the data structure and API for this mechanism.
+The Roster, a subset of the address book, will provide the data structure and API for this mechanism.
 This proposal provides a specification for the behavior of rosters starting from their creation from the Address Book to
 their terminal state within the TSS specification.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
