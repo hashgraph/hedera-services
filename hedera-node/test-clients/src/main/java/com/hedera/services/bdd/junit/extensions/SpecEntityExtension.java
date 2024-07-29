@@ -125,7 +125,9 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
 
     private SpecContract contractFrom(@NonNull final Contract annotation) {
         final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
-        return new SpecContract(name, annotation.contract(), annotation.creationGas());
+        final var specContract = new SpecContract(name, annotation.contract(), annotation.creationGas());
+        specContract.builder().tinybarBalance(annotation.tinybarBalance());
+        return specContract;
     }
 
     private SpecNonFungibleToken nonFungibleTokenFrom(
