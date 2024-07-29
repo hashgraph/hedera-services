@@ -287,7 +287,7 @@ Proof Sketch by Dr. Leemon Baird:
 ##### TSS Algorithm - Alternatives Considered
 
 The list of options considered here were based off of prototypes developed by [Rohit Sinha](https://github.com/rsinha),
-the Swirlds Labs cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart
+the Hashgraph cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart
 contract verification, and we could assign a multiplicity of shares to nodes to get close enough in modeling the
 distribution of weight between nodes.
 
