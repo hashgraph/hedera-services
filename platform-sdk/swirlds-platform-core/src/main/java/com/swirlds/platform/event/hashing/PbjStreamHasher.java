@@ -38,12 +38,13 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
 
     /** The hashing stream for the event. */
     private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();
+
     final WritableSequentialData eventStream = new WritableStreamingData(new HashingOutputStream(eventDigest));
     /** The hashing stream for the payloads. */
     private final MessageDigest transactionDigest = DigestType.SHA_384.buildDigest();
-    final WritableSequentialData transactionStream = new WritableStreamingData(
-            new HashingOutputStream(transactionDigest));
 
+    final WritableSequentialData transactionStream =
+            new WritableStreamingData(new HashingOutputStream(transactionDigest));
 
     @Override
     @NonNull
