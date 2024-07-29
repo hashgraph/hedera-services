@@ -166,7 +166,7 @@ jobs:
         env:
           HOME: /x
         with:
-          version: v25.0.6
+          version: v25.0.5
           daemon-config: |
             {
               "registry-mirrors": [
@@ -383,7 +383,7 @@ jobs:
         env:
           HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
         with:
-          version: v25.0.6
+          version: v25.0.5
           daemon-config: |
             {
               "registry-mirrors": [

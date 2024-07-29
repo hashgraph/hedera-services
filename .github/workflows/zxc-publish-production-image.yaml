@@ -176,7 +176,7 @@ jobs:
         env:
           HOME: /x
         with:
-          version: v25.0.6
+          version: v25.0.5
           daemon-config: |
             {
               "registry-mirrors": [
