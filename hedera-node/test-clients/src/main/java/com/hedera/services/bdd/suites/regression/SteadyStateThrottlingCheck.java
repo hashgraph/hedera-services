@@ -96,7 +96,7 @@ public class SteadyStateThrottlingCheck {
     private static final String TOKEN = "token";
     private static final String CIVILIAN = "civilian";
 
-    private final AtomicLong duration = new AtomicLong(180);
+    private final AtomicLong duration = new AtomicLong(360);
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 

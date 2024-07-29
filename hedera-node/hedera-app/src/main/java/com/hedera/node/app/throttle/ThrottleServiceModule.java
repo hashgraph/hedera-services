@@ -32,6 +32,7 @@ import com.swirlds.platform.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntSupplier;
 import javax.inject.Singleton;
@@ -39,6 +40,7 @@ import javax.inject.Singleton;
 @Module
 public interface ThrottleServiceModule {
     IntSupplier SUPPLY_ONE = () -> 1;
+    int NUM_THROTTLE_FRAGMENTS = 32;
 
     @Binds
     @Singleton
@@ -56,11 +58,15 @@ public interface ThrottleServiceModule {
     @Provides
     @Singleton
     @IngestThrottle
-    static ThrottleAccumulator provideIngestThrottleAccumulator(
+    static List<ThrottleAccumulator> provideIngestThrottleAccumulator(
             Platform platform, ConfigProvider configProvider, Metrics metrics) {
-        final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
-        return new ThrottleAccumulator(
-                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE, throttleMetrics);
+        final var throttles = new ArrayList<ThrottleAccumulator>();
+        final IntSupplier capacity = () -> (platform.getAddressBook().getSize() * NUM_THROTTLE_FRAGMENTS);
+        for (int i = 0; i < NUM_THROTTLE_FRAGMENTS; i++) {
+            final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+            throttles.add(new ThrottleAccumulator(capacity, configProvider, FRONTEND_THROTTLE, throttleMetrics));
+        }
+        return throttles;
     }
 
     @Provides

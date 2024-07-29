@@ -35,7 +35,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -55,23 +54,20 @@ import org.apache.logging.log4j.Logger;
 public class ThrottleServiceManager {
     private static final Logger log = LogManager.getLogger(ThrottleServiceManager.class);
 
-    private final ConfigProvider configProvider;
     private final ThrottleParser throttleParser;
-    private final ThrottleAccumulator ingestThrottle;
+    private final List<ThrottleAccumulator> ingestThrottle;
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;
 
     @Inject
     public ThrottleServiceManager(
-            @NonNull final ConfigProvider configProvider,
             @NonNull final ThrottleParser throttleParser,
-            @NonNull @IngestThrottle final ThrottleAccumulator ingestThrottle,
+            @NonNull @IngestThrottle final List<ThrottleAccumulator> ingestThrottle,
             @NonNull @BackendThrottle final ThrottleAccumulator backendThrottle,
             @NonNull final CongestionMultipliers congestionMultipliers) {
         this.throttleParser = throttleParser;
         this.ingestThrottle = requireNonNull(ingestThrottle);
         this.backendThrottle = requireNonNull(backendThrottle);
-        this.configProvider = requireNonNull(configProvider);
         this.congestionMultipliers = requireNonNull(congestionMultipliers);
     }
 
@@ -148,7 +144,7 @@ public class ThrottleServiceManager {
      * Updates all metrics for the throttles.
      */
     public void updateAllMetrics() {
-        ingestThrottle.updateAllMetrics();
+        ingestThrottle.forEach(t -> t.updateAllMetrics());
         backendThrottle.updateAllMetrics();
     }
 
@@ -182,13 +178,13 @@ public class ThrottleServiceManager {
 
     private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NonNull Bytes encoded) {
         final var validatedThrottles = throttleParser.parse(encoded);
-        ingestThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
+        ingestThrottle.forEach(t -> t.rebuildFor(validatedThrottles.throttleDefinitions()));
         backendThrottle.rebuildFor(validatedThrottles.throttleDefinitions());
         return validatedThrottles;
     }
 
     private void applyGasConfig() {
-        ingestThrottle.applyGasConfig();
+        ingestThrottle.forEach(t -> t.applyGasConfig());
         backendThrottle.applyGasConfig();
     }
 
@@ -225,7 +221,7 @@ public class ThrottleServiceManager {
      */
     public void reclaimFrontendThrottleCapacity(final int numCapacity, final HederaFunctionality hederaFunctionality) {
         try {
-            ingestThrottle.leakCapacityForNOfUnscaled(numCapacity, hederaFunctionality);
+            ingestThrottle.forEach(t -> t.leakCapacityForNOfUnscaled(numCapacity, hederaFunctionality));
         } catch (Exception ignore) {
             // Ignore if the frontend bucket has already leaked all the capacity
             // used for throttling the transaction on the frontend

@@ -28,6 +28,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.swirlds.state.State;
 import java.time.InstantSource;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,7 @@ class SynchronizedThrottleAccumulatorTest {
 
     @BeforeEach
     void setUp() {
-        subject = new SynchronizedThrottleAccumulator(instantSource, throttleAccumulator);
+        subject = new SynchronizedThrottleAccumulator(instantSource, List.of(throttleAccumulator));
     }
 
     @Test
