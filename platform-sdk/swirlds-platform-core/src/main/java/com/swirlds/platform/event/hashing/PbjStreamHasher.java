@@ -34,7 +34,7 @@ import java.util.Objects;
  * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
  * payloads without invalidating the event hash.
  */
-public class PbjHasher2 implements EventHasher, UnsignedEventHasher {
+public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
 
     /** The hashing stream for the event. */
     private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();

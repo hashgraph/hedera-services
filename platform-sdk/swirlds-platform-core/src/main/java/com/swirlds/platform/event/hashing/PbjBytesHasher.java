@@ -20,11 +20,9 @@ import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventPayload;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Objects;
 
@@ -32,7 +30,7 @@ import java.util.Objects;
  * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
  * payloads without invalidating the event hash.
  */
-public class PbjHasher implements EventHasher, UnsignedEventHasher {
+public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
 
     /** The digest for the event. */
     private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();

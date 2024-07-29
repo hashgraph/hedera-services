@@ -22,8 +22,8 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.hashing.PbjHasher;
-import com.swirlds.platform.event.hashing.PbjHasher2;
+import com.swirlds.platform.event.hashing.PbjBytesHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -124,8 +124,8 @@ public class EventBenchmarks {
         public EventHasher newHasher() {
             return switch (this) {
                 case LEGACY -> new StatefulEventHasher();
-                case PBJ_BYTES_DIGEST -> new PbjHasher();
-                case PBJ_STREAM_DIGEST -> new PbjHasher2();
+                case PBJ_BYTES_DIGEST -> new PbjBytesHasher();
+                case PBJ_STREAM_DIGEST -> new PbjStreamHasher();
             };
         }
     }
