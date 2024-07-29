@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.DISTINCT;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +34,6 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.SubType;
@@ -40,12 +41,16 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.GenesisContext;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -59,16 +64,24 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -141,11 +154,11 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the Address Book into state
 
-    public void createGenesisAddressBookAndNodeDetails(@NonNull final GenesisContext genesisContext) {
-        requireNonNull(genesisContext);
-        final var networkInfo = genesisContext.networkInfo();
-        final var filesConfig = genesisContext.configuration().getConfigData(FilesConfig.class);
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+    public void createGenesisAddressBookAndNodeDetails(@NonNull final SystemContext systemContext) {
+        requireNonNull(systemContext);
+        final var networkInfo = systemContext.networkInfo();
+        final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
+        final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
 
         // Create the master key that will own both of these special files
         final var masterKey = KeyList.newBuilder()
@@ -156,40 +169,23 @@ public class V0490FileSchema extends Schema {
 
         // Create the address book file
         final var addressBookFileNum = filesConfig.addressBook();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisAddressBook(networkInfo))
                                 .keys(masterKey)
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
                 addressBookFileNum);
 
-        // Create the node details for file 102,  their fields are different from 101, addressBook
-        final var nodeDetail = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeDetail.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.stake())
-                    .nodeAccountId(nodeInfo.accountId())
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    // we really don't have grpc proxy name and port for now.Temporary values are set.
-                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                            .port(1)
-                            .build())
-                    .build());
-        }
-
         final var nodeInfoFileNum = filesConfig.nodeDetails();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisNodeDetails(networkInfo))
                                 .keys(masterKey)
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
                 nodeInfoFileNum);
@@ -206,10 +202,7 @@ public class V0490FileSchema extends Schema {
                             // we really don't have grpc proxy name and port for now. Temporary values are set.
                             // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
                             // here.
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                                    .port(1)
-                                    .build())
+                            V053AddressBookSchema.endpointFor("1.0.0.0", 1))
                     .build());
         }
         return NodeAddressBook.PROTOBUF.toBytes(
@@ -226,12 +219,46 @@ public class V0490FileSchema extends Schema {
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     // we really don't have grpc proxy name and port for now.Temporary values are set.
                     // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                            .port(1)
-                            .build())
+                    .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
                     .build());
         }
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
+    }
+
+    public void updateNodeDetailsAfterFreeze(
+            @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
+        requireNonNull(systemContext);
+        final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
+        // Create the node details for file 102
+        final var nodeInfoFileNum = filesConfig.nodeDetails();
+        systemContext.dispatchUpdate(TransactionBody.newBuilder()
+                .fileUpdate(FileUpdateTransactionBody.newBuilder()
+                        .fileID(FileID.newBuilder().fileNum(nodeInfoFileNum).build())
+                        .contents(nodeStoreNodeDetails(nodeStore))
+                        .expirationTime(maxLifetimeExpiry(systemContext))
+                        .build())
+                .build());
+    }
+
+    private Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
+        final var nodeDetails = new ArrayList<NodeAddress>();
+        StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                .mapToLong(EntityNumber::number)
+                .mapToObj(nodeStore::get)
+                .filter(node -> node != null && !node.deleted())
+                .forEach(node -> {
+                    nodeDetails.add(NodeAddress.newBuilder()
+                            .nodeId(node.nodeId())
+                            .nodeAccountId(node.accountId())
+                            .nodeCertHash(node.grpcCertificateHash())
+                            .description(node.description())
+                            .stake(node.weight())
+                            .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
+                                    node.gossipCaCertificate().toByteArray(), node.nodeId())))
+                            .serviceEndpoint(node.serviceEndpoint())
+                            .build());
+                });
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
@@ -239,18 +266,18 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the initial Fee Schedule into state
 
-    public void createGenesisFeeSchedule(@NonNull final GenesisContext genesisContext) {
-        requireNonNull(genesisContext);
-        final var config = genesisContext.configuration();
+    public void createGenesisFeeSchedule(@NonNull final SystemContext systemContext) {
+        requireNonNull(systemContext);
+        final var config = systemContext.configuration();
         final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisFeeSchedules(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
                 config.getConfigData(FilesConfig.class).feeSchedules());
@@ -354,20 +381,20 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the initial Exchange Rate into state
 
-    public void createGenesisExchangeRate(@NonNull final GenesisContext genesisContext) {
-        final var config = genesisContext.configuration();
+    public void createGenesisExchangeRate(@NonNull final SystemContext systemContext) {
+        final var config = systemContext.configuration();
         final var masterKey = Key.newBuilder()
                 .ed25519(config.getConfigData(BootstrapConfig.class).genesisPublicKey())
                 .build();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisExchangeRates(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
+                systemContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
     }
 
     /**
@@ -397,23 +424,21 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the network properties into state
 
-    public void createGenesisNetworkProperties(@NonNull final GenesisContext genesisContext) {
-        final var config = genesisContext.configuration();
+    public void createGenesisNetworkProperties(@NonNull final SystemContext systemContext) {
+        final var config = systemContext.configuration();
         final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         // The overrides file is initially empty
-        final var servicesConfigList =
-                ServicesConfigurationList.newBuilder().nameValue(List.of()).build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisNetworkProperties(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).networkProperties());
+                systemContext.configuration().getConfigData(FilesConfig.class).networkProperties());
     }
 
     /**
@@ -430,20 +455,20 @@ public class V0490FileSchema extends Schema {
 
     // ================================================================================================================
     // Creates and loads the HAPI Permissions into state
-    public void createGenesisHapiPermissions(@NonNull final GenesisContext genesisContext) {
-        final var config = genesisContext.configuration();
+    public void createGenesisHapiPermissions(@NonNull final SystemContext systemContext) {
+        final var config = systemContext.configuration();
         final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisHapiPermissions(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
+                systemContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
     }
 
     public Bytes genesisHapiPermissions(@NonNull final Configuration config) {
@@ -494,20 +519,20 @@ public class V0490FileSchema extends Schema {
 
     // ================================================================================================================
     // Creates and loads the Throttle definitions into state
-    public void createGenesisThrottleDefinitions(@NonNull final GenesisContext genesisContext) {
-        final var config = genesisContext.configuration();
+    public void createGenesisThrottleDefinitions(@NonNull final SystemContext systemContext) {
+        final var config = systemContext.configuration();
         final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        genesisContext.dispatchCreation(
+        systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisThrottleDefinitions(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions());
+                systemContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions());
     }
 
     /**
@@ -575,35 +600,54 @@ public class V0490FileSchema extends Schema {
 
     // ================================================================================================================
     // Creates and loads the software update file into state
-    public void createGenesisSoftwareUpdateFiles(@NonNull final GenesisContext genesisContext) {
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+    public void createGenesisSoftwareUpdateFiles(@NonNull final SystemContext systemContext) {
+        final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
         // These files all start off as an empty byte array for all upgrade files from 150-159.
         // But only file 150 is actually used, the others are not, but may be used in the future.
         final var updateFilesRange =
-                genesisContext.configuration().getConfigData(FilesConfig.class).softwareUpdateRange();
+                systemContext.configuration().getConfigData(FilesConfig.class).softwareUpdateRange();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         // initializing the files 150 -159
         for (var updateNum = updateFilesRange.left(); updateNum <= updateFilesRange.right(); updateNum++) {
-            genesisContext.dispatchCreation(
+            systemContext.dispatchCreation(
                     TransactionBody.newBuilder()
                             .fileCreate(FileCreateTransactionBody.newBuilder()
                                     .contents(Bytes.EMPTY)
                                     .keys(KeyList.newBuilder().keys(masterKey))
-                                    .expirationTime(maxLifetimeExpiry(genesisContext))
+                                    .expirationTime(maxLifetimeExpiry(systemContext))
                                     .build())
                             .build(),
                     updateNum);
         }
     }
 
-    private static Timestamp maxLifetimeExpiry(@NonNull final GenesisContext genesisContext) {
+    private static Timestamp maxLifetimeExpiry(@NonNull final SystemContext systemContext) {
         return Timestamp.newBuilder()
-                .seconds(genesisContext.now().getEpochSecond()
-                        + genesisContext
+                .seconds(systemContext.now().getEpochSecond()
+                        + systemContext
                                 .configuration()
                                 .getConfigData(EntitiesConfig.class)
                                 .maxLifetime())
                 .build();
+    }
+
+    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes, long nodeId) {
+        try {
+            final var certificate = (X509Certificate)
+                    CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certBytes));
+            return certificate.getPublicKey();
+        } catch (final CertificateException e) {
+            logger.error("Unable to extract RSA key for node{} from certificate bytes {}", nodeId, hex(certBytes), e);
+        }
+        return null;
+    }
+
+    private String readableKey(@Nullable final PublicKey publicKey) {
+        if (publicKey == null) {
+            return "";
+        } else {
+            return hex(publicKey.getEncoded());
+        }
     }
 }

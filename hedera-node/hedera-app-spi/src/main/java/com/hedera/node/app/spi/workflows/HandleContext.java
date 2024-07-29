@@ -120,6 +120,13 @@ public interface HandleContext {
     AccountID payer();
 
     /**
+     * Attempts to charge the payer in this context the given amount of tinybar.
+     * @param amount the amount to charge
+     * @return true if the entire amount was successfully charged, false otherwise
+     */
+    boolean tryToChargePayer(long amount);
+
+    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}

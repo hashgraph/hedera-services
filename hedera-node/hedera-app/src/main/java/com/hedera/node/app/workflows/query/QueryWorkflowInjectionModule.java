@@ -29,7 +29,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -51,9 +51,9 @@ public interface QueryWorkflowInjectionModule {
 
     @Provides
     @Singleton
-    static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
+    static Function<ResponseType, AutoCloseableWrapper<State>> provideStateAccess(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
-        return responseType -> new AutoCloseableWrapper<>(workingStateAccessor.getHederaState(), NO_OP);
+        return responseType -> new AutoCloseableWrapper<>(workingStateAccessor.getState(), NO_OP);
     }
 
     @Provides
