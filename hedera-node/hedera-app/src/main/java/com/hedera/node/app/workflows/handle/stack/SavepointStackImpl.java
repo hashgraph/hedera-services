@@ -32,13 +32,13 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.WrappedMerkleState;
+import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,12 +53,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link MerkleState} at the time
+ * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link State} at the time
  * the savepoint was created and all the changes made to the state from the time savepoint was created, along with all
  * the stream builders created in the savepoint.
  */
-public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleState {
-    private final MerkleState root;
+public class SavepointStackImpl implements HandleContext.SavepointStack, State {
+    private final State state;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
     /**
@@ -73,14 +73,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
-     * @param root the root state
+     * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
      * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
-            @NonNull final MerkleState root, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
-        return new SavepointStackImpl(root, maxBuildersBeforeUser, maxBuildersAfterUser);
+            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
+        return new SavepointStackImpl(state, maxBuildersBeforeUser, maxBuildersAfterUser);
     }
 
     /**
@@ -104,13 +104,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
     /**
      * Constructs a new root {@link SavepointStackImpl} with the given root state.
      *
-     * @param root the root state
+     * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders to create
      * @param maxBuildersAfterUser the maximum number of following builders to create
      */
     private SavepointStackImpl(
-            @NonNull final MerkleState root, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
-        this.root = requireNonNull(root);
+            @NonNull final State state, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
+        this.state = requireNonNull(state);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
@@ -132,7 +132,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
         requireNonNull(reversingBehavior);
         requireNonNull(customizer);
         requireNonNull(category);
-        this.root = requireNonNull(parent);
+        this.state = requireNonNull(parent);
         this.builderSink = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
@@ -140,7 +140,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
 
     @Override
     public void createSavepoint() {
-        stack.push(new FollowingSavepoint(new WrappedMerkleState(peek().state()), peek()));
+        stack.push(new FollowingSavepoint(new WrappedState(peek().state()), peek()));
     }
 
     @Override
@@ -192,7 +192,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
      */
     @NonNull
     public ReadableStates rootStates(@NonNull final String serviceName) {
-        return root.getReadableStates(serviceName);
+        return state.getReadableStates(serviceName);
     }
 
     /**
@@ -202,7 +202,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
      * <p>
-     * Unlike other {@link MerkleState} implementations, the returned {@link ReadableStates} of this implementation
+     * Unlike other {@link State} implementations, the returned {@link ReadableStates} of this implementation
      * must only be used in the handle workflow.
      */
     @Override
@@ -419,10 +419,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
-        if (root instanceof SavepointStackImpl parent) {
-            stack.push(new FirstChildSavepoint(new WrappedMerkleState(root), parent.peek(), category));
+        if (state instanceof SavepointStackImpl parent) {
+            stack.push(new FirstChildSavepoint(new WrappedState(state), parent.peek(), category));
         } else {
-            stack.push(new FirstRootSavepoint(new WrappedMerkleState(root), requireNonNull(builderSink)));
+            stack.push(new FirstRootSavepoint(new WrappedState(state), requireNonNull(builderSink)));
         }
     }
 }

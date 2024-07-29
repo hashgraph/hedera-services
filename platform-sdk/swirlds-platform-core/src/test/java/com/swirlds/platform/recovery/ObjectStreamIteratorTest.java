@@ -38,7 +38,7 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -65,8 +65,7 @@ class ObjectStreamIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(
-            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
         assertEquals(expected, actual);
     }
 
@@ -81,7 +80,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -100,7 +99,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent e) {
+                } else if (object instanceof CesEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -146,7 +145,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -168,7 +167,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent e) {
+                } else if (object instanceof CesEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -200,7 +199,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -223,7 +222,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent e) {
+                } else if (object instanceof CesEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {

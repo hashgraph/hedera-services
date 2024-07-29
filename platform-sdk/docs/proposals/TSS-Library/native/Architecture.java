@@ -16,21 +16,15 @@
 
 
 
-package com.swirlds.pairings.nativ3support;
+package com.hedera.common.nativesupport;
 
 public enum Architecture {
-    AMD64("amd64"),
-    ARM64("arm64"),
-    I386("i386");
-
-    private final String directoryName;
-
-    Architecture(final String directoryName) {
-        this.directoryName = directoryName;
-    }
+    AMD64,
+    ARM64,
+    I386;
 
     public String directoryName() {
-        return directoryName;
+        return this.name().toLowerCase();
     }
 
     /**
