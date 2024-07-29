@@ -303,7 +303,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         try {
             recentEvents.add(event);
-            final List<ConsensusRound> rounds = new ArrayList<>();
             // set its round to undefined so that it gets calculated
             event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
             ConsensusRound consensusRound;
@@ -312,7 +311,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
             if (!noInitJudgesMissing()) {
                 // we should not do any calculations or voting until we have found all the init judges
-                return rounds;
+                return List.of();
             }
 
             if (lastJudgeFound) {
@@ -324,6 +323,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 consensusRound = calculateAndVote(event);
             }
 
+            final List<ConsensusRound> rounds = new ArrayList<>();
             while (consensusRound != null) {
                 rounds.add(consensusRound);
 
