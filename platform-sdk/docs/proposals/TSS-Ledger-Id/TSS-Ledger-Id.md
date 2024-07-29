@@ -179,7 +179,7 @@ algorithm. Each node receives some number of shares in proportion to the consens
 is an EC key pair on the same curve. All public keys of the shares are known, and aggregating a threshold number of
 share public keys will produce the ledger id. Each node alone has access to the private key of its own shares. Each
 node must keep their private keys to themselves since a threshold number of share private keys can aggregate to
-recover the ledger private key. An aggregate number of signatures on the same message from the share private keys
+recover the ledger private key. A threshold number of signatures on the same message from the share private keys
 will aggregate to recover the ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
