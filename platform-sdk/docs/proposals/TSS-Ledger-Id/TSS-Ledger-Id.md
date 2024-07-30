@@ -657,7 +657,9 @@ The following startup sequence on new networks is modified from existing practic
 5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
    building a new hashgraph, working towards consensus on round 1. It is now in post-genesis mode.
 6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node provides the pre-genesis node a
-   copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes.
+   copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes. A
+   post genesis node can count or rate limit the number of times it has provided the key material to a pre-genesis
+   node to prevent an intentional or unintentional denial of service attack.
 
 #### Startup for Existing Networks
 
