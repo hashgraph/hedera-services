@@ -26,13 +26,13 @@ The architecture for update token custom fees follows the existing framework def
 ## Implementation
 
 ### New Function Implementations
+
 New system contract functions must be added to the `IHederaTokenService` interface to support the updating the custom fees for fungible and non-fungible tokens.
 
-| Function Selector Hash  | Function Signature                                    | Response                 |                                                                                                      | 
-|-------------------------|-------------------------------------------------------|--------------------------|------------------------------------------------------------------------------------------------------|
-| `0xe780c5d3`            | `function updateFungibleTokenCustomFees(address token,  IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.FractionalFee[] memory fractionalFees) returns (int64 responseCode)` | `ResponseCode`           | The response code from the call                                                                      |
-| `0x01f9eb7d`            | `function updateNonFungibleTokenCustomFees(address token, IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.RoyaltyFee[] memory royaltyFees) returns (int64 responseCode)` | `ResponseCode`           | The response code from the call                                                                      |
-
+| Function Selector Hash |                                                                                        Function Signature                                                                                         |    Response    |                                 |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|---------------------------------|
+| `0xe780c5d3`           | `function updateFungibleTokenCustomFees(address token,  IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.FractionalFee[] memory fractionalFees) returns (int64 responseCode)` | `ResponseCode` | The response code from the call |
+| `0x01f9eb7d`           | `function updateNonFungibleTokenCustomFees(address token, IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.RoyaltyFee[] memory royaltyFees) returns (int64 responseCode)`     | `ResponseCode` | The response code from the call |
 
 ### Smart Contract Service Module
 
@@ -85,4 +85,3 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
-
