@@ -658,6 +658,7 @@ public class ThrottleAccumulator {
         return implicitCreationsCount;
     }
 
+    @SuppressWarnings("ReplaceInefficientStreamCount")
     public int getAutoAssociationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableTokenRelationStore relationStore) {
         int autoAssociationsCount = 0;
@@ -666,15 +667,16 @@ public class ThrottleAccumulator {
             return 0;
         }
         for (var transfer : cryptoTransferBody.tokenTransfers()) {
-            final var tokenID = transfer.token();
             autoAssociationsCount += (int) transfer.transfers().stream()
                     .filter(accountAmount -> accountAmount.amount() > 0)
-                    .map(AccountAmount::accountID)
-                    .filter(accountID -> hasNoRelation(relationStore, accountID, tokenID))
+                    // FUTURE: This is a temporary fix to avoid state reads for auto-associations
+//                    .map(AccountAmount::accountID)
+//                    .filter(accountID -> hasNoRelation(relationStore, accountID, transfer.token()))
                     .count();
             autoAssociationsCount += (int) transfer.nftTransfers().stream()
-                    .map(NftTransfer::receiverAccountID)
-                    .filter(receiverID -> hasNoRelation(relationStore, receiverID, tokenID))
+                    // FUTURE: This is a temporary fix to avoid state reads for auto-associations
+//                    .map(NftTransfer::receiverAccountID)
+//                    .filter(receiverID -> hasNoRelation(relationStore, receiverID, transfer.token()))
                     .count();
         }
         return autoAssociationsCount;
