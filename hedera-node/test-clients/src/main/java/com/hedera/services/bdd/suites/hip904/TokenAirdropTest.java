@@ -323,17 +323,16 @@ public class TokenAirdropTest {
                             }),
                             withOpContext((spec, opLog) -> allRunFor(
                                     spec,
-                                    tokenAirdrop(
-                                            movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
                                                     .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                             .payingWith(OWNER)
                                             .via("txn"),
                                     // assert transfers
                                     getTxnRecord("txn")
                                             .hasPriority(recordWith()
-                                                    .pendingAirdrops(includingNftPendingAirdrop(
-                                                            movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-                                                                    .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
+                                                                    NON_FUNGIBLE_TOKEN, 7L)
+                                                            .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
                                     // assert balances
                                     getAliasedAccountBalance(receiverAccountAlias.get())
                                             .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
