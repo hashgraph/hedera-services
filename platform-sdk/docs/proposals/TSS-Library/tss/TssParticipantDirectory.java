@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.api;
+package com.hedera.cryptography.tss.api;
 
-import com.swirlds.signaturescheme.api.PairingPrivateKey;
-import com.swirlds.signaturescheme.api.PairingPublicKey;
-import com.swirlds.signaturescheme.api.SignatureSchema;
+import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
+import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
+import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;

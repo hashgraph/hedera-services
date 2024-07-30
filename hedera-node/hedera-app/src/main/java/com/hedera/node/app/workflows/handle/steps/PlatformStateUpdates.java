@@ -27,7 +27,7 @@ import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,7 +60,7 @@ public class PlatformStateUpdates {
      * @param txBody the transaction body
      */
     public void handleTxBody(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final PlatformState platformState,
             @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
