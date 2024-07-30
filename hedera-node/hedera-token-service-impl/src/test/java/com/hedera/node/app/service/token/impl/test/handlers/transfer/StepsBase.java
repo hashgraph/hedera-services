@@ -240,23 +240,35 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAirdropTxn(boolean isReceiverAssociated) {
+        givenAirdropTxn(isReceiverAssociated, ownerId, AirDropTransferType.TOKEN_AND_NFT_AIRDROP);
+    }
+
+    protected void givenAirdropTxn(boolean isReceiverAssociated, AccountID senderId, AirDropTransferType transferType) {
         var receiver = tokenReceiverNoAssociationId;
         if (isReceiverAssociated) {
             receiver = tokenReceiverId;
         }
-        airdropBody = TokenAirdropTransactionBody.newBuilder()
-                .tokenTransfers(
-                        TokenTransferList.newBuilder()
-                                .token(fungibleTokenId)
-                                .expectedDecimals(1000)
-                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(receiver, +1_000)))
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(nonFungibleTokenId)
-                                .expectedDecimals(1000)
-                                .nftTransfers(nftTransferWith(ownerId, receiver, 1))
-                                .build())
+
+        TokenTransferList fundgibleTokenTransferList = TokenTransferList.newBuilder()
+                .token(fungibleTokenId)
+                .expectedDecimals(1000)
+                .transfers(List.of(aaWith(senderId, -1_000), aaWith(receiver, +1_000)))
                 .build();
+        TokenTransferList nonFungibleTokenTransferList = TokenTransferList.newBuilder()
+                .token(nonFungibleTokenId)
+                .expectedDecimals(1000)
+                .nftTransfers(nftTransferWith(senderId, receiver, 1))
+                .build();
+        final var tokenAirdropTransactionBody = TokenAirdropTransactionBody.newBuilder();
+        if (transferType == AirDropTransferType.TOKEN_AIRDROP
+                || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
+            tokenAirdropTransactionBody.tokenTransfers(fundgibleTokenTransferList);
+        }
+        if (transferType == AirDropTransferType.NFT_AIRDROP
+                || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
+            tokenAirdropTransactionBody.tokenTransfers(nonFungibleTokenTransferList);
+        }
+        airdropBody = tokenAirdropTransactionBody.build();
         givenAirdropTxn(airdropBody, payerId);
     }
 
