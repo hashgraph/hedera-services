@@ -49,7 +49,7 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -167,7 +167,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     .commit();
         }
 
-        final var merkleState = app.workingStateAccessor().getMerkleState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
                         app.networkInfo().selfNodeInfo(),
@@ -178,7 +178,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getMerkleState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -261,12 +261,12 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         final Random random = new Random(82792874);
-        final var merkleState = app.workingStateAccessor().getMerkleState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = new StreamFileProducerSingleThreaded(
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getMerkleState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -437,8 +437,8 @@ final class BlockRecordManagerTest extends AppTestBase {
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
     }
 
-    private static MerkleState simpleBlockInfoState(final BlockInfo blockInfo) {
-        return new MerkleState() {
+    private static State simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new State() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull final String serviceName) {

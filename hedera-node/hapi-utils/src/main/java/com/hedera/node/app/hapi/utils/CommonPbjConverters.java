@@ -100,6 +100,17 @@ public class CommonPbjConverters {
         }
     }
 
+    public static @NonNull com.hederahashgraph.api.proto.java.ServiceEndpoint fromPbj(
+            @NonNull ServiceEndpoint endpoint) {
+        requireNonNull(endpoint);
+        try {
+            final var bytes = asBytes(ServiceEndpoint.PROTOBUF, endpoint);
+            return com.hederahashgraph.api.proto.java.ServiceEndpoint.parseFrom(bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static @NonNull com.hederahashgraph.api.proto.java.Key fromPbj(@NonNull Key keyValue) {
         requireNonNull(keyValue);
         try {

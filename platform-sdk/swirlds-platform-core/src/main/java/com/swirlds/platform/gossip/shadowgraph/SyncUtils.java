@@ -32,7 +32,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -402,8 +402,9 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                for (final EventDescriptor otherParent : event.getBaseEvent().getAllParents()) {
-                    parentHashesOfEventsToSend.add(otherParent.getHash());
+                for (final EventDescriptorWrapper otherParent :
+                        event.getBaseEvent().getAllParents()) {
+                    parentHashesOfEventsToSend.add(otherParent.hash());
                 }
             }
         }

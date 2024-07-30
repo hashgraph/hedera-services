@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.stack.savepoints;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.state.WrappedMerkleState;
+import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -39,7 +39,7 @@ public class FirstChildSavepoint extends AbstractSavepoint {
      * @param txnCategory the transaction category
      */
     public FirstChildSavepoint(
-            @NonNull final WrappedMerkleState state,
+            @NonNull final WrappedState state,
             @NonNull final BuilderSink parentSink,
             @NonNull final HandleContext.TransactionCategory txnCategory) {
         super(
