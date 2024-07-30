@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -34,14 +34,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class PayloadUtilsTest {
+class TransactionUtilsTest {
 
     @ParameterizedTest
     @MethodSource("buildArgumentsSwirldTransactions")
     void testSizeComparisonsSwirldTransactions(
-            final OneOf<PayloadOneOfType> payload, final PayloadWrapper swirldTransaction) {
-        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), swirldTransaction.getSize());
-        assertFalse(PayloadUtils.isSystemPayload(payload));
+            final OneOf<TransactionOneOfType> payload, final TransactionWrapper swirldTransaction) {
+        assertEquals(TransactionUtils.getLegacyTransactionSize(payload), swirldTransaction.getSize());
+        assertFalse(TransactionUtils.isSystemTransaction(payload));
     }
 
     protected static Stream<Arguments> buildArgumentsSwirldTransactions() {
@@ -51,8 +51,8 @@ class PayloadUtilsTest {
         IntStream.range(0, 100).forEach(i -> {
             final Bytes payload = randotron.nextHashBytes();
 
-            OneOf<PayloadOneOfType> oneOfPayload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload);
-            arguments.add(Arguments.of(oneOfPayload, new PayloadWrapper(oneOfPayload)));
+            OneOf<TransactionOneOfType> oneOfTransaction = new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, payload);
+            arguments.add(Arguments.of(oneOfTransaction, new TransactionWrapper(oneOfTransaction)));
         });
 
         return arguments.stream();
@@ -61,9 +61,9 @@ class PayloadUtilsTest {
     @ParameterizedTest
     @MethodSource("buildArgumentsStateSignatureTransaction")
     void testSizeComparisonsStateSignatureTransaction(
-            final OneOf<PayloadOneOfType> payload, final PayloadWrapper stateSignatureTransaction) {
-        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), stateSignatureTransaction.getSize());
-        assertTrue(PayloadUtils.isSystemPayload(payload));
+            final OneOf<TransactionOneOfType> payload, final TransactionWrapper stateSignatureTransaction) {
+        assertEquals(TransactionUtils.getLegacyTransactionSize(payload), stateSignatureTransaction.getSize());
+        assertTrue(TransactionUtils.isSystemTransaction(payload));
     }
 
     protected static Stream<Arguments> buildArgumentsStateSignatureTransaction() {
@@ -71,12 +71,12 @@ class PayloadUtilsTest {
         final Randotron randotron = Randotron.create();
 
         IntStream.range(0, 100).forEach(i -> {
-            final StateSignaturePayload payload = StateSignaturePayload.newBuilder()
+            final StateSignatureTransaction payload = StateSignatureTransaction.newBuilder()
                     .hash(randotron.nextHashBytes())
                     .signature(randotron.nextSignatureBytes())
                     .build();
-            final OneOf<PayloadOneOfType> oneOfPayload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload);
-            arguments.add(Arguments.of(oneOfPayload, new PayloadWrapper(oneOfPayload)));
+            final OneOf<TransactionOneOfType> oneOfTransaction = new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload);
+            arguments.add(Arguments.of(oneOfTransaction, new TransactionWrapper(oneOfTransaction)));
         });
 
         return arguments.stream();

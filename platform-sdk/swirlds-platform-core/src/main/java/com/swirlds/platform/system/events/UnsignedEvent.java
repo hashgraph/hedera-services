@@ -18,9 +18,9 @@ package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
-import com.hedera.hapi.platform.event.EventPayload;
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -32,8 +32,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
-import com.swirlds.platform.util.PayloadUtils;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -98,9 +98,9 @@ public class UnsignedEvent extends AbstractHashable {
     private final Instant timeCreated;
 
     /**
-     * the payload: an array of transactions
+     * list of transactions
      */
-    private final List<PayloadWrapper> transactions;
+    private final List<TransactionWrapper> transactions;
 
     /**
      * The core event data.
@@ -108,9 +108,9 @@ public class UnsignedEvent extends AbstractHashable {
     private final EventCore eventCore;
 
     /**
-     * The payloads of the event.
+     * The transactions of the event.
      */
-    private final List<EventPayload> payloads;
+    private final List<EventTransaction> eventTransactions;
 
     /**
      * The event descriptor for this event. Is not itself hashed.
@@ -126,7 +126,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @param otherParents    other parent event descriptors
      * @param birthRound      the round in which this event was created.
      * @param timeCreated     creation time, as claimed by its creator
-     * @param transactions    the payload: an array of transactions included in this event instance
+     * @param transactions    list of transactions included in this event instance
      */
     public UnsignedEvent(
             @NonNull final SoftwareVersion softwareVersion,
@@ -135,7 +135,7 @@ public class UnsignedEvent extends AbstractHashable {
             @NonNull final List<EventDescriptorWrapper> otherParents,
             final long birthRound,
             @NonNull final Instant timeCreated,
-            @NonNull final List<OneOf<PayloadOneOfType>> transactions) {
+            @NonNull final List<OneOf<TransactionOneOfType>> transactions) {
         Objects.requireNonNull(transactions, "The transactions must not be null");
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
@@ -146,7 +146,7 @@ public class UnsignedEvent extends AbstractHashable {
         this.allParents = createAllParentsList();
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
 
-        this.payloads = transactions.stream().map(EventPayload::new).toList();
+        this.eventTransactions = transactions.stream().map(EventTransaction::new).toList();
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
@@ -155,7 +155,7 @@ public class UnsignedEvent extends AbstractHashable {
                         .map(EventDescriptorWrapper::eventDescriptor)
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
-        this.transactions = transactions.stream().map(PayloadWrapper::new).toList();
+        this.transactions = transactions.stream().map(TransactionWrapper::new).toList();
     }
 
     /**
@@ -163,7 +163,7 @@ public class UnsignedEvent extends AbstractHashable {
      * Since events are being migrated to protobuf, calculating the hash of an event will change.
      *
      * @param out the stream to which this object is to be written
-     * @throws IOException if unsupported payload types are encountered
+     * @throws IOException if unsupported transaction types are encountered
      */
     public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(CLASS_ID);
@@ -175,7 +175,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @param out the stream to which this object is to be written
      *
-     * @throws IOException if unsupported payload types are encountered
+     * @throws IOException if unsupported transaction types are encountered
      */
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(ClassVersion.BIRTH_ROUND);
@@ -189,51 +189,51 @@ public class UnsignedEvent extends AbstractHashable {
 
         // write serialized length of transaction array first, so during the deserialization proces
         // it is possible to skip transaction array and move on to the next object
-        out.writeInt(PayloadUtils.getLegacyObjectSize(payloads));
+        out.writeInt(TransactionUtils.getLegacyObjectSize(eventTransactions));
         // transactions may include both system transactions and application transactions
         // so writeClassId set to true and allSameClass set to false
-        out.writeInt(payloads.size());
-        if (!payloads.isEmpty()) {
+        out.writeInt(eventTransactions.size());
+        if (!eventTransactions.isEmpty()) {
             final boolean allSameClass = false;
             out.writeBoolean(allSameClass);
         }
-        for (final EventPayload payload : payloads) {
-            switch (payload.payload().kind()) {
-                case APPLICATION_PAYLOAD:
-                    serializeApplicationPayload(out, payload);
+        for (final EventTransaction transaction : eventTransactions) {
+            switch (transaction.transaction().kind()) {
+                case APPLICATION_TRANSACTION:
+                    serializeApplicationTransaction(out, transaction);
                     break;
-                case STATE_SIGNATURE_PAYLOAD:
-                    serializeStateSignaturePayload(out, payload);
+                case STATE_SIGNATURE_TRANSACTION:
+                    serializeStateSignatureTransaction(out, transaction);
                     break;
                 default:
                     throw new IOException(
-                            "Unknown payload type: " + payload.payload().kind());
+                            "Unknown transaction type: " + transaction.transaction().kind());
             }
         }
     }
 
-    private static void serializeApplicationPayload(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
+    private static void serializeApplicationTransaction(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction) throws IOException {
         out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
         out.writeInt(APPLICATION_TRANSACTION_VERSION);
-        final Bytes bytes = payload.payload().as();
+        final Bytes bytes = transaction.transaction().as();
         out.writeInt((int) bytes.length());
         bytes.writeTo(out);
     }
 
-    private static void serializeStateSignaturePayload(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
-        final StateSignaturePayload stateSignaturePayload = payload.payload().as();
+    private static void serializeStateSignatureTransaction(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction) throws IOException {
+        final StateSignatureTransaction stateSignatureTransaction = transaction.transaction().as();
 
         out.writeLong(STATE_SIGNATURE_CLASS_ID);
         out.writeInt(STATE_SIGNATURE_VERSION);
-        out.writeInt((int) stateSignaturePayload.signature().length());
-        stateSignaturePayload.signature().writeTo(out);
+        out.writeInt((int) stateSignatureTransaction.signature().length());
+        stateSignatureTransaction.signature().writeTo(out);
 
-        out.writeInt((int) stateSignaturePayload.hash().length());
-        stateSignaturePayload.hash().writeTo(out);
+        out.writeInt((int) stateSignatureTransaction.hash().length());
+        stateSignatureTransaction.hash().writeTo(out);
 
-        out.writeLong(stateSignaturePayload.round());
+        out.writeLong(stateSignatureTransaction.round());
         out.writeInt(Integer.MIN_VALUE); // epochHash is always null
     }
 
@@ -242,7 +242,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @param in the stream from which this object is to be read
      * @return the deserialized event
-     * @throws IOException if unsupported payload types are encountered
+     * @throws IOException if unsupported transaction types are encountered
      */
     public static UnsignedEvent deserialize(@NonNull final SerializableDataInputStream in) throws IOException {
         final int version = in.readInt();
@@ -264,20 +264,20 @@ public class UnsignedEvent extends AbstractHashable {
 
         final Instant timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
-        final int payloadSize = in.readInt();
-        if (payloadSize > 0) {
+        final List<OneOf<TransactionOneOfType>> transactionList = new ArrayList<>();
+        final int transactionSize = in.readInt();
+        if (transactionSize > 0) {
             in.readBoolean(); // allSameClass
         }
-        for (int i = 0; i < payloadSize; i++) {
+        for (int i = 0; i < transactionSize; i++) {
             final long classId = in.readLong();
             final int classVersion = in.readInt();
             if (classId == APPLICATION_TRANSACTION_CLASS_ID) {
                 transactionList.add(new OneOf<>(
-                        PayloadOneOfType.APPLICATION_PAYLOAD, deserializeApplicationPayload(in, classVersion)));
+                        TransactionOneOfType.APPLICATION_TRANSACTION, deserializeApplicationTransaction(in, classVersion)));
             } else if (classId == STATE_SIGNATURE_CLASS_ID) {
                 transactionList.add(new OneOf<>(
-                        PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, deserializeStateSignaturePayload(in, classVersion)));
+                        TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, deserializeStateSignatureTransaction(in, classVersion)));
             } else {
                 throw new IOException("Unknown classId: " + classId);
             }
@@ -288,7 +288,7 @@ public class UnsignedEvent extends AbstractHashable {
     }
 
     @Nullable
-    private static Bytes deserializeApplicationPayload(
+    private static Bytes deserializeApplicationTransaction(
             @NonNull final SerializableDataInputStream in, final int classVersion) throws IOException {
         if (classVersion != APPLICATION_TRANSACTION_VERSION) {
             throw new IOException("Unsupported application class version: " + classVersion);
@@ -301,7 +301,7 @@ public class UnsignedEvent extends AbstractHashable {
         return null;
     }
 
-    private static StateSignaturePayload deserializeStateSignaturePayload(
+    private static StateSignatureTransaction deserializeStateSignatureTransaction(
             SerializableDataInputStream in, int classVersion) throws IOException {
         if (classVersion != STATE_SIGNATURE_VERSION) {
             throw new IOException("Unsupported state signature class version: " + classVersion);
@@ -310,7 +310,7 @@ public class UnsignedEvent extends AbstractHashable {
         final byte[] hashBytes = in.readByteArray(1000000);
         final long round = in.readLong();
         in.readInt(); // epochHash is always null
-        return new StateSignaturePayload(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
+        return new StateSignatureTransaction(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
     }
 
     @Override
@@ -513,7 +513,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return array of transactions inside this event instance
      */
     @NonNull
-    public List<PayloadWrapper> getTransactions() {
+    public List<TransactionWrapper> getTransactions() {
         return transactions;
     }
 
@@ -564,12 +564,12 @@ public class UnsignedEvent extends AbstractHashable {
     }
 
     /**
-     * Get the payloads of the event.
+     * Get the transactions of the event.
      *
-     * @return list of payloads
+     * @return list of transactions
      */
     @NonNull
-    public List<EventPayload> getPayloads() {
-        return payloads;
+    public List<EventTransaction> getEventTransactions() {
+        return eventTransactions;
     }
 }

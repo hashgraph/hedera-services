@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.stale;
 
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -70,11 +70,11 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
-        final List<OneOf<PayloadOneOfType>> systemTransactions = new ArrayList<>();
+        final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
+        final List<OneOf<TransactionOneOfType>> systemTransactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
             final boolean systemTransaction = randotron.nextBoolean();
-            final OneOf<PayloadOneOfType> transaction;
+            final OneOf<TransactionOneOfType> transaction;
             if (systemTransaction) {
 
                 final boolean tooOld = randotron.nextBoolean(0.1);
@@ -90,9 +90,9 @@ class TransactionResubmitterTests {
                     round = randotron.nextLong(currentRound - maxSignatureAge, currentRound);
                 }
 
-                final StateSignaturePayload payload = new StateSignaturePayload(
+                final StateSignatureTransaction payload = new StateSignatureTransaction(
                         round, randotron.nextSignature().getBytes(), randotron.nextHashBytes());
-                transaction = new OneOf<>(STATE_SIGNATURE_PAYLOAD, payload);
+                transaction = new OneOf<>(STATE_SIGNATURE_TRANSACTION, payload);
 
                 if (!tooOld) {
                     systemTransactions.add(transaction);
@@ -100,7 +100,7 @@ class TransactionResubmitterTests {
             } else {
                 final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
                 buffer.putLong(randotron.nextLong());
-                transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
+                transaction = new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
             }
             transactions.add(transaction);
         }
@@ -108,7 +108,7 @@ class TransactionResubmitterTests {
         final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
-        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
 
         assertEquals(systemTransactions.size(), transactionsToResubmit.size());
         for (int i = 0; i < systemTransactions.size(); i++) {
@@ -134,18 +134,18 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
+        final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
             final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.putLong(randotron.nextLong());
-            final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
+            final OneOf<TransactionOneOfType> transaction = new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
             transactions.add(transaction);
         }
 
         final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
-        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 
@@ -170,7 +170,7 @@ class TransactionResubmitterTests {
                 .setTransactions(Collections.emptyList())
                 .build();
 
-        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 

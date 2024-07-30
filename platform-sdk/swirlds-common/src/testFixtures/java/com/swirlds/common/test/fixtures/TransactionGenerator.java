@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.fixtures;
 
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Random;
 
@@ -33,5 +33,5 @@ public interface TransactionGenerator {
      * 		source of randomness. May or may not be used depending on the implementation.
      * @return an array of transactions
      */
-    PayloadWrapper[] generate(final Random random);
+    TransactionWrapper[] generate(final Random random);
 }

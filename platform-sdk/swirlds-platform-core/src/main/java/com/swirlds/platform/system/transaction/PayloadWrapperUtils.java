@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Utility class for creating {@link PayloadWrapper} instances.
+ * Utility class for creating {@link TransactionWrapper} instances.
  */
 public final class PayloadWrapperUtils {
     private PayloadWrapperUtils() {
@@ -30,26 +30,26 @@ public final class PayloadWrapperUtils {
     }
 
     /**
-     * Creates an application {@link PayloadWrapper} instance and wraps the given payload in an {@link OneOf} and {@link Bytes} instances.
+     * Creates an application {@link TransactionWrapper} instance and wraps the given payload in an {@link OneOf} and {@link Bytes} instances.
      *
      * @param payload the payload as a byte array
      *
-     * @return the created {@link PayloadWrapper} instance
+     * @return the created {@link TransactionWrapper} instance
      */
     @NonNull
-    public static PayloadWrapper createAppPayloadWrapper(final byte[] payload) {
+    public static TransactionWrapper createAppPayloadWrapper(final byte[] payload) {
         return createAppPayloadWrapper(Bytes.wrap(payload));
     }
 
     /**
-     * Creates a application {@link PayloadWrapper} instance and wraps the given payload in an {@link OneOf} instance.
+     * Creates a application {@link TransactionWrapper} instance and wraps the given payload in an {@link OneOf} instance.
      *
      * @param payload the payload as {@link Bytes}
      *
-     * @return the created {@link PayloadWrapper} instance
+     * @return the created {@link TransactionWrapper} instance
      */
     @NonNull
-    public static PayloadWrapper createAppPayloadWrapper(@NonNull final Bytes payload) {
-        return new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload));
+    public static TransactionWrapper createAppPayloadWrapper(@NonNull final Bytes payload) {
+        return new TransactionWrapper(new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, payload));
     }
 }

@@ -68,7 +68,7 @@ public final class EventUtils {
         if (event.getConsensusTimestamp() == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
-        if (transactionIndex >= event.getPayloadCount()) {
+        if (transactionIndex >= event.getTransactionCount()) {
             throw new IllegalArgumentException("Event does not have a transaction with index: " + transactionIndex);
         }
         return event.getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
@@ -87,9 +87,9 @@ public final class EventUtils {
         }
         // this is a special case. if an event has 0 or 1 transactions, the timestamp of the last transaction can be
         // considered to be the same, equivalent to the timestamp of the event
-        if (event.getPayloadCount() <= 1) {
+        if (event.getTransactionCount() <= 1) {
             return event.getConsensusTimestamp();
         }
-        return getTransactionTime(event, event.getPayloadCount() - 1);
+        return getTransactionTime(event, event.getTransactionCount() - 1);
     }
 }

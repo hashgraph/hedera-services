@@ -24,7 +24,7 @@ import static com.swirlds.common.wiring.wires.SolderType.OFFER;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -103,7 +103,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
@@ -136,7 +136,7 @@ public class PlatformWiring {
     private final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, PlatformEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final ComponentWiring<StateSigner, StateSignaturePayload> stateSignerWiring;
+    private final ComponentWiring<StateSigner, StateSignatureTransaction> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -168,7 +168,7 @@ public class PlatformWiring {
     private final boolean publishStaleEvents;
     private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
             staleEventDetectorWiring;
-    private final ComponentWiring<TransactionResubmitter, List<PayloadWrapper>> transactionResubmitterWiring;
+    private final ComponentWiring<TransactionResubmitter, List<TransactionWrapper>> transactionResubmitterWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
@@ -522,7 +522,7 @@ public class PlatformWiring {
 
         staleEventsFromStaleEventDetector.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
-        final OutputWire<StateSignaturePayload> splitTransactionResubmitterOutput =
+        final OutputWire<StateSignatureTransaction> splitTransactionResubmitterOutput =
                 transactionResubmitterWiring.getSplitOutput();
         splitTransactionResubmitterOutput.solderTo(
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
@@ -536,12 +536,12 @@ public class PlatformWiring {
                 TransactionPrehandler::prehandleApplicationTransactions));
 
         // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
-        final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignaturePayload>>>
+        final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 preConsensusTransformer = new WireTransformer<>(
                         model,
                         "extractPreconsensusSignatureTransactions",
                         "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
+                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignatureTransaction.class));
         splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
         preConsensusTransformer
                 .getOutputWire()
@@ -673,12 +673,12 @@ public class PlatformWiring {
         // FUTURE WORK: Split the single StateAndRound output into separate State and Round wires.
 
         // Extract signatures from post-consensus events for input to the StateSignatureCollector.
-        final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignaturePayload>>>
+        final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
                 postConsensusTransformer = new WireTransformer<>(
                         model,
                         "extractConsensusSignatureTransactions",
                         "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
+                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class));
         hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
         postConsensusTransformer
                 .getOutputWire()
