@@ -123,26 +123,26 @@ Implications Of Completion
 
 TSS Core Requirements
 
-| Requirement ID |                                                        Requirement Description                                                         |
-|----------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.                         |
-| TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                             |
-| TSS-003        | The `ledger id` MUST be a public key that everyone knows and able to verify signatures from the ledger private key.                    |
-| TSS-004        | The ledger signature MUST be produced through aggregating signatures from consensus nodes representing more than 1/2 consensus weight. |
-| TSS-005        | There MUST be a way to bootstrap an existing network's consensus roster with the ledger public/private signing key                     |
-| TSS-006        | There MUST be a way for a new network to generate a public/private signing key for the ledger.                                         |
-| TSS-007        | There MUST be a way to rotate the ledger's public/private signing key.                                                                 |
-| TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive gas cost.                                         |
-| TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                                       |
-| TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                                        |
-| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                                         |
+| Requirement ID |                                                        Requirement Description                                                        |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.                        |
+| TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                            |
+| TSS-003        | The `ledger id` MUST be a public key that everyone knows and able to verify signatures from the ledger private key.                   |
+| TSS-004        | The ledger signature MUST be produced through aggregating signatures from consensus nodes representing at least 1/3 consensus weight. |
+| TSS-005        | There MUST be a way to bootstrap an existing network's consensus roster with the ledger public/private signing key                    |
+| TSS-006        | There MUST be a way for a new network to generate a public/private signing key for the ledger.                                        |
+| TSS-007        | There MUST be a way to rotate the ledger's public/private signing key.                                                                |
+| TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive gas cost.                                        |
+| TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                                      |
+| TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                                       |
+| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                                        |
 
 Block Signing Requirements
 
-| Requirement ID |                                 Requirement Description                                 |
-|----------------|-----------------------------------------------------------------------------------------|
-| TSSBS-001      | The initial block in the block stream MUST be signed and verifiable with the ledger id. |
-| TSSBS-002      | On a new network, the initial block MUST be block 1                                     |
+| Requirement ID |                                   Requirement Description                                   |
+|----------------|---------------------------------------------------------------------------------------------|
+| TSSBS-001      | The initial block in the block stream SHOULD be signable and verifiable with the ledger id. |
+| TSSBS-002      | On a new network, the initial block MUST be block 1                                         |
 
 ### Design Decisions
 
@@ -215,8 +215,8 @@ and used in the recovery of the ledger id, otherwise the bit is `0`.
 ##### Elliptic Curve Decisions
 
 Our first implementation of Groth21 will use the ALT_BN_128 ([BN254](https://hackmd.io/@jpw/bn254)) elliptic curve which
-has precompiles in the EVM.
-If the Ethereum ecosystem creates precompiles for BLS12_381, we may switch over to that more secure curve.
+has precompiles in the EVM. If the Ethereum ecosystem creates precompiles for BLS12_381, we may switch over to that
+more secure curve.
 
 ##### New Elliptic Curve Node Keys
 
@@ -228,7 +228,7 @@ keys of the `tssEncryptionKeys` must be in the address book.
 ##### Groth21 Drawbacks
 
 The Groth21 algorithm is not able to model arbitrary precision proportions of weight assigned to nodes in the
-network. For example if each node in a 4 node network received 1 share, then every share has a weight of 1/4.
+network. For example if each node in a 4 node network received 1 share, then every share has 1/4 of the total.
 If there are a total of N shares, then the distribution of weight can only be modeled in increments of (1/N) * total
 weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. (See the
 picture of TssMessages above.) This forces us to pick a number of total shares with a max value in the thousands.
@@ -237,7 +237,7 @@ This modeling of weight uses small integer precision.
 ##### Calculating Number of Shares from Weight and Recovery Threshold
 
 Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
-calculated as follows:
+calculated as follows using java integer arithmetic where division rounds down:
 
 - Let `N` be the max number of shares that any node can have. (A configured value.)
 - Let `maxWeight` be the max weight assigned to any node.
@@ -247,15 +247,16 @@ calculated as follows:
 
 ###### Threshold for recovery of Signatures and Ledger Id.
 
-The network must be able to tolerate up to 1/3 of the stake assigned to malicious nodes. Breaking up the weight
-into `N + 1` values (`0`, `1`, `2`, ... `N`) introduces a potential error in the modeling of weight. To account for
+The network must be able to tolerate less than 1/3 of the weight assigned to malicious nodes. Modeling the weight as
+a fewer number of shares introduces a potential error in representation. To account for
 this error, we need a guaranteed safe threshold for the number of shares that must be used to recover the ledger id.
 
-A threshold of `(TS + 2) / 2` has been proven secure under the following conditions:
+A threshold of at least `(TS + 2) / 2`, with java integer division rounding down, has been proven secure under the
+following conditions:
 
 * Let `minWeight` be the minimum non-zero weight assigned to any node.
 * Let `maxWeight` be the maximum weight assigned to any node.
-* Let `R = maxWeight / minWeight` be the real number ratio of maximum weight to the minimum.
+* Let `R = maxWeight / minWeight` be the real number ratio.
 * Let `N>0` be the max number of shares that any node can have.
 * If `R <= 2*N` then the threshold of `(TS + 2) / 2` is secure.
 
@@ -283,6 +284,16 @@ Proof Sketch by Dr. Leemon Baird:
   you collect only shares with wps of 1, and all the rest are 1/2. And again, that means you have more than 1/2 the
   shares.
 - So both theorems are proved.
+
+###### Impacts on Service's Calculation of Weight from Staked HBars
+
+The services layer will track staking to nodes, clipping any stake above the max, and reducing any stake below `1/R` of
+the maximum clipped stake to zero (where `R` is a setting of services, set to twice the max number of shares allowed per
+node).
+
+The resulting stake (after clipping or zeroing) is passed to the platform layer, which treats it as a “weight” for
+consensus, and which then generates a number of shares for each node. That share count is proportional to that weight,
+and acts as a low-resolution version of that weight.
 
 ##### TSS Algorithm - Alternatives Considered
 
@@ -327,14 +338,15 @@ There will be a pre-genesis phase where the genesis roster is keyed and a random
 happen through running the platform without application transactions. After the platform keys the roster, the
 platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
 id. After the platform restarts, application transactions are accepted and the platform starts building a new
-hashgraph from round 0. This ensures that the first user transactions handled by the network are in a block that can be
-signed as soon as possible. The alternative is that blocks will go unsigned until the nodes go through TSS
-bootstrap, which may be several rounds later.
+hashgraph, working towards consensus on round 1 with the ability to sign block 1. This ensures that the first user
+transactions handled by the network are in a block that can have a block proof soon as possible. The
+alternative is that blocks will go without block proofs until the nodes go through TSS bootstrap, which may be
+several rounds later.
 
 While this solution does not capture the TSS bootstrap communication in the history of the hashgraph after the
 platform restarts, nodes can cryptographically verify that the setup process took place correctly through using the
 TSS key material to re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient
-variety of nodes. With the assumption that no greater than 1/3 weight is assigned to malicious nodes, the threshold
+variety of nodes. With the assumption that less than 1/3 of the weight is assigned to malicious nodes, the threshold
 of 1/2 ensures that the malicious nodes will not be able to recover the ledger private key if they collude together.
 
 The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.
@@ -372,7 +384,7 @@ material can generate the ledger key.
 | 5 | TSS Setup in block history, initial block == 1, covers all prior rounds, and is signed                        | <span style="color:red">NO</span>    | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     | Cognitive burden to reason about block # and round # discrepancy.                  |
 | 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
 | 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
-| 8 | Instead of separate app, detect genesis, key the state, network restart from round 0 with keyed state.        | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
+| 8 | Instead of separate app, detect genesis, key the state, restart the network with a keyed genesis state.       | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 
 Option 2 was chosen for existing networks and Option 8 was selected for new networks. This decision was made to
 ensure that the first block in the block stream is can be signed by the ledger.
@@ -617,7 +629,7 @@ messages from one roster to the next roster
 #### Startup for New Networks
 
 At the start of a new network there will be a new pre-genesis phase to generate the key material for the genesis
-roster and then restart the network from round 0 with the new key material and ledger id.
+roster and then restart the network adding the new key material and ledger id to the genesis state.
 
 The following startup sequence on new networks is modified from existing practices.
 
@@ -643,7 +655,7 @@ The following startup sequence on new networks is modified from existing practic
    8. When a node detects that a threshold number of pre-genesis nodes on the network are ready to adopt the key
       material, the node adds the key material and ledger id to a copy of the genesis state and restarts the platform.
 5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
-   building a new hashgraph from round 0. It is now in post-genesis mode.
+   building a new hashgraph, working towards consensus on round 1. It is now in post-genesis mode.
 6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node provides the pre-genesis node a
    copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes.
 
