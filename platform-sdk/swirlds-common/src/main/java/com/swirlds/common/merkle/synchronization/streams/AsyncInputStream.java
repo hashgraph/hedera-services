@@ -148,7 +148,7 @@ public class AsyncInputStream implements AutoCloseable {
                     sharedQueue.add(new SharedQueueItem(viewId, messageBytes));
                     // Slow down reading from the stream, if handling threads can't keep up
                     if (sharedQueueSize.incrementAndGet() > sharedQueueSizeThreshold) {
-                        Thread.sleep(0, 1);
+                        Thread.onSpinWait();
                     }
                 } else {
                     final Queue<byte[]> viewQueue =
@@ -162,9 +162,6 @@ public class AsyncInputStream implements AutoCloseable {
             }
         } catch (final IOException e) {
             workGroup.handleError(e);
-        } catch (final InterruptedException e) {
-            logger.warn(RECONNECT.getMarker(), this.toString() + " interrupted");
-            Thread.currentThread().interrupt();
         } finally {
             finishedLatch.countDown();
         }

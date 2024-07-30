@@ -27,6 +27,7 @@ import com.swirlds.virtualmap.internal.Path;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +44,7 @@ import org.apache.logging.log4j.Logger;
  * Path#INVALID_PATH}, this request is sent to indicate that there will be no more requests from
  * the learner, and this task is finished.
  */
+@SuppressWarnings("rawtypes")
 public class LearnerPullVirtualTreeSendTask {
 
     private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeSendTask.class);
@@ -53,7 +55,6 @@ public class LearnerPullVirtualTreeSendTask {
     private final int viewId;
     private final AsyncOutputStream out;
     private final LearnerPullVirtualTreeView view;
-    private final NodeTraversalOrder traversalOrder;
 
     // Max time to wait for path 0 (virtual root) response from the teacher
     private final Duration rootResponseTimeout;
@@ -64,6 +65,9 @@ public class LearnerPullVirtualTreeSendTask {
     // Number of requests sent to teacher / responses expected from the teacher. Increased in
     // this task, decreased in the receiving task
     private final AtomicLong responsesExpected;
+
+    private final AtomicBoolean rootRequestSent;
+    private final AtomicBoolean lastPathSent;
 
     /**
      * Create a thread for sending node requests to the teacher.
@@ -86,16 +90,18 @@ public class LearnerPullVirtualTreeSendTask {
             final int viewId,
             final AsyncOutputStream out,
             final LearnerPullVirtualTreeView view,
-            final NodeTraversalOrder traversalOrder,
             final CountDownLatch rootResponseReceived,
-            final AtomicLong responsesExpected) {
+            final AtomicLong responsesExpected,
+            final AtomicBoolean rootRequestSent,
+            final AtomicBoolean lastPathSent) {
         this.workGroup = workGroup;
         this.viewId = viewId;
         this.out = out;
         this.view = view;
-        this.traversalOrder = traversalOrder;
         this.rootResponseReceived = rootResponseReceived;
         this.responsesExpected = responsesExpected;
+        this.rootRequestSent = rootRequestSent;
+        this.lastPathSent = lastPathSent;
 
         this.rootResponseTimeout = reconnectConfig.pullLearnerRootResponseTimeout();
     }
@@ -106,30 +112,29 @@ public class LearnerPullVirtualTreeSendTask {
 
     private void run() {
         try {
-            // Send a request for the root node first. The response will contain virtual tree path range
-            view.anticipatePath(0);
-            out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
-            view.getMapStats().incrementTransfersFromLearner();
-            responsesExpected.incrementAndGet();
+            if (rootRequestSent.compareAndSet(false, true)) {
+                // Send a request for the root node first. The response will contain virtual tree path range
+                out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
+                view.getMapStats().incrementTransfersFromLearner();
+                responsesExpected.incrementAndGet();
+            }
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new MerkleSynchronizationException(
                         "Timed out waiting for root node response from the teacher " + viewId);
             }
 
             while (!Thread.currentThread().isInterrupted()) {
-                final long path = traversalOrder.getNextPathToSend();
-                if (path < Path.INVALID_PATH) {
-                    Thread.onSpinWait();
-                    continue;
-                }
-                view.anticipatePath(path);
-                final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
-                responsesExpected.incrementAndGet();
-                out.sendAsync(viewId, new PullVirtualTreeRequest(path, hash));
-                view.getMapStats().incrementTransfersFromLearner();
+                final long path = view.getNextPathToSend();
                 if (path == Path.INVALID_PATH) {
+                    if (lastPathSent.compareAndSet(false, true)) {
+                        responsesExpected.incrementAndGet();
+                        out.sendAsync(viewId, new PullVirtualTreeRequest(path, null));
+                    }
                     break;
                 }
+                responsesExpected.incrementAndGet();
+                out.sendAsync(viewId, new PullVirtualTreeRequest(path, view.getNodeHash(path)));
+                view.getMapStats().incrementTransfersFromLearner();
             }
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner sending task is interrupted");

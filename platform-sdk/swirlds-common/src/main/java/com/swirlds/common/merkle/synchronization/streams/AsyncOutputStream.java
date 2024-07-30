@@ -16,8 +16,6 @@
 
 package com.swirlds.common.merkle.synchronization.streams;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -142,14 +140,7 @@ public class AsyncOutputStream implements AutoCloseable {
                 if (!workDone) {
                     workDone = flush();
                     if (!workDone) {
-                        try {
-                            Thread.sleep(0, 1);
-                        } catch (final InterruptedException e) {
-                            logger.warn(RECONNECT.getMarker(), "AsyncOutputStream interrupted");
-                            alive.set(false);
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
+                        Thread.onSpinWait();
                     }
                 }
             }

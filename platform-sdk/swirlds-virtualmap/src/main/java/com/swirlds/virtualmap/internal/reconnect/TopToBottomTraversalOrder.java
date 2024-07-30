@@ -84,7 +84,12 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     }
 
     @Override
-    public long getNextPathToSend() {
+    public long getNextInternalPathToSend() {
+        return Path.INVALID_PATH;
+    }
+
+    @Override
+    public long getNextLeafPathToSend() {
         assert lastPath != Path.INVALID_PATH;
         long path = lastPath + 1;
         long result = skipCleanPaths(path);
@@ -100,7 +105,7 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
      * For the given path, find the highest clean parent path on the way to the root. If such
      * a clean parent is found, all paths in the parent's sub-tree at the same rank as the
      * initial path are skipped, and the next path outside of the sub-tree is returned (it may
-     * also be clean, this is handled in the loop in {@link #getNextPathToSend()}. Is the
+     * also be clean, this is handled in the loop in {@link #getNextLeafPathToSend()}. Is the
      * sub-tree spans up to the last leaf path, this method returns Path.INVALID_PATH, which
      * indicates there are no more requests to the teacher to send. If no clean parents are
      * found, the initial path is returned.

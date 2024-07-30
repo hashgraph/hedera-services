@@ -33,9 +33,10 @@ public interface NodeTraversalOrder {
      * to send.
      *
      * @return the next virtual path to send to the teacher
-     * @throws InterruptedException if the current thread is interrupted while backpressure waiting
      */
-    long getNextPathToSend() throws InterruptedException;
+    long getNextInternalPathToSend();
+
+    long getNextLeafPathToSend();
 
     /**
      * Notifies this object that a node response is received from the teacher. This method may be called

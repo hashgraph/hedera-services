@@ -21,7 +21,6 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Deque;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -81,19 +80,11 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
     // Chunk width, i.e. number of paths in the chunk, at the chunk's start rank
     private AtomicReferenceArray<Long> chunkWidths;
 
-    // Index of the chunk, in which the last internal path at phase 1 was sent
-    private int lastSentPathChunk;
-
     // For every chunk, a list of paths to check next. Initially this is a starting
     // path for every chunk. Then this list may contain clean nodes' parents. If for a chunk
     // this list is not empty, paths from the list are sent before "pessimistic" paths
     // for this chunk
-    private AtomicReferenceArray<Deque<Long>> chunkNextToCheckPaths;
-
-    // For every chunk, the next "pessimistic" internal node in the chunk to check. These
-    // nodes are at chunk starting ranks. If such a path appears to be clean, it's skipped
-    // up to the next dirty path or the end of the chunk
-    private Map<Integer, Long> chunkNextPessimisticPaths;
+    private final Deque<Long> internalsToCheck = new ConcurrentLinkedDeque<>();
 
     // Used during phase 2
     private long lastLeafPath = Path.INVALID_PATH;
@@ -118,8 +109,8 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             return; // no phase 1, just iterate over all leaves
         }
 
-        // Higher the stop rank, less number of chunks
-        chunksStopRank = Math.max(leafParentRank / 2, 13);
+        // Higher the stop rank, less the number of chunks
+        chunksStopRank = Math.max(leafParentRank / 2, 12);
         chunkCount = 1 << chunksStopRank;
         // Height of chunks starting from leaf parent rank. Chunks starting from first leaf rank
         // will be of minChunkHeight + 1 height
@@ -130,8 +121,6 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         chunkStartPaths = new AtomicReferenceArray<>(chunkCount);
         chunkWidths = new AtomicReferenceArray<>(chunkCount);
         chunkStartRanks = new AtomicReferenceArray<>(chunkCount);
-        chunkNextToCheckPaths = new AtomicReferenceArray<>(chunkCount);
-        chunkNextPessimisticPaths = new ConcurrentHashMap<>(chunkCount);
         for (int i = 0; i < chunkCount; i++) {
             final long p = firstPathInLeafParentRank + ((long) i << minChunkHeight);
             final int startRank;
@@ -149,11 +138,8 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             chunkStartPaths.set(i, startPath);
             chunkStartRanks.set(i, startRank);
             chunkWidths.set(i, chunkWidth);
-            chunkNextToCheckPaths.set(i, new ConcurrentLinkedDeque<>());
-            chunkNextPessimisticPaths.put(i, chunkStartPaths.get(i));
+            internalsToCheck.add(chunkStartPaths.get(i));
         }
-
-        lastSentPathChunk = -1;
     }
 
     @Override
@@ -174,10 +160,9 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
                     // need to keep them in the set
                     cleanNodes.remove(Path.getLeftChildPath(path));
                     cleanNodes.remove(Path.getRightChildPath(path));
-                    // If clean and left, add the parent to the list of paths to check. Even if
-                    // the parent is higher in the tree than chunkStopRank
-                    if ((path != 1) && Path.isLeft(path)) {
-                        chunkNextToCheckPaths.get(chunk).addFirst(Path.getParentPath(path));
+                    // If clean and left, add the parent to the list of paths to check
+                    if ((path != Path.INVALID_PATH) && Path.isLeft(path)) {
+                        internalsToCheck.addFirst(Path.getParentPath(path));
                     }
                 } else {
                     // At the chunk start rank, every other path (i.e. all right paths) are skipped by
@@ -188,7 +173,7 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
                     final int chunkStartRank = chunkStartRanks.get(chunk);
                     final int pathRank = Path.getRank(path);
                     if ((pathRank == chunkStartRank) && Path.isLeft(path)) {
-                        chunkNextToCheckPaths.get(chunk).addLast(path + 1);
+                        internalsToCheck.addLast(path + 1);
                     }
                 }
             }
@@ -200,54 +185,30 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
     }
 
     @Override
-    public long getNextPathToSend() {
-        long result = -1;
-        if (lastLeafPath == -1) {
-            for (int i = 0; i < chunkCount; i++) {
-                final int chunk = (lastSentPathChunk + 1 + i) % chunkCount;
-                // Check the queue first. If not empty, return a path from there (if not clean)
-                final Deque<Long> toCheck = chunkNextToCheckPaths.get(chunk);
-                result = toCheck.isEmpty() ? Path.INVALID_PATH : toCheck.pollFirst();
-                while ((result != Path.INVALID_PATH) && hasCleanParent(result)) {
-                    result = toCheck.isEmpty() ? Path.INVALID_PATH : toCheck.pollFirst();
-                }
-                if (result != Path.INVALID_PATH) {
-                    lastSentPathChunk = chunk;
-                    break;
-                }
-                // Otherwise proceed to the next pessimistic path at chunk start rank
-                final long nextPessimisticPath = chunkNextPessimisticPaths.get(chunk);
-                if (nextPessimisticPath == Path.INVALID_PATH) {
-                    continue;
-                }
-                result = skipCleanPaths(nextPessimisticPath, getLastChunkPath(chunk));
-                if (result == Path.INVALID_PATH) {
-                    // All remaining paths at chunk start rank are clear. Mark the chunk as done
-                    // and try the next chunk
-                    chunkNextPessimisticPaths.put(chunk, Path.INVALID_PATH);
-                    continue;
-                }
-                // Only left paths are sent at the chunk start rank. If a left path is dirty, then its
-                // right sibling is scheduled to check in nodeReceived(), otherwise a parent will be
-                // checked, and there is no need to send a request for the right sibling
-                assert Path.isLeft(result);
-                lastSentPathChunk = chunk;
-                // Skip to the next left path
-                long next = result + 2;
-                if (next > getLastChunkPath(chunk)) {
-                    next = Path.INVALID_PATH;
-                }
-                chunkNextPessimisticPaths.put(chunk, next);
+    public long getNextInternalPathToSend() {
+        while (true) {
+            final Long pathToCheck = internalsToCheck.pollFirst();
+            if (pathToCheck == null) {
                 break;
             }
+            if (hasCleanParent(pathToCheck)) {
+                continue;
+            }
+            final int pathRank = Path.getRank(pathToCheck);
+            final int chunk = getPathChunk(pathToCheck);
+            if ((pathRank == chunkStartRanks.get(chunk)) && Path.isLeft(pathToCheck)) {
+                // Pessimistic path
+                long next = skipCleanPaths(pathToCheck + 2, getLastChunkPath(chunk));
+                if (next != Path.INVALID_PATH) {
+                    internalsToCheck.addLast(next);
+                }
+            }
+            return pathToCheck;
         }
-        if (result == -1) {
-            result = getNextLeafPath();
-        }
-        return result;
+        return Path.INVALID_PATH;
     }
 
-    private long getNextLeafPath() {
+    public long getNextLeafPathToSend() {
         long path = lastLeafPath == Path.INVALID_PATH ? reconnectFirstLeafPath : lastLeafPath + 1;
         if ((path > reconnectLastLeafPath) || (reconnectFirstLeafPath < 0)) {
             return Path.INVALID_PATH;
