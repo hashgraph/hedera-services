@@ -277,12 +277,9 @@ public class TokenAirdropHandler implements TransactionHandler {
      * This method returns if the receiver is the fee collector or the treasury account.
      */
     private static boolean skipCustomFeeValidation(Token token, AccountID receiverId) {
-        for (var customFee : token.customFees()) {
-            if (CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId)) {
-                return true;
-            }
-        }
-        return false;
+        return token.customFees().stream()
+                .anyMatch(customFee ->
+                        CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
     }
 
     private void validateNftTransfers(
