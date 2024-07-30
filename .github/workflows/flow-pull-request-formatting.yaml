@@ -50,7 +50,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version: v25.0.5
           daemon-config: |
             {
               "registry-mirrors": [
