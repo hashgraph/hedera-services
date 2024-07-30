@@ -19,9 +19,11 @@ package com.hedera.node.app.service.token.impl.validators;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,6 +47,16 @@ public class TokenAirdropValidator extends CryptoTransferValidator {
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
         validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION_BODY);
+        // If there is more than one negative transfer we throw an exception
+        for (var tokenTransfer : tokenTransfers) {
+            List<AccountAmount> negativeTransfers = tokenTransfer.transfers().stream()
+                    .filter(fungibleTransfer -> fungibleTransfer.amount() < 0)
+                    .toList();
+
+            if (negativeTransfers.size() > 1) {
+                throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            }
+        }
         validateTokenTransfers(op.tokenTransfers());
     }
 }

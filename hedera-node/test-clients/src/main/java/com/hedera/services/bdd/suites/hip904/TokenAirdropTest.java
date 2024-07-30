@@ -629,11 +629,13 @@ public class TokenAirdropTest {
         @HapiTest
         @DisplayName("to fungible token pending airdrop")
         final Stream<DynamicTest> canNotDeleteAccountRelatedToAirdrop() {
+            var receiver = "receiverToDelete";
             return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
                     .given()
                     .when()
                     .then(
-                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
