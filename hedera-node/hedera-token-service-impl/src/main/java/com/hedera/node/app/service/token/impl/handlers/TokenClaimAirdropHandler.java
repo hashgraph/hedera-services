@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -26,7 +29,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -82,12 +87,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         var op = context.body().tokenClaimAirdropOrThrow();
         var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropRecordBuilder.class);
 
-        // todo validations for custom fees
-        // validate if pending airdrop is existing in state
-        op.pendingAirdrops().forEach(pendingAirdropId -> {
-            validateTrue(pendingAirdropStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
-        });
-
         List<TokenTransferList> transfers = new ArrayList<>();
         List<Token> tokensToAssociate = new ArrayList<>();
         AccountID receiverId = op.pendingAirdrops().getFirst().receiverId();
@@ -97,6 +96,10 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
             final var senderId = airdrop.senderIdOrThrow();
+            // validate if pending airdrop is existing in state
+            validateTrue(pendingAirdropStore.exists(airdrop), INVALID_TRANSACTION_BODY);
+            // validate custom fees
+            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
 
             if (airdrop.hasFungibleTokenType()) {
                 // process fungible tokens
@@ -128,9 +131,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                         .build());
             }
 
-            // removePendingAirdrop
-            removePendingAirdropAndUpdateStores(airdrop, pendingAirdropStore, accountStore);
-
             // check if we need new association
             if (tokenRelStore.get(receiverId, tokenId) == null) {
                 tokensToAssociate.add(tokenStore.get(tokenId));
@@ -144,7 +144,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                 .tokenId(token.tokenId())
                 .accountId(receiverId)
                 .build()));
-
+        // do the crypto transfer
         var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(transfers)
                 .build();
@@ -154,6 +154,8 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         // We should skip custom fee steps here, because they must be already prepaid
         executor.executeCryptoTransferWithoutCustomFee(
                 syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
+        // removePendingAirdrop
+        op.pendingAirdrops().forEach(airdrop -> removePendingAirdropAndUpdateStores(airdrop, pendingAirdropStore, accountStore));
     }
 
     @Override
@@ -219,5 +221,26 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         }
 
         pendingAirdropStore.remove(airdrop);
+    }
+
+    // todo: same validation is used in TokenAirdropHandler, so when it is merged we can reuse it here too
+    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+        final var token = getIfUsable(tokenId, tokenStore);
+        final var feeMeta = customFeeMetaFrom(token);
+        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            for (var fee : feeMeta.customFees()) {
+                if (fee.hasFractionalFee()
+                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
+                    return false;
+                }
+            }
+        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            for (var fee : feeMeta.customFees()) {
+                if (fee.hasRoyaltyFee()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
