@@ -73,8 +73,10 @@ public class AirdropHandlerHelper {
 
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
+            final var accountProbe = accountStore.getAccountById(accountId);
+
             // if not existing account, create transfer
-            if (!accountStore.contains(accountId)) {
+            if (accountProbe == null) {
                 transferFungibleAmounts.add(aa);
                 continue;
             }
@@ -150,9 +152,11 @@ public class AirdropHandlerHelper {
             return false;
         }
         // check if we have existing association or free auto associations slots or unlimited auto associations
-        return tokenRelation == null
-                && receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
-                && receiver.maxAutoAssociations() != -1;
+        if (tokenRelation == null) {
+            return isAutoAssociationLimitReached(receiver) || receiver.receiverSigRequired();
+        } else {
+            return receiver.receiverSigRequired();
+        }
     }
 
     /**
@@ -229,5 +233,10 @@ public class AirdropHandlerHelper {
                 .pendingAirdropId(pendingAirdropId)
                 .pendingAirdropValue(pendingAirdropValue)
                 .build();
+    }
+
+    private static boolean isAutoAssociationLimitReached(Account receiver) {
+        return receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
+                && receiver.maxAutoAssociations() != -1;
     }
 }
