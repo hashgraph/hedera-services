@@ -18,6 +18,8 @@ package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
@@ -25,18 +27,24 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.Objects;
 
 /**
  * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
  * payloads without invalidating the event hash.
  */
-public class PbjHasher implements EventHasher, UnsignedEventHasher {
+public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
 
     /** The hashing stream for the event. */
-    private final HashingOutputStream eventHashingStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
+    private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();
+
+    final WritableSequentialData eventStream = new WritableStreamingData(new HashingOutputStream(eventDigest));
     /** The hashing stream for the payloads. */
-    private final HashingOutputStream payloadHashingStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
+    private final MessageDigest transactionDigest = DigestType.SHA_384.buildDigest();
+
+    final WritableSequentialData transactionStream =
+            new WritableStreamingData(new HashingOutputStream(transactionDigest));
 
     @Override
     @NonNull
@@ -53,16 +61,16 @@ public class PbjHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        EventCore.PROTOBUF.toBytes(event.getEventCore()).writeTo(eventHashingStream);
-        event.getPayloads().forEach(payload -> {
-            EventPayload.PROTOBUF.toBytes(payload).writeTo(payloadHashingStream);
-            try {
-                eventHashingStream.write(payloadHashingStream.getDigest());
-            } catch (IOException e) {
-                throw new RuntimeException("An exception occurred while trying to hash an event!", e);
+        try {
+            EventCore.PROTOBUF.write(event.getEventCore(), eventStream);
+            for (final EventPayload payload : event.getPayloads()) {
+                EventPayload.PROTOBUF.write(payload, transactionStream);
+                eventStream.writeBytes(transactionDigest.digest());
             }
-        });
+        } catch (final IOException e) {
+            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
+        }
 
-        event.setHash(new Hash(eventHashingStream.getDigest(), DigestType.SHA_384));
+        event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
     }
 }
