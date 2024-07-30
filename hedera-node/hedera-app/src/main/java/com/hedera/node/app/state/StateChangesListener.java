@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state;
 
+import com.hedera.hapi.block.stream.output.NewStateType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -30,7 +31,8 @@ public interface StateChangesListener {
     enum DataType {
         MAP,
         QUEUE,
-        SINGLETON
+        SINGLETON,
+        SCHEMA
     }
 
     /**
@@ -83,4 +85,22 @@ public interface StateChangesListener {
      * @param <V> The type of the value
      */
     default <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value) {}
+
+    /**
+     * Addition of a new state.
+     * This may be a singleton, virtual map, or queue state.
+     *
+     * @param stateName The name of the new state
+     * @param type The type of the new state
+     */
+    default <K, V> void schemaAddStateChange(@NonNull final String stateName, @NonNull final NewStateType type) {}
+
+    /**
+     *  Removal of an existing state.
+     *  The entire singleton, virtual map, or queue state is removed,
+     *  and not just the contents.
+     *
+     * @param stateName The name of the state to be removed
+     */
+    default <V> void schemaRemoveStateChange(@NonNull final String stateName) {}
 }
