@@ -2,9 +2,9 @@
 
 ## A
 
-- [Account Aliases](#account-aliases)
 - [Address Book](#address-book)
 - [Admin Transaction](#admin-transaction)
+- [Aliases](#aliases)
 - [Application Accounts](#application-accounts)
 - [Auto Associations](#asynchronous)
 - [Auto-Renew Accounts](#auto-renew-accounts)
@@ -55,6 +55,7 @@
 ## T
 
 - [Token Allowance](#token-allowance)
+- [Triplet](#triplet)
 
 ## W
 
@@ -62,13 +63,33 @@
 
 ---
 
-## Account Aliases
+## Aliases
 
-**Account Aliases**: These are identifiers which can be protobuf serialized keys of ED25519 or ECDSA
-Keys or 33 byte EVM address values. The "triplet" form (e.g. 0.0.18273892) is the simpler and easier
-to "type". An alias is not intended to be user-friendly, but instead to offer a smart-contract
-friendly identifier. See https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583
-for more information.
+**Alias**: A value that can be associated with an account, and used in some circumstances instead
+of the account id [triplet](#triplet).
+
+Most often used to indicate a 20-byte value that can be used in smart contracts to refer to a
+Hedera account.
+
+All accounts will have a (derived) account num alias, but all accounts _may_ have a single
+EVM address alias _or_ key alias.
+
+The different kinds of alias are detailed in HIP-583[^583].  HIP-32[^32] also describes a _key
+alias.
+
+[^32]: [HIP-32](https://hips.hedera.com/hip/hip-32) "Auto Account Creation"
+[^583]: [HIP-583](https://hips.hedera.com/hip/hip-583)
+"Expand alias support in CryptoCreate & CryptoTransfer Transactions"
+
+* **Account num alias**:  The account ID triplet, encoded as a 64-bit `long` in the usual way,
+  then prefixed with 12 bytes of `0` to form a 20-byte value
+  * a.k.a. "long zero address" (though this term is somewhat deprecated)
+* **EVM address alias**: An EVM address - the rightmost 20 bytes of the 32 byte Keccak-256 hash of
+  an ECDSA sep25661 public key; that is, an "address" on an Ethereum-like chain as defined in the
+  Ethereum Yellow Paper.
+* **Key alias**: Available if an account's key is a "primitive" key - not a
+  threshold key or keylist.  These are protobuf serialized keys of ED25519 or ECDSA `Key`s.
+  * AKA **Account Alias** in the earlier HIP-32[^32]
 
 ## Address Book
 
@@ -295,6 +316,25 @@ ERC-20 allowance mechanism used in Ethereum. The amount of tokens that a user ha
 user or smart contract to spend on their behalf. This allowance is set by the user and can be
 modified or revoked at any time. It allows the spender to spend tokens on behalf of the owner
 without requiring explicit approval for each transaction.
+
+## Triplet
+
+**Triplet**: An id for some Hedera semantic object (e.g., Account, Token Type, File) of the
+form `shard.realm.num`.
+* For a standard entity id:
+* The display format shows `shard`, `realm`, and `num` in base-10
+* E.g., `0.0.12345678`
+* Each of `shard`, `realm`, and `num` are 8-byte `long` values
+* Currently `shard` and `realm` are always `0`
+* For aliases - where the triplet form is used for user input/output only and not used
+internally in the code:
+* `num` can be a hex-encoded value of:
+* The entity ID encoded as an account num alias (i.e., long-zero)
+* E.g., `0.0.00000000000000000000000000000000004D67FB`
+* EVM address
+* E.g., `0.0.b794f5ea0ba39494ce839613fffba74279579268`
+* Key alias
+* E.g., `0.0.1220d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a`
 
 ---
 
