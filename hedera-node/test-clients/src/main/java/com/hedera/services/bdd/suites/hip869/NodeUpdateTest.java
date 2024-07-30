@@ -18,7 +18,9 @@ package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
+import static com.hedera.services.bdd.spec.HapiPropertySource.invalidServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
@@ -48,12 +50,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_NODE_AC
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-import com.google.protobuf.ByteString;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -100,7 +100,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 newKeyNamed("adminKey"),
                 nodeCreate("testNode").adminKey("adminKey"),
-                nodeUpdate("testNode").gossipCaCertificate("").hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
+                nodeUpdate("testNode").gossipCaCertificate(new byte[0]).hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
     }
 
     @HapiTest
@@ -122,21 +122,11 @@ public class NodeUpdateTest {
                         .hasKnownStatus(INVALID_GOSSIP_ENDPOINT),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
-                        .gossipEndpoint(List.of(
-                                asServiceEndpoint("127.0.0.2:60"),
-                                ServiceEndpoint.newBuilder()
-                                        .setIpAddressV4(ByteString.copyFromUtf8("300.0.0.1"))
-                                        .setPort(10)
-                                        .build()))
+                        .gossipEndpoint(List.of(asServiceEndpoint("127.0.0.2:60"), invalidServiceEndpoint()))
                         .hasKnownStatus(INVALID_IPV4_ADDRESS),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
-                        .gossipEndpoint(List.of(
-                                asServiceEndpoint("127.0.0.3:60"),
-                                ServiceEndpoint.newBuilder()
-                                        .setDomainName("test.dom")
-                                        .setPort(10)
-                                        .build()))
+                        .gossipEndpoint(List.of(asServiceEndpoint("127.0.0.3:60"), asDnsServiceEndpoint("test.dom:10")))
                         .hasKnownStatus(GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN));
     }
 
@@ -147,12 +137,7 @@ public class NodeUpdateTest {
                 nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
-                        .serviceEndpoint(List.of(
-                                asServiceEndpoint("127.0.0.2:60"),
-                                ServiceEndpoint.newBuilder()
-                                        .setIpAddressV4(ByteString.copyFromUtf8("300.0.0.1"))
-                                        .setPort(10)
-                                        .build()))
+                        .serviceEndpoint(List.of(asServiceEndpoint("127.0.0.2:60"), invalidServiceEndpoint()))
                         .hasKnownStatus(INVALID_IPV4_ADDRESS));
     }
 
@@ -167,8 +152,8 @@ public class NodeUpdateTest {
                         asServiceEndpoint("127.0.0.2:60"),
                         asServiceEndpoint("127.0.0.3:60")))
                 .serviceEndpoint(List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")))
-                .gossipCaCertificate("caCert")
-                .grpcCertificateHash("grpcCert");
+                .gossipCaCertificate("caCert".getBytes())
+                .grpcCertificateHash("grpcCert".getBytes());
         return hapiTest(
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
@@ -178,13 +163,13 @@ public class NodeUpdateTest {
                     assertEquals("updated description", node.description(), "Node description should be updated");
                     assertIterableEquals(
                             List.of(
-                                    toPbj(asServiceEndpoint("127.0.0.1:60")),
-                                    toPbj(asServiceEndpoint("127.0.0.2:60")),
-                                    toPbj(asServiceEndpoint("127.0.0.3:60"))),
+                                    asServiceEndpoint("127.0.0.1:60"),
+                                    asServiceEndpoint("127.0.0.2:60"),
+                                    asServiceEndpoint("127.0.0.3:60")),
                             node.gossipEndpoint(),
                             "Node gossipEndpoint should be updated");
                     assertIterableEquals(
-                            List.of(toPbj(asServiceEndpoint("127.0.1.1:60")), toPbj(asServiceEndpoint("127.0.1.2:60"))),
+                            List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")),
                             node.serviceEndpoint(),
                             "Node serviceEndpoint should be updated");
                     assertEquals(

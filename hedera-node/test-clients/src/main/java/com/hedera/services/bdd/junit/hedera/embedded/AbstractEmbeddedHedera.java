@@ -29,8 +29,8 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -87,7 +87,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final PlatformState platformState = new PlatformState();
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
-    protected final FakeMerkleState state = new FakeMerkleState();
+    protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
     protected final NodeId defaultNodeId;
@@ -129,8 +129,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
-    public FakeMerkleState state() {
+    public FakeState state() {
         return state;
+    }
+
+    @Override
+    public PlatformState platformState() {
+        return platformState;
     }
 
     @Override

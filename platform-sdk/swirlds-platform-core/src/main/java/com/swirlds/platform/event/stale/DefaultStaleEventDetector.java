@@ -27,7 +27,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +48,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     /**
      * Self events that have not yet reached consensus.
      */
-    private final StandardSequenceMap<EventDescriptor, PlatformEvent> selfEvents;
+    private final StandardSequenceMap<EventDescriptorWrapper, PlatformEvent> selfEvents;
 
     /**
      * The most recent event window we know about.
@@ -75,11 +75,11 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        final ToLongFunction<EventDescriptor> getAncientIdentifier;
+        final ToLongFunction<EventDescriptorWrapper> getAncientIdentifier;
         if (ancientMode == BIRTH_ROUND_THRESHOLD) {
-            getAncientIdentifier = EventDescriptor::getBirthRound;
+            getAncientIdentifier = ed -> ed.eventDescriptor().birthRound();
         } else {
-            getAncientIdentifier = EventDescriptor::getGeneration;
+            getAncientIdentifier = ed -> ed.eventDescriptor().generation();
         }
         selfEvents = new StandardSequenceMap<>(0, 1024, true, getAncientIdentifier);
 

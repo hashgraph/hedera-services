@@ -63,7 +63,7 @@ import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -95,7 +95,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                             .build()))
             .build();
 
-    private final Function<ResponseType, AutoCloseableWrapper<MerkleState>> stateAccessor;
+    private final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
@@ -131,7 +131,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final Function<ResponseType, AutoCloseableWrapper<MerkleState>> stateAccessor,
+            @NonNull final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,

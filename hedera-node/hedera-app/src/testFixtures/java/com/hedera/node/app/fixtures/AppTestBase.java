@@ -23,9 +23,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
@@ -52,7 +52,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.WritableStates;
@@ -73,8 +73,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * these dependencies out, especially to test a variety of negative test scenarios, it is often better to test using
  * something more approximating a real environment. Such tests are less brittle to changes in the codebase, and also
  * tend to find issues earlier in the development cycle. They may also result in test failures in seemingly unrelated
- * tests. For example, if all tests use {@link MerkleState}, and the implementation of that has a bug, a large number
- * of tests that are only indirectly related to {@link MerkleState} will still fail.
+ * tests. For example, if all tests use {@link State}, and the implementation of that has a bug, a large number
+ * of tests that are only indirectly related to {@link State} will still fail.
  *
  * <p>The real challenge is that many of these dependencies are not easy to set up. In addition, from test to test,
  * you may want *almost* everything setup as normal, but with a small tweak in one place or another.
@@ -102,7 +102,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public static final String ALICE_ALIAS = "Alice Alias";
     protected MapWritableKVState<AccountID, Account> accountsState;
     protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
-    protected MerkleState state;
+    protected State state;
 
     protected void setupStandardStates() {
         accountsState = new MapWritableKVState<>(ACCOUNTS_KEY);
@@ -118,7 +118,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 .state(aliasesState)
                 .build();
 
-        state = new MerkleState() {
+        state = new State() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull String serviceName) {
@@ -369,13 +369,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), new AddressBook(addresses));
             final var networkInfo = new NetworkInfoImpl(realSelfNodeInfo, platform, configProvider);
 
-            final var initialState = new FakeMerkleState();
+            final var initialState = new FakeState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
-            workingStateAccessor.setMerkleState(initialState);
+            workingStateAccessor.setState(initialState);
 
             return new App() {
                 @NonNull
@@ -411,7 +411,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 @NonNull
                 @Override
                 public StateMutator stateMutator(@NonNull final String serviceName) {
-                    final var fakeMerkleState = requireNonNull(workingStateAccessor.getMerkleState());
+                    final var fakeMerkleState = requireNonNull(workingStateAccessor.getState());
                     final var writableStates = (MapWritableStates) fakeMerkleState.getWritableStates(serviceName);
                     return new StateMutator(writableStates);
                 }

@@ -20,7 +20,6 @@ import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -31,7 +30,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * transaction internally uses a {@link ReadWriteLock} to provide atomic reads and writes to the underlying list of
  * signatures.
  */
-public sealed interface Transaction extends SerializableWithKnownLength permits ConsensusTransaction {
+public sealed interface Transaction permits ConsensusTransaction {
 
     /**
      * Returns the payload as a PBJ record

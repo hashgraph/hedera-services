@@ -24,4 +24,5 @@ module com.hedera.node.app.service.addressbook.impl {
     exports com.hedera.node.app.service.addressbook.impl.handlers;
     exports com.hedera.node.app.service.addressbook.impl.records;
     exports com.hedera.node.app.service.addressbook.impl.validators;
+    exports com.hedera.node.app.service.addressbook.impl.schemas;
 }
