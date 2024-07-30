@@ -175,9 +175,10 @@ public class TokenAirdropHandler implements TransactionHandler {
                             .build();
                     final AccountPendingAirdrop newAccountPendingAirdrop = getNewAccountPendingAirdropAndUpdateStores(
                             senderAccount, pendingId, pendingValue, accountStore, pendingStore);
-                    final var record =
-                            createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
                     pendingStore.put(pendingId, newAccountPendingAirdrop);
+                    // use the value from the store, in case we already have a pending airdrop with the same id
+                    final var record = createPendingAirdropRecord(
+                            pendingId, pendingStore.get(pendingId).pendingAirdropValue());
                     recordBuilder.addPendingAirdrop(record);
                 });
 
