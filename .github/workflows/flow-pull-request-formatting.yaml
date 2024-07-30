@@ -50,6 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          version: v25.0.5
           daemon-config: |
             {
               "registry-mirrors": [
@@ -69,7 +70,7 @@ jobs:
             exit 1
 
   assignee-check:
-    name: Assignee Check
+    name: Assigneed Check
     runs-on: [ self-hosted, Linux, medium, ephemeral ]
 
     steps:
