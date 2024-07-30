@@ -29,6 +29,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
@@ -113,6 +114,10 @@ public class RoundStateChangeListener implements StateChangesListener {
         return BlockItem.newBuilder().stateChanges(stateChanges).build();
     }
 
+    public Instant getLastUsedConsensusTime() {
+        return lastUsedConsensusTime;
+    }
+
     public void setLastUsedConsensusTime(final Instant nextAvailableConsensusTime) {
         this.lastUsedConsensusTime = nextAvailableConsensusTime;
     }
@@ -134,7 +139,7 @@ public class RoundStateChangeListener implements StateChangesListener {
         }
     }
 
-    private static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
+    public static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
             @NotNull V value) {
         switch (value) {
             case BlockInfo blockInfo -> {
@@ -169,6 +174,9 @@ public class RoundStateChangeListener implements StateChangesListener {
             }
             case Timestamp timestamp -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.TIMESTAMP_VALUE, timestamp);
+            }
+            case BlockStreamInfo blockStreamInfo -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_STREAM_INFO_VALUE, blockStreamInfo);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

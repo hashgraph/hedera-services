@@ -17,8 +17,9 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
-import static com.hedera.node.app.blocks.impl.HashUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -29,6 +30,10 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.hapi.block.stream.BlockHeader;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -148,29 +153,43 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         //                "Capturing end of round state changes for block {} with {}",
         //                blockNumber,
         //                roundStateChangeListener.stateChanges());
-        pendingItems.add(roundStateChangeListener.stateChanges());
+        writeFuture.join();
 
-        if (!pendingItems.isEmpty()) {
-            schedulePendingWork();
-        }
+        final var writableState = state.getWritableStates(BlockStreamService.NAME);
+        final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+        final var blockStreamInfo = new BlockStreamInfo(
+                blockNumber,
+                Bytes.EMPTY,
+                blockTimestamp(),
+                runningHashManager.latestHashes(),
+                blockHashManager.hashesAfterLatest(Bytes.wrap(new byte[48])));
+        blockStreamInfoState.put(blockStreamInfo);
+        ((CommittableWritableStates) writableState).commit();
+
+        pendingItems.add(roundStateChangeListener.stateChanges());
+        final var blockItem = BlockItem.newBuilder()
+                .stateChanges(StateChanges.newBuilder()
+                        .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
+                        .consensusTimestamp(asTimestamp(
+                                roundStateChangeListener.getLastUsedConsensusTime() == null
+                                        ? blockTimestamp
+                                        : roundStateChangeListener.getLastUsedConsensusTime()))
+                        .stateChanges(StateChange.newBuilder()
+                                .stateName(BlockStreamService.NAME + "." + BLOCK_STREAM_INFO_KEY)
+                                .singletonUpdate(
+                                        new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
+                                .build())
+                        .build())
+                .build();
+        pendingItems.add(blockItem);
+
+        schedulePendingWork();
+
         writeFuture.join();
         final var inputRootHash = inputTreeHasher.rootHash().join();
         final var outputRootHash = outputTreeHasher.rootHash().join();
         final var stateRootHash = MOCK_STATE_ROOT_HASH_FUTURE.join();
-        runningHashManager.hashFuture.join();
-        final var blockHash = Bytes.wrap(combine(
-                combine(previousBlockHash.toByteArray(), inputRootHash.toByteArray()),
-                combine(outputRootHash.toByteArray(), stateRootHash.toByteArray())));
-        final var writableState = state.getWritableStates(BlockStreamService.NAME);
-        final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-        blockStreamInfoState.put(new BlockStreamInfo(
-                blockNumber,
-                blockHash,
-                blockTimestamp(),
-                runningHashManager.latestHashes(),
-                blockHashManager.hashesAfterLatest(blockHash)));
 
-        ((CommittableWritableStates) writableState).commit();
         writer.closeBlock();
     }
 
