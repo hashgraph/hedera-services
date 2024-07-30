@@ -676,6 +676,11 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
+    public int getNumAutoAssociations() {
+        return automaticTokenAssociations.size();
+    }
+
     /**
      * Sets the alias.
      *

@@ -28,9 +28,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asNumericContractId;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -43,6 +46,9 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -177,6 +183,20 @@ class ContractDeleteHandlerTest {
 
     private ContractDeleteTransactionBody missingObtainer(final ContractID targetId) {
         return ContractDeleteTransactionBody.newBuilder().contractID(targetId).build();
+    }
+
+    @Test
+    void testCalculateFeesWithNoDeleteBody() {
+        final var txn = TransactionBody.newBuilder().build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
     }
 
     private ContractDeleteTransactionBody deletion(final ContractID targetId, final ContractID transferId) {

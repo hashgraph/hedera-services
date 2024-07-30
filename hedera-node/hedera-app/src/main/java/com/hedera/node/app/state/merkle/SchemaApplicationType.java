@@ -16,15 +16,16 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.spi.Schema;
 
 /**
  * Enumerates the ways the {@link MerkleSchemaRegistry} may apply a {@link Schema}
- * to the {@link MerkleHederaState}.
+ * to the {@link MerkleStateRoot}.
  */
 public enum SchemaApplicationType {
     /**
-     * A schema may contribute state definitions to the {@link MerkleHederaState}
+     * A schema may contribute state definitions to the {@link MerkleStateRoot}
      * no matter if it was first registered before or after the version of the
      * deserialized state. The only two conditions under which a schema {@code X}
      * need not be used for state definitions are:
