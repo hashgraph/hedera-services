@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -52,7 +52,7 @@ class StateRegistryTests {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        registry.registerConstructable(new ClassConstructorPair(DummySwirldState.class, DummySwirldState::new));
+        registry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
     }
 
     @AfterAll

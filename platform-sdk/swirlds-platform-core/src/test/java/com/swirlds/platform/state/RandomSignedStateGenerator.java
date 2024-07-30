@@ -39,7 +39,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private MerkleStateRoot state;
+    private BlockingSwirldState state;
     private Long round;
     private Hash legacyRunningEventHash;
     private AddressBook addressBook;
@@ -113,9 +113,9 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
-        final MerkleStateRoot stateInstance;
+        final BlockingSwirldState stateInstance;
         if (state == null) {
-            stateInstance = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
+            stateInstance = new BlockingSwirldState();
             PlatformState platformState = new PlatformState();
             platformState.setAddressBook(addressBookInstance);
             stateInstance.setPlatformState(platformState);
@@ -241,7 +241,7 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState dummySwirldState) {
+        if (protectionEnabled && stateInstance.getSwirldState() instanceof final BlockingSwirldState dummySwirldState) {
             dummySwirldState.disableDeletion();
         }
 
@@ -282,7 +282,7 @@ public class RandomSignedStateGenerator {
      * @return this object
      */
     public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
-        this.state = state;
+        this.state = new BlockingSwirldState(state.getPlatformState());
         return this;
     }
 
@@ -384,7 +384,7 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Default false. If true and a {@link DummySwirldState} is being used, then disable deletion on the state.
+     * Default false. If true and a {@link BlockingSwirldState} is being used, then disable deletion on the state.
      *
      * @return this object
      */
