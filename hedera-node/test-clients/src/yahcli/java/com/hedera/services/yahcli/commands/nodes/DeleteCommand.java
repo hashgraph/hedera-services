@@ -38,12 +38,11 @@ public class DeleteCommand implements Callable<Integer> {
         final var yahcli = nodesCommand.getYahcli();
         var config = ConfigUtils.configFrom(yahcli);
 
-        final var noveltyLoc = config.keysLoc() + File.separator + NOVELTY + ".pem";
         final var effectiveNodeId = nodeId != null ? nodeId : "";
         final var retries = boxedRetries != null ? boxedRetries.intValue() : DEFAULT_NUM_RETRIES;
 
         final var delegate = new DeleteNodeSuite(
-                config.asSpecConfig(), effectiveNodeId, noveltyLoc, retries);
+                config.asSpecConfig(), effectiveNodeId, retries);
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == HapiSpec.SpecStatus.PASSED) {

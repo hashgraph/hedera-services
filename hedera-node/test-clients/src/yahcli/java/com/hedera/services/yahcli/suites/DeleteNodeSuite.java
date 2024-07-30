@@ -42,7 +42,6 @@ public class DeleteNodeSuite extends HapiSuite {
     private final Map<String, String> specConfig;
     private final String nodeId;
     private final int numBusyRetries;
-    private final String novelTarget;
 
 
     public DeleteNodeSuite(
@@ -52,7 +51,6 @@ public class DeleteNodeSuite extends HapiSuite {
             final int numBusyRetries) {
         this.specConfig = specConfig;
         this.nodeId = nodeId;
-        this.novelTarget = novelTarget;
         this.numBusyRetries = numBusyRetries;
     }
 
@@ -62,13 +60,8 @@ public class DeleteNodeSuite extends HapiSuite {
     }
 
     final Stream<DynamicTest> doCreate() {
-        if (!novelTarget.endsWith(NOVELTY + ".pem")) {
-            throw new IllegalArgumentException("Only accepts tentative new key material named 'novel.pem'");
-        }
-
         final var newKey = "newKey";
         final var success = new AtomicBoolean(false);
-        final var novelPass = TxnUtils.randomAlphaNumeric(12);
         return HapiSpec.customHapiSpec("DoDelete")
                 .withProperties(specConfig)
                 .given(UtilVerbs.newKeyNamed(newKey)

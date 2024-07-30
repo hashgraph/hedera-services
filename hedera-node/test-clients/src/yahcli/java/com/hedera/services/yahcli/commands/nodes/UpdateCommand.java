@@ -12,7 +12,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOIN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hedera.services.yahcli.suites.CreateSuite.NOVELTY;
 import static java.util.Objects.requireNonNull;
@@ -21,12 +20,9 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.yahcli.config.ConfigUtils;
-import com.hedera.services.yahcli.config.domain.NodeConfig;
-import com.hedera.services.yahcli.suites.DeleteNodeSuite;
 import com.hedera.services.yahcli.suites.UpdateNodeSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
@@ -55,7 +51,7 @@ public class UpdateCommand  implements Callable<Integer> {
 
     @CommandLine.Option(
             names = {"-n", "--nodeId"},
-            paramLabel = "node Id for deletion")
+            paramLabel = "node Id for update")
     String nodeId;
 
     @CommandLine.Option(
