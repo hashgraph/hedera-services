@@ -93,3 +93,16 @@ resolved.
 If the health monitor reports an unhealthy duration exceeding `maximumPermissibleUnhealthyDuration`, then the acceptance
 of application transactions is disabled. Once the system reports an unhealthy duration below
 `maximumPermissibleUnhealthyDuration` seconds, application transactions are accepted again.
+
+##### PCES Replay
+
+PCES replay is also limited by the health monitor, but the amount of time that a queue is permitted to be unhealthy
+is configured with a separate value, `replayHealthThreshold`. There is a separate config value because the rate that
+events can be replayed vastly outstrips the rate that the system could receive events via gossip.
+
+In addition to being governed by the health monitor, PCES replay is also subject to a rate limiter. The rate
+limiter may be turned on or off with `limitReplayFrequency`, and tuned with `maxEventReplayFrequency`.
+The additional rate limiter was added because the health monitor wasn't able to detect the influx of replayed events
+quickly enough, and the system was flooded with large numbers of events. Therefore, the rate limiter must be tuned
+low enough that the initial replayed events don't overwhelm the system, but high enough that the transaction handler
+is fully utilized throughout the replay process.
