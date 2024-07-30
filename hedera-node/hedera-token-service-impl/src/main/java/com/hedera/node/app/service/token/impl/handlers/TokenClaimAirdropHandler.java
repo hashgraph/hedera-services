@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -79,7 +80,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         var op = context.body().tokenClaimAirdropOrThrow();
-        // todo implement record builder
         var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropRecordBuilder.class);
 
         // todo validations for custom fees
@@ -139,6 +139,12 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
 
         // associate for free
         createAndLinkTokenRels(accountStore.getAccountById(receiverId), tokensToAssociate, accountStore, tokenRelStore);
+        // externalize associations
+        tokensToAssociate.forEach(token -> recordBuilder.addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                .tokenId(token.tokenId())
+                .accountId(receiverId)
+                .build()));
+
         var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(transfers)
                 .build();
@@ -155,6 +161,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         return Fees.FREE;
     }
 
+    // todo add unit test to test this!
     private void removePendingAirdropAndUpdateStores(
             PendingAirdropId airdrop, WritableAirdropStore pendingAirdropStore, WritableAccountStore accountStore) {
         var currentAirdrop = requireNonNull(pendingAirdropStore.get(airdrop));
@@ -174,7 +181,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                 PendingAirdropId nullId = null;
                 var updatedNext =
                         nextAirdrop.copyBuilder().previousAirdrop(nullId).build();
-                pendingAirdropStore.put(currentAirdrop.nextAirdrop(), updatedNext);
+                pendingAirdropStore.patch(currentAirdrop.nextAirdrop(), updatedNext);
 
                 // update sender account
                 var updatedSenderAccount = senderAccount
@@ -192,7 +199,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                 PendingAirdropId nullId = null;
                 var updatedPrevious =
                         previousAirdrop.copyBuilder().nextAirdrop(nullId).build();
-                pendingAirdropStore.put(currentAirdrop.previousAirdrop(), updatedPrevious);
+                pendingAirdropStore.patch(currentAirdrop.previousAirdrop(), updatedPrevious);
             }
         }
 
@@ -207,8 +214,8 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                     .copyBuilder()
                     .nextAirdrop(currentAirdrop.nextAirdrop())
                     .build();
-            pendingAirdropStore.put(currentAirdrop.nextAirdrop(), updatedNext);
-            pendingAirdropStore.put(currentAirdrop.previousAirdrop(), updatedPrev);
+            pendingAirdropStore.patch(currentAirdrop.nextAirdrop(), updatedNext);
+            pendingAirdropStore.patch(currentAirdrop.previousAirdrop(), updatedPrev);
         }
 
         pendingAirdropStore.remove(airdrop);
