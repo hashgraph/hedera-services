@@ -63,7 +63,20 @@ interface NumericHelper {
     struct TransferList {
         // Multiple list of AccountAmounts, each of which has an account and amount.
         // Used to transfer hbars between the accounts in the list.
-        IHederaTokenService.AccountAmount[] transfers;
+        AccountAmount[] transfers;
+    }
+
+    struct AccountAmount {
+        // The Account ID, as a solidity address, that sends/receives cryptocurrency or tokens
+        address accountID;
+
+        // The amount of  the lowest denomination of the given token that
+        // the account sends(negative) or receives(positive)
+        int64 amount;
+
+        // If true then the transfer is expected to be an approved allowance and the
+        // accountID is expected to be the owner. The default is false (omitted).
+        bool isApproval;
     }
 
     struct HederaTokenV2 {

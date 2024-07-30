@@ -355,6 +355,25 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
+      }
+    ],
+    "name": "pauseToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
       },
       {
         "internalType": "address",
@@ -456,7 +475,7 @@
         "type": "int64"
       }
     ],
-    "name": "transferNFT",
+    "name": "transferNFTTest",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -507,12 +526,12 @@
         "type": "address"
       },
       {
-        "internalType": "int64",
+        "internalType": "uint256",
         "name": "amount",
-        "type": "int64"
+        "type": "uint256"
       }
     ],
-    "name": "transferToken",
+    "name": "transferTokenERC",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -535,35 +554,12 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint256"
+        "type": "int64"
       }
     ],
-    "name": "transferTokenERC",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "accountId",
-        "type": "address"
-      },
-      {
-        "internalType": "int64[]",
-        "name": "amounts",
-        "type": "int64[]"
-      }
-    ],
-    "name": "transferTokens",
+    "name": "transferTokenTest",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

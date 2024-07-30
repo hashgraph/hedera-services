@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import "./IHederaTokenService.sol";
 import "./NumericHelper.sol";
+import "./KeyHelper.sol";
 
-contract NumericContractComplex {
+contract NumericContractComplex is KeyHelper {
 
     int32 public constant SUCCESS_CODE = 22;
 
@@ -31,7 +32,7 @@ contract NumericContractComplex {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: new IHederaTokenService.TokenKey[](0),
+            tokenKeys: super.getDefaultKeys(),
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
@@ -48,7 +49,7 @@ contract NumericContractComplex {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: new IHederaTokenService.TokenKey[](0),
+            tokenKeys: super.getDefaultKeys(),
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
@@ -65,7 +66,7 @@ contract NumericContractComplex {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: new IHederaTokenService.TokenKey[](0),
+            tokenKeys: super.getDefaultKeys(),
             expiry: NumericHelper.ExpiryV2(expirySecond, address(this), expiryRenew)
         });
     }
@@ -75,10 +76,11 @@ contract NumericContractComplex {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function createFungibleTokenWithCustomFeesFixedFee(address token, uint32 fixedFee) public {
         IHederaTokenService.HederaToken memory token = buildTokenV1({
-            expirySecond: 0, expiryRenew: 10_000, maxSupply: 10000});
+            expirySecond: 0, expiryRenew: 10000, maxSupply: 10000});
 
+        IHederaTokenService.FixedFee memory _fixedFee = buildFixedFeeV1(fixedFee);
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), buildFixedFeeV1(fixedFee), new IHederaTokenService.FractionalFee[](0))
+            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), _fixedFee, new IHederaTokenService.FractionalFee[](0))
         );
 
         (int32 responseCode, address addressToken) =
@@ -284,15 +286,15 @@ contract NumericContractComplex {
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(IHederaTokenService.cryptoTransfer.selector, tokenTransfers));
 
-        int32 responseCode = abi.decode(result, (int32));
+        int64 responseCode = abi.decode(result, (int64));
         require(responseCode == SUCCESS_CODE);
     }
 
     /* CryptoTransferV2 allows to specify Hbars for the transfer, instead of just tokens */
     function cryptoTransferV2(int64[] memory amounts, address sender, address receiver) public {
-        IHederaTokenService.AccountAmount[] memory accountAmounts = new IHederaTokenService.AccountAmount[](2);
-        accountAmounts[0] = IHederaTokenService.AccountAmount(sender, amounts[0]);
-        accountAmounts[1] = IHederaTokenService.AccountAmount(receiver, amounts[1]);
+        NumericHelper.AccountAmount[] memory accountAmounts = new NumericHelper.AccountAmount[](2);
+        accountAmounts[0] = NumericHelper.AccountAmount(sender, amounts[0], false);
+        accountAmounts[1] = NumericHelper.AccountAmount(receiver, amounts[1], false);
 
         NumericHelper.TransferList memory hbarTransfers = NumericHelper.TransferList(accountAmounts);
 
@@ -317,20 +319,7 @@ contract NumericContractComplex {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function transferTokens(address token, address accountId, int64[] memory amounts) public {
-        address[] memory accountIds = new address[](2);
-        accountIds[0] = accountId;
-        accountIds[1] = accountId;
-
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSignature("transferTokens(address,address[],int64[])", token, accountIds, amounts)
-        );
-
-        int32 responseCode = abi.decode(result, (int32));
-        require(responseCode == SUCCESS_CODE);
-    }
-
-    function transferToken(address token, address sender, address receiver, int64 amount) public {
+    function transferTokenTest(address token, address sender, address receiver, int64 amount) public {
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSignature("transferToken(address,address,address,int64)", token, sender, receiver, amount)
         );
@@ -369,7 +358,7 @@ contract NumericContractComplex {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function transferNFT(address token, address sender, address receiver, int64 serialNumber) public {
+    function transferNFTTest(address token, address sender, address receiver, int64 serialNumber) public {
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSignature("transferNFT(address,address,address,int64)", token, sender, receiver, serialNumber)
         );
@@ -391,8 +380,8 @@ contract NumericContractComplex {
         (bool success, bytes memory result) =
                                 address(token).call(abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, amount));
 
-        int32 responseCode = abi.decode(result, (int32));
-        require(responseCode == SUCCESS_CODE);
+        bool resultBool = abi.decode(result, (bool));
+        require(resultBool);
     }
 
     function transferFromNFT(address token, address from, address to, uint256 serialNumber) public {

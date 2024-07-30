@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetAccountInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.ApproveAllowanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
@@ -118,6 +119,48 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     public AssociateTokensOperation associateTokens(@NonNull final SpecToken... tokens) {
         requireNonNull(tokens);
         return new AssociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given amount of tokens.
+     *
+     * @param token the token
+     * @param spender the contract to approve
+     * @param amount the amount to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveTokenAllowance(
+            @NonNull final SpecToken token, @NonNull final SpecContract spender, final long amount) {
+        requireNonNull(token);
+        return new ApproveAllowanceOperation(token, this, spender, amount);
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given amount of hBars.
+     *
+     * @param spender the contract to approve
+     * @param amount the amount to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveCryptoAllowance(@NonNull final SpecContract spender, final long amount) {
+        return new ApproveAllowanceOperation(this, spender, amount);
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given NFTs.
+     *
+     * @param token the token
+     * @param spender the contract to approve
+     * @param serials the serials to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveNFTAllowance(
+            @NonNull final SpecToken token,
+            @NonNull final SpecContract spender,
+            final boolean approvedForAll,
+            @NonNull final List<Long> serials) {
+        requireNonNull(token);
+        return new ApproveAllowanceOperation(token, this, spender, approvedForAll, serials);
     }
 
     /**

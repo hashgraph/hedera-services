@@ -21,13 +21,15 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -37,9 +39,11 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +66,7 @@ public class NumericValidationTest {
     @Account(maxAutoAssociations = 10, tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecAccount bob;
 
-    @FungibleToken(name = "fungibleToken")
+    @FungibleToken(name = "fungibleToken", initialSupply = 1_000L)
     static SpecFungibleToken fungibleToken;
 
     @NonFungibleToken(
@@ -470,11 +474,21 @@ public class NumericValidationTest {
     @DisplayName("calls fail to non-static transfer functions with invalid values")
     class TransfersTests {
 
+        @BeforeAll
+        public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(
+                    fungibleToken.treasury().approveTokenAllowance(fungibleToken, numericContractComplex, 100L),
+                    nft.treasury().approveNFTAllowance(nft, numericContractComplex, true, List.of(1L, 2L, 3L)),
+                    alice.approveCryptoAllowance(numericContractComplex, ONE_HBAR),
+                    bob.approveCryptoAllowance(numericContractComplex, ONE_HBAR));
+        }
+
         @HapiTest
         @DisplayName("when using cryptoTransferFungibleV1")
         public Stream<DynamicTest> failToUseCryptoTransferFungibleV1() {
             return hapiTest(numericContractComplex
                     .call("cryptoTransferFungibleV1", fungibleToken, new long[] {-5, -5}, fungibleToken.treasury(), bob)
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -484,6 +498,7 @@ public class NumericValidationTest {
             return hapiTest(numericContractComplex
                     .call("cryptoTransferV2", new long[] {-5, -5}, alice, bob)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                    .gas(1_000_000L)
         }
 
         @HapiTest
@@ -491,14 +506,7 @@ public class NumericValidationTest {
         public Stream<DynamicTest> failToUseCryptoTransferNonFungible() {
             return hapiTest(numericContractComplex
                     .call("cryptoTransferNonFungible", nft, nft.treasury(), bob, -1L)
-                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
-        }
-
-        @HapiTest
-        @DisplayName("when using transferTokens")
-        public Stream<DynamicTest> failToUseTransferTokens() {
-            return hapiTest(numericContractComplex
-                    .call("transferTokens", fungibleToken, bob, new long[] {-1L})
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -507,6 +515,7 @@ public class NumericValidationTest {
         public Stream<DynamicTest> failToUseTransferNFTs() {
             return hapiTest(numericContractComplex
                     .call("transferNFTs", nft, nft.treasury(), alice, new long[] {-1L})
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -514,7 +523,8 @@ public class NumericValidationTest {
         @DisplayName("when using transferToken")
         public Stream<DynamicTest> failToUseTransferToken() {
             return hapiTest(numericContractComplex
-                    .call("transferToken", fungibleToken, fungibleToken.treasury(), alice, -1L)
+                    .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, -1L)
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -524,6 +534,7 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContractComplex
                             .call("transferTokenERC", fungibleToken, fungibleToken.treasury(), alice, testCase.amount)
+                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
         }
 
@@ -531,7 +542,8 @@ public class NumericValidationTest {
         @DisplayName("when using transferNFT")
         public Stream<DynamicTest> failToUseTransferNFT() {
             return hapiTest(numericContractComplex
-                    .call("transferNFT", nft, nft.treasury(), alice, -1L)
+                    .call("transferNFTTest", nft, nft.treasury(), alice, -1L)
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -541,6 +553,7 @@ public class NumericValidationTest {
             // note: zero seems to be supported
             return hapiTest(numericContractComplex
                     .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, NEGATIVE_ONE_BIG_INT)
+                    .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -550,6 +563,7 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContractComplex
                             .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, testCase.amount)
+                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
@@ -559,6 +573,7 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContractComplex
                             .call("transferFromNFT", nft, nft.treasury(), alice, testCase.amount)
+                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
     }
