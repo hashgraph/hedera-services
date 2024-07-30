@@ -438,6 +438,57 @@ public class TokenAirdropTest {
                     tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
                             .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
         }
+
+        // When a receiver is a custom fee collector it should be exempt from the custom fee
+        @HapiTest
+        @DisplayName("NFT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
+        final Stream<DynamicTest> nftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    cryptoCreate("receiver"),
+                    cryptoCreate("collector").balance(0L),
+                    newKeyNamed("key"),
+                    tokenCreate("TOKEN")
+                            .maxSupply(100L)
+                            .initialSupply(0)
+                            .supplyType(TokenSupplyType.FINITE)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .supplyKey("key")
+                            .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                            .withCustom(royaltyFeeWithFallback(
+                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), "collector", true))
+                            // set the receiver as a custom fee collector
+                            .withCustom(royaltyFeeWithFallback(
+                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), "receiver")),
+                    tokenAssociate(OWNER, "TOKEN"),
+                    mintToken("TOKEN", List.of(ByteStringUtils.wrapUnsafely("meta".getBytes()))),
+                    cryptoTransfer(movingUnique("TOKEN", 1L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(movingUnique("TOKEN", 1L).between(OWNER, "receiver"))
+                            .signedByPayerAnd("receiver", OWNER));
+        }
+
+        // When a receiver is a custom fee collector it should be exempt from the custom fee
+        @HapiTest
+        @DisplayName("FT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
+        final Stream<DynamicTest> ftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    cryptoCreate("receiver"),
+                    cryptoCreate("collector").balance(0L),
+                    newKeyNamed("key"),
+                    tokenCreate("TOKEN")
+                            .initialSupply(100L)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                            .withCustom(fixedHbarFee(100, "collector", true))
+                            // set the receiver as a custom fee collector
+                            .withCustom(fixedHbarFee(100, "receiver")),
+                    tokenAssociate(OWNER, "TOKEN"),
+                    cryptoTransfer(moving(50, "TOKEN").between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(moving(50, "TOKEN").between(OWNER, "receiver")).signedByPayerAnd("receiver", OWNER));
+        }
     }
 
     @Nested
