@@ -112,6 +112,17 @@ public class TokenAirdropTest {
     private static final String HBAR_COLLECTOR = "hbarCollector";
     private static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
     private static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
+    // all collectors exempt
+    private static final String NFT_ALL_COLLECTORS_EXEMPT_OWNER = "nftAllCollectorsExemptOwner";
+    private static final String NFT_ALL_COLLECTORS_EXEMPT_RECEIVER = "nftAllCollectorsExemptReceiver";
+    private static final String NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR = "nftAllCollectorsExemptCollector";
+    private static final String NFT_ALL_COLLECTORS_EXEMPT_TOKEN = "nftAllCollectorsExemptToken";
+    private static final String NFT_ALL_COLLECTORS_EXEMPT_KEY = "nftAllCollectorsExemptKey";
+
+    private static final String FT_ALL_COLLECTORS_EXEMPT_OWNER = "ftAllCollectorsExemptOwner";
+    private static final String FT_ALL_COLLECTORS_EXEMPT_RECEIVER = "ftAllCollectorsExemptReceiver";
+    private static final String FT_ALL_COLLECTORS_EXEMPT_COLLECTOR = "ftAllCollectorsExemptCollector";
+    private static final String FT_ALL_COLLECTORS_EXEMPT_TOKEN = "ftAllCollectorsExemptToken";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -444,28 +455,13 @@ public class TokenAirdropTest {
         @DisplayName("NFT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
         final Stream<DynamicTest> nftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
             return hapiTest(
-                    cryptoCreate(OWNER),
-                    cryptoCreate("receiver"),
-                    cryptoCreate("collector").balance(0L),
-                    newKeyNamed("key"),
-                    tokenCreate("TOKEN")
-                            .maxSupply(100L)
-                            .initialSupply(0)
-                            .supplyType(TokenSupplyType.FINITE)
-                            .tokenType(NON_FUNGIBLE_UNIQUE)
-                            .supplyKey("key")
-                            .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                            // setting a custom fee with allCollectorsExempt=true(see HIP-573)
-                            .withCustom(royaltyFeeWithFallback(
-                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), "collector", true))
-                            // set the receiver as a custom fee collector
-                            .withCustom(royaltyFeeWithFallback(
-                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), "receiver")),
-                    tokenAssociate(OWNER, "TOKEN"),
-                    mintToken("TOKEN", List.of(ByteStringUtils.wrapUnsafely("meta".getBytes()))),
-                    cryptoTransfer(movingUnique("TOKEN", 1L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
-                    tokenAirdrop(movingUnique("TOKEN", 1L).between(OWNER, "receiver"))
-                            .signedByPayerAnd("receiver", OWNER));
+                    mintToken(
+                            NFT_ALL_COLLECTORS_EXEMPT_TOKEN, List.of(ByteStringUtils.wrapUnsafely("meta".getBytes()))),
+                    cryptoTransfer(movingUnique(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1L)
+                            .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, NFT_ALL_COLLECTORS_EXEMPT_OWNER)),
+                    tokenAirdrop(movingUnique(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1L)
+                                    .between(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_RECEIVER))
+                            .signedByPayerAnd(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER, NFT_ALL_COLLECTORS_EXEMPT_OWNER));
         }
 
         // When a receiver is a custom fee collector it should be exempt from the custom fee
@@ -473,21 +469,11 @@ public class TokenAirdropTest {
         @DisplayName("FT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
         final Stream<DynamicTest> ftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
             return hapiTest(
-                    cryptoCreate(OWNER),
-                    cryptoCreate("receiver"),
-                    cryptoCreate("collector").balance(0L),
-                    newKeyNamed("key"),
-                    tokenCreate("TOKEN")
-                            .initialSupply(100L)
-                            .tokenType(FUNGIBLE_COMMON)
-                            .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                            // setting a custom fee with allCollectorsExempt=true(see HIP-573)
-                            .withCustom(fixedHbarFee(100, "collector", true))
-                            // set the receiver as a custom fee collector
-                            .withCustom(fixedHbarFee(100, "receiver")),
-                    tokenAssociate(OWNER, "TOKEN"),
-                    cryptoTransfer(moving(50, "TOKEN").between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
-                    tokenAirdrop(moving(50, "TOKEN").between(OWNER, "receiver")).signedByPayerAnd("receiver", OWNER));
+                    cryptoTransfer(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                            .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, FT_ALL_COLLECTORS_EXEMPT_OWNER)),
+                    tokenAirdrop(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                                    .between(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_RECEIVER))
+                            .signedByPayerAnd(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_OWNER));
         }
     }
 
@@ -825,7 +811,43 @@ public class TokenAirdropTest {
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .withCustom(
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
-                tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE)));
+                tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
+
+                // all collectors exempt setup
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR),
+                newKeyNamed(NFT_ALL_COLLECTORS_EXEMPT_KEY),
+                tokenCreate(NFT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                        .maxSupply(100L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(NFT_ALL_COLLECTORS_EXEMPT_KEY)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                        .withCustom(royaltyFeeWithFallback(
+                                1,
+                                2,
+                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR,
+                                true))
+                        // set the receiver as a custom fee collector
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
+                tokenAssociate(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_TOKEN),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_OWNER),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_RECEIVER),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR).balance(0L),
+                tokenCreate(FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                        .initialSupply(100L)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                        .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_COLLECTOR, true))
+                        // set the receiver as a custom fee collector
+                        .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
+                tokenAssociate(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_TOKEN)));
 
         // mint 99 NFTs
         for (int i = 0; i < 99; i++) {
