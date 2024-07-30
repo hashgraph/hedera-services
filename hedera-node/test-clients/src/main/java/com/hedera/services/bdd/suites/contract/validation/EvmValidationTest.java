@@ -69,7 +69,7 @@ public class EvmValidationTest {
         private static String touchAccountContract = "TouchAccountContract";
 
         @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             testLifecycle.doAdhoc(uploadInitCode(touchAccountContract), contractCreate(touchAccountContract));
         }
 

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -130,6 +130,10 @@ public class AddressBookTestBase {
     protected final ServiceEndpoint endpoint7 = new ServiceEndpoint(null, 123, null);
 
     protected final ServiceEndpoint endpoint8 = new ServiceEndpoint(Bytes.wrap("345.0.0.1"), 1234, null);
+    protected final ServiceEndpoint endpoint9 = new ServiceEndpoint(Bytes.wrap("1.0.0.0"), 1234, null);
+
+    private final byte[] invalidIPBytes = {49, 46, 48, 46, 48, 46, 48};
+    protected final ServiceEndpoint endpoint10 = new ServiceEndpoint(Bytes.wrap(invalidIPBytes), 1234, null);
 
     protected Node node;
 

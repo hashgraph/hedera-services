@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class ExternalizedRecordCustomizerTest {
     @Test
     void suppressionIsOffByDefault() {
-        assertFalse(ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER.shouldSuppressRecord());
+        assertFalse(ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER.shouldSuppressRecord());
     }
 
     @Test

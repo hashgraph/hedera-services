@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip869;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
@@ -36,12 +37,16 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NODES_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -53,11 +58,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 public class NodeCreateTest {
@@ -256,52 +264,13 @@ public class NodeCreateTest {
     }
 
     /**
-     * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
+     * Check that node creation succeeds with gossip and service endpoints using ips and all optional fields are recorded.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
-        return hapiTest(
-                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                overriding("nodes.gossipFqdnRestricted", "false"),
-                nodeCreate("nodeCreate")
-                        .description("hello")
-                        .gossipCaCertificate("gossip".getBytes())
-                        .grpcCertificateHash("hash".getBytes())
-                        .accountId(asAccount("0.0.100"))
-                        .gossipEndpoint(GOSSIP_ENDPOINTS)
-                        .serviceEndpoint(SERVICES_ENDPOINTS)
-                        .adminKey(ED_25519_KEY)
-                        .hasPrecheck(OK)
-                        .hasKnownStatus(SUCCESS),
-                viewNode("nodeCreate", node -> {
-                    assertEquals("hello", node.description(), "Description invalid");
-                    assertEquals(
-                            ByteString.copyFrom("gossip".getBytes()),
-                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
-                            "Gossip CA invalid");
-                    assertEquals(
-                            ByteString.copyFrom("hash".getBytes()),
-                            ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
-                            "GRPC hash invalid");
-                    assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
-                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS, node.gossipEndpoint());
-                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS, node.serviceEndpoint());
-                    assertNotNull(node.adminKey(), "Admin key invalid");
-                }));
-    }
-
-    /**
-     * Check that node creation succeeds with gossip and service endpoints using IPs and all optional fields are recorded.
-     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
-     */
-    @LeakyEmbeddedHapiTest(
-            reason = NEEDS_STATE_ACCESS,
-            overrides = {"nodes.gossipFqdnRestricted"})
     final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                overriding("nodes.gossipFqdnRestricted", "false"),
                 nodeCreate("nodeCreate")
                         .description("hello")
                         .gossipCaCertificate("gossip".getBytes())
@@ -326,6 +295,45 @@ public class NodeCreateTest {
                     assertEqualServiceEndpoints(GOSSIP_ENDPOINTS_IPS, node.gossipEndpoint());
                     assertEqualServiceEndpoints(SERVICES_ENDPOINTS_IPS, node.serviceEndpoint());
                     assertNotNull(node.adminKey(), "Admin key invalid");
+                }));
+    }
+
+    /**
+     * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @LeakyEmbeddedHapiTest(
+            reason = NEEDS_STATE_ACCESS,
+            overrides = {"nodes.gossipFqdnRestricted"})
+    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
+        final var nodeCreate = nodeCreate("nodeCreate")
+                .description("hello")
+                .gossipCaCertificate("gossip".getBytes())
+                .grpcCertificateHash("hash".getBytes())
+                .accountId(asAccount("0.0.100"))
+                .gossipEndpoint(GOSSIP_ENDPOINTS)
+                .serviceEndpoint(SERVICES_ENDPOINTS)
+                .adminKey(ED_25519_KEY)
+                .hasPrecheck(OK)
+                .hasKnownStatus(SUCCESS);
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                overriding("nodes.gossipFqdnRestricted", "false"),
+                nodeCreate,
+                viewNode("nodeCreate", node -> {
+                    assertEquals("hello", node.description(), "Description invalid");
+                    assertEquals(
+                            ByteString.copyFrom("gossip".getBytes()),
+                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
+                            "Gossip CA invalid");
+                    assertEquals(
+                            ByteString.copyFrom("hash".getBytes()),
+                            ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
+                            "GRPC hash invalid");
+                    assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
+                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS, node.gossipEndpoint());
+                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS, node.serviceEndpoint());
+                    assertEquals(toPbj(nodeCreate.getAdminKey()), node.adminKey(), "Admin key invalid");
                 }));
     }
 
@@ -441,6 +449,37 @@ public class NodeCreateTest {
                         .fee(ONE_HBAR)
                         .hasPrecheck(BUSY)
                         .via("nodeCreation"));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.maxNumber"})
+    @DisplayName("check error code MAX_NODES_CREATED is returned correctly")
+    final Stream<DynamicTest> maxNodesReachedFail() {
+        return hapiTest(
+                overriding("nodes.maxNumber", "1"), nodeCreate("testNode").hasKnownStatus(MAX_NODES_CREATED));
+    }
+
+    @HapiTest
+    @DisplayName("Not existing account as accountId during nodeCreate failed")
+    final Stream<DynamicTest> notExistingAccountFail() {
+        return hapiTest(nodeCreate("testNode")
+                .accountId(AccountID.newBuilder().setAccountNum(50000).build())
+                .hasKnownStatus(INVALID_NODE_ACCOUNT_ID));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.nodeMaxDescriptionUtf8Bytes"})
+    @DisplayName("Check the max description size")
+    final Stream<DynamicTest> updateTooLargeDescriptionFail() {
+        return hapiTest(
+                overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
+                nodeCreate("testNode").description("toolarge").hasKnownStatus(INVALID_NODE_DESCRIPTION));
+    }
+
+    @HapiTest
+    @DisplayName("Check default setting, gossipEndpoint can not have domain names")
+    final Stream<DynamicTest> gossipEndpointHaveDomainNameFail() {
+        return hapiTest(nodeCreate("testNode")
+                .gossipEndpoint(GOSSIP_ENDPOINTS)
+                .hasKnownStatus(GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN));
     }
 
     private static void assertEqualServiceEndpoints(

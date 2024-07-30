@@ -36,6 +36,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.WritableScheduleStoreImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -43,7 +44,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -51,7 +52,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
+ * Factory for all writable stores. It creates new writable stores based on the {@link State}.
  *
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
@@ -70,6 +71,7 @@ public class WritableStoreFactory {
         newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
         // TokenService
         newMap.put(WritableAccountStore.class, new StoreEntry(TokenService.NAME, WritableAccountStore::new));
+        newMap.put(WritableAirdropStore.class, new StoreEntry(TokenService.NAME, WritableAirdropStore::new));
         newMap.put(WritableNftStore.class, new StoreEntry(TokenService.NAME, WritableNftStore::new));
         newMap.put(WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new));
         newMap.put(
@@ -113,7 +115,7 @@ public class WritableStoreFactory {
     /**
      * Constructor of {@code WritableStoreFactory}
      *
-     * @param state the {@link HederaState} to use
+     * @param state the {@link State} to use
      * @param serviceName the name of the service to create stores for
      * @param configuration the configuration to use for the created stores
      * @param storeMetricsService Service that provides utilization metrics.
@@ -121,7 +123,7 @@ public class WritableStoreFactory {
      * @throws IllegalArgumentException if the service name is unknown
      */
     public WritableStoreFactory(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {

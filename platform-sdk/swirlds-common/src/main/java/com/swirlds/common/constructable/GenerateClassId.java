@@ -25,9 +25,6 @@ public final class GenerateClassId {
 
     private GenerateClassId() {}
 
-    /**
-     * {@inheritDoc}
-     */
     public static void main(final String[] args) {
         generateAndPrintClassId();
     }
