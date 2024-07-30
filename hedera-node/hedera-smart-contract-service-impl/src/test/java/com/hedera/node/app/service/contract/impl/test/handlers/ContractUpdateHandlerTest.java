@@ -30,6 +30,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -59,6 +61,9 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -538,6 +543,24 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         assertEquals(op.memo(), updatedContract.memo());
         verify(attributeValidator, times(1)).validateMemo(op.memo());
+    }
+
+    @Test
+    void testCalculateFeesWithNoContractIDAndMemo() {
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder())
+                .transactionID(transactionID)
+                .build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+        given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
     }
 
     @Test
