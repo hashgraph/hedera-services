@@ -691,8 +691,9 @@ unless the startup sequence is modified by subsequent releases.)
 3. The platform validates that its private `tssEncryptionKey`  matches its public `tssEncryptionKey` in the active
    roster. If there is a mismatch, a critical error is logged and the node shuts down.
 4. If a software upgrade is detected,
-   1. If the existing active roster and candidate roster do not have key material, adopt the candidate roster
-      immediately.
+   1. If the existing active roster and candidate roster do not have complete key material and the network does not
+      yet have a ledger id, adopt the candidate roster immediately on software upgrade.  (This keeps the pre-ledger
+      id behavior of the network until the ledger id can be created for the first time.)
    2. If the candidate roster exists, has key material, and the number of yes votes passes the threshold for
       adoption, then the candidate roster is adopted.
       1. Validation Check: if the state already has a ledger id set, the ledger id recovered from the key material
