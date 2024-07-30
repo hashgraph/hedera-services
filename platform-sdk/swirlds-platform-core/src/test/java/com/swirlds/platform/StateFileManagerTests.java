@@ -101,7 +101,8 @@ class StateFileManagerTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
     }
 
     @BeforeEach

@@ -32,7 +32,6 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -71,7 +70,6 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
     protected CountDownLatch deletionLatch = new CountDownLatch(1);
 
     protected AtomicBoolean released = new AtomicBoolean(false);
-
 
     public BlockingSwirldState() {
         super();
@@ -124,7 +122,9 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
         if (!(obj instanceof final BlockingSwirldState that)) {
             return false;
         }
-        return Objects.equals(this.getPlatformState().getAddressBook(), that.getPlatformState().getAddressBook());
+        return Objects.equals(
+                this.getPlatformState().getAddressBook(),
+                that.getPlatformState().getAddressBook());
     }
 
     /**
@@ -276,6 +276,4 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
         }
         deletionLatch.countDown();
     }
-
-
 }
