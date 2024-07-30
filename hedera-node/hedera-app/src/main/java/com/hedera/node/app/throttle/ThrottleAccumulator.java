@@ -669,14 +669,16 @@ public class ThrottleAccumulator {
         for (var transfer : cryptoTransferBody.tokenTransfers()) {
             autoAssociationsCount += (int) transfer.transfers().stream()
                     .filter(accountAmount -> accountAmount.amount() > 0)
-                    // FUTURE: This is a temporary fix to avoid state reads for auto-associations
-//                    .map(AccountAmount::accountID)
-//                    .filter(accountID -> hasNoRelation(relationStore, accountID, transfer.token()))
+                    // FUTURE: This is a temporary performance fix to avoid state reads for auto-associations
+                    //                    .map(AccountAmount::accountID)
+                    //                    .filter(accountID -> hasNoRelation(relationStore, accountID,
+                    // transfer.token()))
                     .count();
             autoAssociationsCount += (int) transfer.nftTransfers().stream()
-                    // FUTURE: This is a temporary fix to avoid state reads for auto-associations
-//                    .map(NftTransfer::receiverAccountID)
-//                    .filter(receiverID -> hasNoRelation(relationStore, receiverID, transfer.token()))
+                    // FUTURE: This is a temporary performance fix to avoid state reads for auto-associations
+                    //                    .map(NftTransfer::receiverAccountID)
+                    //                    .filter(receiverID -> hasNoRelation(relationStore, receiverID,
+                    // transfer.token()))
                     .count();
         }
         return autoAssociationsCount;
