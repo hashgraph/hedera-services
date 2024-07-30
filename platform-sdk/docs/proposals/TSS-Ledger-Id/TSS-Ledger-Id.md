@@ -248,8 +248,8 @@ calculated as follows using java integer arithmetic where division rounds down:
 ###### Threshold for recovery of Signatures and Ledger Id.
 
 The network must be able to tolerate less than 1/3 of the weight assigned to malicious nodes. Modeling the weight as
-a fewer number of shares introduces a potential error in representation. To account for
-this error, we need a guaranteed safe threshold for the number of shares that must be used to recover the ledger id.
+a fewer number of shares introduces a potential error in representation. To account for this error, we need a
+guaranteed safe threshold for the number of shares that must be used to create a valid signature.
 
 A threshold of at least `(TS + 2) / 2`, with java integer division rounding down, has been proven secure under the
 following conditions:
