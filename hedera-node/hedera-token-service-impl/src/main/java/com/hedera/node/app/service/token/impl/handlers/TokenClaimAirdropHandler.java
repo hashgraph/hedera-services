@@ -18,11 +18,13 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -126,15 +128,8 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                         .build());
             }
 
-            var accountPendingAirdrop = pendingAirdropStore.get(airdrop);
-            pendingAirdropStore.remove(airdrop);
-            var senderAccount = accountStore.getAccountById(senderId);
-
-            // todo update pending airdrop state and account head (similar to TokenRelListCalculator)
-            if (!accountPendingAirdrop.hasPreviousAirdrop() && airdrop.equals(senderAccount.headPendingAirdropId())) {
-                // update the nex, if exists
-                // update accout's head
-            }
+            // removePendingAirdrop
+            removePendingAirdropAndUpdateStores(airdrop, pendingAirdropStore, accountStore);
 
             // check if we need new association
             if (tokenRelStore.get(receiverId, tokenId) == null) {
@@ -158,5 +153,64 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         return Fees.FREE;
+    }
+
+    private void removePendingAirdropAndUpdateStores(
+            PendingAirdropId airdrop, WritableAirdropStore pendingAirdropStore, WritableAccountStore accountStore) {
+        var currentAirdrop = requireNonNull(pendingAirdropStore.get(airdrop));
+        var previousAirdrop =
+                currentAirdrop.hasPreviousAirdrop() ? pendingAirdropStore.get(currentAirdrop.previousAirdrop()) : null;
+        var nextAirdrop =
+                currentAirdrop.hasNextAirdrop() ? pendingAirdropStore.get(currentAirdrop.nextAirdrop()) : null;
+
+        var senderAccount = requireNonNull(accountStore.getAccountById(airdrop.senderIdOrThrow()));
+
+        // if no prev, should check if we have next and update it + change the head in the account
+        if (!currentAirdrop.hasPreviousAirdrop() && airdrop.equals(senderAccount.headPendingAirdropId())) {
+            // update the nex, if exists
+            // update account's head
+            if (currentAirdrop.hasNextAirdrop()) {
+                // set prev to null and copy everything else
+                PendingAirdropId nullId = null;
+                var updatedNext =
+                        nextAirdrop.copyBuilder().previousAirdrop(nullId).build();
+                pendingAirdropStore.put(currentAirdrop.nextAirdrop(), updatedNext);
+
+                // update sender account
+                var updatedSenderAccount = senderAccount
+                        .copyBuilder()
+                        .headPendingAirdropId(currentAirdrop.nextAirdrop())
+                        .build();
+                accountStore.put(updatedSenderAccount);
+            }
+        }
+
+        // if no next, should check if we have prev and update it
+        if (!currentAirdrop.hasNextAirdrop()) {
+            // update prev to point to null next, if exist
+            if (currentAirdrop.hasPreviousAirdrop()) {
+                PendingAirdropId nullId = null;
+                var updatedPrevious =
+                        previousAirdrop.copyBuilder().nextAirdrop(nullId).build();
+                pendingAirdropStore.put(currentAirdrop.previousAirdrop(), updatedPrevious);
+            }
+        }
+
+        // updated prev and next
+        if (currentAirdrop.hasNextAirdrop() && currentAirdrop.hasPreviousAirdrop()) {
+            // update prev and next
+            var updatedNext = nextAirdrop
+                    .copyBuilder()
+                    .previousAirdrop(currentAirdrop.previousAirdrop())
+                    .build();
+            var updatedPrev = previousAirdrop
+                    .copyBuilder()
+                    .nextAirdrop(currentAirdrop.nextAirdrop())
+                    .build();
+            pendingAirdropStore.put(currentAirdrop.nextAirdrop(), updatedNext);
+            pendingAirdropStore.put(currentAirdrop.previousAirdrop(), updatedPrev);
+        }
+
+        pendingAirdropStore.remove(airdrop);
     }
 }
