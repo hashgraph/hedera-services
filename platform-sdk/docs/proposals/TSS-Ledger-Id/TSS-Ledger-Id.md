@@ -395,7 +395,7 @@ material can generate the ledger key.
 | 8 | Instead of separate app, detect genesis, key the state, restart the network with a keyed genesis state.       | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 
 Option 2 was chosen for existing networks and Option 8 was selected for new networks. This decision was made to
-ensure that the first block in the block stream is can be signed by the ledger.
+ensure that the first block in the block stream can be signed by the ledger.
 
 ---
 
