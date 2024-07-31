@@ -17,8 +17,6 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -30,12 +28,10 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -67,35 +63,15 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
 
     private CountDownLatch serializationLatch;
 
-    protected volatile boolean allowDeletion = true;
-
-    protected CountDownLatch deletionLatch = new CountDownLatch(1);
-
     protected AtomicBoolean released = new AtomicBoolean(false);
 
     public BlockingSwirldState() {
         super();
     }
 
-    public BlockingSwirldState(final PlatformState platformState) {
-        this.platformState = platformState;
-    }
-
-    /**
-     * Protection should always be enabled but current unit tests don't expect this behavior
-     *
-     * @param protectionEnabled If protection is enabled then this SignedState can only be deleted after explicitly
-     *                          enabled.
-     */
-    public BlockingSwirldState(final boolean protectionEnabled) {
-        allowDeletion = !protectionEnabled;
-    }
-
     private BlockingSwirldState(final BlockingSwirldState that) {
         super(that);
         this.platformState = that.platformState;
-        this.allowDeletion = that.allowDeletion;
-        this.deletionLatch = that.deletionLatch;
         this.released = new AtomicBoolean(that.released.get());
     }
 
@@ -238,44 +214,5 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         platformState = in.readSerializable();
-    }
-
-    public void enableDeletion() {
-        allowDeletion = true;
-    }
-
-    public void disableDeletion() {
-        allowDeletion = false;
-    }
-
-    public void waitForDeletion() {
-        try {
-            // 10 seconds is assumed to be more than sufficient for any unit test. If a test requires
-            // a greater wait then a variable timeout parameter can be added.
-            assertTrue(
-                    deletionLatch.await(DEFAULT_UNIT_TEST_SECS, TimeUnit.SECONDS),
-                    "Unit test took longer than the default of 10 seconds. Fix the test or override the wait time.");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            fail();
-        }
-    }
-
-    public void setAddressBook(AddressBook addressBook) {
-        platformState.setAddressBook(addressBook);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void destroyNode() {
-        if (!allowDeletion) {
-            fail("State is not allowed to be deleted");
-        }
-        if (!released.compareAndSet(false, true)) {
-            throw new IllegalStateException("This type of node should only be deleted once");
-        }
-        deletionLatch.countDown();
     }
 }

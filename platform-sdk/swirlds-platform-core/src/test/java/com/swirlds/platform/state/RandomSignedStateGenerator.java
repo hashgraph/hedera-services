@@ -36,7 +36,6 @@ import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -69,7 +68,6 @@ public class RandomSignedStateGenerator {
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
-    private boolean protectionEnabled = false;
     private Hash stateHash = null;
     private Integer roundsNonAncient = null;
     private Hash epoch = null;
@@ -247,10 +245,6 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final BlockingSwirldState dummySwirldState) {
-            dummySwirldState.disableDeletion();
-        }
-
         return signedState;
     }
 
@@ -386,17 +380,6 @@ public class RandomSignedStateGenerator {
     public RandomSignedStateGenerator setStateHash(@NonNull final Hash stateHash) {
         Objects.requireNonNull(stateHash, "stateHash must not be null");
         this.stateHash = stateHash;
-        return this;
-    }
-
-    /**
-     * Default false. If true and a {@link BlockingSwirldState} is being used, then disable deletion on the state.
-     *
-     * @return this object
-     */
-    @NonNull
-    public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
-        this.protectionEnabled = protectionEnabled;
         return this;
     }
 
