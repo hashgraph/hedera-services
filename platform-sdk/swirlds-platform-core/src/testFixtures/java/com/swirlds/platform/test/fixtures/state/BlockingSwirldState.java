@@ -65,6 +65,10 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
 
     protected AtomicBoolean released = new AtomicBoolean(false);
 
+
+    /**
+     * Constructs a new instance of {@link BlockingSwirldState}.
+     */
     public BlockingSwirldState() {
         super();
     }
@@ -73,6 +77,7 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
         super(that);
         this.platformState = that.platformState;
         this.released = new AtomicBoolean(that.released.get());
+        this.serializationLatch = that.serializationLatch;
     }
 
     @Override
