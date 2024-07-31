@@ -10,7 +10,7 @@
 			"CryptoCreate",
 			"CryptoTransfer",
             "TokenAirdrop",
-				"TokenClaimAirdrop",
+			"TokenClaimAirdrop",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",
