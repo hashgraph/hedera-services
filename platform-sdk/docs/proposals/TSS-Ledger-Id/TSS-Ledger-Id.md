@@ -477,7 +477,7 @@ message TssMessageTransaction {
 
 ```protobuf
 /**
- * The TssVoteTransaction is used to vote on the validity of TssMessages for a candidate roster.
+ * A transaction used to vote on the validity of TssMessages for a candidate roster.
  */
 message TssVoteTransaction {
 
