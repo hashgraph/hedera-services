@@ -17,8 +17,10 @@
 package com.hedera.node.app.spi.signatures;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -42,6 +44,10 @@ public interface SignatureVerifier {
      * contain the full public key, and the verifier will use this to verify the signature. If there are multiple
      * prefixes that match the same key, the verifier will use the first pair encountered when traversing the
      * {@link SignaturePair}s in the order given.
+     * <p>
+     * For a ECDSA(secp256k1) {@link SignaturePair}, the public key prefix must be of the compressed form of the key
+     * (33 bytes); that is, it must match the format for ECDSA(secp256k1) public keys used in {@link Key} structures
+     * with the Hedera gRPC API.
      *
      * @param key the key whose signature should be verified
      * @param bytes the payload to verify
@@ -53,7 +59,7 @@ public interface SignatureVerifier {
             @NonNull Key key,
             @NonNull Bytes bytes,
             @NonNull SignatureMap signatureMap,
-            @Nullable Function<Key, SimpleKeyVerification> simpleKeyVerifier);
+            @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier);
 
     /**
      * Convenience method for getting the number of Ed25519 and ECDSA(secp256k1) keys in a {@link Key} structure,
@@ -61,5 +67,30 @@ public interface SignatureVerifier {
      * @param key the key structure to count simple keys in
      * @return the number of Ed25519 and ECDSA(secp256k1) keys in the key
      */
-    SimpleKeyCount countSimpleKeys(@NonNull Key key);
+    KeyCounts countSimpleKeys(@NonNull Key key);
+
+    /**
+     * Contains the number of Ed25519 and ECDSA(secp256k1) keys in a {@link Key} structure.
+     */
+    record KeyCounts(int numEddsaKeys, int numEcdsaKeys) {}
+
+    /**
+     * Enumerates the statuses of the signature verification for a simple key in the context of a call to
+     * {@link SignatureVerifier#verifySignature(Key, Bytes, SignatureMap, Function)}, where a <i>simple</i> key is any
+     * {@link Key} that is neither a {@link KeyList} nor a {@link ThresholdKey}.
+     */
+    enum SimpleKeyStatus {
+        /**
+         * The key's signature should be considered valid.
+         */
+        VALID,
+        /**
+         * The key's signature should be considered invalid.
+         */
+        INVALID,
+        /**
+         * The key's signature should be considered valid only if the key has a valid cryptographic signature in context.
+         */
+        ONLY_IF_CRYPTO_SIG_VALID
+    }
 }

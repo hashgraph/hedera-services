@@ -21,8 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.app.spi.signatures.SimpleKeyCount;
-import com.hedera.node.app.spi.signatures.SimpleKeyVerification;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +59,7 @@ public class AppSignatureVerifier implements SignatureVerifier {
             @NonNull final Key key,
             @NonNull final Bytes bytes,
             @NonNull final SignatureMap signatureMap,
-            @Nullable final Function<Key, SimpleKeyVerification> simpleKeyVerifier) {
+            @Nullable final Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
         final Set<ExpandedSignaturePair> sigPairs = new HashSet<>();
         signatureExpander.expand(key, signatureMap.sigPair(), sigPairs);
         final var results = signatureVerifier.verify(bytes, sigPairs);
@@ -80,10 +78,10 @@ public class AppSignatureVerifier implements SignatureVerifier {
     }
 
     @Override
-    public SimpleKeyCount countSimpleKeys(@NonNull final Key key) {
+    public KeyCounts countSimpleKeys(@NonNull final Key key) {
         final int[] counts = new int[2];
         countSimpleKeys(key, counts);
-        return new SimpleKeyCount(counts[EDDSA_COUNT_INDEX], counts[ECDSA_COUNT_INDEX]);
+        return new KeyCounts(counts[EDDSA_COUNT_INDEX], counts[ECDSA_COUNT_INDEX]);
     }
 
     private void countSimpleKeys(@NonNull final Key key, @NonNull final int[] counts) {

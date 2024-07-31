@@ -17,6 +17,9 @@
 package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.INVALID;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.VALID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,8 +34,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.SimpleKeyCount;
-import com.hedera.node.app.spi.signatures.SimpleKeyVerification;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -42,6 +43,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -49,17 +52,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AppSignatureVerifierTest {
-    private static final Key A_KEY = Key.newBuilder()
+    private static final Key ED_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
-    private static final Key B_KEY = Key.newBuilder()
+    private static final Key EC_KEY = Key.newBuilder()
             .ecdsaSecp256k1(Bytes.fromHex("020202020202020202020202020202020202020202020202020202020202020202"))
             .build();
-    private static final Key C_KEY = Key.newBuilder()
+    private static final Key CID_KEY = Key.newBuilder()
             .contractID(ContractID.newBuilder().contractNum(666L).build())
             .build();
     private static final Key TEST_KEY = Key.newBuilder()
-            .thresholdKey(ThresholdKey.newBuilder().threshold(1).keys(new KeyList(List.of(A_KEY, B_KEY, C_KEY))))
+            .thresholdKey(ThresholdKey.newBuilder().threshold(1).keys(new KeyList(List.of(ED_KEY, EC_KEY, CID_KEY))))
             .build();
 
     @Mock
@@ -82,75 +85,61 @@ class AppSignatureVerifierTest {
                 DEFAULT_CONFIG.getConfigData(HederaConfig.class), signatureExpander, signatureVerifier);
     }
 
-    @Test
-    void usesDefaultKeyVerifierWithNoOverride() throws ExecutionException, InterruptedException, TimeoutException {
-        final Set<ExpandedSignaturePair> expandedPairs =
-                Set.of(new ExpandedSignaturePair(A_KEY, A_KEY.ed25519OrThrow(), null, SignaturePair.DEFAULT));
-        willAnswer(invocationOnMock -> {
-                    final Set<ExpandedSignaturePair> pairs = invocationOnMock.getArgument(2);
-                    pairs.addAll(expandedPairs);
-                    return null;
-                })
-                .given(signatureExpander)
-                .expand(eq(TEST_KEY), eq(SignatureMap.DEFAULT.sigPair()), any(Set.class));
+    @Nested
+    @DisplayName("with one expanded ED25519 signature pair")
+    class WithOneExpandedEd25519SignaturePair {
+        private final Set<ExpandedSignaturePair> expandedPairs =
+                Set.of(new ExpandedSignaturePair(ED_KEY, ED_KEY.ed25519OrThrow(), null, SignaturePair.DEFAULT));
 
-        final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
-        given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
-                .willReturn(verification);
-        given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
+        @BeforeEach
+        void setUp() {
+            willAnswer(invocationOnMock -> {
+                        final Set<ExpandedSignaturePair> pairs = invocationOnMock.getArgument(2);
+                        pairs.addAll(expandedPairs);
+                        return null;
+                    })
+                    .given(signatureExpander)
+                    .expand(eq(TEST_KEY), eq(SignatureMap.DEFAULT.sigPair()), any(Set.class));
+        }
 
-        assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, null))
-                .isTrue();
-        // The default verifier counts the number of failed verifications in a key list, not the number passed
-        verify(verification).failed();
-    }
+        @Test
+        void usesDefaultKeyVerifierWithNoOverride() throws ExecutionException, InterruptedException, TimeoutException {
+            final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
+            given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
+                    .willReturn(verification);
+            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
 
-    @Test
-    void usesDefaultKeyVerifierWithValidOverride() throws ExecutionException, InterruptedException, TimeoutException {
-        final Set<ExpandedSignaturePair> expandedPairs =
-                Set.of(new ExpandedSignaturePair(A_KEY, A_KEY.ed25519OrThrow(), null, SignaturePair.DEFAULT));
-        willAnswer(invocationOnMock -> {
-                    final Set<ExpandedSignaturePair> pairs = invocationOnMock.getArgument(2);
-                    pairs.addAll(expandedPairs);
-                    return null;
-                })
-                .given(signatureExpander)
-                .expand(eq(TEST_KEY), eq(SignatureMap.DEFAULT.sigPair()), any(Set.class));
+            assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, null))
+                    .isTrue();
+            // The default verifier counts the number of failed verifications in a key list, not the number passed
+            verify(verification).failed();
+        }
 
-        final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
-        given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
-                .willReturn(verification);
-        given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
+        @Test
+        void usesDefaultKeyVerifierWithValidOverride()
+                throws ExecutionException, InterruptedException, TimeoutException {
+            final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
+            given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
+                    .willReturn(verification);
+            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
 
-        assertThat(subject.verifySignature(
-                        TEST_KEY,
-                        Bytes.EMPTY,
-                        SignatureMap.DEFAULT,
-                        key -> key == C_KEY
-                                ? SimpleKeyVerification.VALID
-                                : SimpleKeyVerification.ONLY_IF_CRYPTO_SIG_VALID))
-                .isTrue();
-        // Here we are directly using the crypto verification passed() method ourselves in the callback
-        verify(verification).passed();
-    }
+            assertThat(subject.verifySignature(
+                            TEST_KEY,
+                            Bytes.EMPTY,
+                            SignatureMap.DEFAULT,
+                            key -> key == CID_KEY ? VALID : ONLY_IF_CRYPTO_SIG_VALID))
+                    .isTrue();
+            // Here we are directly using the crypto verification passed() method ourselves in the callback
+            verify(verification).passed();
+        }
 
-    @Test
-    void usesDefaultKeyVerifierWithInvalidOverride() {
-        final Set<ExpandedSignaturePair> expandedPairs =
-                Set.of(new ExpandedSignaturePair(A_KEY, A_KEY.ed25519OrThrow(), null, SignaturePair.DEFAULT));
-        willAnswer(invocationOnMock -> {
-                    final Set<ExpandedSignaturePair> pairs = invocationOnMock.getArgument(2);
-                    pairs.addAll(expandedPairs);
-                    return null;
-                })
-                .given(signatureExpander)
-                .expand(eq(TEST_KEY), eq(SignatureMap.DEFAULT.sigPair()), any(Set.class));
+        @Test
+        void usesDefaultKeyVerifierWithInvalidOverride() {
+            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
 
-        given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(A_KEY, future));
-
-        assertThat(subject.verifySignature(
-                        TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, key -> SimpleKeyVerification.INVALID))
-                .isFalse();
+            assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, key -> INVALID))
+                    .isFalse();
+        }
     }
 
     @Test
@@ -164,13 +153,13 @@ class AppSignatureVerifierTest {
                                         TEST_KEY,
                                         Key.newBuilder()
                                                 .keyList(KeyList.newBuilder()
-                                                        .keys(A_KEY, C_KEY, TEST_KEY)
+                                                        .keys(ED_KEY, CID_KEY, TEST_KEY)
                                                         .build())
                                                 .build())
                                 .build())
                         .build())
                 .build();
-        final var expectedCount = new SimpleKeyCount(4, 3);
+        final var expectedCount = new com.hedera.node.app.spi.signatures.SignatureVerifier.KeyCounts(4, 3);
         final var actualCount = subject.countSimpleKeys(structure);
         assertThat(actualCount).isEqualTo(expectedCount);
     }
