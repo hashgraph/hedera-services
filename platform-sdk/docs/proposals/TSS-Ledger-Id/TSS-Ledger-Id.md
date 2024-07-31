@@ -504,14 +504,19 @@ message TssVoteTransaction {
   bytes node_signature = 5;
 
   /**
-   * The tss_vote is a bit vector where the index position of each bit corresponds to the sequence number of a
-   * `TssMessageTransaction`. The least significant bit of byte[0] corresponds to sequence number 0 and the most
-   * significant bit of byte[0] corresponds to sequence number 7.  The least significant bit of byte[1] corresponds to
-   * sequence number 8 and the most significant bit of byte[1] corresponds to the sequence number 15, and so on.
-   * If a bit is set to 1, then the TssMessage for the corresponding TssMessageTransaction sequence number was
-   * received as one of the first Threshold number of valid TssMessages in consensus order.  If a bit is set to 0,
-   * then the TssMessage was invalid or there was no TssMessageTransaction with a sequence number corresponding to
-   * the bit index.
+    /**
+     * A bit vector where the index position of each bit corresponds to the
+     * sequence number of a `TssMessageTransaction`. The least significant bit
+     * of byte[0] corresponds to sequence number 0 and the most significant bit
+     * of byte[0] corresponds to sequence number 7.  The least significant bit
+     * of byte[1] corresponds to sequence number 8 and the most significant bit
+     * of byte[1] corresponds to the sequence number 15, and so on. If a bit is
+     * set to 1, then the TssMessage for the corresponding TssMessageTransaction
+     * sequence number was received as one of the first Threshold number of
+     * valid TssMessages in consensus order.  If a bit is set to 0, then the
+     * TssMessage was invalid or there was no TssMessageTransaction with a
+     * sequence number corresponding to the bit index.
+     */
    */
   bytes tss_vote = 5;
 
