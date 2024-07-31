@@ -443,7 +443,7 @@ message TssMessageTransaction {
   bytes source_roster_hash = 2;
 
   /**
-   * The target roster hash is the hash of the roster that the TssMessage is for.
+   * A hash of the roster that the TssMessage is for.
    */
   bytes target_roster_hash = 3;
 
