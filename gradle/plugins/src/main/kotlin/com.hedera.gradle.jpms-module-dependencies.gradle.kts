@@ -20,7 +20,6 @@ plugins { id("org.gradlex.java-module-dependencies") }
 // - 'com.' for 'com.swirlds' modules
 // - 'com.hedera.node.' for 'com.hedera.hashgraph' modules
 // - 'com.hedera.storage' for 'com.hedera.storage.blocknode' modules
-// - 'com.hedera.evm' for 'com.hedera.evm' modules
 // If one of the module groups has 'requires' to modules of another group, we need to register
 // that module group here.
 javaModuleDependencies {
@@ -28,5 +27,5 @@ javaModuleDependencies {
     moduleNamePrefixToGroup.put("com.hedera.node.", "com.hedera.hashgraph")
     moduleNamePrefixToGroup.put("com.hedera.storage.", "com.hedera.storage.blocknode")
     moduleNameToGA.put("com.hedera.evm", "com.hedera.evm:hedera-evm")
-    moduleNameToGA.put("com.hedera.evm.impl", "com.hedera.evm.impl:hedera-evm-impl")
+    moduleNameToGA.put("com.hedera.evm.impl", "com.hedera:hedera-evm-impl")
 }
