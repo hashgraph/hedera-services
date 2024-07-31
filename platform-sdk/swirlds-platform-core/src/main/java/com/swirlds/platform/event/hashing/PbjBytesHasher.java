@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
@@ -27,8 +27,8 @@ import java.security.MessageDigest;
 import java.util.Objects;
 
 /**
- * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
- * payloads without invalidating the event hash.
+ * Hashes the PBJ representation of an event. This hasher double hashes each transaction in order to allow redaction of
+ * transactions without invalidating the event hash.
  */
 public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
 
@@ -53,8 +53,8 @@ public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
         EventCore.PROTOBUF.toBytes(event.getEventCore()).writeTo(eventDigest);
-        event.getPayloads().forEach(payload -> {
-            EventPayload.PROTOBUF.toBytes(payload).writeTo(transactionDigest);
+        event.getEventTransactions().forEach(transaction -> {
+            EventTransaction.PROTOBUF.toBytes(transaction).writeTo(transactionDigest);
             eventDigest.update(transactionDigest.digest());
         });
         event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
