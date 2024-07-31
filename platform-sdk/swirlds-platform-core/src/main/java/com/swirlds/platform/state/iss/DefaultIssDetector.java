@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -297,8 +297,8 @@ public class DefaultIssDetector implements IssDetector {
      */
     @NonNull
     private List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<StateSignaturePayload>> stateSignatureTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
 
         if (stateSignatureTransactions == null) {
             return List.of();
@@ -325,9 +325,9 @@ public class DefaultIssDetector implements IssDetector {
      */
     @Nullable
     private IssNotification handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignaturePayload> transaction) {
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
         final NodeId signerId = transaction.submitterId();
-        final StateSignaturePayload signaturePayload = transaction.transaction();
+        final StateSignatureTransaction signaturePayload = transaction.transaction();
         final SemanticVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {

@@ -41,7 +41,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
@@ -75,13 +75,12 @@ class DefaultTransactionHandlerTests {
             @NonNull final List<EventImpl> events,
             final long roundNumber,
             final boolean pcesRound) {
-        final ArrayList<DetailedConsensusEvent> streamedEvents = new ArrayList<>();
+        final ArrayList<CesEvent> streamedEvents = new ArrayList<>();
         for (final Iterator<EventImpl> iterator = events.iterator(); iterator.hasNext(); ) {
             final EventImpl event = iterator.next();
-            final DetailedConsensusEvent detailedConsensusEvent =
-                    new DetailedConsensusEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
-            streamedEvents.add(detailedConsensusEvent);
-            detailedConsensusEvent.getRunningHash().setHash(mock(Hash.class));
+            final CesEvent cesEvent = new CesEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
+            streamedEvents.add(cesEvent);
+            cesEvent.getRunningHash().setHash(mock(Hash.class));
         }
 
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
@@ -120,7 +119,7 @@ class DefaultTransactionHandlerTests {
     }
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
-        assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
+        assertTrue(event.getBaseEvent().getTransactionCount() > 0, "event should have transactions");
         event.getBaseEvent()
                 .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNotNull(
@@ -128,7 +127,7 @@ class DefaultTransactionHandlerTests {
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
-        assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
+        assertTrue(event.getBaseEvent().getTransactionCount() > 0, "event should have transactions");
         event.getBaseEvent()
                 .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
