@@ -22,10 +22,10 @@ import com.hedera.hapi.node.base.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code TokenCreate}
  * transaction.
  */
-public interface TokenCreateStreamBuilder extends TokenBaseRecordBuilder {
+public interface TokenCreateStreamBuilder extends TokenBaseStreamBuilder {
     /**
      * Tracks creation of a new token by number. Even if someday we support creating multiple
      * tokens within a smart contract call, we will still only need to track one created token

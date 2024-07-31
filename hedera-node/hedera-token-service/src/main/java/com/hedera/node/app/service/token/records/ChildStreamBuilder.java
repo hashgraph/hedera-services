@@ -21,7 +21,7 @@ import com.hedera.hapi.node.base.TransferList;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for reading the transfer list from child records.
+ * A {@code StreamBuilder} specialization for reading the transfer list from child records.
  */
 public interface ChildStreamBuilder {
 

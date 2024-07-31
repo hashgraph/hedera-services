@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.api;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
 public interface FeeStreamBuilder {

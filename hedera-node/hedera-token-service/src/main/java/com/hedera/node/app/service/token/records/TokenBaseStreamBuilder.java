@@ -23,11 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * The base interface for Token Service record builders that record operations on Tokens.
  */
-public interface TokenBaseRecordBuilder extends StreamBuilder {
+public interface TokenBaseStreamBuilder extends StreamBuilder {
     /**
      * Sets the {@link TokenType} of the token the recorded transaction created or modified.
      * @param tokenType the token type
      * @return this builder
      */
-    TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType);
+    TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType);
 }

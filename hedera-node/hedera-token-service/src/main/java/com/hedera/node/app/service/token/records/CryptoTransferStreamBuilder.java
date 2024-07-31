@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
+ * A {@code StreamBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
  * transaction.
  */
 public interface CryptoTransferStreamBuilder extends StreamBuilder {

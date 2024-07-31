@@ -20,10 +20,10 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
+ * A {@code StreamBuilder} specialization for tracking the effects of a {@code TokenUpdate}
  * transaction.
  */
-public interface TokenUpdateStreamBuilder extends TokenBaseRecordBuilder {
+public interface TokenUpdateStreamBuilder extends TokenBaseStreamBuilder {
     /**
      * Adds the token relations that are created by auto associations.
      * This information is needed while building the transfer list, to set the auto association flag.

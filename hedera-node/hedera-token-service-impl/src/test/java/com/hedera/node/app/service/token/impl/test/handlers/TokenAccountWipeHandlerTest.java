@@ -71,7 +71,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -232,7 +232,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             @NonNull
             @Override
-            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
+            public TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType) {
                 return this;
             }
 
