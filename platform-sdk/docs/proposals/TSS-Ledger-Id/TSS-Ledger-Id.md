@@ -482,7 +482,7 @@ message TssMessageTransaction {
 message TssVoteTransaction {
 
   /**
-   * The node id is the id of the node that generated the TssVote.
+   * An identifier for the node that generated this TssVote.
    */
   uint64 node_id = 1;
 
