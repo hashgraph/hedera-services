@@ -181,14 +181,19 @@ generate the ledger signature on the same message. The threshold should be high 
 share is required to participate in the signing since a threshold number of shares can also collude to recover the
 ledger private key, if they so choose.
 
-The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
-node will need its own long-term EC key pair, called an `tssEncryptionKey`, on the curve for use in the groth21 TSS
-algorithm. Each node receives some number of shares in proportion to the consensus weight assigned to it. Each share
-is an EC key pair on the same curve. All public keys of the shares are known, and aggregating a threshold number of
-share public keys will produce the ledger id. Each node alone has access to the private key of its own shares. Each
-node must keep their private keys to themselves since a threshold number of share private keys can aggregate to
-recover the ledger private key. A threshold number of signatures on the same message from the share private keys
-will aggregate to recover the ledger signature on the message.
+The Groth21 algorithm requires a specific class of Elliptic Curve (EC) with the
+ability to produce bilinear pairings. Each node will need its own long-term EC
+key pair, called a `tssEncryptionKey`, based on the chosen curve, for use in
+the Groth21 TSS algorithm.
+Each node receives some number of shares in proportion to the consensus
+weight assigned to it. Each share is an EC key pair on the same curve.
+All public keys of the shares are known, and aggregating a threshold number of
+share public keys will produce the ledger id. Each node only has access to the
+private key of its own shares, and none other. Each node must keep their
+private keys secret because a threshold number of share private keys can
+aggregate to recover the ledger private key. A threshold number of signatures
+on the same message from the share private keys will aggregate to produce a
+ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
