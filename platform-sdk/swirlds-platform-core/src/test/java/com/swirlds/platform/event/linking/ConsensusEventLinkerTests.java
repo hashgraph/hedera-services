@@ -33,7 +33,7 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.util.Iterator;
@@ -94,7 +94,7 @@ class ConsensusEventLinkerTests {
                 linkedEvents.add(linkedEvent);
                 assertSame(event, linkedEvent.getBaseEvent());
 
-                final EventDescriptor selfParent = event.getSelfParent();
+                final EventDescriptorWrapper selfParent = event.getSelfParent();
                 if (selfParent == null || eventWindow.isAncient(selfParent)) {
                     assertNull(linkedEvent.getSelfParent());
                 } else {
@@ -104,11 +104,11 @@ class ConsensusEventLinkerTests {
                             linkedEvent.getSelfParent().getBaseEvent().getDescriptor());
                 }
 
-                final List<EventDescriptor> otherParents = event.getOtherParents();
+                final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
                 if (otherParents.isEmpty()) {
                     assertNull(linkedEvent.getOtherParent());
                 } else {
-                    final EventDescriptor otherParent = otherParents.getFirst();
+                    final EventDescriptorWrapper otherParent = otherParents.getFirst();
                     if (eventWindow.isAncient(otherParent)) {
                         assertNull(linkedEvent.getOtherParent());
                     } else {

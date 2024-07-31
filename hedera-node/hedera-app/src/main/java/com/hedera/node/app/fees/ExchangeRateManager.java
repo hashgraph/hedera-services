@@ -35,7 +35,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -79,7 +79,7 @@ public final class ExchangeRateManager {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public void init(@NonNull final HederaState state, @NonNull final Bytes bytes) {
+    public void init(@NonNull final State state, @NonNull final Bytes bytes) {
         requireNonNull(state, "state must not be null");
         requireNonNull(bytes, "bytes must not be null");
 
@@ -170,9 +170,9 @@ public final class ExchangeRateManager {
     /**
      * Updates the midnight rates to the current exchange rates, both internally and in the given state.
      *
-     * @param state the {@link HederaState} to update the midnight rates in
+     * @param state the {@link State} to update the midnight rates in
      */
-    public void updateMidnightRates(@NonNull final HederaState state) {
+    public void updateMidnightRates(@NonNull final State state) {
         midnightRates = currentExchangeRateInfo.exchangeRates();
         final var singleton = state.getWritableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY);
@@ -206,11 +206,11 @@ public final class ExchangeRateManager {
     /**
      * Get the {@link ExchangeRateInfo} that is based on the given state.
      *
-     * @param state The {@link HederaState} to use.
+     * @param state The {@link State} to use.
      * @return The {@link ExchangeRateInfo}.
      */
     @NonNull
-    public ExchangeRateInfo exchangeRateInfo(@NonNull final HederaState state) {
+    public ExchangeRateInfo exchangeRateInfo(@NonNull final State state) {
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var shardNum = hederaConfig.shard();
         final var realmNum = hederaConfig.realm();

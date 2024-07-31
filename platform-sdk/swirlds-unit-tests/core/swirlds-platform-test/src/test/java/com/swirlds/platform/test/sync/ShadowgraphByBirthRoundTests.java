@@ -43,7 +43,7 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -196,12 +196,12 @@ class ShadowgraphByBirthRoundTests {
         }
     }
 
-    private Set<Hash> ancestorsOf(final List<EventDescriptor> parents) {
+    private Set<Hash> ancestorsOf(final List<EventDescriptorWrapper> parents) {
         final Set<Hash> ancestorSet = new HashSet<>();
-        for (final EventDescriptor parent : parents) {
-            ancestorSet.add(parent.getHash());
-            if (ancestorsMap.containsKey(parent.getHash())) {
-                ancestorSet.addAll(ancestorsMap.get(parent.getHash()));
+        for (final EventDescriptorWrapper parent : parents) {
+            ancestorSet.add(parent.hash());
+            if (ancestorsMap.containsKey(parent.hash())) {
+                ancestorSet.addAll(ancestorsMap.get(parent.hash()));
             }
         }
         return ancestorSet;
