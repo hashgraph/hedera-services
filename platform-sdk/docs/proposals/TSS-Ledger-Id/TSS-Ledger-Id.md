@@ -463,9 +463,11 @@ message TssMessageTransaction {
   bytes tss_message = 5;
 
   /**
-   * The signature is produced by the node signing the tuple (source_roster_hash, target_roster_hash, share_index,
-   * tss_message) using its private `tssEncryptionKey`.  The signature is verified by other nodes using the public
-   * key of the `tssEncryptionKey` of the node sending this transaction.
+   * A signature produced by the node.<br/>
+   * This is created by signing the tuple (source_roster_hash, target_roster_hash,
+   * share_index, tss_message) using the node's private `tssEncryptionKey`.
+   * The signature is verified by other nodes using the public key of the
+   * `tssEncryptionKey` for the node sending this transaction.
    */
   bytes signature = 6;
 }
