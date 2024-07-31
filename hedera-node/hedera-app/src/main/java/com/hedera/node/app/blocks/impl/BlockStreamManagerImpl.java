@@ -17,7 +17,6 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
@@ -170,10 +169,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var blockItem = BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
                         .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
-                        .consensusTimestamp(asTimestamp(
-                                roundStateChangeListener.getLastUsedConsensusTime() == null
-                                        ? blockTimestamp
-                                        : roundStateChangeListener.getLastUsedConsensusTime()))
+                        .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
                         .stateChanges(StateChange.newBuilder()
                                 .stateName(BlockStreamService.NAME + "." + BLOCK_STREAM_INFO_KEY)
                                 .singletonUpdate(
@@ -230,6 +226,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public @Nullable Bytes blockHashByBlockNumber(final long blockNo) {
         return blockHashManager.hashOfBlock(blockNo);
+    }
+
+    public Timestamp endOfBlockTimestamp() {
+        return roundStateChangeListener.endOfBlockTimestamp();
     }
 
     private void schedulePendingWork() {

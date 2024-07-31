@@ -323,7 +323,7 @@ public class WorkingDirUtils {
                 .toList());
     }
 
-    public static AddressBook loadAddressBookWithCert(@NonNull Path path) {
+    public static AddressBook loadAddressBookWithDeterministicCerts(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         try {

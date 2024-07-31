@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import org.jetbrains.annotations.NotNull;
 
 public class RoundStateChangeListener implements StateChangesListener {
@@ -109,17 +110,17 @@ public class RoundStateChangeListener implements StateChangesListener {
         }
         final var stateChanges = StateChanges.newBuilder()
                 .stateChanges(allStateChanges)
-                .consensusTimestamp(asTimestamp(lastUsedConsensusTime.plusNanos(1)))
+                .consensusTimestamp(endOfBlockTimestamp())
                 .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
         return BlockItem.newBuilder().stateChanges(stateChanges).build();
     }
 
-    public Instant getLastUsedConsensusTime() {
-        return lastUsedConsensusTime;
+    public @NonNull Timestamp endOfBlockTimestamp() {
+        return asTimestamp(lastUsedConsensusTime.plusNanos(1));
     }
 
-    public void setLastUsedConsensusTime(final Instant nextAvailableConsensusTime) {
-        this.lastUsedConsensusTime = nextAvailableConsensusTime;
+    public void setLastUsedConsensusTime(@NonNull final Instant nextAvailableConsensusTime) {
+        this.lastUsedConsensusTime = requireNonNull(nextAvailableConsensusTime);
     }
 
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {

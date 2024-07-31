@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithCert;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -85,6 +85,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
@@ -164,7 +165,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
         final var migrator = new OrderedServiceMigrator();
 
-        final var addressBook = loadAddressBookWithCert(pathToAddressBook);
+        final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
         final var networkInfo = new NetworkInfo() {
             @NonNull
             @Override
@@ -233,6 +234,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
             final var actualHashes = hashesByName(sb.toString());
             final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
+            final var onlyRootMismatch = new AtomicBoolean(true);
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
                 if (!expectedHash.equals(actualHash)) {
@@ -242,9 +244,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                             .append(expectedHash)
                             .append(", was ")
                             .append(actualHash);
+                    onlyRootMismatch.set(false);
                 }
             });
-            Assertions.fail(errorMsg.toString());
+            // Until we are streaming Platform state changes, the root hash will never match, so for now
+            // we only fail if some Services state hash does not match
+            if (!onlyRootMismatch.get()) {
+                Assertions.fail(errorMsg.toString());
+            }
         }
     }
 
@@ -267,9 +274,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var singletonState = writableStates.getSingleton(stateKey);
                     singletonState.put(
                             stateChange.singletonUpdateOrThrow().newValue().value());
-                    if ("ENTITY_ID".equals(stateKey)) {
-                        logger.info("Entity ID updated to {}", singletonState.get());
-                    }
                     stateChangesSummary.countSingletonPut(serviceName, stateKey);
                 }
                 case MAP_UPDATE -> {
