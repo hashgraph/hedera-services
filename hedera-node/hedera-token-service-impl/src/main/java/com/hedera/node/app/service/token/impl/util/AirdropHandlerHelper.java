@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -57,7 +58,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link AccountAmount} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #shouldAddAirdropToPendingState(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
      *
      * @param context {@link HandleContext} used to obtain state stores
      * @param tokenId token id
@@ -82,9 +83,9 @@ public class AirdropHandlerHelper {
             final var account =
                     getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             final var tokenRel = tokenRelStore.get(accountId, tokenId);
-            var shouldAddAirdropToPendingState = shouldAddAirdropToPendingState(account, tokenRel);
+            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
 
-            if (shouldAddAirdropToPendingState) {
+            if (isPendingAirdrop) {
                 pendingFungibleAmounts.add(aa);
             } else {
                 transferFungibleAmounts.add(aa);
@@ -98,7 +99,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link NftTransfer} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #shouldAddAirdropToPendingState(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
      *
      * @param context context
      * @param tokenId token id
@@ -123,7 +124,7 @@ public class AirdropHandlerHelper {
             var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             var tokenRel = tokenRelStore.get(receiverId, tokenId);
-            var shouldAddAirdropToPendingState = shouldAddAirdropToPendingState(account, tokenRel);
+            var shouldAddAirdropToPendingState = isPendingAirdrop(account, tokenRel);
 
             if (shouldAddAirdropToPendingState) {
                 pendingNftList.add(nftTransfer);
@@ -144,15 +145,15 @@ public class AirdropHandlerHelper {
      * @param tokenRelation token relation
      * @return if airdrop of given token to given receiver should be added to the airdrop pending state
      */
-    private static boolean shouldAddAirdropToPendingState(
-            @Nullable Account receiver, @Nullable TokenRelation tokenRelation) {
-        if (receiver == null) {
-            return false;
-        }
+    private static boolean isPendingAirdrop(@NonNull Account receiver, @Nullable TokenRelation tokenRelation) {
         // check if we have existing association or free auto associations slots or unlimited auto associations
-        return tokenRelation == null
-                && receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
-                && receiver.maxAutoAssociations() != -1;
+        if (tokenRelation != null) {
+            return false;
+        } else if (receiver.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
+            return false;
+        } else {
+            return receiver.usedAutoAssociations() == receiver.maxAutoAssociations();
+        }
     }
 
     /**
@@ -198,7 +199,7 @@ public class AirdropHandlerHelper {
      * @param pendingAirdropValue the amount of fungible token
      * @return {@link AccountPendingAirdrop} for storing in the state
      */
-    public static AccountPendingAirdrop createAccountPendingAirdrop(PendingAirdropValue pendingAirdropValue) {
+    public static AccountPendingAirdrop createFirstAccountPendingAirdrop(PendingAirdropValue pendingAirdropValue) {
         return createAccountPendingAirdrop(pendingAirdropValue, null);
     }
 
@@ -209,7 +210,7 @@ public class AirdropHandlerHelper {
      * @return {@link AccountPendingAirdrop} for storing in the state
      */
     public static AccountPendingAirdrop createAccountPendingAirdrop(
-            PendingAirdropValue pendingAirdropValue, PendingAirdropId next) {
+            @Nullable final PendingAirdropValue pendingAirdropValue, @Nullable final PendingAirdropId next) {
         return AccountPendingAirdrop.newBuilder()
                 .pendingAirdropValue(pendingAirdropValue)
                 .nextAirdrop(next)
@@ -224,7 +225,7 @@ public class AirdropHandlerHelper {
      * @return {@link PendingAirdropRecord}
      */
     public static PendingAirdropRecord createPendingAirdropRecord(
-            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
+            @NonNull final PendingAirdropId pendingAirdropId, @Nullable final PendingAirdropValue pendingAirdropValue) {
         return PendingAirdropRecord.newBuilder()
                 .pendingAirdropId(pendingAirdropId)
                 .pendingAirdropValue(pendingAirdropValue)

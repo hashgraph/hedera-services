@@ -317,7 +317,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void handleAirdropMultipleTokensToPendingState() {
         givenStoresAndConfig(handleContext);
-        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
         var tokenWithNoCustomFees =
@@ -347,6 +347,10 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(feeCalculator.calculate()).willReturn(new Fees(10, 10, 10));
+        given(handleContext.tryToChargePayer(anyLong())).willReturn(true);
 
         tokenAirdropHandler.handle(handleContext);
 
@@ -376,7 +380,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         // mock record builder
-        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
         var nftWithNoCustomFees = nonFungibleToken
@@ -392,7 +396,10 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn(true);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-
+        given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(feeCalculator.calculate()).willReturn(new Fees(10, 10, 10));
+        given(handleContext.tryToChargePayer(anyLong())).willReturn(true);
         tokenAirdropHandler.handle(handleContext);
 
         assertThat(writableAccountStore.get(tokenReceiverId)).isNotNull();
@@ -417,7 +424,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void calculateFeesShouldSumAllRequiredFees() {
+    void calculateFeesShouldChargeBaseFee() {
         final var fungibleTransferList = TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
                 .transfers(ACCT_4444_MINUS_5)
@@ -431,20 +438,12 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
         setupAirdropMocks(airdropBody, true);
 
-        final var defaultAirdropFees = new Fees(10, 10, 10);
-        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
-        when(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(defaultAirdropFees);
-
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelationStore);
-        when(readableTokenRelationStore.get(any(), any())).thenReturn(null);
-
         when(feeContext.dispatchComputeFees(any(), any())).thenReturn(new Fees(30, 30, 30));
 
         final var fees = tokenAirdropHandler.calculateFees(feeContext);
-        assertEquals(70, fees.networkFee());
-        assertEquals(70, fees.nodeFee());
-        assertEquals(70, fees.serviceFee());
+        assertEquals(30, fees.networkFee());
+        assertEquals(30, fees.nodeFee());
+        assertEquals(30, fees.serviceFee());
     }
 
     private void setupAirdropMocks(TokenAirdropTransactionBody body, boolean enableAirdrop) {

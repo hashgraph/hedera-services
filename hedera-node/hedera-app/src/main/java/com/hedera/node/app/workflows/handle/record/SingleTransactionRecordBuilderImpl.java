@@ -574,19 +574,6 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Sets the pending airdrop record list
-     *
-     * @param pendingAirdropRecords the pending airdrop record list
-     * @return the builder
-     */
-    @Override
-    public TokenAirdropRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
-        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
-        this.pendingAirdropRecords = pendingAirdropRecords;
-        return this;
-    }
-
-    /**
      * Adds to the pending airdrop record list
      *
      * @param pendingAirdropRecord pending airdrop record

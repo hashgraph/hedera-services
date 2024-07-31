@@ -94,23 +94,6 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Updates given {@link PendingAirdropId} with new {@link AccountPendingAirdrop} value the state,
-     * as well as exporting its ID to the transaction receipt. If there is no existing
-     * airdrop with the same id do nothing.
-     *
-     * @param airdropId    - the airdropId to be updated.
-     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be updated.
-     */
-    public void patch(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
-        requireNonNull(airdropId);
-        requireNonNull(accountAirdrop);
-
-        if (airdropState.contains(airdropId)) {
-            airdropState.put(airdropId, accountAirdrop);
-        }
-    }
-
-    /**
      * Removes a {@link PendingAirdropId} from the state
      *
      * @param airdropId the {@code PendingAirdropId} to be removed
@@ -131,5 +114,9 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     public AccountPendingAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
         return airdropState.getForModify(airdropId);
+    }
+
+    public boolean contains(final PendingAirdropId pendingId) {
+        return airdropState.contains(pendingId);
     }
 }
