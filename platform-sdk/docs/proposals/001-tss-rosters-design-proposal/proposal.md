@@ -396,11 +396,9 @@ The App will decide a network transplant sequence based on the following heurist
    genesis, or transplant modes.
 3. The App will be responsible for creating the Genesis Roster and conditionally passing it to the platform.
 
-All these app changes will need to be implemented by the Service team.
-
 ### DevOps Changes, in summary
 
-1. DevOps will decide whether it wants to keep the `config.txt` model and if so, work with Services on its translation
+1. DevOps will decide whether to keep the `config.txt` model and if so, work with Services on its translation
    into a Roster.
 2. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster,
    including the new TSS encryption key.
@@ -411,9 +409,9 @@ All these app changes will need to be implemented by the Service team.
 - Roster Submission: App will trigger roster submission by setting the `Roster` object in the
   `PlatformState` API.
 - Roster Validation: The submitted roster is validated and hashed, if valid, and the hash is not already in the state.
-- Roster Storage: The Roster is stored in the State as a map of Roster Hash to Roster. A reference to the candidate
-  roster's hash is also stored in the
-  `RosterState` object.
+- Roster Storage: The Roster is stored in the State as a States API map of Roster Hash to Roster. A reference to the
+  candidate
+  roster's hash is also stored in the `RosterState` singleton object.
 - Roster Adoption: The candidate roster is always adopted on the next software upgrade.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the previous.
