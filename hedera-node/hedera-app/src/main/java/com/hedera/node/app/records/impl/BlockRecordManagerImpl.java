@@ -37,7 +37,6 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -86,6 +85,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * time.
      */
     private final BlockRecordStreamProducer streamFileProducer;
+
     private final BlockStreamManager blockStreamManager;
     /**
      * A {@link BlockInfo} of the most recently completed block. This is actually available in state, but there
@@ -137,8 +137,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
         // thrown here, then startup of the node will fail. This is the intended behavior. We MUST be able to produce
         // record streams, or there really is no point to running the node!
-        final var runningHashState =
-                states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
+        final var runningHashState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var lastRunningHashes = runningHashState.get();
         assert lastRunningHashes != null : "Cannot be null, because this state is created at genesis";
         this.streamFileProducer.initRunningHash(lastRunningHashes);
@@ -278,15 +277,14 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var currentRunningHash = streamFileProducer.getRunningHash();
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var runningHashesState =
-                states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
+        final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         final var runningHashes = new RunningHashes(
-                        currentRunningHash,
-                        existingRunningHashes.nMinus1RunningHash(),
-                        existingRunningHashes.nMinus2RunningHash(),
-                        existingRunningHashes.nMinus3RunningHash());
+                currentRunningHash,
+                existingRunningHashes.nMinus1RunningHash(),
+                existingRunningHashes.nMinus2RunningHash(),
+                existingRunningHashes.nMinus3RunningHash());
         runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
@@ -298,19 +296,22 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                             .consensusTimestamp(endOfRoundTimestamp)
                             .stateChanges(StateChange.newBuilder()
                                     .stateName(BlockRecordService.NAME + "." + RUNNING_HASHES_STATE_KEY)
-                                    .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(runningHashes)))
+                                    .singletonUpdate(
+                                            new SingletonUpdateChange(singletonUpdateChangeValueFor(runningHashes)))
                                     .build())
                             .build())
                     .build();
             blockStreamManager.writeItem(runningHashesBlockItem);
-            final var blockInfo = requireNonNull(states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY).get());
+            final var blockInfo = requireNonNull(
+                    states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY).get());
             final var blockInfoBlockItem = BlockItem.newBuilder()
                     .stateChanges(StateChanges.newBuilder()
                             .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK)
                             .consensusTimestamp(endOfRoundTimestamp)
                             .stateChanges(StateChange.newBuilder()
                                     .stateName(BlockRecordService.NAME + "." + BLOCK_INFO_STATE_KEY)
-                                    .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(blockInfo)))
+                                    .singletonUpdate(
+                                            new SingletonUpdateChange(singletonUpdateChangeValueFor(blockInfo)))
                                     .build())
                             .build())
                     .build();

@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.jetbrains.annotations.NotNull;
 
 public class RoundStateChangeListener implements StateChangesListener {
