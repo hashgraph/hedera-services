@@ -37,6 +37,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,6 +76,7 @@ public class RandomSignedStateGenerator {
     private SignatureVerifier signatureVerifier;
     private boolean deleteOnBackgroundThread;
     private boolean pcesRound;
+    private boolean useBlockingState = false;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -112,9 +114,13 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
-        final BlockingSwirldState stateInstance;
+        final MerkleRoot stateInstance;
         if (state == null) {
-            stateInstance = new BlockingSwirldState();
+            if (useBlockingState) {
+                stateInstance = new BlockingSwirldState();
+            } else {
+                stateInstance = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
+            }
             PlatformState platformState = new PlatformState();
             platformState.setAddressBook(addressBookInstance);
             stateInstance.setPlatformState(platformState);
@@ -439,6 +445,18 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
         this.pcesRound = pcesRound;
+        return this;
+    }
+
+    /**
+     * Set if this state should use a {@link BlockingSwirldState} instead of a {@link MerkleStateRoot}.
+     * This flag is fasle by default.
+     *
+     * @param useBlockingState true if this state should use {@link BlockingSwirldState}
+     * @return this object
+     */
+    public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {
+        this.useBlockingState = useBlockingState;
         return this;
     }
 }

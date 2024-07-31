@@ -39,7 +39,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A dummy swirld state for SignedStateManager unit tests.
+ * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
+ * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
+ * {@link com.swirlds.platform.state.MerkleStateRoot} should be used instead.
  */
 public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf, SwirldState, MerkleRoot {
 
