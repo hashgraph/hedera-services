@@ -511,7 +511,7 @@ public class TokenHandlers {
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
     }
-/**
+    /**
      * Gets the tokenCancelAirdropHandler.
      *
      * @return the tokenCancelAirdropHandler
