@@ -91,7 +91,7 @@ The protobuf definition for the Roster will look as follows:
 /**
  * A single roster in the network state.
  * <p>
- * The roster SHALL be a PBJ map of key `NodeId`, value `RosterEntry`.
+ * The roster SHALL be a map of key `NodeId`, value `RosterEntry`.
  */
 message Roster {
 
@@ -102,7 +102,7 @@ message Roster {
      * The node Id key SHALL match the node Id in the value.
      * This map SHALL NOT be empty.<br/>
      */
-    map<uint64, RosterEntry> mapInt32ToString = 1;
+    map<uint64, RosterEntry> rosterEntries = 1;
 }
 ```
 
@@ -216,11 +216,11 @@ message RosterState {
     byte candidate_roster_hash = 1;
 
     /**
-     * The SHA-384 hash of an active roster
-     * This is the hash of the roster that has already been adopted by the
-     * network.
-     * A Node SHALL NOT, ever, have more than one active roster
-     * at the same time.
+     * A list of round numbers and roster hashes.
+     * The round number indicates the round in which the corresponding roster became active
+     * <p>
+     * This list SHALL be ordered by round numbers.<br/>
+     * This list MUST be deterministically ordered.
      */
     repeated RoundRosterPair round_roster_pairs = 2;
 }
@@ -242,7 +242,7 @@ message RoundRosterPair {
     /**
      * The round number.
      * <p>
-     * This value SHALL be the round number of the consensus round.
+     * This value SHALL be the round number of the consensus round in which this roster became active.
      */
     uint64 round_number = 1;
 
