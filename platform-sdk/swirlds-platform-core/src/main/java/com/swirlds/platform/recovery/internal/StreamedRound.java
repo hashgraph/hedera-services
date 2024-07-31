@@ -42,7 +42,7 @@ public class StreamedRound implements Round {
             @NonNull final AddressBook consensusRoster, @NonNull final List<CesEvent> events, final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
-        events.stream().map(CesEvent::getPlatformEvent).forEach(PlatformEvent::setConsensusTimestampsOnPayloads);
+        events.stream().map(CesEvent::getPlatformEvent).forEach(PlatformEvent::setConsensusTimestampsOnTransactions);
         consensusTimestamp = events.get(events.size() - 1).getPlatformEvent().getConsensusTimestamp();
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }

@@ -34,7 +34,7 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.hashing.PbjHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -175,7 +175,7 @@ public class TipsetEventCreator implements EventCreator {
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
                         .migrateEventHashing()
-                ? new PbjHasher()
+                ? new PbjStreamHasher()
                 : new StatefulEventHasher();
     }
 
@@ -200,7 +200,7 @@ public class TipsetEventCreator implements EventCreator {
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = event.getDescriptor();
                 lastSelfEventCreationTime = event.getTimeCreated();
-                lastSelfEventTransactionCount = event.getPayloadCount();
+                lastSelfEventTransactionCount = event.getTransactionCount();
                 childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
