@@ -347,7 +347,7 @@ happen through running the platform without application transactions. After the 
 platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
 id. After the platform restarts, application transactions are accepted and the platform starts building a new
 hashgraph, working towards consensus on round 1 with the ability to sign block 1. This ensures that the first user
-transactions handled by the network are in a block that can have a block proof soon as possible. The
+transactions handled by the network are in a block that can have a block proof as soon as possible. The
 alternative is that blocks will go without block proofs until the nodes go through TSS bootstrap, which may be
 several rounds later.
 
