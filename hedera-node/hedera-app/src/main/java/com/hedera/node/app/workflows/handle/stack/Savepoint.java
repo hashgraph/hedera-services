@@ -20,7 +20,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,7 +33,7 @@ public interface Savepoint extends BuilderSink {
      *
      * @return the state
      */
-    MerkleState state();
+    State state();
 
     /**
      * Rolls back all changes made in this savepoint, making any necessary changes to the stream item builders

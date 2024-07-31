@@ -24,7 +24,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -50,7 +50,7 @@ public final class StreamUtils {
             final Signer signer,
             final Duration eventStreamWindowSize,
             final Collection<ConsensusRound> rounds) {
-        final LinkedObjectStream<DetailedConsensusEvent> stream =
+        final LinkedObjectStream<CesEvent> stream =
                 new RunningHashCalculatorForStream<>(new TimestampStreamFileWriter<>(
                         dir.toAbsolutePath().toString(),
                         eventStreamWindowSize.toMillis(),
