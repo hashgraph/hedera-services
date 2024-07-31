@@ -17,9 +17,7 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -44,8 +42,6 @@ import java.util.List;
  * Utility class that provides static methods
  */
 public class AirdropHandlerHelper {
-    private static final Long LAST_RESERVED_SYSTEM_ACCOUNT = 1000L;
-
     public record FungibleAirdropLists(
             @NonNull List<AccountAmount> transferFungibleAmounts,
             @NonNull List<AccountAmount> pendingFungibleAmounts) {}
@@ -81,10 +77,6 @@ public class AirdropHandlerHelper {
             if (!accountStore.contains(accountId)) {
                 transferFungibleAmounts.add(aa);
                 continue;
-            }
-
-            if (aa.amount() > 0) {
-                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
             }
 
             final var account =
@@ -237,15 +229,5 @@ public class AirdropHandlerHelper {
                 .pendingAirdropId(pendingAirdropId)
                 .pendingAirdropValue(pendingAirdropValue)
                 .build();
-    }
-
-    /**
-     * Validate if AccountId is a system account.
-     *
-     * @param accountID the ID of the account that need to be validated
-     * @return boolean value indicating if the account is a system account
-     */
-    public static boolean validateIfSystemAccount(@NonNull AccountID accountID) {
-        return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT ? true : false;
     }
 }

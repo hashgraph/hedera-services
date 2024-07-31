@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -35,7 +34,6 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropRecord;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
-import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.validateIfSystemAccount;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -275,9 +273,6 @@ public class TokenAirdropHandler implements TransactionHandler {
             // If isApproval flag is set then the spender account must have paid for the transaction.
             // The transfer list specifies the owner who granted allowance as sender
             // check if the allowances from the sender account has the payer account as spender
-            // check if the receiver is a system account
-            validateTrue(
-                    !validateIfSystemAccount(nftTransfer.receiverAccountIDOrThrow()), INVALID_RECEIVING_NODE_ACCOUNT);
             final var nft = nftStore.get(tokenId, nftTransfer.serialNumber());
             validateTrue(nft != null, INVALID_NFT_ID);
             if (nftTransfer.isApproval()) {
@@ -316,7 +311,7 @@ public class TokenAirdropHandler implements TransactionHandler {
             }
             validateTrue(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
         } else {
-            validateTrue(tokenRel.balance() >= Math.abs(senderAmount.amount()), INSUFFICIENT_TOKEN_BALANCE);
+            validateTrue(tokenRel.balance() >= Math.abs(senderAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
         }
     }
 
