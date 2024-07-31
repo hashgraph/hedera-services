@@ -433,7 +433,7 @@ The following are new system transactions needed to key rosters and generate led
 message TssMessageTransaction {
 
   /**
-   * The node id is the id of the node that generated the TssMessage.
+   * An identifier for the node that generated the TssMessage.
    */
   uint64 node_id = 1;
 
