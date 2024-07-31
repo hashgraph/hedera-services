@@ -558,7 +558,7 @@ NOTE: The detailed processes for updating the ledger id can be found in the `TSS
 
 ```protobuf
 /**
- * The LedgerId is the public key of the ledger that can verify ledger signatures.
+ * A public key that identifies the ledger and can be used to verify ledger signatures.
  */
 message LedgerId {
 
