@@ -24,7 +24,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -79,7 +79,7 @@ public class EventMigrationTest {
                 eventHashes.add(platformEvent.getHash());
                 platformEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
-                        .map(EventDescriptor::getHash)
+                        .map(EventDescriptorWrapper::hash)
                         .forEach(parentHashes::add);
             }
         }

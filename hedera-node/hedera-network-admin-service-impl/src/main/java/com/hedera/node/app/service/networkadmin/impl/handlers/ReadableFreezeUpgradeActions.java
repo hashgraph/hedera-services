@@ -53,7 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Provides all the read-only actions that need to take place during upgrade
+ * Provides read-only actions that take place during network upgrade
  */
 public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
@@ -105,6 +105,9 @@ public class ReadableFreezeUpgradeActions {
         this.stakingInfoStore = stakingInfoStore;
     }
 
+    /**
+     * Write a NOW_FROZEN_MARKER marker file to signal that the network is frozen.
+     */
     public void externalizeFreezeIfUpgradePending() {
         log.info(
                 "Externalizing freeze if upgrade pending, freezeStore: {}, updateFileHash: {}",
@@ -115,6 +118,13 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
+    /**
+     * Write a marker file.
+     * @param file the name of the marker file
+     *             @param now the timestamp to write to the marker file
+     *                        if null, the marker file will contain the string "✓"
+     *                        if not null, the marker file will contain the string representation of the timestamp
+     */
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
@@ -132,11 +142,20 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
+    /**
+     * Write a marker file containing the string '✓'.
+     * @param file the name of the marker file
+     */
     protected void writeCheckMarker(@NonNull final String file) {
         requireNonNull(file);
         writeMarker(file, null);
     }
 
+    /**
+     * Write a marker file containing the string representation of the given timestamp.
+     * @param file the name of the marker file
+     * @param now the timestamp to write to the marker file
+     */
     protected void writeSecondMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         writeMarker(file, now);
@@ -147,21 +166,43 @@ public class ReadableFreezeUpgradeActions {
         catchUpOnMissedUpgradePrep();
     }
 
+    /**
+     * Check whether the two given hashes match.
+     * @param curSpecialFilesHash the first hash
+     * @param hashFromTxnBody the second hash
+     * @return true if the hashes match, false otherwise
+     */
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
         return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
     }
 
+    /**
+     * Extract the telemetry upgrade from the given archive data.
+     * @param archiveData the archive data
+     * @param now the timestamp to write to the marker file
+     * @return a future that completes when the extraction is done
+     */
     public CompletableFuture<Void> extractTelemetryUpgrade(
             @NonNull final Bytes archiveData, @Nullable final Timestamp now) {
         requireNonNull(archiveData);
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
+    /**
+     * Extract the software upgrade from the given archive data.
+     * @param archiveData the archive data
+     * @return a future that completes when the extraction is done
+     */
     public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
         requireNonNull(archiveData);
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
+    /**
+     * Check whether a freeze is scheduled.
+     * @param platformState the platform state
+     * @return true if a freeze is scheduled, false otherwise
+     */
     public boolean isFreezeScheduled(final PlatformState platformState) {
         requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
         final var freezeTime = platformState.getFreezeTime();
