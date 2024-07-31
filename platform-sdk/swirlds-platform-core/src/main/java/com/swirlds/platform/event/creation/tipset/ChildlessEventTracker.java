@@ -18,7 +18,7 @@ package com.swirlds.platform.event.creation.tipset;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,8 +34,8 @@ import java.util.Set;
  */
 public class ChildlessEventTracker {
 
-    private final Set<EventDescriptor> childlessEvents = new HashSet<>();
-    private final Map<NodeId, EventDescriptor> eventsByCreator = new HashMap<>();
+    private final Set<EventDescriptorWrapper> childlessEvents = new HashSet<>();
+    private final Map<NodeId, EventDescriptorWrapper> eventsByCreator = new HashMap<>();
 
     /**
      * Add a new event. Parents are removed from the set of childless events. Event is ignored if there is another event
@@ -43,15 +43,18 @@ public class ChildlessEventTracker {
      * if it has a lower generation. This is true even if the event being added is not a direct child (possible if there
      * has been branching).
      *
-     * @param eventDescriptor the event to add
+     * @param eventDescriptorWrapper the event to add
      * @param parents         the parents of the event being added
      */
-    public void addEvent(@NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
-        Objects.requireNonNull(eventDescriptor);
+    public void addEvent(
+            @NonNull final EventDescriptorWrapper eventDescriptorWrapper,
+            @NonNull final List<EventDescriptorWrapper> parents) {
+        Objects.requireNonNull(eventDescriptorWrapper);
 
-        final EventDescriptor existingEvent = eventsByCreator.get(eventDescriptor.getCreator());
+        final EventDescriptorWrapper existingEvent = eventsByCreator.get(eventDescriptorWrapper.creator());
         if (existingEvent != null) {
-            if (existingEvent.getGeneration() >= eventDescriptor.getGeneration()) {
+            if (existingEvent.eventDescriptor().generation()
+                    >= eventDescriptorWrapper.eventDescriptor().generation()) {
                 // Only add a new event if it has the highest generation of all events observed so far.
                 return;
             } else {
@@ -60,9 +63,9 @@ public class ChildlessEventTracker {
             }
         }
 
-        insertEvent(eventDescriptor);
+        insertEvent(eventDescriptorWrapper);
 
-        for (final EventDescriptor parent : parents) {
+        for (final EventDescriptorWrapper parent : parents) {
             removeEvent(parent);
         }
     }
@@ -72,8 +75,8 @@ public class ChildlessEventTracker {
      *
      * @param parents the parents of the self event
      */
-    public void registerSelfEventParents(@NonNull final List<EventDescriptor> parents) {
-        for (final EventDescriptor parent : parents) {
+    public void registerSelfEventParents(@NonNull final List<EventDescriptorWrapper> parents) {
+        for (final EventDescriptorWrapper parent : parents) {
             childlessEvents.remove(parent);
         }
     }
@@ -84,7 +87,7 @@ public class ChildlessEventTracker {
      * @param eventWindow the event window
      */
     public void pruneOldEvents(@NonNull final EventWindow eventWindow) {
-        for (final EventDescriptor event : getChildlessEvents()) {
+        for (final EventDescriptorWrapper event : getChildlessEvents()) {
             if (eventWindow.isAncient(event)) {
                 removeEvent(event);
             }
@@ -97,25 +100,25 @@ public class ChildlessEventTracker {
      * @return the childless events, this list is safe to modify
      */
     @NonNull
-    public List<EventDescriptor> getChildlessEvents() {
+    public List<EventDescriptorWrapper> getChildlessEvents() {
         return new ArrayList<>(childlessEvents);
     }
 
     /**
      * Insert an event into this data structure.
      */
-    private void insertEvent(@NonNull final EventDescriptor eventDescriptor) {
-        childlessEvents.add(eventDescriptor);
-        eventsByCreator.put(eventDescriptor.getCreator(), eventDescriptor);
+    private void insertEvent(@NonNull final EventDescriptorWrapper eventDescriptorWrapper) {
+        childlessEvents.add(eventDescriptorWrapper);
+        eventsByCreator.put(eventDescriptorWrapper.creator(), eventDescriptorWrapper);
     }
 
     /**
      * Remove an event from this data structure.
      */
-    private void removeEvent(@NonNull final EventDescriptor eventDescriptor) {
-        final boolean removed = childlessEvents.remove(eventDescriptor);
+    private void removeEvent(@NonNull final EventDescriptorWrapper eventDescriptorWrapper) {
+        final boolean removed = childlessEvents.remove(eventDescriptorWrapper);
         if (removed) {
-            eventsByCreator.remove(eventDescriptor.getCreator());
+            eventsByCreator.remove(eventDescriptorWrapper.creator());
         }
     }
 
@@ -136,7 +139,7 @@ public class ChildlessEventTracker {
         final StringBuilder sb = new StringBuilder();
         sb.append("Childless events:\n");
 
-        for (final EventDescriptor event : childlessEvents) {
+        for (final EventDescriptorWrapper event : childlessEvents) {
             sb.append("  - ").append(event).append("\n");
         }
         return sb.toString();

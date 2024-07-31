@@ -21,7 +21,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -62,7 +62,7 @@ public interface ConsensusEngine {
      * @return a list of CES events
      */
     @NonNull
-    default List<DetailedConsensusEvent> getCesEvents(@NonNull final ConsensusRound round) {
+    default List<CesEvent> getCesEvents(@NonNull final ConsensusRound round) {
         return round.getStreamedEvents();
     }
 }

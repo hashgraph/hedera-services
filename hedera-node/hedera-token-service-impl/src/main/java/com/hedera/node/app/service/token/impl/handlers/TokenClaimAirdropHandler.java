@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static java.util.Objects.requireNonNull;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -100,6 +101,7 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
 
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        return TransactionHandler.super.calculateFees(feeContext);
+        // Always throwing an unsupported exception until we merge the story that will implement the feature flag
+        throw new HandleException(NOT_SUPPORTED);
     }
 }

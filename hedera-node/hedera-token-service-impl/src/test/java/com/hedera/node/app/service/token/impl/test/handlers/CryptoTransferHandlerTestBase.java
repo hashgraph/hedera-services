@@ -33,6 +33,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
@@ -77,6 +78,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     protected CryptoTransferHandler subject;
     protected TokenClaimAirdropHandler tokenClaimAirdropHandler;
     protected CryptoTransferValidator validator;
+    protected CryptoTransferExecutor executor;
 
     @Mock
     protected HandleContext.SavepointStack stack;
@@ -84,8 +86,9 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        executor = new CryptoTransferExecutor();
         validator = new CryptoTransferValidator();
-        subject = new CryptoTransferHandler(validator);
+        subject = new CryptoTransferHandler(validator, executor);
         tokenClaimAirdropHandler = new TokenClaimAirdropHandler();
     }
 
