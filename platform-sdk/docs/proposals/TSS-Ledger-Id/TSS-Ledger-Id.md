@@ -328,7 +328,7 @@ distribution of weight between nodes.
 The hinTS algorithm is a threshold signature scheme that is able to measure double precision distributions of weight
 across nodes. The complicating factor with hinTS is that during an address book change over, a recursive proof needs
 to be constructed to prove that the new roster is a descendent of the original genesis roster. Validation of this
-recursive proof proved too expensive for EVM smart contracts, even with EC curve precompiles.
+recursive proof proved too expensive for EVM smart contracts, even with elliptic curve precompiles.
 
 #### TSS Bootstrap Process
 
