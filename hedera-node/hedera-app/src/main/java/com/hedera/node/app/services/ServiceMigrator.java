@@ -19,13 +19,13 @@ package com.hedera.node.app.services;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Defines a type able to perform some related set of migrations on a {@link HederaState} instance
+ * Defines a type able to perform some related set of migrations on a {@link State} instance
  * given a current and previous version of the state; a configuration; and network information, and
  * the metrics that services will use.
  */
@@ -42,7 +42,7 @@ public interface ServiceMigrator {
      * @param metrics The metrics to use for the migrations
      */
     void doMigrations(
-            @NonNull HederaState state,
+            @NonNull State state,
             @NonNull ServicesRegistry servicesRegistry,
             @Nullable SemanticVersion previousVersion,
             @NonNull SemanticVersion currentVersion,
