@@ -2,6 +2,7 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
@@ -25,7 +26,6 @@ module com.hedera.node.app {
     requires transitive io.grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
-    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
@@ -48,10 +48,10 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
+    requires static org.jetbrains.annotations;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
