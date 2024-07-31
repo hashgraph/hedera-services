@@ -26,7 +26,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -89,8 +89,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @NonNull
     @Override
-    public <T extends SingleTransactionRecordBuilder> T userTransactionRecordBuilder(
-            @NonNull Class<T> recordBuilderClass) {
+    public <T extends StreamBuilder> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return stack.getBaseBuilder(recordBuilderClass);
     }
@@ -108,8 +107,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @NonNull
     @Override
-    public <T extends SingleTransactionRecordBuilder> T addPrecedingChildRecordBuilder(
-            @NonNull Class<T> recordBuilderClass) {
+    public <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         final var result = stack.createIrreversiblePrecedingBuilder();
         return castBuilder(result, recordBuilderClass);
     }

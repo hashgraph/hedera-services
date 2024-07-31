@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.addressbook.impl.records;
 
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code NodeCreate} transaction.
  */
-public interface NodeCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface NodeCreateStreamBuilder extends StreamBuilder {
     /**
      * Tracks creation of a new node by nodeID.
      *
@@ -30,5 +30,5 @@ public interface NodeCreateRecordBuilder extends SingleTransactionRecordBuilder 
      * @return this builder
      */
     @NonNull
-    NodeCreateRecordBuilder nodeID(long nodeID);
+    NodeCreateStreamBuilder nodeID(long nodeID);
 }

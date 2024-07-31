@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.records;
+package com.hedera.node.app.service.token.api;
 
-import com.hedera.hapi.node.base.TokenAssociation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface TokenUpdateRecordBuilder extends TokenBaseRecordBuilder {
+public interface FeeStreamBuilder {
     /**
-     * Adds the token relations that are created by auto associations.
-     * This information is needed while building the transfer list, to set the auto association flag.
-     * @param tokenAssociation the token association that is created by auto association
+     * Gets the current value of the transaction fee in this builder.
+     * @return The current transaction fee value.
+     */
+    long transactionFee();
+
+    /**
+     * Sets the consensus transaction fee.
+     *
+     * @param transactionFee the transaction fee
      * @return the builder
      */
-    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    @NonNull
+    FeeStreamBuilder transactionFee(final long transactionFee);
 }

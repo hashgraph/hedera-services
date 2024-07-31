@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.api;
+package com.hedera.node.app.service.contract.impl.records;
 
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
- * transaction.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractUpdate}.
  */
-public interface FeeRecordBuilder {
+public interface ContractUpdateStreamBuilder extends DeleteCapableTransactionRecordBuilder {
     /**
-     * Gets the current value of the transaction fee in this builder.
-     * @return The current transaction fee value.
-     */
-    long transactionFee();
-
-    /**
-     * Sets the consensus transaction fee.
+     * Tracks the contract id updated by a successful top-level contract update operation.
      *
-     * @param transactionFee the transaction fee
-     * @return the builder
+     * @param contractId the {@link ContractID} of the updated top-level contract
+     * @return this builder
      */
     @NonNull
-    FeeRecordBuilder transactionFee(final long transactionFee);
+    ContractUpdateStreamBuilder contractID(@Nullable ContractID contractId);
 }

@@ -48,7 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -78,7 +78,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private NodeCreateRecordBuilder recordBuilder;
+    private NodeCreateStreamBuilder recordBuilder;
 
     @Mock
     private StoreFactory storeFactory;

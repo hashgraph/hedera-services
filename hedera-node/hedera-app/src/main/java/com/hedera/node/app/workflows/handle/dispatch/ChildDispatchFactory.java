@@ -41,7 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -59,7 +59,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -70,7 +70,7 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -157,7 +157,7 @@ public class ChildDispatchFactory {
             @NonNull final AccountID syntheticPayerId,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
@@ -170,8 +170,7 @@ public class ChildDispatchFactory {
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
-        final var streamBuilder =
-                initializedForChild(childStack.getBaseBuilder(SingleTransactionRecordBuilder.class), childTxnInfo);
+        final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
@@ -200,7 +199,7 @@ public class ChildDispatchFactory {
 
     private RecordDispatch newChildDispatch(
             // @ChildDispatchScope
-            @NonNull final SingleTransactionRecordBuilder builder,
+            @NonNull final StreamBuilder builder,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final AccountID payerId,
             @NonNull final HandleContext.TransactionCategory category,
@@ -236,7 +235,7 @@ public class ChildDispatchFactory {
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
         final var feeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -264,8 +263,8 @@ public class ChildDispatchFactory {
                 feeAccumulator);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
+        final var childFeeAccumulator =
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (RecordStreamBuilder) builder);
         final var childTokenContext =
                 new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
         return new RecordDispatch(
@@ -479,8 +478,8 @@ public class ChildDispatchFactory {
      * @param builder the stream item builder
      * @param txnInfo the transaction info
      */
-    private SingleTransactionRecordBuilder initializedForChild(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    private StreamBuilder initializedForChild(
+            @NonNull final StreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
         builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());

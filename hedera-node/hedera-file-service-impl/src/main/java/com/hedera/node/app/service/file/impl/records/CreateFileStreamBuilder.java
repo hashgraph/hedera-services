@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.records;
+package com.hedera.node.app.service.file.impl.records;
 
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code ConsensusCreateTopic} transaction.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CreateFile} transaction.
  */
-public interface ConsensusCreateTopicRecordBuilder extends SingleTransactionRecordBuilder {
+public interface CreateFileStreamBuilder extends StreamBuilder {
+
     /**
-     * Tracks creation of a new topic by {@link TopicID}. Even if someday we support creating multiple topics within a
-     * smart contract call, we will still only need to track one created topic per child record.
+     * Tracks creation of a new file by {@link FileID}
      *
-     * @param topicID the {@link TopicID} the new topic
+     * @param fileID the {@link FileID} of the new file
      * @return this builder
      */
     @NonNull
-    ConsensusCreateTopicRecordBuilder topicID(@NonNull TopicID topicID);
+    CreateFileStreamBuilder fileID(@NonNull FileID fileID);
 }

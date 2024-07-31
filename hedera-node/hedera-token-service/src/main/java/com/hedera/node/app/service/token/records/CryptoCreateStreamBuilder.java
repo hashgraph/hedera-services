@@ -16,35 +16,48 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface TokenMintRecordBuilder extends TokenBaseRecordBuilder {
+public interface CryptoCreateStreamBuilder extends StreamBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
      * per child record.
      *
-     * @param serialNumbers the list of new serial numbers minted
+     * @param accountID the {@link AccountID} of the new account
      * @return this builder
      */
     @NonNull
-    TokenMintRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+    CryptoCreateStreamBuilder accountID(@NonNull AccountID accountID);
 
     /**
-     * Sets the new total supply of a token
-     * @param newTotalSupply the new total supply of a token
+     * The new EVM address of the account created by this transaction.
+     * @param evmAddress the new EVM address
      * @return this builder
      */
-    TokenMintRecordBuilder newTotalSupply(final long newTotalSupply);
+    @NonNull
+    CryptoCreateStreamBuilder evmAddress(@NonNull final Bytes evmAddress);
 
     /**
-     * Gets the new total supply of a token
-     * @return new total supply of a token
+     * The transactionFee charged for this transaction.
+     * @param transactionFee the transaction fee
+     * @return this builder
      */
-    long getNewTotalSupply();
+    @NonNull
+    CryptoCreateStreamBuilder transactionFee(@NonNull final long transactionFee);
+
+    /**
+     * The memo associated with the transaction.
+     * @param memo the memo
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateStreamBuilder memo(@NonNull final String memo);
 }

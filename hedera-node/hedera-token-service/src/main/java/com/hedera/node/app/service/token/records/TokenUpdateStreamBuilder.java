@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.records;
+package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.hapi.node.base.TokenAssociation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CreateFile} transaction.
+ * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
+ * transaction.
  */
-public interface CreateFileRecordBuilder extends SingleTransactionRecordBuilder {
-
+public interface TokenUpdateStreamBuilder extends TokenBaseRecordBuilder {
     /**
-     * Tracks creation of a new file by {@link FileID}
-     *
-     * @param fileID the {@link FileID} of the new file
-     * @return this builder
+     * Adds the token relations that are created by auto associations.
+     * This information is needed while building the transfer list, to set the auto association flag.
+     * @param tokenAssociation the token association that is created by auto association
+     * @return the builder
      */
-    @NonNull
-    CreateFileRecordBuilder fileID(@NonNull FileID fileID);
+    TokenUpdateStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }

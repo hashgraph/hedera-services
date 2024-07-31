@@ -16,26 +16,25 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransferList;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for reading the transfer list from child records.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
+ * transaction.
  */
-public interface ChildRecordBuilder {
+public interface TokenAccountWipeStreamBuilder extends TokenBaseRecordBuilder {
 
     /**
-     * Get the transfer list from the child record.
-     *
-     * @return the transfer list
+     * Gets the new total supply of a token
+     * @return new total supply of a token
      */
-    TransferList transferList();
+    long getNewTotalSupply();
 
     /**
-     * Get the token transfer lists, if any, from the child record.
-     *
-     * @return the token transfer lists
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
+     * @return this builder
      */
-    List<TokenTransferList> tokenTransferLists();
+    @NonNull
+    TokenAccountWipeStreamBuilder newTotalSupply(final long newTotalSupply);
 }

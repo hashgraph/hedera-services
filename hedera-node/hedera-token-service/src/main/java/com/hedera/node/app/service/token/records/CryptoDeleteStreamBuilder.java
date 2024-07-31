@@ -16,25 +16,10 @@
 
 package com.hedera.node.app.service.token.records;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
  * transaction.
  */
-public interface TokenAccountWipeRecordBuilder extends TokenBaseRecordBuilder {
-
-    /**
-     * Gets the new total supply of a token
-     * @return new total supply of a token
-     */
-    long getNewTotalSupply();
-
-    /**
-     * Sets the new total supply of a token
-     * @param newTotalSupply the new total supply of a token
-     * @return this builder
-     */
-    @NonNull
-    TokenAccountWipeRecordBuilder newTotalSupply(final long newTotalSupply);
-}
+public interface CryptoDeleteStreamBuilder extends DeleteCapableTransactionRecordBuilder {}

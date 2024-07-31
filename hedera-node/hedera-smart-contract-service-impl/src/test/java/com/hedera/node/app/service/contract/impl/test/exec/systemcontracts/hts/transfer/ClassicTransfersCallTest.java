@@ -48,7 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Optional;
@@ -73,7 +73,7 @@ class ClassicTransfersCallTest extends CallTestBase {
     private ApprovalSwitchHelper approvalSwitchHelper;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private SystemAccountCreditScreen systemAccountCreditScreen;
@@ -93,7 +93,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
@@ -126,7 +126,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
@@ -150,7 +150,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status())
                 .willReturn(INVALID_SIGNATURE)
@@ -209,7 +209,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 

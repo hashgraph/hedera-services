@@ -23,7 +23,7 @@ import java.util.List;
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenBurn}
  * transaction.
  */
-public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
+public interface TokenBurnStreamBuilder extends TokenBaseRecordBuilder {
 
     /**
      * Gets the new total supply of a token
@@ -37,7 +37,7 @@ public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
      * @return this builder
      */
     @NonNull
-    TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
+    TokenBurnStreamBuilder newTotalSupply(final long newTotalSupply);
 
     /**
      * Sets the list of serial numbers burned
@@ -45,5 +45,5 @@ public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
      * @return this builder
      */
     @NonNull
-    TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+    TokenBurnStreamBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 }

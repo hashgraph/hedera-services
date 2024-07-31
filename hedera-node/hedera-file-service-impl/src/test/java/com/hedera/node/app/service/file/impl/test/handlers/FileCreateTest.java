@@ -48,7 +48,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -91,7 +91,7 @@ class FileCreateTest extends FileTestBase {
     private Configuration configuration;
 
     @Mock
-    private CreateFileRecordBuilder recordBuilder;
+    private CreateFileStreamBuilder recordBuilder;
 
     @Mock
     private HandleContext.SavepointStack stack;
@@ -217,7 +217,7 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(CreateFileStreamBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
@@ -251,7 +251,7 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(CreateFileStreamBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 

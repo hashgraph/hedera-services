@@ -63,7 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"DataFlowIssue"})
 @ExtendWith(MockitoExtension.class)
-public class SingleTransactionRecordBuilderTest {
+public class StreamBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
     public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
@@ -114,7 +114,7 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -247,7 +247,7 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testTopLevelRecordBuilder() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
 
         singleTransactionRecordBuilder.transaction(transaction);
 
@@ -268,7 +268,7 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testBuilderWithAddMethods() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)

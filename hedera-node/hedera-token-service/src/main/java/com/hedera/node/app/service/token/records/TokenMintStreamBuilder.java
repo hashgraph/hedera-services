@@ -16,48 +16,35 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenMintStreamBuilder extends TokenBaseRecordBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
      * per child record.
      *
-     * @param accountID the {@link AccountID} of the new account
+     * @param serialNumbers the list of new serial numbers minted
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder accountID(@NonNull AccountID accountID);
+    TokenMintStreamBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 
     /**
-     * The new EVM address of the account created by this transaction.
-     * @param evmAddress the new EVM address
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
-    @NonNull
-    CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
+    TokenMintStreamBuilder newTotalSupply(final long newTotalSupply);
 
     /**
-     * The transactionFee charged for this transaction.
-     * @param transactionFee the transaction fee
-     * @return this builder
+     * Gets the new total supply of a token
+     * @return new total supply of a token
      */
-    @NonNull
-    CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee);
-
-    /**
-     * The memo associated with the transaction.
-     * @param memo the memo
-     * @return this builder
-     */
-    @NonNull
-    CryptoCreateRecordBuilder memo(@NonNull final String memo);
+    long getNewTotalSupply();
 }

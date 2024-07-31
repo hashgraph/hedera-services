@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractDelete}.
  */
-public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRecordBuilder {
+public interface ContractDeleteStreamBuilder extends DeleteCapableTransactionRecordBuilder {
     /**
      * Tracks the contract id deleted by a successful top-level contract deletion.
      *
@@ -33,8 +33,8 @@ public interface ContractDeleteRecordBuilder extends DeleteCapableTransactionRec
      * @return this builder
      */
     @NonNull
-    ContractDeleteRecordBuilder contractID(@Nullable ContractID contractId);
+    ContractDeleteStreamBuilder contractID(@Nullable ContractID contractId);
 
     @NonNull
-    ContractDeleteRecordBuilder transaction(@NonNull final Transaction txn);
+    ContractDeleteStreamBuilder transaction(@NonNull final Transaction txn);
 }

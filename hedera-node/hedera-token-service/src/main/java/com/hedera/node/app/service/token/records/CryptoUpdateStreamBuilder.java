@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
  * transaction.
  */
-public interface CryptoUpdateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface CryptoUpdateStreamBuilder extends StreamBuilder {
     /**
      * Tracks update of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
@@ -34,5 +34,5 @@ public interface CryptoUpdateRecordBuilder extends SingleTransactionRecordBuilde
      * @return this builder
      */
     @NonNull
-    CryptoUpdateRecordBuilder accountID(@NonNull AccountID accountID);
+    CryptoUpdateStreamBuilder accountID(@NonNull AccountID accountID);
 }

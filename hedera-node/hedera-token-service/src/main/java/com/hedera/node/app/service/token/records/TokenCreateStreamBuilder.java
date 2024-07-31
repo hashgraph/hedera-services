@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
  * transaction.
  */
-public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
+public interface TokenCreateStreamBuilder extends TokenBaseRecordBuilder {
     /**
      * Tracks creation of a new token by number. Even if someday we support creating multiple
      * tokens within a smart contract call, we will still only need to track one created token
@@ -35,7 +35,7 @@ public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
      * @return this builder
      */
     @NonNull
-    TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID);
+    TokenCreateStreamBuilder tokenID(@NonNull TokenID tokenID);
 
     /**
      * Gets the token ID of the token created
@@ -49,5 +49,5 @@ public interface TokenCreateRecordBuilder extends TokenBaseRecordBuilder {
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    TokenCreateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenCreateStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }
