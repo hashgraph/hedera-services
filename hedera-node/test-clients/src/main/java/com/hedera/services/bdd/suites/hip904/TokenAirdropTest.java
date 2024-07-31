@@ -49,16 +49,20 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -620,6 +624,77 @@ public class TokenAirdropTest {
                     tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, ASSOCIATED_RECEIVER))
                             .signedByPayerAnd(OWNER_TWO)
                             .hasKnownStatus(INVALID_SIGNATURE));
+        }
+
+        @HapiTest
+        @DisplayName("when sender has insufficient token balance")
+        final Stream<DynamicTest> insufficientFTFromSender() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String CAROL = "carol";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(10L),
+                    tokenCreate(FUNGIBLE_TOKEN_B)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5L),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_B),
+                    tokenAirdrop(
+                                    moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
+                                    moving(10, FUNGIBLE_TOKEN_B).between(ALICE, CAROL))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+        }
+
+        @HapiTest
+        @DisplayName("when sending fungible token to system address")
+        final Stream<DynamicTest> fungibleTokenReceiverSystemAddress() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(100L),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, FREEZE_ADMIN))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("when sending nft to system address")
+        final Stream<DynamicTest> nftTokenReceiverSystemAddress() {
+            final String ALICE = "alice";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(ALICE, FREEZE_ADMIN))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("with missing crypto allowance")
+        final Stream<DynamicTest> missingSpenderAllowancesFails() {
+            var spender = "spender";
+            return hapiTest(
+                    cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(spender, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                            // Should be signed by owner as well
+                            .signedByPayerAnd(spender, OWNER)
+                            .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
         }
     }
 
