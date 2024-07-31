@@ -143,7 +143,7 @@ TSS Core Requirements
 | TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive gas cost.                                        |
 | TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                                      |
 | TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                                       |
-| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                                        |
+| TSS-011        | The TSS design SHOULD minimize the number of steps a Node Operator is required to perform.                                           |
 
 Block Signing Requirements
 
