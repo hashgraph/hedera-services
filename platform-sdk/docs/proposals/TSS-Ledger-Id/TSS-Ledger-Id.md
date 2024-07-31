@@ -27,12 +27,16 @@ consensus nodes to produce a network ledger id and offer a mechanism for
 aggregating signature messages such that the final result can be verified
 using the ledger id.
 
-In this BLS based TSS, the network is assigned a durable BLS private/public key pair where the public key is the ledger
-id and the private key is a secret that no one knows. Each node in the network is given a number of shares
-proportional to its signing weight. Each share is a BLS key on the same elliptic curve as the ledger key. When the
-network needs to sign a block root hash, each node uses its shares to sign the block root hash and gossips the
-signature out to the network. When a node has collected a threshold number of signatures on the same block root hash,
-it can aggregate the signatures into a ledger signature that is verifiable by the ledger id.
+In this TSS based on BLS, the network is assigned a durable private/public key
+pair where the public key is the ledger id and the private key is a secret that
+no entity knows. Each node in the network is given a number of shares
+proportional to its consensus weight and each share is a BLS key on the same
+elliptic curve as the ledger key. When the network needs to sign a message,
+each node uses its shares to sign that message (e.g. a block root hash) and
+gossips the signature out to the network. When a node has collected enough
+signatures to meet a configured threshold on the same message, it can then
+aggregate the signatures into a final ledger signature that is space-efficient
+and is verifiable with the ledger id.
 
 The TSS effort has been broken down into 5 separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID,
 TSS-Block-Signing, and TSS-Ledger-ID-Updates.
