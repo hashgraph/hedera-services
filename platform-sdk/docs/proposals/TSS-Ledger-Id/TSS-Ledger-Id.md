@@ -63,7 +63,7 @@ This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 
 ### Goals
 
-The following capabilities are the goals of this proposal:
+The following capabilities are goals of this proposal:
 
 1. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
 2. `TSS Bootstrap for New Network` - Able to setup a new network with a ledger public/private key pair.
