@@ -36,6 +36,21 @@ import java.util.function.Function;
  */
 public interface SignatureVerifier {
     /**
+     * Enumerates the types of messages we support verifying signatures over.
+     */
+    enum MessageType {
+        /**
+         * A raw message that must be hashed via Keccak-256 (SHA-2) before verifying ECDSA(secp256k1) signatures.
+         */
+        RAW,
+        /**
+         * A message that is already hashed via Keccak-256 (SHA-2) and should be used directly for verifying both
+         * Ed25519 and ECDSA(secp256k1) signatures.
+         */
+        KECCAK_256_HASH
+    }
+
+    /**
      * Verifies the signature of a {@link Key} for a given {@link Bytes} payload based on the cryptographic signatures
      * given in a {@link SignatureMap} and, optionally, an override strategy for verifying simple key signatures.
      * <p>
@@ -47,17 +62,21 @@ public interface SignatureVerifier {
      * <p>
      * For a ECDSA(secp256k1) {@link SignaturePair}, the public key prefix must be of the compressed form of the key
      * (33 bytes); that is, it must match the format for ECDSA(secp256k1) public keys used in {@link Key} structures
-     * with the Hedera gRPC API.
+     * with the Hedera gRPC API. Any prefix that is longer than 32 bytes for an Ed25519 {@link SignaturePair} or
+     * 33 bytes for an ECDSA(secp256k1) {@link SignaturePair} will be completely ignored.
      *
      * @param key the key whose signature should be verified
-     * @param bytes the payload to verify
+     * @param bytes the message to verify signatures over
+     * @param messageType the type of message to verify the signature over
      * @param signatureMap the cryptographic signatures to verify against
      * @param simpleKeyVerifier an optional override strategy for verifying simple key signatures
      * @return true if the signature is valid; false otherwise
+     * @throws IllegalArgumentException if the message is not 32 bytes long with type KECCAK_256_HASH
      */
     boolean verifySignature(
             @NonNull Key key,
             @NonNull Bytes bytes,
+            @NonNull MessageType messageType,
             @NonNull SignatureMap signatureMap,
             @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier);
 
@@ -76,7 +95,7 @@ public interface SignatureVerifier {
 
     /**
      * Enumerates the statuses of the signature verification for a simple key in the context of a call to
-     * {@link SignatureVerifier#verifySignature(Key, Bytes, SignatureMap, Function)}, where a <i>simple</i> key is any
+     * {@link SignatureVerifier#verifySignature(Key, Bytes, MessageType, SignatureMap, Function)}, where a <i>simple</i> key is any
      * {@link Key} that is neither a {@link KeyList} nor a {@link ThresholdKey}.
      */
     enum SimpleKeyStatus {

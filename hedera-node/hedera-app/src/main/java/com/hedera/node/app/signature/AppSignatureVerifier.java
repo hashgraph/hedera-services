@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.signature;
 
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.KECCAK_256_HASH;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -58,11 +59,20 @@ public class AppSignatureVerifier implements SignatureVerifier {
     public boolean verifySignature(
             @NonNull final Key key,
             @NonNull final Bytes bytes,
+            @NonNull final MessageType messageType,
             @NonNull final SignatureMap signatureMap,
             @Nullable final Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+        requireNonNull(key);
+        requireNonNull(bytes);
+        requireNonNull(messageType);
+        requireNonNull(signatureMap);
+        if (messageType == KECCAK_256_HASH && bytes.length() != 32) {
+            throw new IllegalArgumentException(
+                    "Message type " + KECCAK_256_HASH + " must be 32 bytes long, got '" + bytes.toHex() + "'");
+        }
         final Set<ExpandedSignaturePair> sigPairs = new HashSet<>();
         signatureExpander.expand(key, signatureMap.sigPair(), sigPairs);
-        final var results = signatureVerifier.verify(bytes, sigPairs);
+        final var results = signatureVerifier.verify(bytes, sigPairs, messageType);
         final var verifier = new DefaultKeyVerifier(0, hederaConfig, results);
         return simpleKeyVerifier == null
                 ? verifier.verificationFor(key).passed()

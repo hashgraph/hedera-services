@@ -17,10 +17,13 @@
 package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.KECCAK_256_HASH;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.RAW;
 import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.INVALID;
 import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID;
 import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus.VALID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -104,12 +107,15 @@ class AppSignatureVerifierTest {
 
         @Test
         void usesDefaultKeyVerifierWithNoOverride() throws ExecutionException, InterruptedException, TimeoutException {
+            final var pretendKeccak256Hash = Bytes.wrap(new byte[32]);
             final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
             given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
                     .willReturn(verification);
-            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
+            given(signatureVerifier.verify(pretendKeccak256Hash, expandedPairs, KECCAK_256_HASH))
+                    .willReturn(Map.of(ED_KEY, future));
 
-            assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, null))
+            assertThat(subject.verifySignature(
+                            TEST_KEY, pretendKeccak256Hash, KECCAK_256_HASH, SignatureMap.DEFAULT, null))
                     .isTrue();
             // The default verifier counts the number of failed verifications in a key list, not the number passed
             verify(verification).failed();
@@ -121,11 +127,12 @@ class AppSignatureVerifierTest {
             final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
             given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
                     .willReturn(verification);
-            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
+            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs, RAW)).willReturn(Map.of(ED_KEY, future));
 
             assertThat(subject.verifySignature(
                             TEST_KEY,
                             Bytes.EMPTY,
+                            RAW,
                             SignatureMap.DEFAULT,
                             key -> key == CID_KEY ? VALID : ONLY_IF_CRYPTO_SIG_VALID))
                     .isTrue();
@@ -135,9 +142,9 @@ class AppSignatureVerifierTest {
 
         @Test
         void usesDefaultKeyVerifierWithInvalidOverride() {
-            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs)).willReturn(Map.of(ED_KEY, future));
+            given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs, RAW)).willReturn(Map.of(ED_KEY, future));
 
-            assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, SignatureMap.DEFAULT, key -> INVALID))
+            assertThat(subject.verifySignature(TEST_KEY, Bytes.EMPTY, RAW, SignatureMap.DEFAULT, key -> INVALID))
                     .isFalse();
         }
     }
@@ -162,5 +169,13 @@ class AppSignatureVerifierTest {
         final var expectedCount = new com.hedera.node.app.spi.signatures.SignatureVerifier.KeyCounts(4, 3);
         final var actualCount = subject.countSimpleKeys(structure);
         assertThat(actualCount).isEqualTo(expectedCount);
+    }
+
+    @Test
+    void throwsIaeForWrongLengthKeccakHash() {
+        assertThatThrownBy(() -> subject.verifySignature(
+                        TEST_KEY, Bytes.fromHex("deadbeef"), KECCAK_256_HASH, SignatureMap.DEFAULT, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Message type KECCAK_256_HASH must be 32 bytes long, got 'deadbeef'");
     }
 }
