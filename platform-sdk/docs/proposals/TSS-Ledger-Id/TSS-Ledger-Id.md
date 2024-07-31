@@ -116,8 +116,8 @@ Impacts to DevOps Team
   - EC Key generation will have to happen before a node can join the network.
 - A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the address book containing the new node.
-- If a node is added, removed, or updated in the address book and the candidate roster is not adopted in the next
-  software upgrade, the change is not applied.
+- If a node is added, removed, or updated in the address book and the candidate roster
+  is not adopted in the next software upgrade, the change to that node is not applied.
 - config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
   has received enough yes votes.
 
