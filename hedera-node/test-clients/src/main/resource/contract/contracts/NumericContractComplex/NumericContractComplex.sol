@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./IHederaTokenService.sol";
-import "./NumericHelper.sol";
+import {Structs, NumericHelperV2, NumericHelperV3} from "./NumericHelper.sol";
 import "./KeyHelper.sol";
 
 contract NumericContractComplex is KeyHelper {
@@ -16,8 +16,8 @@ contract NumericContractComplex is KeyHelper {
         fixedFee = IHederaTokenService.FixedFee(amount, address(0), true, true, msg.sender);
     }
 
-    function buildFixedFeeV2(int64 amount) private returns (NumericHelper.FixedFeeV2 memory fixedFee) {
-        fixedFee = NumericHelper.FixedFeeV2(amount, address(0), true, true, msg.sender);
+    function buildFixedFeeV2(int64 amount) private returns (Structs.FixedFeeV2 memory fixedFee) {
+        fixedFee = Structs.FixedFeeV2(amount, address(0), true, true, msg.sender);
     }
 
     function buildTokenV1(uint32 expirySecond, uint32 expiryRenew, uint32 maxSupply)
@@ -39,9 +39,9 @@ contract NumericContractComplex is KeyHelper {
 
     function buildTokenV2(uint32 expirySecond, uint32 expiryRenew, int64 maxSupply)
     private
-    returns (NumericHelper.HederaTokenV2 memory token)
+    returns (Structs.HederaTokenV2 memory token)
     {
-        token = NumericHelper.HederaTokenV2({
+        token = Structs.HederaTokenV2({
             name: "NAME",
             symbol: "SYMBOL",
             treasury: address(this),
@@ -56,9 +56,9 @@ contract NumericContractComplex is KeyHelper {
 
     function buildTokenV3(int64 expirySecond, int64 expiryRenew, int64 maxSupply)
     private
-    returns (NumericHelper.HederaTokenV3 memory token)
+    returns (Structs.HederaTokenV3 memory token)
     {
-        token = NumericHelper.HederaTokenV3({
+        token = Structs.HederaTokenV3({
             name: "NAME",
             symbol: "SYMBOL",
             treasury: address(this),
@@ -67,7 +67,7 @@ contract NumericContractComplex is KeyHelper {
             maxSupply: maxSupply,
             freezeDefault: false,
             tokenKeys: super.getDefaultKeys(),
-            expiry: NumericHelper.ExpiryV2(expirySecond, address(this), expiryRenew)
+            expiry: Structs.ExpiryV2(expirySecond, address(this), expiryRenew)
         });
     }
 
@@ -121,11 +121,11 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function createFungibleTokenWithCustomFeesV3WithNegativeFixedFee(address token) public {
-        NumericHelper.HederaTokenV3 memory token = buildTokenV3({
+        Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: 0, expiryRenew: 10_000, maxSupply: 10000});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createFungibleTokenWithCustomFeesV3.selector, token, int64(100), int64(2), buildFixedFeeV2(int64(-1)), new NumericHelper.FractionalFeeV2[](0))
+            abi.encodeWithSelector(NumericHelperV3.createFungibleTokenWithCustomFees.selector, token, int64(100), int64(2), buildFixedFeeV2(int64(-1)), new Structs.FractionalFeeV2[](0))
         );
 
         (int32 responseCode, address addressToken) =
@@ -137,14 +137,14 @@ contract NumericContractComplex is KeyHelper {
 
     // Note: We skip V2 test, as its already validated via normal create flow.
     function createFungibleTokenWithCustomFeesV3FractionalFee(address token, int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount) public {
-        NumericHelper.HederaTokenV3 memory token = buildTokenV3({
+        Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: 0, expiryRenew: 0, maxSupply: 10000});
 
-        NumericHelper.FractionalFeeV2[] memory fractionalFees = new NumericHelper.FractionalFeeV2[](1);
-        fractionalFees[0] = NumericHelper.FractionalFeeV2(numerator, denominator, minimumAmount, maximumAmount, false, address(this));
+        Structs.FractionalFeeV2[] memory fractionalFees = new Structs.FractionalFeeV2[](1);
+        fractionalFees[0] = Structs.FractionalFeeV2(numerator, denominator, minimumAmount, maximumAmount, false, address(this));
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createFungibleTokenWithCustomFeesV3.selector, token, int64(100), int64(2), new NumericHelper.FixedFeeV2[](0), fractionalFees));
+            abi.encodeWithSelector(NumericHelperV3.createFungibleTokenWithCustomFees.selector, token, int64(100), int64(2), new Structs.FixedFeeV2[](0), fractionalFees));
         (int32 responseCode, address addressToken) =
             success
                 ? abi.decode(result, (int32, address))
@@ -167,11 +167,11 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function createFungibleTokenV2(int64 _maxSupply, uint64 initialTotalSupply, uint32 decimals) public {
-        NumericHelper.HederaTokenV2 memory token = buildTokenV2({
+        Structs.HederaTokenV2 memory token = buildTokenV2({
             expirySecond: 0, expiryRenew: 10000, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createFungibleTokenV2.selector, token, initialTotalSupply, decimals)
+            abi.encodeWithSelector(NumericHelperV2.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
         (int32 responseCode, address addressToken) =
             success
@@ -181,11 +181,11 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function createFungibleTokenV3(int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply, int64 initialTotalSupply, int32 decimals) public {
-        NumericHelper.HederaTokenV3 memory token = buildTokenV3({
+        Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createFungibleTokenV3.selector, token, initialTotalSupply, decimals)
+            abi.encodeWithSelector(NumericHelperV3.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
         (int32 responseCode, address addressToken) =
             success
@@ -209,11 +209,11 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function createNonFungibleTokenV2(uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public {
-        NumericHelper.HederaTokenV2 memory token = buildTokenV2({
+        Structs.HederaTokenV2 memory token = buildTokenV2({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createNonFungibleTokenV2.selector, token)
+            abi.encodeWithSelector(NumericHelperV2.createNonFungibleToken.selector, token)
         );
         (int32 responseCode, address addressToken) =
             success
@@ -223,11 +223,11 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function createNonFungibleTokenV3(int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply) public {
-        NumericHelper.HederaTokenV3 memory token = buildTokenV3({
+        Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.createNonFungibleTokenV3.selector, token)
+            abi.encodeWithSelector(NumericHelperV3.createNonFungibleToken.selector, token)
         );
         (int32 responseCode, address addressToken) =
             success
@@ -251,22 +251,22 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function updateTokenInfoV2(address token, uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public {
-        NumericHelper.HederaTokenV2 memory newToken = buildTokenV2({
+        Structs.HederaTokenV2 memory newToken = buildTokenV2({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.updateTokenInfoV2.selector, token, newToken));
+            abi.encodeWithSelector(NumericHelperV2.updateTokenInfo.selector, token, newToken));
 
         int32 responseCode = abi.decode(result, (int32));
         require(responseCode == SUCCESS_CODE);
     }
 
     function updateTokenInfoV3(address token, int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply) public {
-        NumericHelper.HederaTokenV3 memory newToken = buildTokenV3({
+        Structs.HederaTokenV3 memory newToken = buildTokenV3({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.updateTokenInfoV3.selector, token, newToken));
+            abi.encodeWithSelector(NumericHelperV3.updateTokenInfo.selector, token, newToken));
 
         int32 responseCode = abi.decode(result, (int32));
         require(responseCode == SUCCESS_CODE);
@@ -292,14 +292,14 @@ contract NumericContractComplex is KeyHelper {
 
     /* CryptoTransferV2 allows to specify Hbars for the transfer, instead of just tokens */
     function cryptoTransferV2(int64[] memory amounts, address sender, address receiver) public {
-        NumericHelper.AccountAmount[] memory accountAmounts = new NumericHelper.AccountAmount[](2);
-        accountAmounts[0] = NumericHelper.AccountAmount(sender, amounts[0], false);
-        accountAmounts[1] = NumericHelper.AccountAmount(receiver, amounts[1], false);
+        Structs.AccountAmount[] memory accountAmounts = new Structs.AccountAmount[](2);
+        accountAmounts[0] = Structs.AccountAmount(sender, amounts[0], false);
+        accountAmounts[1] = Structs.AccountAmount(receiver, amounts[1], false);
 
-        NumericHelper.TransferList memory hbarTransfers = NumericHelper.TransferList(accountAmounts);
+        Structs.TransferList memory hbarTransfers = Structs.TransferList(accountAmounts);
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.cryptoTransfer.selector, hbarTransfers, new IHederaTokenService.TokenTransferList[](0)));
+            abi.encodeWithSelector(NumericHelperV2.cryptoTransfer.selector, hbarTransfers, new IHederaTokenService.TokenTransferList[](0)));
 
         int32 responseCode = abi.decode(result, (int32));
         require(responseCode == SUCCESS_CODE);
