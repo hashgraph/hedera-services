@@ -3,9 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./IHederaTokenService.sol";
 import {Structs, NumericHelperV2, NumericHelperV3} from "./NumericHelper.sol";
-import "./KeyHelper.sol";
 
-contract NumericContractComplex is KeyHelper {
+contract NumericContractComplex  {
 
     int32 public constant SUCCESS_CODE = 22;
 
@@ -32,10 +31,29 @@ contract NumericContractComplex is KeyHelper {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: super.getDefaultKeys(),
+            tokenKeys: new IHederaTokenService.TokenKey[](0),
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
+
+    function buildDefaultStructFrom(
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) internal returns (IHederaTokenService.HederaToken memory token) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](0);
+
+        IHederaTokenService.Expiry memory expiry;
+        expiry.autoRenewAccount = autoRenewAccount;
+        expiry.autoRenewPeriod = autoRenewPeriod;
+
+        token.name = "NAME";
+        token.symbol = "SYMBOL";
+        token.treasury = address(this);
+        token.tokenKeys = keys;
+        token.expiry = expiry;
+        token.memo = "MEMO";
+    }
+}
 
     function buildTokenV2(uint32 expirySecond, uint32 expiryRenew, int64 maxSupply)
     private
@@ -49,7 +67,7 @@ contract NumericContractComplex is KeyHelper {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: super.getDefaultKeys(),
+            tokenKeys: new IHederaTokenService.TokenKey[](0),
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
@@ -66,7 +84,7 @@ contract NumericContractComplex is KeyHelper {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: super.getDefaultKeys(),
+            tokenKeys: new IHederaTokenService.TokenKey[](0),
             expiry: Structs.ExpiryV2(expirySecond, address(this), expiryRenew)
         });
     }
@@ -109,8 +127,14 @@ contract NumericContractComplex is KeyHelper {
         IHederaTokenService.HederaToken memory token = buildTokenV1({
             expirySecond: 0, expiryRenew: 10000, maxSupply: 10000});
 
+        IHederaTokenService.FractionalFee memory fractionalFee;
+        fractionalFee.numerator = numerator;
+        fractionalFee.denominator = denominator;
+        fractionalFee.netOfTransfers = false;
+        fractionalFee.feeCollector = address(this);
+
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), new IHederaTokenService.FixedFee[](0), new IHederaTokenService.FractionalFee[](0))
+            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), new IHederaTokenService.FixedFee[](0), fractionalFee)
         );
 
         (int32 responseCode, address addressToken) =
@@ -240,8 +264,8 @@ contract NumericContractComplex is KeyHelper {
     /*         Non-static Complex HTS functions - Update          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function updateTokenInfoV1(address token, uint32 _expirySecond, uint32 _expiryRenew, uint32 _maxSupply) public {
-        IHederaTokenService.HederaToken memory newToken = buildTokenV1({
-            expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
+        IHederaTokenService.HederaToken memory newToken;
+        newToken.expiry = IHederaTokenService.Expiry(_expirySecond, address(this), _expiryRenew);
 
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, token, newToken));
@@ -251,8 +275,8 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function updateTokenInfoV2(address token, uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public {
-        Structs.HederaTokenV2 memory newToken = buildTokenV2({
-            expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
+        Structs.HederaTokenV2 memory newToken;
+        newToken.expiry = IHederaTokenService.Expiry(_expirySecond, address(this), _expiryRenew);
 
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(NumericHelperV2.updateTokenInfo.selector, token, newToken));
@@ -262,8 +286,8 @@ contract NumericContractComplex is KeyHelper {
     }
 
     function updateTokenInfoV3(address token, int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply) public {
-        Structs.HederaTokenV3 memory newToken = buildTokenV3({
-            expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
+        Structs.HederaTokenV3 memory newToken;
+        newToken.expiry = Structs.ExpiryV2(_expirySecond, address(this), _expiryRenew);
 
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(NumericHelperV3.updateTokenInfo.selector, token, newToken));

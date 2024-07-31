@@ -45,9 +45,9 @@ public @interface Contract {
     String contract();
 
     /**
-     * If set, the initial balance of the account in tinybars.
+     * If set, the initial balance of the contract in tinybars.
      *
-     * @return the initial balance of the account in tinybars
+     * @return the initial balance of the contract in tinybars
      */
     long tinybarBalance() default 0;
 

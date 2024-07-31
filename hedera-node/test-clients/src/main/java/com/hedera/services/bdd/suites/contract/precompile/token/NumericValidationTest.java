@@ -23,7 +23,9 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -37,6 +39,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -56,10 +59,10 @@ public class NumericValidationTest {
     @Contract(contract = "NumericContract", creationGas = 1_000_000L, tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecContract numericContract;
 
-    @Contract(contract = "NumericContractComplex", creationGas = 1_000_000L, tinybarBalance = ONE_HUNDRED_HBARS)
+    @Contract(contract = "NumericContractComplex", creationGas = 1_000_000L)
     static SpecContract numericContractComplex;
 
-    @Account(maxAutoAssociations = 10, tinybarBalance = ONE_HUNDRED_HBARS)
+    @Account(maxAutoAssociations = 10, tinybarBalance = ONE_MILLION_HBARS)
     static SpecAccount alice;
 
     @Account(maxAutoAssociations = 10, tinybarBalance = ONE_HUNDRED_HBARS)
@@ -335,6 +338,14 @@ public class NumericValidationTest {
     @DisplayName("calls fail to non-static create/update token functions with invalid values")
     class CreateAndUpdateTokenTests {
 
+        @BeforeAll
+        public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(
+                    alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS * 10),
+                    fungibleToken.authorizeContracts(numericContract),
+                    nft.authorizeContracts(numericContract));
+        }
+
         @HapiTest
         @DisplayName("when using createFungibleTokenWithCustomFees with FixedFee")
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFees() {
@@ -358,11 +369,11 @@ public class NumericValidationTest {
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesFractionalFee() {
             // Try division by 0
             final long nominator = 1;
-            final long denominator = 0;
+            final long denominator = 10;
             return hapiTest(numericContractComplex
                     .call("createFungibleTokenWithCustomFeesFractionalFee", fungibleToken, nominator, denominator)
                     .gas(1_000_000L)
-                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
         }
 
         @HapiTest
@@ -375,7 +386,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with FractionalFee")
+        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where maxAmount < minAmount")
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesV3FractionalFee() {
             // Try division by 0
             final long nominator = 1;

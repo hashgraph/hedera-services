@@ -37,6 +37,7 @@ import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.ApproveAllowanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.CryptoTransferOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokensOperation;
@@ -97,6 +98,18 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         requireNonNull(token);
         requireNonNull(to);
         return new TransferTokensOperation(this, to, token, units);
+    }
+
+    /**
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
+     *
+     * @param to the beneficiary contract
+     * @param amount the amount of hBars to transfer
+     * @return the operation
+     */
+    public CryptoTransferOperation transferHBarsTo(@NonNull final SpecContract to, final long amount) {
+        requireNonNull(to);
+        return new CryptoTransferOperation(amount, this, to);
     }
 
     /**
