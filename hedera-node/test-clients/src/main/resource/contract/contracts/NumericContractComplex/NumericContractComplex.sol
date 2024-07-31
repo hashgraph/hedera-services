@@ -299,7 +299,7 @@ contract NumericContractComplex is KeyHelper {
         NumericHelper.TransferList memory hbarTransfers = NumericHelper.TransferList(accountAmounts);
 
         (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelper.cryptoTransferV2.selector, hbarTransfers, new IHederaTokenService.TokenTransferList[](0)));
+            abi.encodeWithSelector(NumericHelper.cryptoTransfer.selector, hbarTransfers, new IHederaTokenService.TokenTransferList[](0)));
 
         int32 responseCode = abi.decode(result, (int32));
         require(responseCode == SUCCESS_CODE);

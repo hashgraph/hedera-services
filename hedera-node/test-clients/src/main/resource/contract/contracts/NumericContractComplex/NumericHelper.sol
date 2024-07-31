@@ -56,17 +56,36 @@ interface NumericHelper {
     external
     returns (int64 responseCode);
 
-    function cryptoTransferV2(TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers)
+    function cryptoTransfer(TransferList memory transferList, TokenTransferList[] memory tokenTransfers)
     external
     returns (int64 responseCode);
 
+    struct TokenTransferList {
+        address token;
+        AccountAmount[] transfers;
+        NftTransfer[] nftTransfers;
+    }
+
     struct TransferList {
-        // Multiple list of AccountAmounts, each of which has an account and amount.
-        // Used to transfer hbars between the accounts in the list.
         AccountAmount[] transfers;
     }
 
-    struct AccountAmount {
+    struct NftTransfer {
+        // The solidity address of the sender
+        address senderAccountID;
+
+        // The solidity address of the receiver
+        address receiverAccountID;
+
+        // The serial number of the NFT
+        int64 serialNumber;
+
+        // If true then the transfer is expected to be an approved allowance and the
+        // accountID is expected to be the owner. The default is false (omitted).
+        bool isApproval;
+    }
+
+        struct AccountAmount {
         // The Account ID, as a solidity address, that sends/receives cryptocurrency or tokens
         address accountID;
 
