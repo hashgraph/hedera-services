@@ -344,7 +344,7 @@ existing network. There are several options to consider in the TSS bootstrap pro
 
 There will be a pre-genesis phase where the genesis roster is keyed and a random ledger id is created. This will
 happen through running the platform without application transactions. After the platform keys the roster, the
-platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
+platform restarts itself with a copy of the genesis state after adding the TSS key material and ledger id
 id. After the platform restarts, application transactions are accepted and the platform starts building a new
 hashgraph, working towards consensus on round 1 with the ability to sign block 1. This ensures that the first user
 transactions handled by the network are in a block that can have a block proof as soon as possible. The
