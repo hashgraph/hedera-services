@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -36,6 +37,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -50,6 +52,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import javax.inject.Inject;
@@ -61,8 +64,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCancelAirdropHandler extends BaseTokenHandler implements TransactionHandler {
-
-    private final int MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL = 10;
 
     @Inject
     public TokenCancelAirdropHandler() {
@@ -110,8 +111,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var op = txn.tokenCancelAirdropOrThrow();
 
         validateFalsePreCheck(op.pendingAirdrops().isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
-        validateFalsePreCheck(
-                op.pendingAirdrops().size() > MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL, MAX_PENDING_AIRDROP_ID_EXCEEDED);
         final var uniquePendingAirdrops = new HashSet<PendingAirdropId>();
         for (final var airdrop : op.pendingAirdrops()) {
             if (!uniquePendingAirdrops.add(airdrop)) {
@@ -136,11 +135,11 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
-
         final var txn = context.body();
         final var op = txn.tokenCancelAirdropOrThrow();
+
+        handleConfigValidation(context.configuration(), op);
+
         final var pendingAirdropIds = op.pendingAirdrops();
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
@@ -205,6 +204,14 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         // delete the pending airdrops from the airdrop store
         pendingAirdropIds.forEach(airdropStore::remove);
+    }
+
+    private static void handleConfigValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
+        var tokensConfig = configuration.getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+        validateFalse(
+                op.pendingAirdrops().size() > tokensConfig.maxAllowedPendingAirdropsToCancel(),
+                MAX_PENDING_AIRDROP_ID_EXCEEDED);
     }
 
     @NonNull
