@@ -90,7 +90,9 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
     @Override
     public long getNextLeafPathToSend() {
-        assert lastPath != Path.INVALID_PATH;
+        if (lastPath == Path.INVALID_PATH) {
+            return Path.INVALID_PATH;
+        }
         long path = lastPath + 1;
         long result = skipCleanPaths(path);
         // Find the highest clean path and skip all paths in its sub-tree. Repeat
