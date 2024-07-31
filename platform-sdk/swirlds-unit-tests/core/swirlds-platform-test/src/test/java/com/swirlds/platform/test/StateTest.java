@@ -16,15 +16,27 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.SignedState;
+import java.util.Random;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,7 +49,7 @@ class StateTest {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot state = randomSignedState().getState();
         final MerkleRoot copy = state.copy();
 
         assertNotSame(state, copy, "copy should not return the same object");
@@ -59,7 +71,7 @@ class StateTest {
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {
-        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot state = randomSignedState().getState();
         assertEquals(
                 1,
                 state.getReservationCount(),
@@ -73,5 +85,52 @@ class StateTest {
 
         assertTrue(state.isDestroyed(), "state should be destroyed when fully released.");
         assertFalse(state.tryReserve(), "tryReserve() should fail when the state is destroyed");
+    }
+
+    @Test
+    public void migratePlatformState() {
+        final MerkleRoot state = randomSignedState().getState();
+
+        PlatformState expectedPlatformState = state.getPlatformState().copy();
+        // expected platform state will have reservation count = 1
+        expectedPlatformState.reserve();
+        MerkleStateRoot oldRoot = (MerkleStateRoot) state.getSwirldState();
+        MerkleStateRoot newRoot = (MerkleStateRoot) state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
+        assertNotSame(newRoot, oldRoot, "migrate should return a new root");
+        assertThat(oldRoot.isImmutable()).isTrue();
+        assertThat(oldRoot.getReservationCount()).isEqualTo(1);
+        assertThat(newRoot)
+                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("immutable", "registryRecord.creationTime", "reservationCount")
+                        .build())
+                .isEqualTo(oldRoot);
+        assertThat(newRoot.getReservationCount()).isEqualTo(0);
+        assertThat(newRoot.isMutable()).isTrue();
+
+        assertNull(state.getPlatformState(), "platform state should be null in the old root");
+
+        assertThat(newRoot.getPlatformState())
+                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("route")
+                        .build())
+                .isEqualTo(expectedPlatformState);
+    }
+
+    private static SignedState randomSignedState() {
+        Random random = new Random(0);
+        State root = new State();
+        root.setPlatformState(randomPlatformState(random));
+        root.setSwirldState(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
+        boolean shouldSaveToDisk = random.nextBoolean();
+        SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                CryptoStatic::verifySignature,
+                root,
+                "test",
+                shouldSaveToDisk,
+                false,
+                false);
+        signedState.getState().setHash(RandomUtils.randomHash(random));
+        return signedState;
     }
 }
