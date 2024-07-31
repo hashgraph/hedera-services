@@ -57,8 +57,9 @@ This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 - The new state data structures needed to store TSS Key material and the ledger id.
 - The new components needed in the framework to support creating and transferring the ledger key.
 - The modified startup process to initialize the signing capability.
-- For each node, the creation of a new Elliptic Curve (EC) key called its `tssEncryptionKey` that is used in creating
-  shares.
+- For each node, the creation of a new, private to the node, Elliptic Curve (EC)
+  key pair, which we call the `tssEncryptionKey`, that is used in creating and
+  decrypting shares.
 
 ### Goals
 
