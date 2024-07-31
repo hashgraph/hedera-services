@@ -36,6 +36,7 @@ import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -59,7 +60,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private BlockingSwirldState state;
+    private MerkleRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
     private AddressBook addressBook;
@@ -287,7 +288,7 @@ public class RandomSignedStateGenerator {
      * @return this object
      */
     public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
-        this.state = new BlockingSwirldState(state.getPlatformState());
+        this.state = state;
         return this;
     }
 

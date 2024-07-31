@@ -198,7 +198,7 @@ class StateFileManagerTests {
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
         final SignedState signedState =
-                new RandomSignedStateGenerator().setUseBlockingState(false).build();
+                new RandomSignedStateGenerator().setUseBlockingState(true).build();
         ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
