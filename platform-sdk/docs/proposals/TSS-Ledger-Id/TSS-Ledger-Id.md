@@ -448,9 +448,11 @@ message TssMessageTransaction {
   bytes target_roster_hash = 3;
 
   /**
-   * The share index establishes a global ordering of shares across all shares in the network.  It corresponds to the
-   * index of the public share in the list returned from the TSS library when the share was created for the source
-   * roster.
+   * An index to order shares.<br/>
+   * This establishes a global ordering of shares across all shares in
+   * the network.  It corresponds to the index of the public share in the
+   * list returned from the TSS library when the share was created for
+   * the source roster.
    */
   uint64 share_index = 4;
 
