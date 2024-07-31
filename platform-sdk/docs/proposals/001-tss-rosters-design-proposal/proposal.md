@@ -21,7 +21,7 @@ The introduction of the Threshold Signature Scheme (TSS) requires a new mechanis
 consensus and block signing.
 The Roster, a subset of the address book, will provide the data structure and API for this mechanism.
 This proposal provides a specification for the behavior of rosters starting from their creation from the Address Book to
-their terminal state within the TSS specification.
+their terminal state.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 The candidate roster will always get adopted on the next software upgrade.
 
@@ -80,32 +80,6 @@ However, its replacement will continue to have this new API to set a candidate r
 The App is already responsible for managing the address book.
 We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
 and passes it to the platform via the new API. The platform will then validate the roster and store it in the state.
-
-A Roster has a data structure as follows:
-
-```
-class Roster {
-    Map~NodeId, RosterEntry~ entries
-}
-
-class RosterEntry {
-    NodeId nodeId
-    long weight
-    X509Certificate gossipCaCertificate
-    PairingPublicKey tssEncryptionKey
-    List~ServiceEndpoint~ gossipEndpoints
-}
-
-class ServiceEndpoint {
-    bytes ipAddressV4
-    int32 port
-    string domain_name
-}
-
-Roster "1" *-- "many" RosterEntry
-RosterEntry "1" *-- "many" ServiceEndpoint
-
-```
 
 ### Protobuf
 
@@ -248,7 +222,7 @@ message RosterState {
      * A Node SHALL NOT, ever, have more than one active roster
      * at the same time.
      */
-    repeated RoundRosterPair round_id_to_roster_pair = 2;
+    repeated RoundRosterPair round_roster_pairs = 2;
 }
 ```
 
@@ -286,8 +260,8 @@ This map of rosters will typically contain the current Active Roster, an optiona
 optional current Candidate Roster. Insertion of rosters will be controlled by ensuring that the acceptance of a new
 Candidate Roster invalidates and removes the current candidate roster. Therefore, the map is expected to have a maximum
 size of three elements.
-The new `RosterState` will store the `candidateRosterHash` and a list `roundActiveRosters`
-of pairs of round numbers and the active roster that was used for that round. The `roundActiveRosters` list will be
+The new `RosterState` will store the `candidateRosterHash` and a list `roundRosterPairs`
+of pairs of round numbers and the active roster that was used for that round. The `roundRosterPairs` list will be
 updated only when the active roster changes.
 In the vast majority of cases, the list will contain only one element, the current active roster.
 Immediately following the adoption of a candidate roster, this list will have two elements — the previous active roster
@@ -371,7 +345,7 @@ The equivalent of the Genesis Roster in the current DevOps flow is the `config.t
 DevOps and Services may choose to create the Genesis Roster from the `config.txt` file or some other mechanism.
 
 A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
-In most cases, this Genesis Roster will be null.
+In most cases, there will be no need to call the method on `PlatformBuilder` to set the Genesis Roster.
 
 ```java
 //in PlatformBuilder
@@ -388,8 +362,8 @@ In most cases, this Genesis Roster will be null.
 void withGenesisRoster(@NonNull final Roster genesisRoster);
 ```
 
-The logic to determine whether to invoke this method could be determined by a config flag, or some other mechanism
-Services deem appropriate.
+The logic to determine whether to invoke this method could be determined by some mechanism
+Services deems appropriate.
 
 #### New Transplant Procedure
 
@@ -402,17 +376,34 @@ The App will decide a network transplant sequence based on the following heurist
   Roster are adopted.
   There will be new code required to create the Genesis Roster and pass it to the platform via the `PlatformBuilder` if
   the network is intended to be in a Transplant mode.
-  The Services team will be responsible for implementing this, althouth the details are yet to be defined.
+  The Services team will be responsible for implementing this, although the details are yet to be defined.
 
 * Genesis Network process == Genesis Roster, No State provided
   When a Genesis Roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
   The node will initiate the TSS key generation process (out of scope for this proposal),
-  create a genesis state with the provided Genesis Roster, and start participating in consensus from round 0.
+  create a genesis state with the provided Genesis Roster, and start participating in consensus from round 1.
 
 * Keep Network Settings (Normal restart) == No Genesis Roster AND State provided
   If only a state is provided without a roster, the node will retain its existing network settings, including the active
-  roster.
-  This will be the typical behavior for a node restarting within an established network.
+  roster. This will be the typical behavior for a node restarting within an established network.
+  However, if there is a software upgrade, the candidate roster will always get adopted.
+
+### Services Changes, in summary
+
+1. The App will be responsible for creating the Candidate Roster from the Address Book and calling the specified API to
+   set it.
+2. The App will be responsible for determining the mode it wants the network to start in i.e. one of restart, upgrade,
+   genesis, or transplant modes.
+3. The App will be responsible for creating the Genesis Roster and conditionally passing it to the platform.
+
+All these app changes will need to be implemented by the Service team.
+
+### DevOps Changes, in summary
+
+1. DevOps will decide whether it wants to keep the `config.txt` model and if so, work with Services on its translation
+   into a Roster.
+2. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster,
+   including the new TSS encryption key.
 
 ## Core Behaviors, in summary
 
@@ -427,7 +418,7 @@ The App will decide a network transplant sequence based on the following heurist
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the previous.
 
-## Dependencies on Services, DevOps, and Release Engineering
+## Technical Debt Dependencies on Services, DevOps, and Release Engineering
 
 There are a few existing technical debts that the team has agreed to tackle as dependencies for this proposal.
 
@@ -474,13 +465,20 @@ state. Both of these will need to be updated to use rosters instead.
 Some of the obvious test cases to be covered in the plan include validating one or more of the following scenarios:
 
 1. New valid Candidate Roster created with no subsequent one sent by App. Verify accept.
-2. New valid Candidate Roster created with the subsequent one sent by App. Verify accept.
+2. New valid Candidate Roster created with a subsequent one sent by App. Verify accept.
 3. Invalid roster(s) sent by the App. Verify reject.
 4. Node Failures During Roster Change: What happens if nodes fail or disconnect during a roster change? Verify valid
    node successfully reconnects.
 5. Concurrent Roster Updates: What if we make multiple roster updates concurrently? Verify no effect on adoption.
 6. Roster recovery? The Node receives a candidate roster, crashes. Wake up, reconnect. Verify recovery.
 7. What end-to-end testing do we need for a brand-new network that uses the TSS signature scheme to sign its blocks?
+8. A node goes offline and skips a software version upgrade but remains in the active roster used by the network. Comes
+   back online.
+   Verify it can still successfully rejoin the network.
+9. A node goes offline and skips a bunch of software version upgrades but remains in the active roster.
+   Comes back online, but The old version of the roster that was preserved when it died still contains at least one node
+   that is still active on the network when the node comes back online. Verify it can still successfully rejoin the
+   network.
 
 ## Metrics
 
