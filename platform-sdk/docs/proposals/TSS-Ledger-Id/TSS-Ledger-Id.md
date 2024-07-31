@@ -482,7 +482,7 @@ message TssVoteTransaction {
   uint64 node_id = 1;
 
   /**
-   * The source roster hash is the hash of the roster containing the node generating the TssVote.
+   * A hash of the roster containing the node generating this TssVote.
    */
   bytes source_roster_hash = 2;
 
