@@ -69,7 +69,8 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
             if (Objects.equals(transaction.getTransaction().kind(), TransactionOneOfType.STATE_SIGNATURE_TRANSACTION)) {
-                final StateSignatureTransaction payload = transaction.getTransaction().as();
+                final StateSignatureTransaction payload =
+                        transaction.getTransaction().as();
                 final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
                 if (transactionAge <= maxSignatureResubmitAge) {

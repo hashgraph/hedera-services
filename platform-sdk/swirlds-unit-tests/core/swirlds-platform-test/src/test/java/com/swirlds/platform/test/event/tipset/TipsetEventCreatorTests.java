@@ -211,8 +211,9 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<TransactionOneOfType>> convertedTransactions =
-                newEvent.getTransactions().stream().map(Transaction::getTransaction).toList();
+        final List<OneOf<TransactionOneOfType>> convertedTransactions = newEvent.getTransactions().stream()
+                .map(Transaction::getTransaction)
+                .toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {
             final OneOf<TransactionOneOfType> expected = expectedTransactions.get(i);

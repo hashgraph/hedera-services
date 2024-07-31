@@ -58,12 +58,12 @@ class SystemTransactionExtractionUtilsTests {
     void testHandleRound() {
         final Random r = RandomUtils.getRandomPrintSeed();
         final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions = new ArrayList<>();
-        assertNull(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 0, 0), StateSignatureTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 1, 1), StateSignatureTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 2, 2), StateSignatureTransaction.class));
+        assertNull(SystemTransactionExtractionUtils.extractFromRound(
+                newDummyRound(r, 0, 0), StateSignatureTransaction.class));
+        transactions.addAll(SystemTransactionExtractionUtils.extractFromRound(
+                newDummyRound(r, 1, 1), StateSignatureTransaction.class));
+        transactions.addAll(SystemTransactionExtractionUtils.extractFromRound(
+                newDummyRound(r, 2, 2), StateSignatureTransaction.class));
 
         transactions.forEach(t -> assertTrue(StateSignatureTransaction.class.isInstance(t.transaction())));
         assertEquals(5, transactions.size(), "incorrect number of transactions returned");

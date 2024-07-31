@@ -283,7 +283,8 @@ public class TestingEventBuilder {
      * @param transactions the transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setTransactions(@Nullable final List<OneOf<TransactionOneOfType>> transactions) {
+    public @NonNull TestingEventBuilder setTransactions(
+            @Nullable final List<OneOf<TransactionOneOfType>> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(
                     "Cannot set transactions when app transaction count, system transaction count, or transaction "

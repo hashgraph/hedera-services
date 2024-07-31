@@ -138,7 +138,8 @@ class TransactionResubmitterTests {
         for (int i = 0; i < transactionCount; i++) {
             final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.putLong(randotron.nextLong());
-            final OneOf<TransactionOneOfType> transaction = new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
+            final OneOf<TransactionOneOfType> transaction =
+                    new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
             transactions.add(transaction);
         }
 

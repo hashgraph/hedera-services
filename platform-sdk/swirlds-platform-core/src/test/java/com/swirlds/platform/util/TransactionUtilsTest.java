@@ -51,7 +51,8 @@ class TransactionUtilsTest {
         IntStream.range(0, 100).forEach(i -> {
             final Bytes payload = randotron.nextHashBytes();
 
-            OneOf<TransactionOneOfType> oneOfTransaction = new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, payload);
+            OneOf<TransactionOneOfType> oneOfTransaction =
+                    new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, payload);
             arguments.add(Arguments.of(oneOfTransaction, new TransactionWrapper(oneOfTransaction)));
         });
 
@@ -75,7 +76,8 @@ class TransactionUtilsTest {
                     .hash(randotron.nextHashBytes())
                     .signature(randotron.nextSignatureBytes())
                     .build();
-            final OneOf<TransactionOneOfType> oneOfTransaction = new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload);
+            final OneOf<TransactionOneOfType> oneOfTransaction =
+                    new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload);
             arguments.add(Arguments.of(oneOfTransaction, new TransactionWrapper(oneOfTransaction)));
         });
 

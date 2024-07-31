@@ -541,7 +541,8 @@ public class PlatformWiring {
                         model,
                         "extractPreconsensusSignatureTransactions",
                         "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignatureTransaction.class));
+                        event -> SystemTransactionExtractionUtils.extractFromEvent(
+                                event, StateSignatureTransaction.class));
         splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
         preConsensusTransformer
                 .getOutputWire()
@@ -678,7 +679,8 @@ public class PlatformWiring {
                         model,
                         "extractConsensusSignatureTransactions",
                         "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class));
+                        round -> SystemTransactionExtractionUtils.extractFromRound(
+                                round, StateSignatureTransaction.class));
         hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
         postConsensusTransformer
                 .getOutputWire()

@@ -69,12 +69,14 @@ class ConsistencyTestingToolRoundTests {
 
             eventContent.forEach(transactionContent -> {
                 final Bytes bytes = Bytes.wrap(longToByteArray(transactionContent));
-                final OneOf<TransactionOneOfType> transaction = new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, bytes);
+                final OneOf<TransactionOneOfType> transaction =
+                        new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, bytes);
                 transactions.add(transaction);
             });
 
-            final PlatformEvent e =
-                    new TestingEventBuilder(randotron).setTransactions(transactions).build();
+            final PlatformEvent e = new TestingEventBuilder(randotron)
+                    .setTransactions(transactions)
+                    .build();
             mockEvents.add(e);
         });
         final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);

@@ -46,7 +46,8 @@ public class DefaultTransactionPool implements TransactionPool {
     @Override
     public void submitSystemTransaction(@NonNull final StateSignatureTransaction payload) {
         Objects.requireNonNull(payload);
-        transactionPoolNexus.submitTransaction(new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload), true);
+        transactionPoolNexus.submitTransaction(
+                new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload), true);
     }
 
     /**

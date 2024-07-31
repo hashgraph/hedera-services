@@ -146,7 +146,8 @@ public class UnsignedEvent extends AbstractHashable {
         this.allParents = createAllParentsList();
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
 
-        this.eventTransactions = transactions.stream().map(EventTransaction::new).toList();
+        this.eventTransactions =
+                transactions.stream().map(EventTransaction::new).toList();
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
@@ -206,14 +207,15 @@ public class UnsignedEvent extends AbstractHashable {
                     serializeStateSignatureTransaction(out, transaction);
                     break;
                 default:
-                    throw new IOException(
-                            "Unknown transaction type: " + transaction.transaction().kind());
+                    throw new IOException("Unknown transaction type: "
+                            + transaction.transaction().kind());
             }
         }
     }
 
     private static void serializeApplicationTransaction(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction) throws IOException {
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction)
+            throws IOException {
         out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
         out.writeInt(APPLICATION_TRANSACTION_VERSION);
         final Bytes bytes = transaction.transaction().as();
@@ -222,8 +224,10 @@ public class UnsignedEvent extends AbstractHashable {
     }
 
     private static void serializeStateSignatureTransaction(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction) throws IOException {
-        final StateSignatureTransaction stateSignatureTransaction = transaction.transaction().as();
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction)
+            throws IOException {
+        final StateSignatureTransaction stateSignatureTransaction =
+                transaction.transaction().as();
 
         out.writeLong(STATE_SIGNATURE_CLASS_ID);
         out.writeInt(STATE_SIGNATURE_VERSION);
@@ -274,10 +278,12 @@ public class UnsignedEvent extends AbstractHashable {
             final int classVersion = in.readInt();
             if (classId == APPLICATION_TRANSACTION_CLASS_ID) {
                 transactionList.add(new OneOf<>(
-                        TransactionOneOfType.APPLICATION_TRANSACTION, deserializeApplicationTransaction(in, classVersion)));
+                        TransactionOneOfType.APPLICATION_TRANSACTION,
+                        deserializeApplicationTransaction(in, classVersion)));
             } else if (classId == STATE_SIGNATURE_CLASS_ID) {
                 transactionList.add(new OneOf<>(
-                        TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, deserializeStateSignatureTransaction(in, classVersion)));
+                        TransactionOneOfType.STATE_SIGNATURE_TRANSACTION,
+                        deserializeStateSignatureTransaction(in, classVersion)));
             } else {
                 throw new IOException("Unknown classId: " + classId);
             }
