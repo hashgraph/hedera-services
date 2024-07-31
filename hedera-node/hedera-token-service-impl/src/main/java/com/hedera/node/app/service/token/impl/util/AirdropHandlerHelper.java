@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -73,10 +74,11 @@ public class AirdropHandlerHelper {
 
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
-            final var accountProbe = accountStore.getAccountById(accountId);
+            var bool = isAlias(accountId);
+            //            final var accountProbe = accountStore.getAccountById(accountId);
 
             // if not existing account, create transfer
-            if (accountProbe == null) {
+            if (!accountStore.contains(accountId)) {
                 transferFungibleAmounts.add(aa);
                 continue;
             }
@@ -235,7 +237,7 @@ public class AirdropHandlerHelper {
                 .build();
     }
 
-    private static boolean isAutoAssociationLimitReached(Account receiver) {
+    private static boolean isAutoAssociationLimitReached(@NonNull final Account receiver) {
         return receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
                 && receiver.maxAutoAssociations() != -1;
     }
