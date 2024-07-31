@@ -520,11 +520,13 @@ message TssVoteTransaction {
    */
   bytes tss_vote = 5;
 
-  /**
-   * The signature is produced by the node signing the tuple (source_roster_hash, target_roster_hash, ledger_id,
-   * node_signature, tss_vote) using its private `tssEncryptionKey`.  The signature is verified by other nodes using
-   * the public key of the `tssEncryptionKey` of the node sending this transaction.
-   */
+    /**
+     * A signature produced by the node signing the tuple
+     * (source_roster_hash, target_roster_hash, ledger_id, node_signature, tss_vote)
+     * using its private `tssEncryptionKey`.
+     * The signature is verified by other nodes using the public key of the
+     * `tssEncryptionKey` for the node sending this transaction.
+     */
   bytes signature = 6;
 }
 ```
