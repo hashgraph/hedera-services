@@ -28,7 +28,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,7 +42,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
     private static final Logger logger = LogManager.getLogger(IngestWorkflowImpl.class);
 
-    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final TransactionChecker transactionChecker;
     private final IngestChecker ingestChecker;
     private final SubmissionManager submissionManager;
@@ -60,7 +60,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      */
     @Inject
     public IngestWorkflowImpl(
-            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final IngestChecker ingestChecker,
             @NonNull final SubmissionManager submissionManager,

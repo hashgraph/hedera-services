@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -50,6 +52,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,6 +62,8 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 @Singleton
 public class CryptoTransferValidator {
+    private static final int MAX_TOKEN_TRANSFERS = 10;
+
     /**
      * Default constructor for injection.
      */
@@ -72,7 +77,7 @@ public class CryptoTransferValidator {
      * @param op the crypto transfer transaction body
      * @throws PreCheckException if any of the checks fail
      */
-    public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
+    public void cryptoTransferPureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         validateTruePreCheck(isNetZeroAdjustment(acctAmounts), INVALID_ACCOUNT_AMOUNTS);
 
@@ -85,49 +90,18 @@ public class CryptoTransferValidator {
         }
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-        // Validate token transfers
+        validateTokenTransfers(op.tokenTransfers());
+    }
+
+    /**
+     * Performs pure checks that validates basic fields in the token airdrop transaction.
+     * @param op the token airdrop transaction body
+     * @throws PreCheckException if any of the checks fail
+     */
+    public void airdropsPureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
-        final var nftIds = new HashSet<Long>();
-        final var tokenIds = new HashSet<TokenID>();
-        for (final TokenTransferList tokenTransfer : tokenTransfers) {
-            final var tokenID = tokenTransfer.token();
-            tokenIds.add(tokenID);
-            validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
-
-            // Validate the fungible transfers
-            final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-            final var fungibleTransfers = tokenTransfer.transfers();
-            validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
-            boolean nonZeroFungibleValueFound = false;
-            for (final AccountAmount acctAmount : fungibleTransfers) {
-                validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
-                if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
-                    nonZeroFungibleValueFound = true;
-                }
-            }
-            validateFalsePreCheck(
-                    uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-
-            // Validate the nft transfers
-            final var nftTransfers = tokenTransfer.nftTransfers();
-            nftIds.clear();
-            for (final NftTransfer nftTransfer : nftTransfers) {
-                validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-                validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                validateFalsePreCheck(
-                        !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
-                validateFalsePreCheck(
-                        nftTransfer.senderAccountIDOrThrow().equals(nftTransfer.receiverAccountID()),
-                        ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-                nftIds.add(nftTransfer.serialNumber());
-            }
-            // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
-            validateFalsePreCheck(
-                    uniqueTokenAcctIds.isEmpty() && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-        }
-        validateFalsePreCheck(tokenIds.size() < tokenTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION_BODY);
+        validateTokenTransfers(op.tokenTransfers());
     }
 
     /**
@@ -205,6 +179,60 @@ public class CryptoTransferValidator {
         }
 
         return false;
+    }
+
+    private static void validateTokenTransfers(List<TokenTransferList> tokenTransfers) throws PreCheckException {
+        // Validate token transfers
+        final var tokenIds = new HashSet<TokenID>();
+        for (final TokenTransferList tokenTransfer : tokenTransfers) {
+            final var tokenID = tokenTransfer.token();
+            tokenIds.add(tokenID);
+            validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
+
+            // Validate the fungible transfers
+            final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
+            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds);
+
+            // Validate the nft transfers
+            final var nftIds = new HashSet<Long>();
+            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds);
+
+            // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
+            validateFalsePreCheck(
+                    uniqueTokenAcctIds.isEmpty() && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
+        }
+        validateFalsePreCheck(tokenIds.size() < tokenTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+    }
+
+    public static void validateFungibleTransfers(
+            final List<AccountAmount> fungibleTransfers, final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds)
+            throws PreCheckException {
+        validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+        boolean nonZeroFungibleValueFound = false;
+        for (final AccountAmount acctAmount : fungibleTransfers) {
+            validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
+            if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
+                nonZeroFungibleValueFound = true;
+            }
+        }
+        validateFalsePreCheck(
+                uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+    }
+
+    public static void validateNftTransfers(final List<NftTransfer> nftTransfers, final Set<Long> nftIds)
+            throws PreCheckException {
+        for (final NftTransfer nftTransfer : nftTransfers) {
+            validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+            validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            validateFalsePreCheck(
+                    !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
+            validateFalsePreCheck(
+                    nftTransfer.senderAccountIDOrThrow().equals(nftTransfer.receiverAccountID()),
+                    ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+            nftIds.add(nftTransfer.serialNumber());
+        }
     }
 
     private static boolean isNetZeroAdjustment(@NonNull final List<AccountAmount> adjusts) {

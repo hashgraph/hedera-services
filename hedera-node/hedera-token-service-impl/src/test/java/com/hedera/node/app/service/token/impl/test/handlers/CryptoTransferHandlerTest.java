@@ -53,7 +53,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -76,7 +75,6 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -103,7 +101,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoTransferHandler(validator);
+        subject = new CryptoTransferHandler(validator, executor);
     }
 
     @Test
@@ -456,7 +454,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     void failsWhenAutoAssociatedTokenHasKycKey() {
         Assertions.setMaxStackTraceElementsDisplayed(200);
 
-        subject = new CryptoTransferHandler(validator, false);
+        subject = new CryptoTransferHandler(validator, executor, false);
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -470,14 +468,16 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -488,7 +488,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void happyPathWorksWithAutoCreation() {
-        subject = new CryptoTransferHandler(validator, false);
+        subject = new CryptoTransferHandler(validator, executor, false);
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
@@ -502,7 +502,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
@@ -514,18 +515,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             .kycGranted(true)
                             .accountId(tokenReceiverId)
                             .build());
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
-                });
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
-                .will((invocation) -> {
-                    final var relation =
-                            new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
-                    final var relation1 =
-                            new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
-                    writableTokenRelStore.put(relation);
-                    writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
@@ -536,6 +527,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).willReturn(transferRecordBuilder);
         given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
 
         subject.handle(handleContext);
@@ -594,14 +586,16 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -640,14 +634,16 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

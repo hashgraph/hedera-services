@@ -29,6 +29,7 @@ tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-
 testModuleInfo {
     requires("com.hedera.node.app.spi")
     requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("org.apache.commons.lang3")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
