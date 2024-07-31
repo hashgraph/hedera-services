@@ -235,7 +235,7 @@ public class AirdropHandlerHelper {
                 .build();
     }
 
-    private static boolean isAutoAssociationLimitReached(Account receiver) {
+    private static boolean isAutoAssociationLimitReached(@NonNull final Account receiver) {
         return receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
                 && receiver.maxAutoAssociations() != -1;
     }

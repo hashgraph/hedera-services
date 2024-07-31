@@ -285,6 +285,13 @@ public class TokenAirdropTest {
             @Nested
             @DisplayName("and is account alias")
             class AirdropToAliasPending {
+                private static final String RECEIVER_FOR_ALIAS_TESTING = "Receiver_for_alias_testing";
+
+                @BeforeAll
+                static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+                    lifecycle.doAdhoc(cryptoCreate(RECEIVER_FOR_ALIAS_TESTING).maxAutomaticTokenAssociations(0));
+                }
+
                 final AtomicReference<ByteString> receiverAccountAlias = new AtomicReference<>();
 
                 @HapiTest
@@ -293,20 +300,20 @@ public class TokenAirdropTest {
                     return hapiTest(
                             withOpContext((spec, opLog) -> {
                                 var registry = spec.registry();
-                                var receiverAccountId = registry.getAccountID(RECEIVER_WITH_0_AUTO_ASSOCIATIONS);
+                                var receiverAccountId = registry.getAccountID(RECEIVER_FOR_ALIAS_TESTING);
                                 var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
                                 receiverAccountAlias.set(receiverAlias);
                             }),
                             withOpContext((spec, opLog) -> allRunFor(
                                     spec,
-                                    tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    tokenAirdrop(moveFungibleTokensTo(RECEIVER_FOR_ALIAS_TESTING))
                                             .payingWith(OWNER)
-                                            .via("txn"),
+                                            .via("txnAlias"),
                                     // assert transfers
-                                    getTxnRecord("txn")
+                                    getTxnRecord("txnAlias")
                                             .hasPriority(recordWith()
                                                     .pendingAirdrops(includingFungiblePendingAirdrop(
-                                                            moveFungibleTokensTo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                                                            moveFungibleTokensTo(RECEIVER_FOR_ALIAS_TESTING)))),
                                     // assert balances
                                     getAliasedAccountBalance(receiverAccountAlias.get())
                                             .hasTokenBalance(FUNGIBLE_TOKEN, 0))));
@@ -318,22 +325,22 @@ public class TokenAirdropTest {
                     return hapiTest(
                             withOpContext((spec, opLog) -> {
                                 var registry = spec.registry();
-                                var receiverAccountId = registry.getAccountID(RECEIVER_WITH_0_AUTO_ASSOCIATIONS);
+                                var receiverAccountId = registry.getAccountID(RECEIVER_FOR_ALIAS_TESTING);
                                 var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
                                 receiverAccountAlias.set(receiverAlias);
                             }),
                             withOpContext((spec, opLog) -> allRunFor(
                                     spec,
                                     tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-                                                    .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING))
                                             .payingWith(OWNER)
-                                            .via("txn"),
+                                            .via("txnAliasNft"),
                                     // assert transfers
-                                    getTxnRecord("txn")
+                                    getTxnRecord("txnAliasNft")
                                             .hasPriority(recordWith()
-                                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
-                                                                    NON_FUNGIBLE_TOKEN, 7L)
-                                                            .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                                                    .pendingAirdrops(includingNftPendingAirdrop(
+                                                            movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING)))),
                                     // assert balances
                                     getAliasedAccountBalance(receiverAccountAlias.get())
                                             .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
