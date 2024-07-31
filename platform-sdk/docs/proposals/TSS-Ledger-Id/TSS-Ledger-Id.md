@@ -115,7 +115,7 @@ Impacts to DevOps Team
 - Each consensus node will need a new `tssEncryptionKey` in addition to the existing RSA key.
   - EC Key generation will have to happen before a node can join the network.
 - A new node added to an existing network will need to be given a state from an existing node after the network has
-  adopted the address book containing the new node.
+  adopted the roster containing the new node. The new node must be in the active roster to join the network.
 - If a node is added, removed, or updated in the address book and the candidate roster
   is not adopted in the next software upgrade, the change to that node is not applied.
 - config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
@@ -143,7 +143,7 @@ TSS Core Requirements
 | TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive gas cost.                                        |
 | TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                                      |
 | TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                                       |
-| TSS-011        | The TSS design SHOULD minimize the number of steps a Node Operator is required to perform.                                           |
+| TSS-011        | The TSS design SHOULD minimize the number of steps a Node Operator is required to perform.                                            |
 
 Block Signing Requirements
 
@@ -527,16 +527,16 @@ message TssVoteTransaction {
      * TssMessage was invalid or there was no TssMessageTransaction with a
      * sequence number corresponding to the bit index.
      */
-   */
+  */
   bytes tss_vote = 5;
 
-    /**
-     * A signature produced by the node signing the tuple
-     * (source_roster_hash, target_roster_hash, ledger_id, node_signature, tss_vote)
-     * using its private `tssEncryptionKey`.
-     * The signature is verified by other nodes using the public key of the
-     * `tssEncryptionKey` for the node sending this transaction.
-     */
+  /**
+   * A signature produced by the node signing the tuple
+   * (source_roster_hash, target_roster_hash, ledger_id, node_signature, tss_vote)
+   * using its private `tssEncryptionKey`.
+   * The signature is verified by other nodes using the public key of the
+   * `tssEncryptionKey` for the node sending this transaction.
+   */
   bytes signature = 6;
 }
 ```
