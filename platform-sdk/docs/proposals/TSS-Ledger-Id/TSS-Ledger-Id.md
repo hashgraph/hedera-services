@@ -135,7 +135,7 @@ TSS Core Requirements
 |----------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.                        |
 | TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                            |
-| TSS-003        | The `ledger id` MUST be a public key that everyone knows and able to verify signatures from the ledger private key.                   |
+| TSS-003        | The `ledger id` MUST be a public key that everyone knows and that is able to verify signatures from the ledger private key.           |
 | TSS-004        | The ledger signature MUST be produced through aggregating signatures from consensus nodes representing at least 1/3 consensus weight. |
 | TSS-005        | There MUST be a way to bootstrap an existing network's consensus roster with the ledger public/private signing key                    |
 | TSS-006        | There MUST be a way for a new network to generate a public/private signing key for the ledger.                                        |
