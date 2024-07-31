@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCa
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -41,6 +42,9 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -52,6 +56,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
+
+    private final TransactionID transactionID = TransactionID.newBuilder()
+            .accountID(payer)
+            .transactionValidStart(consensusTimestamp)
+            .build();
+
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
@@ -195,7 +205,6 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     }
 
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
         if (adminKey != null) {
             createTxnBody.adminKey(adminKey);
@@ -216,8 +225,22 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
                 .build();
     }
 
+    @Test
+    void testCalculateFeesWithNoCreateBody() {
+        final var txn =
+                TransactionBody.newBuilder().transactionID(transactionID).build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
+    }
+
     private TransactionBody contractCreateTransactionWithInsufficientGas() {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(

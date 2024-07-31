@@ -18,7 +18,7 @@ package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
 
-    private final IOIterator<DetailedConsensusEvent> eventIterator;
+    private final IOIterator<CesEvent> eventIterator;
     private final boolean allowPartialRound;
     private final AddressBook consensusRoster;
 
@@ -70,7 +70,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
      */
     public EventStreamRoundIterator(
             @NonNull final AddressBook consensusRoster,
-            final IOIterator<DetailedConsensusEvent> eventIterator,
+            final IOIterator<CesEvent> eventIterator,
             boolean allowPartialRound) {
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.eventIterator = Objects.requireNonNull(eventIterator);
@@ -98,7 +98,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
             return false;
         }
 
-        final List<DetailedConsensusEvent> events = new ArrayList<>();
+        final List<CesEvent> events = new ArrayList<>();
 
         final long round = eventIterator.peek().getRoundReceived();
         while (eventIterator.hasNext() && eventIterator.peek().getRoundReceived() == round) {
@@ -106,7 +106,7 @@ public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
         }
 
         if (!allowPartialRound) {
-            final DetailedConsensusEvent lastEvent = events.get(events.size() - 1);
+            final CesEvent lastEvent = events.get(events.size() - 1);
             if (!lastEvent.isLastInRoundReceived()) {
                 ended = true;
                 return false;

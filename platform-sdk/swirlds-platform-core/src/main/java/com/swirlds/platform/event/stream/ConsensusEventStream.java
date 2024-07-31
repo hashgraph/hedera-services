@@ -18,7 +18,7 @@ package com.swirlds.platform.event.stream;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -33,7 +33,7 @@ public interface ConsensusEventStream {
      * @param events the list of events to add
      */
     @InputWireLabel("consensus events")
-    void addEvents(@NonNull final List<DetailedConsensusEvent> events);
+    void addEvents(@NonNull final List<CesEvent> events);
 
     /**
      * Updates the running hash with the given event hash. Called when a state is loaded.

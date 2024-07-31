@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -28,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface OnStateInitialized {
     void onStateInitialized(
-            @NonNull MerkleHederaState state,
+            @NonNull MerkleStateRoot state,
             @NonNull Platform platform,
             @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,

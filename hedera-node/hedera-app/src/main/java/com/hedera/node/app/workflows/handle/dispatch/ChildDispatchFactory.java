@@ -41,6 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -234,6 +235,8 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
+        final var feeAccumulator =
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -257,8 +260,10 @@ public class ChildDispatchFactory {
                 networkInfo,
                 this,
                 dispatchProcessor,
-                throttleAdviser);
-        final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+                throttleAdviser,
+                feeAccumulator);
+        final var childFees =
+                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
         final var childTokenContext =
@@ -285,6 +290,7 @@ public class ChildDispatchFactory {
     }
 
     private static Fees computeChildFees(
+            @NonNull final AccountID payerId,
             @NonNull final FeeContext feeContext,
             @NonNull final HandleContext.TransactionCategory childCategory,
             @NonNull final TransactionDispatcher dispatcher,
@@ -296,7 +302,7 @@ public class ChildDispatchFactory {
                 if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
                     yield Fees.FREE;
                 } else {
-                    yield dispatcher.dispatchComputeFees(feeContext);
+                    yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
                 }
             }
             case CHILD -> Fees.FREE;

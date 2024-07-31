@@ -128,7 +128,10 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {}
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+    }
 
     @NonNull
     @Override

@@ -85,7 +85,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -166,7 +166,7 @@ class ThrottleAccumulatorTest {
     private EntitiesConfig entitiesConfig;
 
     @Mock
-    private HederaState state;
+    private State state;
 
     @Mock
     private ReadableStates readableStates;

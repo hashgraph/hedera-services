@@ -31,7 +31,7 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ReadableStoreFactoryTest {
 
     @Mock
-    private HederaState state;
+    private State state;
 
     @Mock(strictness = Strictness.LENIENT)
     private ReadableStates readableStates;

@@ -113,4 +113,11 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
 
     @NonNull
     ContractCallRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
+
+    /**
+     * Returns the number of auto-associations created in the dispatch.
+     *
+     * @return the number of auto-associations created
+     */
+    int getNumAutoAssociations();
 }
