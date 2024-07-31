@@ -492,7 +492,7 @@ message TssVoteTransaction {
   bytes target_roster_hash = 3;
 
   /**
-   * The ledger id that was computed from the TssMessages for the target roster.
+   * An identifier (and public key) computed from the TssMessages for the target roster.
    */
   bytes ledger_id = 4;
 
