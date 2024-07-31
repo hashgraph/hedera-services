@@ -487,7 +487,7 @@ message TssVoteTransaction {
   bytes source_roster_hash = 2;
 
   /**
-   * The target roster hash is the hash of the roster that the TssVote is for.
+   * A hash of the roster that this TssVote is for.
    */
   bytes target_roster_hash = 3;
 
