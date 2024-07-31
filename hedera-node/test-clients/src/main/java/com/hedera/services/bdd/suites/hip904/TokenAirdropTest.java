@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -771,6 +772,39 @@ public class TokenAirdropTest {
                             .payingWith(OWNER)
                             .hasPrecheck(INVALID_TRANSACTION_BODY));
         }
+
+        @HapiTest
+        @DisplayName("airdrop from sender that is not associated with the fungible token")
+        final Stream<DynamicTest> airdropFungibleTokenNotAssociatedWithSender() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(moving(50, FUNGIBLE_TOKEN).between(OWNER_TWO, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop from sender that is not associated with the NFT")
+        final Stream<DynamicTest> airdropNFTNotAssociatedWithSender() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER_TWO, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("with different payer signature")
+        final Stream<DynamicTest> missingTheRightPayerSigFails() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(INVALID_SIGNATURE));
+        }
     }
 
     @Nested
@@ -779,11 +813,13 @@ public class TokenAirdropTest {
         @HapiTest
         @DisplayName("to fungible token pending airdrop")
         final Stream<DynamicTest> canNotDeleteAccountRelatedToAirdrop() {
+            var receiver = "receiverToDelete";
             return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
                     .given()
                     .when()
                     .then(
-                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }

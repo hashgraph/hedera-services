@@ -25,7 +25,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -174,9 +174,9 @@ public class TipsetWeightCalculator {
      * @return the change in this event's tipset advancement weight compared to the tipset advancement weight of the
      * previous event passed to this method
      */
-    public TipsetAdvancementWeight addEventAndGetAdvancementWeight(@NonNull final EventDescriptor event) {
+    public TipsetAdvancementWeight addEventAndGetAdvancementWeight(@NonNull final EventDescriptorWrapper event) {
         Objects.requireNonNull(event);
-        if (!event.getCreator().equals(selfId)) {
+        if (!event.creator().equals(selfId)) {
             throw new IllegalArgumentException("event creator must be the same as self ID");
         }
 
@@ -215,26 +215,27 @@ public class TipsetWeightCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement weight we would get by creating an event with the given parents
      */
-    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(@NonNull final List<EventDescriptor> parents) {
+    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(
+            @NonNull final List<EventDescriptorWrapper> parents) {
         if (parents.isEmpty()) {
             return ZERO_ADVANCEMENT_WEIGHT;
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventDescriptor parent : parents) {
+        for (final EventDescriptorWrapper parent : parents) {
             final Tipset parentTipset = tipsetTracker.getTipset(parent);
 
             if (parentTipset == null) {
                 // For some reason we are trying to use an ancient parent. In theory possible that a self
                 // parent may be ancient. But we shouldn't even be considering non-self parents that are ancient.
-                if (!parent.getCreator().equals(selfId)) {
+                if (!parent.creator().equals(selfId)) {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),
                             "When looking at possible parents, we should never "
                                     + "consider ancient parents that are not self parents. "
                                     + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
-                            parent.getCreator(),
-                            parent.getGeneration(),
+                            parent.creator(),
+                            parent.eventDescriptor().generation(),
                             tipsetTracker.getEventWindow());
                 }
                 continue;
@@ -265,8 +266,8 @@ public class TipsetWeightCalculator {
      */
     public int getMaxSelfishnessScore() {
         int selfishness = 0;
-        for (final EventDescriptor eventDescriptor : childlessEventTracker.getChildlessEvents()) {
-            selfishness = Math.max(selfishness, getSelfishnessScoreForNode(eventDescriptor.getCreator()));
+        for (final EventDescriptorWrapper eventDescriptorWrapper : childlessEventTracker.getChildlessEvents()) {
+            selfishness = Math.max(selfishness, getSelfishnessScoreForNode(eventDescriptorWrapper.creator()));
         }
         return selfishness;
     }

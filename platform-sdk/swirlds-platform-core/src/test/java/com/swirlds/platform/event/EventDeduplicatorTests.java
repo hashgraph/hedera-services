@@ -107,7 +107,7 @@ class EventDeduplicatorTests {
         if (event != null) {
             if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                 assertFalse(
-                        event.getDescriptor().getBirthRound() < minimumRoundNonAncient,
+                        event.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient,
                         "Ancient events shouldn't be emitted");
             } else {
                 assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
@@ -203,11 +203,11 @@ class EventDeduplicatorTests {
                         );
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-                    if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {
+                    if (duplicateEvent.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient) {
                         ancientEventCount++;
                     }
                 } else {
-                    if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient) {
+                    if (duplicateEvent.getDescriptor().eventDescriptor().generation() < minimumGenerationNonAncient) {
                         ancientEventCount++;
                     }
                 }

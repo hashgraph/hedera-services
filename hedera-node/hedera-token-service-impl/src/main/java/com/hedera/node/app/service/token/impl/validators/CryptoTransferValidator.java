@@ -60,6 +60,8 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 @Singleton
 public class CryptoTransferValidator {
+    private static final int MAX_TOKEN_TRANSFERS = 10;
+
     /**
      * Default constructor for injection.
      */
@@ -73,7 +75,7 @@ public class CryptoTransferValidator {
      * @param op the crypto transfer transaction body
      * @throws PreCheckException if any of the checks fail
      */
-    public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
+    public void cryptoTransferPureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         validateTruePreCheck(isNetZeroAdjustment(acctAmounts), INVALID_ACCOUNT_AMOUNTS);
 

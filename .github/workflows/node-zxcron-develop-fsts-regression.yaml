@@ -16,8 +16,6 @@
 
 name: "ZXCron: [Node] Develop JRS Tests"
 on:
-  schedule:
-    - cron: '30 6 * * *'
   workflow_dispatch:
 
 defaults:
