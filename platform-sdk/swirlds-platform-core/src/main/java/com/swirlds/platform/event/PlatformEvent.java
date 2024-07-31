@@ -33,8 +33,8 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -256,9 +256,9 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * @return the number of payloads this event contains
+     * @return the number of transactions this event contains
      */
-    public int getPayloadCount() {
+    public int getTransactionCount() {
         return unsignedEvent.getTransactions().size();
     }
 
@@ -345,14 +345,14 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
+     * Set the consensus timestamp on the transaction wrappers for this event. This must be done after the consensus time is
      * set for this event.
      */
-    public void setConsensusTimestampsOnPayloads() {
+    public void setConsensusTimestampsOnTransactions() {
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
-        final List<PayloadWrapper> transactions = unsignedEvent.getTransactions();
+        final List<TransactionWrapper> transactions = unsignedEvent.getTransactions();
 
         for (int i = 0; i < transactions.size(); i++) {
             transactions.get(i).setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
