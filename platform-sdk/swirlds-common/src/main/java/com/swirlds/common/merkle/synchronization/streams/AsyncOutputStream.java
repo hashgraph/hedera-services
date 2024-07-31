@@ -24,6 +24,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
@@ -84,6 +85,16 @@ public class AsyncOutputStream implements AutoCloseable {
      * The number of messages that have been written to the stream but have not yet been flushed
      */
     private int bufferedMessageCount;
+
+    /**
+     * Using own buffer instead of BufferedOutputStream to avoid unneeded synchronization costs.
+     */
+    private final ByteArrayOutputStream bufferedOut = new ByteArrayOutputStream(65536);
+
+    /**
+     * Data output stream on top of bufferedOut.
+     */
+    private final DataOutputStream dataOut = new DataOutputStream(bufferedOut);
 
     /**
      * The maximum amount of time to wait when writing a message.
@@ -220,23 +231,25 @@ public class AsyncOutputStream implements AutoCloseable {
         if (item == null) {
             return false;
         }
-        while (item != null) {
-            if (item.toNotify() != null) {
-                assert item.messageBytes() == null;
-                item.toNotify().run();
-            } else {
-                final int viewId = item.viewId();
-                final byte[] messageBytes = item.messageBytes();
-                try {
-                    outputStream.writeInt(viewId);
-                    outputStream.writeInt(messageBytes.length);
-                    outputStream.write(messageBytes);
-                } catch (final IOException e) {
-                    throw new MerkleSynchronizationException(e);
+        try {
+            bufferedOut.reset();
+            while (item != null) {
+                if (item.toNotify() != null) {
+                    assert item.messageBytes() == null;
+                    item.toNotify().run();
+                } else {
+                    final int viewId = item.viewId();
+                    final byte[] messageBytes = item.messageBytes();
+                    dataOut.writeInt(viewId);
+                    dataOut.writeInt(messageBytes.length);
+                    dataOut.write(messageBytes);
+                    bufferedMessageCount += 1;
                 }
-                bufferedMessageCount += 1;
+                item = streamQueue.poll();
             }
-            item = streamQueue.poll();
+            bufferedOut.writeTo(outputStream);
+        } catch (final IOException e) {
+            throw new MerkleSynchronizationException(e);
         }
         return true;
     }
