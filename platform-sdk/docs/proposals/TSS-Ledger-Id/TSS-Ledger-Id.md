@@ -44,8 +44,9 @@ TSS-Block-Signing, and TSS-Ledger-ID-Updates.
 1. The `TSS-Library` proposal contains the cryptographic primitives and algorithms needed to implement TSS.
 2. The `TSS-Roster` proposal introduces the data structure of a consensus `Roster` to replace the platform's concept of
    an `AddressBook` and modifies the life-cycle for when the platform receives new consensus rosters.
-3. This proposal (`TSS-Ledger-ID`) depends on the first two proposals and is for the integration of a threshold
-   signature scheme into the consensus node, giving the network a ledger id that can verify ledger signatures.
+3. This proposal (`TSS-Ledger-ID`) depends on the first two proposals and describes
+   the integration of a threshold signature scheme into the consensus node, giving
+   the network a ledger id that can verify network signatures.
 4. The `TSS-Block-Signing` proposal is everything needed to support the signing of blocks.
 5. The `TSS-Ledger-ID-Updates` proposal covers the process of resetting and transplanting ledger ids between networks.
 
