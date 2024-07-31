@@ -1,6 +1,6 @@
 # EVM Transaction Response Codes in Hedera
 
-When executing a transaction processed by the EVM (i.e., EVM Transaction) using `ContractCreate`, `ContractCall`, `EthereumTransaction`, and `ContractCallLocal` in Hedera, different response codes may be present for the top-level status after the transaction is finished.
+When executing a transaction processed by the EVM (i.e., EVM Transaction) using `ContractCreate`, `ContractCall`, `EthereumTransaction`, and `ContractCallLocal` in Hedera, different response codes may be present for the top-level status after the transaction is finished. 
 These responses are found in the transaction receipt. This document's goal is to list the possible EVM transaction type-specific status codes for failure (i.e. different from SUCCESS).
 
 ## Propagated EVM Transaction Response Codes
@@ -49,7 +49,7 @@ Note: The description for the statuses is copied from [protobuf repo](https://gi
   - This code is used for any contract execution-related error not handled by specific error codes listed above.
   - *Example*: An error in Besu due to differences in supported EVM versions. For instance, if Besu supports up to the Shanghai version and the contract is compiled with the Cancun version containing opcode changes, this error would be thrown.
 
-Those are some possible, but very unlikely to happen, top-level status codes.
+Those are some possible, but very unlikely to happen, top-level status codes. 
 As for MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED and MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, they indicate too many contracts/entities in the entire system, so the caller can't do anything except wait until the network is fixed.
 MAX_CONTRACT_STORAGE_EXCEEDED applies to an individual contract but still is very hard to reach under normal operation.
 
@@ -90,7 +90,7 @@ These responses do include ContractCreate via EthereumTransaction.
 - **REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT**
   - Cannot set the number of automatic associations for an account more than the maximum allowed token associations tokens.maxPerAccount. If you would like to exceed that, you should set maxAutoAssociations to -1.
 
-- **PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED**
+- **PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED** 
   - Proxy account ID field is deprecated.
 
 - **INVALID_AUTORENEW_ACCOUNT**
