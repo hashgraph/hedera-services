@@ -497,8 +497,9 @@ message TssVoteTransaction {
   bytes ledger_id = 4;
 
   /**
-   * The signature produced by the node using its RSA signing key to sign the ledger_id.  This signature is used to
-   * establish a chain of trust in the ledger id.
+   * A signature produced by the node.<br/>
+   * This is produced using the node RSA signing key to sign the ledger_id.
+   * This signature is used to establish a chain of trust in the ledger id.
    */
   bytes node_signature = 5;
 
