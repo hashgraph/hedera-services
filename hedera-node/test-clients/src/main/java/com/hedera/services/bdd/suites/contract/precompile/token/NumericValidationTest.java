@@ -21,14 +21,17 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
 import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
@@ -313,6 +316,58 @@ public class NumericValidationTest {
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("ownerOf", nft, testCase.amount)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+        }
+    }
+
+    @Nested
+    @DisplayName("fail to call HAS functions with invalid amounts")
+    class HASFunctionsTests {
+
+        @Account(name = "owner", tinybarBalance = ONE_HUNDRED_HBARS)
+        static SpecAccount owner;
+
+        @Account(name = "spender")
+        static SpecAccount spender;
+
+        @HapiTest
+        @DisplayName("when using hbarAllowance")
+        public Stream<DynamicTest> failToApproveHbar() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("hbarApproveProxy", spender, testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+
+        @HapiTest
+        @DisplayName("when using hbarApprove")
+        public Stream<DynamicTest> failToHbarApprove() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("hbarApprove", owner, spender, testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+    }
+
+    @Nested
+    @DisplayName("fail to call Exchange Rate System contract functions")
+    class ExchangeRateSystemContractTests {
+
+        @HapiTest
+        @DisplayName("when converting tinycents to tinybars")
+        public Stream<DynamicTest> convertTinycentsToTinybars() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("convertTinycentsToTinybars", testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+
+        @HapiTest
+        @DisplayName("when converting tinybars to tinycents")
+        public Stream<DynamicTest> convertTinybarsToTinycents() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("convertTinybarsToTinycents", testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
         }
     }
 }

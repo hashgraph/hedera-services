@@ -54,7 +54,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -200,7 +200,7 @@ class TipsetEventCreatorTests {
         }
 
         // Validate tipset constraints.
-        final EventDescriptor descriptor = newEvent.getDescriptor();
+        final EventDescriptorWrapper descriptor = newEvent.getDescriptor();
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode
@@ -619,7 +619,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -716,7 +716,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -900,7 +900,7 @@ class TipsetEventCreatorTests {
 
         final NodeId otherParentId;
         if (eventA2.hasOtherParent()) {
-            otherParentId = eventA2.getOtherParents().getFirst().getCreator();
+            otherParentId = eventA2.getOtherParents().getFirst().creator();
         } else {
             otherParentId = null;
         }
