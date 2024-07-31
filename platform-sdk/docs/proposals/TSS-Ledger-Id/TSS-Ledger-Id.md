@@ -173,7 +173,7 @@ The TSS-Ledger-ID proposal modifies the address book and roster lifecycle presen
 The threshold signature scheme chosen for our implementation is detailed in [Non-interactive distributed key
 generation and key resharing (Groth21)](https://eprint.iacr.org/2021/339). This scheme is able to meet the
 core requirements listed above. The rest of this proposal details the design of how to implement this scheme in the
-consensus nodes. See the TSS-Library proposal for more details on the Groth21.
+consensus nodes. See the TSS-Library proposal for more details on the Groth21 algorithm.
 
 The Groth21 algorithm uses [Shamir Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_secret_sharing) to hide the
 private key of the ledger and distribute shares of it so that a threshold number of node signatures on a message can
