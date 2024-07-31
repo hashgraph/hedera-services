@@ -65,7 +65,6 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
 
     protected AtomicBoolean released = new AtomicBoolean(false);
 
-
     /**
      * Constructs a new instance of {@link BlockingSwirldState}.
      */
