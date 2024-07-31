@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STRE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -79,6 +80,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.InstantSource;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,6 +89,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,15 +121,41 @@ public class StateChangesValidator implements BlockStreamValidator {
         //
         // "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
         final var testBlocksLoc =
-                "/Users/neeharikasompalli/Documents/Hedera/Repos/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
+                "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3";
         final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Paths.get(testBlocksLoc));
+        final var largestIs = IntStream.range(0, blocks.size())
+                .boxed()
+                .sorted(Comparator.<Integer>comparingInt(
+                        i -> -blocks.get(i).items().size()))
+                .limit(2)
+                .toList();
+        final var block = blocks.get(largestIs.getLast());
+        System.out.println(
+                "Largest block (#" + block.items().getFirst().headerOrThrow().number() + ") has "
+                        + block.items().size() + " items");
+        final var kinds = block.items().stream()
+                .collect(Collectors.groupingBy(item -> item.items().kind(), Collectors.counting()));
+        System.out.println(kinds);
+        final var numResults =
+                block.items().stream().filter(BlockItem::hasTransactionResult).count();
+        System.out.println("It has " + numResults + " results");
+        int numToPrint = 10;
+        for (final var item : block.items()) {
+            if (item.hasTransaction()) {
+                final var parts = TransactionParts.from(fromPbj(item.transactionOrThrow()));
+                System.out.println(parts.body());
+                if (numToPrint-- == 0) {
+                    break;
+                }
+            }
+        }
         //        final var validator = new StateChangesValidator(Bytes.EMPTY, Paths.get(sampleSwirldsLog));
         //        validator.validateBlocks(blocks);
-        System.out.println("465 Block" + blocks.get(465));
-        blocks.get(465).items().stream()
-                .filter(b -> b.hasTransaction())
-                .map(b -> TransactionParts.from(fromPbj(b.transaction())))
-                .forEach(System.out::println);
+        //        System.out.println("465 Block" + blocks.get(465));
+        //        blocks.get(465).items().stream()
+        //                .filter(b -> b.hasTransaction())
+        //                .map(b -> TransactionParts.from(fromPbj(b.transaction())))
+        //                .forEach(System.out::println);
     }
 
     /**

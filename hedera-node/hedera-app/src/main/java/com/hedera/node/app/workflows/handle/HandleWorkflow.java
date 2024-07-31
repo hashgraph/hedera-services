@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
@@ -35,9 +36,12 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -194,7 +198,9 @@ public class HandleWorkflow {
             blockStreamManager.startRound(round, state);
         }
         for (final var event : round) {
-            // TODO - stream input event metadata if mode != RECORDS
+            if (STREAM_MODE != RECORDS) {
+                streamMetadata(event);
+            }
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
@@ -224,8 +230,7 @@ public class HandleWorkflow {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     } else {
-                        // TODO - handle block signature transaction
-                        // TODO - stream state signature transaction
+                        // TODO - handle block and signature transactions here?
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -247,6 +252,20 @@ public class HandleWorkflow {
         if (STREAM_MODE != RECORDS) {
             blockStreamManager.endRound(state);
         }
+    }
+
+    // (FUTURE) Determine if/how we should fill in the birthRound, event descriptors, signature below
+    private void streamMetadata(@NonNull final ConsensusEvent event) {
+        final var eventCore = new EventCore(
+                event.getCreatorId().id(),
+                0L,
+                asTimestamp(event.getTimeCreated()),
+                List.of(),
+                event.getSoftwareVersion());
+        final var metadataItem = BlockItem.newBuilder()
+                .startEvent(new EventMetadata(eventCore, Bytes.EMPTY))
+                .build();
+        blockStreamManager.writeItem(metadataItem);
     }
 
     /**
