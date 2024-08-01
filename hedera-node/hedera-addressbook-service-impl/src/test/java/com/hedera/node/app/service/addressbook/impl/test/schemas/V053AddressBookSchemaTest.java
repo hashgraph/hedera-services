@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.test.schemas;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.FILES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.endpointFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -25,8 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.NodeAddress;
+import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
@@ -42,6 +47,7 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +78,9 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     private final Map<EntityNumber, Node> nodes = new HashMap<>();
     private final MapWritableKVState<EntityNumber, Node> writableNodes = new MapWritableKVState<>(NODES_KEY, nodes);
 
+    private final Map<FileID, File> files = new HashMap<>();
+    private final MapWritableKVState<FileID, File> writableFiles = new MapWritableKVState<>(FILES_KEY, files);
+
     private MapWritableStates writableStates = null;
 
     @BeforeEach
@@ -95,7 +104,8 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
         assertThat(logCaptor.infoLogs()).contains("AccountStore is not found, can be ignored.");
-        assertThat(logCaptor.infoLogs()).contains("Migrated 2 nodes from address book");
+        assertThat(logCaptor.infoLogs()).contains("FileStore is not found, can be ignored.");
+        assertThat(logCaptor.infoLogs()).contains("Migrated 3 nodes from address book");
     }
 
     @Test
@@ -104,7 +114,8 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.infoLogs()).contains("Migrated 2 nodes from address book");
+        assertThat(logCaptor.infoLogs()).contains("FileStore is not found, can be ignored.");
+        assertThat(logCaptor.infoLogs()).contains("Migrated 3 nodes from address book");
         assertEquals(
                 Node.newBuilder()
                         .nodeId(1)
@@ -127,6 +138,109 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .adminKey(anotherKey)
                         .build(),
                 writableNodes.get(EntityNumber.newBuilder().number(2).build()));
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(3)
+                        .accountId(accountId)
+                        .description("memo3")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.3", 124), endpointFor("23.45.34.243", 45)))
+                        .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
+                        .weight(10)
+                        .adminKey(anotherKey)
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(3).build()));
+    }
+
+    @Test
+    void migrateAsExpected3() {
+        setupMigrationContext3();
+
+        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
+        assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
+        assertThat(logCaptor.infoLogs()).contains("Migrated 3 nodes from address book");
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(1)
+                        .accountId(payerId)
+                        .description("memo1")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.1", 123), endpointFor("23.45.34.245", 22)))
+                        .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
+                        .weight(0)
+                        .adminKey(anotherKey)
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(1).build()));
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(2)
+                        .accountId(accountId)
+                        .description("memo2")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.2", 123), endpointFor("23.45.34.240", 23)))
+                        .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
+                        .weight(1)
+                        .adminKey(anotherKey)
+                        .grpcCertificateHash(Bytes.wrap("grpcCertificateHash1"))
+                        .serviceEndpoint(List.of(endpointFor("127.1.0.1", 1234), endpointFor("127.1.0.2", 1234)))
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(2).build()));
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(3)
+                        .accountId(accountId)
+                        .description("memo3")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.3", 124), endpointFor("23.45.34.243", 45)))
+                        .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
+                        .weight(10)
+                        .adminKey(anotherKey)
+                        .grpcCertificateHash(Bytes.wrap("grpcCertificateHash2"))
+                        .serviceEndpoint(
+                                List.of(endpointFor("domain.test1.com", 1234), endpointFor("domain.test2.com", 5678)))
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(3).build()));
+    }
+
+    @Test
+    void migrateAsExpected4() {
+        setupMigrationContext4();
+
+        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
+        assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
+        assertThat(logCaptor.warnLogs()).hasSize(1);
+        assertThat(logCaptor.warnLogs()).matches(logs -> logs.getFirst()
+                .contains("Can not parse file 102 com.hedera.pbj.runtime.ParseException: "));
+        assertThat(logCaptor.infoLogs()).contains("Migrated 3 nodes from address book");
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(1)
+                        .accountId(payerId)
+                        .description("memo1")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.1", 123), endpointFor("23.45.34.245", 22)))
+                        .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
+                        .weight(0)
+                        .adminKey(anotherKey)
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(1).build()));
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(2)
+                        .accountId(accountId)
+                        .description("memo2")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.2", 123), endpointFor("23.45.34.240", 23)))
+                        .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
+                        .weight(1)
+                        .adminKey(anotherKey)
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(2).build()));
+        assertEquals(
+                Node.newBuilder()
+                        .nodeId(3)
+                        .accountId(accountId)
+                        .description("memo3")
+                        .gossipEndpoint(List.of(endpointFor("127.0.0.3", 124), endpointFor("23.45.34.243", 45)))
+                        .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
+                        .weight(10)
+                        .adminKey(anotherKey)
+                        .build(),
+                writableNodes.get(EntityNumber.newBuilder().number(3).build()));
     }
 
     private void setupMigrationContext() {
@@ -157,7 +271,19 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 "memo2",
                 Bytes.wrap(grpcCertificateHash),
                 "memo2");
-        given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2));
+        final var nodeInfo3 = new NodeInfoImpl(
+                3,
+                accountId,
+                10,
+                "23.45.34.243",
+                45,
+                "127.0.0.3",
+                124,
+                "pubKey3",
+                "memo3",
+                Bytes.wrap(grpcCertificateHash),
+                "memo3");
+        given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2, nodeInfo3));
         given(migrationContext.networkInfo()).willReturn(networkInfo);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
@@ -179,6 +305,62 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
                 .withValue("accounts.addressBookAdmin", "55")
+                .getOrCreateConfig();
+        given(migrationContext.configuration()).willReturn(config);
+    }
+
+    private void setupMigrationContext3() {
+        setupMigrationContext2();
+        final var nodeDetails = new ArrayList<NodeAddress>();
+        nodeDetails.addAll(List.of(
+                NodeAddress.newBuilder()
+                        .nodeId(2)
+                        .nodeCertHash(Bytes.wrap("grpcCertificateHash1"))
+                        .serviceEndpoint(List.of(endpointFor("127.1.0.1", 1234), endpointFor("127.1.0.2", 1234)))
+                        .build(),
+                NodeAddress.newBuilder()
+                        .nodeId(3)
+                        .nodeCertHash(Bytes.wrap("grpcCertificateHash2"))
+                        .serviceEndpoint(
+                                List.of(endpointFor("domain.test1.com", 1234), endpointFor("domain.test2.com", 5678)))
+                        .build()));
+        final Bytes fileContent = NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
+        files.put(
+                FileID.newBuilder().fileNum(102).build(),
+                File.newBuilder().contents(fileContent).build());
+        writableStates = MapWritableStates.builder()
+                .state(writableAccounts)
+                .state(writableNodes)
+                .state(writableFiles)
+                .build();
+        given(migrationContext.newStates()).willReturn(writableStates);
+
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("accounts.addressBookAdmin", "55")
+                .withValue("files.nodeDetails", "102")
+                .getOrCreateConfig();
+        given(migrationContext.configuration()).willReturn(config);
+    }
+
+    private void setupMigrationContext4() {
+        setupMigrationContext2();
+
+        files.put(
+                FileID.newBuilder().fileNum(102).build(),
+                File.newBuilder().contents(Bytes.wrap("NotGoodNodeDetailFile")).build());
+        writableStates = MapWritableStates.builder()
+                .state(writableAccounts)
+                .state(writableNodes)
+                .state(writableFiles)
+                .build();
+        given(migrationContext.newStates()).willReturn(writableStates);
+
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .withValue("accounts.addressBookAdmin", "55")
+                .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
         given(migrationContext.configuration()).willReturn(config);
     }

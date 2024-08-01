@@ -65,6 +65,7 @@ public class TokenHandlers {
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
     private final TokenAirdropHandler tokenAirdropHandler;
     private final TokenRejectHandler tokenRejectHandler;
+    private final TokenCancelAirdropHandler tokenCancelAirdropHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -101,6 +102,8 @@ public class TokenHandlers {
      * @param tokenGetNftInfoHandler token get nft info handler
      * @param tokenGetNftInfosHandler token get nft infos handler
      * @param tokenUpdateNftsHandler token update nfts handler
+     * @param tokenRejectHandler token reject handler
+     * @param tokenCancelAirdropHandler token cancel airdrop handler
      */
     @Inject
     public TokenHandlers(
@@ -138,6 +141,7 @@ public class TokenHandlers {
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
             @NonNull final TokenRejectHandler tokenRejectHandler,
             @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler,
+            @NonNull final TokenCancelAirdropHandler tokenCancelAirdropHandler,
             @NonNull final TokenAirdropHandler tokenAirdropHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
@@ -195,6 +199,8 @@ public class TokenHandlers {
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
         this.tokenRejectHandler = Objects.requireNonNull(tokenRejectHandler, "tokenRejectHandler must not be null");
+        this.tokenCancelAirdropHandler =
+                Objects.requireNonNull(tokenCancelAirdropHandler, "tokenCancelAirdropHandler must not be null");
         this.tokenAirdropHandler = Objects.requireNonNull(tokenAirdropHandler, "tokenAirdropsHandler must not be null");
     }
 
@@ -502,6 +508,15 @@ public class TokenHandlers {
      */
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
+    }
+
+    /**
+     * Gets the tokenCancelAirdropHandler.
+     *
+     * @return the tokenCancelAirdropHandler
+     */
+    public TokenCancelAirdropHandler tokenCancelAirdropHandler() {
+        return tokenCancelAirdropHandler;
     }
 
     public TokenAirdropHandler tokenAirdropsHandler() {
