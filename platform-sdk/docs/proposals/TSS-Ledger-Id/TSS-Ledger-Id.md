@@ -908,7 +908,7 @@ Input Invariants
 
 1. If the public shares and ledger id are for the candidate roster,
    1. Sign the ledger ID with the node's private signing key.
-   2. send a `TssVoteTransaction` with the ledger id and the vote vector.
+   2. Send a `TssVoteTransaction` with the ledger id and the vote vector.
 
 ##### Validate TSS Message List
 
