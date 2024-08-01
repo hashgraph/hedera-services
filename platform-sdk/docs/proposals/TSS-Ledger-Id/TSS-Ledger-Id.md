@@ -563,7 +563,12 @@ NOTE: The detailed processes for updating the ledger id can be found in the `TSS
 message LedgerId {
 
   /**
-   * The new ledger id and public key that can verify ledger signatures.  Must not be null.
+   * A public key.<br/>
+   * This key both identifies the ledger and can be used to verify ledger signatures.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
+   * This value MUST contain a valid public key.
    */
   bytes ledger_id = 1;
 
