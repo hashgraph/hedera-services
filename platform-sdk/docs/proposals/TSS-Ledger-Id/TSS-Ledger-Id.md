@@ -825,7 +825,7 @@ Inputs:
 `On Candidate Roster`:
 
 1. If the internal candidate roster is set and equal to the input candidate roster, do nothing.
-2. else, set the internal candidate roster.
+2. Otherwise, set the internal candidate roster.
 3. If the active roster has private shares set, and there exists a candidate roster, then `createTssMessageTransactions`.
 
 `On Private Shares`:
