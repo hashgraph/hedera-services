@@ -218,7 +218,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * event handling may or may not be blocked depending on the implementation.</p>
      *
      * @return a copy of the state to use for the next signed state
-     * @see State#copy()
+     * @see MerkleRoot#copy()
      */
     public MerkleRoot getStateForSigning() {
         fastCopyAndUpdateRefs(stateRef.get());
