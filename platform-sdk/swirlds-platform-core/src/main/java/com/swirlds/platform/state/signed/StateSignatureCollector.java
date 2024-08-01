@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,7 +53,7 @@ public interface StateSignatureCollector {
     @InputWireLabel("preconsensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull List<ScopedSystemTransaction<StateSignaturePayload>> transactions);
+            @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
 
     /**
      * Handle postconsensus state signatures.
@@ -64,7 +64,7 @@ public interface StateSignatureCollector {
     @InputWireLabel("post consensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull List<ScopedSystemTransaction<StateSignaturePayload>> transactions);
+            @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
 
     /**
      * Clear the internal state of this collector.

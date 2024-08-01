@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
@@ -31,8 +31,8 @@ import java.security.MessageDigest;
 import java.util.Objects;
 
 /**
- * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
- * payloads without invalidating the event hash.
+ * Hashes the PBJ representation of an event. This hasher double hashes each transaction in order to allow redaction of
+ * transactions without invalidating the event hash.
  */
 public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
 
@@ -40,7 +40,7 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();
 
     final WritableSequentialData eventStream = new WritableStreamingData(new HashingOutputStream(eventDigest));
-    /** The hashing stream for the payloads. */
+    /** The hashing stream for the transactions. */
     private final MessageDigest transactionDigest = DigestType.SHA_384.buildDigest();
 
     final WritableSequentialData transactionStream =
@@ -63,8 +63,8 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
         try {
             EventCore.PROTOBUF.write(event.getEventCore(), eventStream);
-            for (final EventPayload payload : event.getPayloads()) {
-                EventPayload.PROTOBUF.write(payload, transactionStream);
+            for (final EventTransaction transaction : event.getEventTransactions()) {
+                EventTransaction.PROTOBUF.write(transaction, transactionStream);
                 eventStream.writeBytes(transactionDigest.digest());
             }
         } catch (final IOException e) {

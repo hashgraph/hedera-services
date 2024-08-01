@@ -18,12 +18,12 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.transaction.PayloadWrapperUtils.createAppPayloadWrapper;
 
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.random.RandomGenerator;
 
 public class TransactionUtils {
 
-    public static PayloadWrapper[] randomApplicationTransactions(
+    public static TransactionWrapper[] randomApplicationTransactions(
             final RandomGenerator random,
             final double transactionSizeAverage,
             final double transactionSizeStandardDeviation,
@@ -33,7 +33,7 @@ public class TransactionUtils {
         final int transactionCount =
                 (int) Math.max(0, transactionCountAverage + random.nextGaussian() * transactionCountStandardDeviation);
 
-        final PayloadWrapper[] transactions = new PayloadWrapper[transactionCount];
+        final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
 
         for (int index = 0; index < transactionCount; index++) {
             transactions[index] =
@@ -43,7 +43,7 @@ public class TransactionUtils {
         return transactions;
     }
 
-    public static PayloadWrapper randomApplicationTransaction(
+    public static TransactionWrapper randomApplicationTransaction(
             final RandomGenerator random,
             final double transactionSizeAverage,
             final double transactionSizeStandardDeviation) {

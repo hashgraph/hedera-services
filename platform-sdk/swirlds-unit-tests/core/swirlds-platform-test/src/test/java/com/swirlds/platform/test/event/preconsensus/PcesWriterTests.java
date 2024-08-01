@@ -62,7 +62,7 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -201,7 +201,7 @@ class PcesWriterTests {
         final int transactionSizeStandardDeviationInKb = 5;
 
         return (final Random random) -> {
-            final PayloadWrapper[] transactions = new PayloadWrapper[transactionCount];
+            final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
             for (int index = 0; index < transactionCount; index++) {
 
                 final int transactionSize = (int) UNIT_KILOBYTES.convertTo(

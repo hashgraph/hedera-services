@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.resubmitter;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
@@ -37,7 +37,7 @@ public interface TransactionResubmitter {
      */
     @InputWireLabel("stale events")
     @NonNull
-    List<OneOf<PayloadOneOfType>> resubmitStaleTransactions(@NonNull PlatformEvent event);
+    List<OneOf<TransactionOneOfType>> resubmitStaleTransactions(@NonNull PlatformEvent event);
 
     /**
      * Update the current event window. The transaction resubmitter may use this information to decide which
