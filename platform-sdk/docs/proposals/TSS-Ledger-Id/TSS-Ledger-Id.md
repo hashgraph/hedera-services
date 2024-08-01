@@ -912,12 +912,12 @@ Input Invariants
 
 ##### Validate TSS Message List
 
-1. For the votes already cast in the vote vector
-   1. sum all the yes votes into a total count.
+1. For the votes already cast in the vote vector.
+   1. Sum all the yes votes into a total count.
    2. If the count is greater than or equal to the threshold in the candidate roster, do nothing and return.
-2. For each TSS message in the TSS Message list
+2. For each TSS message in the TSS Message list.
    1. If the TSS Message has a yes entry in the vote vector, do nothing.
-   2. otherwise, validate the message.
+   2. Otherwise, validate the message.
    3. If the message is valid, update the vote vector and increment the count of yes votes.
    4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
       vote vector as a system transaction and exit the validation process.
