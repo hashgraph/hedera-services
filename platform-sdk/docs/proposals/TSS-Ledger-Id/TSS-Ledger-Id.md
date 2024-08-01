@@ -660,31 +660,31 @@ roster and then restart the network adding the new key material and ledger id to
 The following startup sequence on new networks is modified from existing practices.
 
 1. The app reads the genesis address book and cryptography from disk.
-2. The app hands an optional state, genesis roster, and private keys to the platform.
-3. The platform validates that its private `tssEncryptionKey` matches its public `tssEncryptionKey` in the genesis
-   roster. If there is a mismatch, a critical error is logged and the node shuts down.
-4. The platform copies the genesis state and starts gossiping with peers in a pre-genesis mode with the following
+1. The app will transfer an optional state, genesis roster, and private keys to the platform.
+1. The platform will validate that its private `tssEncryptionKey` matches its public `tssEncryptionKey` in the genesis
+   roster. If there is a mismatch, a critical error will be logged and the node will shut down.
+1. The platform will copy the genesis state and start gossiping with peers in a pre-genesis mode with the following
    behavior:
-   1. User transactions are not accepted from the app and events containing user transactions are ignored.
-   2. A node in pre-genesis mode can only gossip with other peers in pre-genesis mode.
-   3. If a pre-genesis node encounters a peer that is post-genesis, the post-genesis node sents the address book
-      and key material and the pre-genesis node restarts itself after successfully validating the key material.
-   4. If the key material cannot be validated, the error is logged and the node remains in pre-genesis mode
-      connecting to other peers.
-   5. If all peers are in post-genesis and no peer can provide validatable key material, the node logs a critical
-      error and shuts itself down.
-   6. Active nodes in pre-genesis mode will initiate the tss-bootstrap process by generating a random share for
-      themselves and create a TssMessage with shares of shares for the total number of shares needed in the
+   1. User transactions will not be accepted from the app and events containing user transactions will be ignored.
+   1. A node in pre-genesis mode can only gossip with other peers in pre-genesis mode.
+   1. If a pre-genesis node encounters a peer that is post-genesis, the post-genesis node must send the address book
+      and key material and the pre-genesis node must restart itself after successfully validating the key material.
+      - If the key material cannot be validated, the error will be logged and the node will remain in pre-genesis mode
+        connecting to other peers.
+      - If all peers are in post-genesis and no peer can provide valid key material, the node will log a critical
+        error and shut itself down.
+   1. Active nodes in pre-genesis mode will initiate the tss-bootstrap process by generating a random share for
+      themselves and creating a TssMessage with shares of shares for the total number of shares needed in the
       genesis roster.
-   7. When a pre-genesis node has enough key-material to generate the ledger id, the node votes yes that it is ready to
-      adopt the key material.
-   8. When a node detects that a threshold number of pre-genesis nodes on the network are ready to adopt the key
-      material, the node adds the key material and ledger id to a copy of the genesis state and restarts the platform.
-5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
-   building a new hashgraph, working towards consensus on round 1. It is now in post-genesis mode.
-6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node provides the pre-genesis node a
+   1. When a pre-genesis node has enough key-material to generate the ledger id, the node will vote `yes` to signal that
+      it is ready to adopt the key material.
+   1. When a node detects that a threshold number of pre-genesis nodes on the network are ready to adopt the key
+      material, the node will add the key material and ledger id to a copy of the genesis state and restart the platform.
+1. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
+   building a new hashgraph, working towards consensus on round 1. It will then be in post-genesis mode.
+1. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node must provide the pre-genesis node a
    copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes. A
-   post genesis node can count or rate limit the number of times it has provided the key material to a pre-genesis
+   post genesis node should count or rate limit the number of times it has provided the key material to a pre-genesis
    node to prevent an intentional or unintentional denial of service attack.
 
 #### Startup for Existing Networks
