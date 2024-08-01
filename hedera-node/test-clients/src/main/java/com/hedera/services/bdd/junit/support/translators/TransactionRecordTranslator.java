@@ -16,33 +16,40 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Translates a txnInput into a {@link TransactionRecord}. Defining such translators allows
- * mapping transactions in new (or old) formats to the current {@code TransactionRecord} for accurate
- * comparison.
+ * Translates a format-agnostic transaction into a {@link SingleTransactionRecord}. Defining such
+ * translators allows mapping transactions in new (or old) formats to the current {@code SingleTransactionRecord}
+ * for accurate comparison.
  */
 public interface TransactionRecordTranslator<T> {
 
     /**
-     * Translates a transaction input into a {@link TransactionRecord}.
+     * Translates a transaction input into a {@link SingleTransactionRecord}.
      *
-     * @param transaction a representation of a txnInput. This may be a single object or a
+     * @param transaction a representation of a transaction input. This may be a single object or a
      *                    collection of objects. This argument should include all needed info about a
-     *                    txnInput to produce a corresponding {@code TransactionRecord}.
-     * @return the equivalent txnInput record
+     *                    transaction to produce a corresponding {@code SingleTransactionRecord}.
+     * @param stateChanges any state changes that occurred during the transaction
+     * @return the equivalent transaction record
      */
-    TransactionRecord translate(@NonNull T transaction);
+    SingleTransactionRecord translate(@NonNull T transaction, @NonNull StateChanges stateChanges);
 
     /**
-     * Much like the {@link #translate(Object)} method, but for translating a collection of transactions,
-     * or for translating a single transaction to multiple {@link TransactionRecord} outputs.
+     * Much like the {@link #translate(Object, StateChanges)} method, but for translating a collection
+     * of transactions, or for translating a single transaction to multiple {@link SingleTransactionRecord}
+     * outputs.
      *
      * @param transactions a collection of transactions to translate
-     * @return the equivalent txnInput records
+     * @param stateChanges any state changes that occurred during transaction processing
+     * @return the equivalent transaction record outputs
      */
-    List<TransactionRecord> translateAll(final List<T> transactions);
+    default List<SingleTransactionRecord> translateAll(
+            @NonNull final List<T> transactions, @NonNull StateChanges stateChanges) {
+        return transactions.stream().map(txn -> translate(txn, stateChanges)).toList();
+    }
 }
