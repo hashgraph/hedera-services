@@ -148,7 +148,12 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 final var senderId = senderAccountAmount.orElseThrow().accountIDOrThrow();
                 // 2. create and save pending airdrops in to state
                 createPendingAirdropsForFungible(
-                        fungibleLists, tokenId, senderId, accountStore, pendingStore, recordBuilder);
+                        fungibleLists.pendingFungibleAmounts(),
+                        tokenId,
+                        senderId,
+                        accountStore,
+                        pendingStore,
+                        recordBuilder);
 
                 // 3. create account amounts and add them to the transfer list
                 if (!fungibleLists.transferFungibleAmounts().isEmpty()) {
@@ -226,6 +231,8 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             @NonNull final WritableAccountStore accountStore,
             @NonNull final TokenAirdropRecordBuilder recordBuilder) {
         nftLists.forEach(item -> {
+            // Each time it is important to get the latest sender account, as we are updating the account
+            // with new pending airdrop
             final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
             final var pendingId = createNftPendingAirdropId(
                     tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
@@ -278,6 +285,8 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             @NonNull final WritableAirdropStore pendingStore,
             @NonNull final TokenAirdropRecordBuilder recordBuilder) {
         fungibleAmounts.forEach(accountAmount -> {
+            // Each time it is important to get the latest sender account , as we are updating the account
+            // with new pending airdrop
             final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
             final var pendingId =
                     createFungibleTokenPendingAirdropId(tokenId, senderAccount.accountId(), accountAmount.accountID());
@@ -344,8 +353,12 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 newHeadAirdrop = createFirstAccountPendingAirdrop(pendingValue);
             }
             // Update the sender account with new head pending airdrop
-            final var updatedSenderAccount =
-                    senderAccount.copyBuilder().headPendingAirdropId(pendingId).build();
+            final var numPendingAirdrops = senderAccount.numberPendingAirdrops();
+            final var updatedSenderAccount = senderAccount
+                    .copyBuilder()
+                    .headPendingAirdropId(pendingId)
+                    .numberPendingAirdrops(numPendingAirdrops + 1)
+                    .build();
             accountStore.put(updatedSenderAccount);
             pendingStore.put(pendingId, newHeadAirdrop);
         }

@@ -358,6 +358,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(writableAccountStore.get(ownerId)).isNotNull();
         var ownerAccount = Objects.requireNonNull(writableAccounts.get(ownerId));
         assertThat(ownerAccount.hasHeadPendingAirdropId()).isTrue();
+        assertThat(ownerAccount.numberPendingAirdrops()).isEqualTo(2);
         var headPendingAirdropId = ownerAccount.headPendingAirdropId();
         var headAirdrop = writableAirdropStore.get(Objects.requireNonNull(headPendingAirdropId));
         assertThat(Objects.requireNonNull(headAirdrop).hasNextAirdrop()).isTrue();
