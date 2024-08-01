@@ -659,7 +659,7 @@ roster and then restart the network adding the new key material and ledger id to
 
 The following startup sequence on new networks is modified from existing practices.
 
-1. The app reads the genesis address book and cryptography from disk.
+1. The app will read the genesis address book and initial cryptography from disk.
 1. The app will transfer an optional state, genesis roster, and private keys to the platform.
 1. The platform will validate that its private `tssEncryptionKey` matches its public `tssEncryptionKey` in the genesis
    roster. If there is a mismatch, a critical error will be logged and the node will shut down.
