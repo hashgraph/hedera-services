@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
 
 public class StaticCallTokenOperation extends AbstractSpecQuery<StaticCallTokenOperation, HapiContractCallLocal>
         implements SpecOperation {
@@ -50,9 +49,9 @@ public class StaticCallTokenOperation extends AbstractSpecQuery<StaticCallTokenO
         this.redirectContract = requireNonNull(redirectContract);
     }
 
-    @NotNull
+    @NonNull
     @Override
-    protected SpecOperation computeDelegate(@NotNull HapiSpec spec) {
+    protected SpecOperation computeDelegate(@NonNull HapiSpec spec) {
         final var network = spec.targetNetworkOrThrow();
         final var abi = getABIFor(FUNCTION, function, redirectContract.abiResource());
         final var arguments = withSubstitutedTypes(network, parameters);

@@ -86,7 +86,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -204,7 +203,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+            public SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now) {
                 return null;
             }
 
@@ -214,12 +213,12 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public SingleTransactionRecordBuilder parentConsensus(@NonNull final Instant parentConsensus) {
                 return null;
             }
 
