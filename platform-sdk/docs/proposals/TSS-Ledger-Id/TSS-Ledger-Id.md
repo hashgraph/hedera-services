@@ -994,7 +994,7 @@ Additional Integration Tests:
 
 - TSS bootstrap for New Networks
 - TSS bootstrap for Existing Networks
-  - multiple software upgrades to check transfer of the ledger id.
+  - Multiple software upgrades to check transfer of the ledger id.
 - Network State Transplant
 
 ### Performance Tests
