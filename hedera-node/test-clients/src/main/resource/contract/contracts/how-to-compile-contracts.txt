@@ -1,4 +1,0 @@
-From .sol get .bin and .json - commit all 3:
-
-solc --evm-version cancun --overwrite --bin --abi -o . --pretty-json  CONTRACT-NAME-HERE.sol
-mv -f CONTRACT-NAME-HERE.abi CONTRACT-NAME-HERE.json

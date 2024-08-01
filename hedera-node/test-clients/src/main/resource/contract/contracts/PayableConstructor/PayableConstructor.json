@@ -1,8 +1,0 @@
-[
-  {
-    "inputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "constructor"
-  }
-]
