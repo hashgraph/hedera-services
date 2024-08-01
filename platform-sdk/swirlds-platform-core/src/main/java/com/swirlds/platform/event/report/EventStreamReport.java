@@ -139,8 +139,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         lastEvent.isLastInRoundReceived() ? "yes" : "no")
                 .addRow(
                         "transaction count",
-                        commaSeparatedNumber(firstEvent.getPlatformEvent().getPayloadCount()),
-                        commaSeparatedNumber(lastEvent.getPlatformEvent().getPayloadCount()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getTransactionCount()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getTransactionCount()))
                 .render(sb);
 
         sb.append("\n\n");

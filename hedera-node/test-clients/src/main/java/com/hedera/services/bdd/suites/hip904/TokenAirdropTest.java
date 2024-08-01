@@ -18,10 +18,10 @@ package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
@@ -29,8 +29,10 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -54,12 +56,15 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
+import static com.hedera.services.bdd.suites.contract.Utils.accountId;
+import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
+import static com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite.TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -79,11 +84,12 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -293,55 +299,95 @@ public class TokenAirdropTest {
             @Nested
             @DisplayName("and is account alias")
             class AirdropToAliasPending {
-                private static ByteString evmAddress;
+                private final String RECEIVER_FOR_ALIAS_TESTING = "receiverForAliasTesting";
+                private final AtomicReference<ByteString> alias = new AtomicReference<>();
+                private final AtomicReference<ByteString> ownerAlias = new AtomicReference<>();
+                private final AtomicReference<TokenID> tokenId = new AtomicReference<>();
 
                 @HapiTest
                 final Stream<DynamicTest> tokenAirdropToExistingAccountsPending() {
-                    final byte[] publicKey =
-                            CommonUtils.unhex("02641dc27aa851ddc5a238dc569718f82b4e5eb3b61030942432fe7ac9088459c5");
-                    evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+                    return hapiTest(
+                            newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                            withOpContext((spec, opLog) -> {
+                                final var registry = spec.registry();
+                                final var treasuryAccountId = registry.getAccountID(OWNER);
+                                ownerAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
 
-                    return defaultHapiSpec("should lazy-create and transfer the tokens")
-                            .given(
-                                    cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
-                                            .payingWith(OWNER)
-                                            .via("evmAddressReceiver")
-                                    ,cryptoUpdate(evmAddress.toString()).maxAutomaticAssociations(0)
-                            )
-                            .when(
-                                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
-                                            .payingWith(OWNER)
-                                            .via("evmAddressReceiver")
-                            )
-                            .then(getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                                // Save the alias for the hollow account
+                                final var ecdsaKey = spec.registry()
+                                        .getKey(SECP_256K1_SOURCE_KEY)
+                                        .getECDSASecp256K1()
+                                        .toByteArray();
+                                final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                alias.set(evmAddressBytes);
+                                tokenId.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
+                            }),
+                            // Create hollow account with tokenTransfer
+                            cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                            .setToken(tokenId.get())
+                                                    .addNftTransfers(ocWith(
+                                            accountId(ownerAlias.get()),
+                                            accountId(alias.get()),
+                                            7L))))
+                                    .payingWith(OWNER)
+                                    .via("hollowAccountTxn"),
+
+                            withOpContext((spec, opLog) -> {
+                                var accountInfo = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                        .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
+                                        .hasAlreadyUsedAutomaticAssociations(1)
+                                        .hasMaxAutomaticAssociations(-1)
+                                        .has(accountWith().hasEmptyKey())
+                                        .exposingIdTo(id -> spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, id));
+
+                                var cryptoUpdate = cryptoUpdate(SECP_256K1_SOURCE_KEY)
+                                        .payingWith(SECP_256K1_SOURCE_KEY)
+                                        .maxAutomaticAssociations(0)
+                                        .logged();
+
+                                var tokenAirdrop = tokenAirdrop(
+                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, alias.get()))
+                                        .payingWith(OWNER)
+                                        .via("txnAliasFungible");
+                                allRunFor(
+                                        spec,
+                                        accountInfo,
+                                        cryptoUpdate,
+                                        tokenAirdrop,
+                                        // assert transfers
+                                        getTxnRecord("txnAliasFungible")
+                                                .hasPriority(recordWith()
+                                                        .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                                moving(10, FUNGIBLE_TOKEN)
+                                                                        .between(OWNER, alias.get())))),
+                                        // assert balances
+                                        getAliasedAccountBalance(alias.get()).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                            }));
                 }
 
                 @HapiTest
                 final Stream<DynamicTest> tokenAirdropNftToExistingAccountsPending() {
-//
-//                    return hapiTest(
-//                            withOpContext((spec, opLog) -> {
-//                                var registry = spec.registry();
-//                                var receiverAccountId = registry.getAccountID(RECEIVER_FOR_ALIAS_TESTING);
-//                                var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
-//                                receiverAccountAlias.set(receiverAlias);
-//                            }),
-//                            withOpContext((spec, opLog) -> allRunFor(
-//                                    spec,
-//                                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-//                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING))
-//                                            .payingWith(OWNER)
-//                                            .via("txnAliasNft"),
-//                                    // assert transfers
-//                                    getTxnRecord("txnAliasNft")
-//                                            .hasPriority(recordWith()
-//                                                    .pendingAirdrops(includingNftPendingAirdrop(
-//                                                            movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-//                                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING)))),
-//                                    // assert balances
-//                                    getAliasedAccountBalance(receiverAccountAlias.get())
-//                                            .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
-                    return null;
+                    return hapiTest(
+                            withOpContext((spec, opLog) -> {
+                                var registry = spec.registry();
+                                var receiverAccountId = registry.getAccountID(RECEIVER_WITH_0_AUTO_ASSOCIATIONS);
+                                var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
+                                alias.set(receiverAlias);
+                            }),
+                            withOpContext((spec, opLog) -> allRunFor(
+                                    spec,
+                                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                                    .between(OWNER, alias.get()))
+                                            .payingWith(OWNER)
+                                            .via("txnAliasNft"),
+                                    // assert transfers
+                                    getTxnRecord("txnAliasNft")
+                                            .hasPriority(recordWith()
+                                                    .pendingAirdrops(includingNftPendingAirdrop(
+                                                            movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                                                    .between(OWNER, alias.get())))),
+                                    // assert balances
+                                    getAliasedAccountBalance(alias.get()).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
                 }
             }
 
