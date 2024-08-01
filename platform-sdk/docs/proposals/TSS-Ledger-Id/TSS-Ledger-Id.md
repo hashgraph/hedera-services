@@ -837,7 +837,7 @@ Inputs:
 
 1. For each private share belonging to the active roster:
    1. Use the TSS-Library to generate a TSS Message for the share private key and public keys for the candidate roster.
-   2. submit a system `TssMessageTransaction` with the TSS Message.
+   2. Submit a system `TssMessageTransaction` with the TSS Message.
 
 #### TSS Message Validator
 
