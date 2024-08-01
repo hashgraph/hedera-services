@@ -664,8 +664,8 @@ Lifecycle Invariants
 
 ### Core Behaviors
 
-The new behavior is related to the bootstrap process of creating the ledger id and transferring the ability to sign
-messages from one roster to the next roster
+We will add new behavior related to the bootstrap process of creating the ledger id
+and transferring the ability to sign messages from one roster to the next roster
 
 #### Startup for New Networks
 
