@@ -55,7 +55,8 @@ class TransactionPoolTests {
 
         transactionPool.submitSystemTransaction(signatureTransaction);
         assertEquals(1, transactionList.size());
-        assertSame(signatureTransaction, transactionList.getFirst().transaction().as());
+        assertSame(
+                signatureTransaction, transactionList.getFirst().transaction().as());
     }
 
     @Test
