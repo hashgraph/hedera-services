@@ -5,7 +5,7 @@
 ## Summary
 
 This proposal outlines the design specification of rosters to support Threshold Signature Scheme (TSS) block signing.
-It details the roster's lifecycle, data storage, API, DevOps workflow, and changes necessary changes to associated
+It details the roster's lifecycle, data storage, API, DevOps workflow, and necessary changes to associated
 components within the platform.
 
 |      Metadata      |                   Entities                    |
@@ -25,11 +25,10 @@ their terminal state.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 The candidate roster will always get adopted on the next software upgrade.
 
-The Hedera App (henceforth reffered to as 'App') will maintain a version of the Address Book as a dynamic list that
-reflects the desired future state of
-the
-network's nodes. This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that
-create, update, or delete nodes.
+The Hedera App (henceforth referred to as 'App') will maintain a version of the Address Book as a dynamic list that
+reflects the desired future state of the network's nodes.
+This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that create, update, or
+delete nodes.
 At some point when the App decides it's time to begin work on adopting a new address book (scope beyond this proposal),
 it will create a `Roster` object with information from the Address Book and pass it to the platform.
 
@@ -44,8 +43,7 @@ The mechanism for doing so is detailed below.
 - Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data
   copying.
 - Clear API: A well-defined API should be provided for the App to create and submit candidate rosters to the platform,
-  and for the
-  platform to manage the lifecycle of submitted rosters.
+  and for the platform to manage the lifecycle of submitted rosters.
 - Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
   Event Validation etc.) must be adapted to use the new `Roster` object instead.
 - Address book paradigm discontinued within the platform codebase in favor of `Roster`s
@@ -98,7 +96,7 @@ message Roster {
     /**
      * Map of roster entries, one per consensus node.
      * <p>
-     * This map SHALL contain roster entries in natural order of ascending node ids.
+     * This map SHALL contain roster entries.
      * The node Id key SHALL match the node Id in the value.
      * This map SHALL NOT be empty.<br/>
      */
@@ -133,10 +131,8 @@ message RosterEntry {
      * A consensus weight.
      * <p>
      * Each node SHALL have a weight of zero or more in consensus calculations.<br/>
-     * The consensus weight of a node SHALL be calculated based on the amount
-     * of HBAR staked to that node.<br/>
-     * Consensus SHALL be calculated based on agreement of greater than `2/3`
-     * of the total `weight` value of all nodes on the network.
+     * The sum of the weights of all nodes in the roster SHALL form the total weight of the system,<br/>
+     * and each node's individual weight SHALL be proportional to that sum.<br/>
      */
     uint64 weight = 2;
 
@@ -275,8 +271,8 @@ is, setting a candidate roster is an idempotent operation.
 
 One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle
 state.
-Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated
-responsibilities between the App and the platform.
+Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated responsibilities
+between the App and the platform.
 
 ### Roster Validity
 
@@ -284,8 +280,8 @@ A Roster is considered valid if it satisfies the following conditions:
 
 1. The roster must have at least one RosterEntry.
 2. At least one RosterEntry/ies must have a non-zero weight.
-3. All RosterEntry/ies must have a valid X509Certificate.
-4. All RosterEntry/ies must have a valid PairingPublicKey.
+3. All RosterEntry/ies must have a valid gossip_ca_certificate which is a DER encoded X509Certificate.
+4. All RosterEntry/ies must have a valid tss_encryption_key which is a DER encoded X509Certificate.
 5. All RosterEntry/ies must have at least one gossip Endpoint.
 6. The RosterEntry/ies must be specified in order of ascending node id.
 7. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
@@ -332,20 +328,27 @@ The current startup procedure will be altered as follows
 
 The current network Transplant procedure is manual.
 DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
-the `config.txt` file using that state. This will change to the use of a Genesis Roster.
+the `config.txt` file using that state. This will change to the use of a Genesis Roster or Override Roster.
+
+The new startup sequence will be determined by the presence of a Genesis Roster, State, or Override Roster as described
+in the following sections.
 
 #### Genesis Roster
 
-![](Proposed%20Network%20Transplant%20flow.drawio.svg)
-A `Genesis Roster` is an optional Roster that DevOps may provide to either start a Genesis Network process or Transplant
-an existing network. It is essential to distinguish the Genesis Roster from the Candidate or Active rosters.
-The Genesis Roster is a special roster used for the sole-purpose of bootstrapping a network. However, its structure is
-exactly the same as the Active or Candidate Rosters.
+![](TSS%20Roster%20Lifecycle-Proposed%20Startup%20Behavior.drawio.svg)
+A `Genesis Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a Genesis Network
+Process.
+It is essential to distinguish the Genesis Roster from the Candidate, Active, or Override rosters.
+The Genesis Roster is a special roster used for the sole purpose of bootstrapping a brand-new Genesis network; one in
+which there is no existing State, and the round number begins at 1.
+However, its structure is exactly the same as the Active or Candidate Rosters.
 The equivalent of the Genesis Roster in the current DevOps flow is the `config.txt` file.
 DevOps and Services may choose to create the Genesis Roster from the `config.txt` file or some other mechanism.
+The trigger for this workflow will be the presence of a Genesis Roster at start-up with no State on disk.
 
 A new method will be added to the `PlatformBuilder` that will be used by the App to set the Genesis Roster.
-In most cases, there will be no need to call the method on `PlatformBuilder` to set the Genesis Roster.
+In most cases, there will be no need to call the method on `PlatformBuilder` to set the Genesis Roster except in the
+events we need to bootstrap a Genesis Network.
 
 ```java
 //in PlatformBuilder
@@ -362,31 +365,75 @@ In most cases, there will be no need to call the method on `PlatformBuilder` to 
 void withGenesisRoster(@NonNull final Roster genesisRoster);
 ```
 
-The logic to determine whether to invoke this method could be determined by some mechanism
-Services deems appropriate.
+The logic to determine whether to invoke this method could be determined by some mechanism Services deems appropriate.
+
+#### Override Roster
+
+An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network in a
+specific state,
+with a specific set of nodes, such as during a Network Transplant Process. A common example of this is Mainnet State
+being transplanted into Testnet.
+Provided an existing State and an `Override Roster`, the platform will adopt that roster.
+The next round number for this network will continue from the last round number in the provided state.
+The trigger for adopting the `Override Roster` will be the presence of an Override Roster at start-up with a State
+existing on disk.
+Bear in mind the Network Transplant process is designed primarily with test networks in mind.
+Upon adoption of the Override Roster, the Override Roster will be deleted from disk.
+In test networks where this process is designed to be used, the Override Roster can be easily accessed and deleted by
+DevOps.
+
+A new method will be added to the `PlatformBuilder` that will be used by the App to set the Override Roster.
+In most cases, as it's the case for a Genesis Roster, there will be no need to call the method on `PlatformBuilder`
+to set the Override Roster except in the events we need to transplant a network.
+
+```java
+//in PlatformBuilder
+/*
+  Set the Override Roster for the network.
+  <p>
+  This method is used to set the optional Override Roster for the network.
+  The Override Roster is a special roster used for the sole purpose of Transplanting an existing network.
+  The Override Roster, if set, is immutable and will be used to trigger a Network Transplant process.
+  <p>
+  @param overrideRoster the Override Roster for the network.
+ */
+void withOverrideRoster(@NonNull final Roster overrideRoster);
+```
 
 #### New Transplant Procedure
 
 The App will decide a network transplant sequence based on the following heuristics:
 
-* Network Transplant process == Genesis Roster AND State provided
-  When both a Genesis Roster and State are provided, it signifies a network transplant.
-  The node will discard any existing candidate roster, rotate the active roster to the previous roster,
-  and adopt the provided Genesis Roster as the new Active Roster. This way, the provided network state and Genesis
-  Roster are adopted.
-  There will be new code required to create the Genesis Roster and pass it to the platform via the `PlatformBuilder` if
-  the network is intended to be in a Transplant mode.
-  The Services team will be responsible for implementing this, although the details are yet to be defined.
+Network Transplant process == Override Roster AND State provided
+When both an Override Roster and State are provided, it signifies a network transplant mode.
+The node will discard any existing candidate roster present in the state, rotate the active roster to the previous
+roster,
+and adopt the provided Override Roster as the new Active Roster. This way, the provided network state and Override
+Roster are adopted.
+There will be new code required to create the Override Roster and pass it to the platform via the `PlatformBuilder` if
+the network is intended to be in a Transplant mode.
+The Services team will be responsible for implementing this, although the details are yet to be defined.
 
-* Genesis Network process == Genesis Roster, No State provided
-  When a Genesis Roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
-  The node will initiate the TSS key generation process (out of scope for this proposal),
-  create a genesis state with the provided Genesis Roster, and start participating in consensus from round 1.
+#### Genesis Network process
 
-* Keep Network Settings (Normal restart) == No Genesis Roster AND State provided
-  If only a state is provided without a roster, the node will retain its existing network settings, including the active
-  roster. This will be the typical behavior for a node restarting within an established network.
-  However, if there is a software upgrade, the candidate roster will always get adopted.
+Genesis Network process == Genesis Roster, No State provided
+When a Genesis Roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
+The node will initiate the TSS key generation process (out of scope for this proposal),
+create a genesis state with the provided Genesis Roster, and start participating in consensus from round 1.
+
+#### Keeping existing Network Settings
+
+Keep Network Settings (Normal restart) == No Override Roster AND State provided AND not in Software Upgrade mode.
+If only a state is provided without an Override Roster, and the network is NOT in a software upgrade mode,
+the node will retain its existing network settings, using the active roster present in the state.
+This will be the typical behavior for a node restarting within an established network.
+
+#### Software Upgrade and adoption of Candidate Roster
+
+Software Upgrade Process == No Override Roster AND State provided AND in Software Upgrade mode.
+When no Override Roster is provided, but a State is present, and the network IS in a software upgrade mode,
+the node will start in a Software Upgrade mode, adopting the Candidate Roster present in the state.
+If there is no Candidate Roster set in the state, the Active Roster continues to be used.
 
 ### Services Changes, in summary
 
@@ -394,7 +441,10 @@ The App will decide a network transplant sequence based on the following heurist
    set it.
 2. The App will be responsible for determining the mode it wants the network to start in i.e. one of restart, upgrade,
    genesis, or transplant modes.
-3. The App will be responsible for creating the Genesis Roster and conditionally passing it to the platform.
+3. The App will be responsible for creating the Genesis Roster, when needed, and conditionally passing it to the
+   platform.
+4. The App will be responsible for creating the Override Roster, when needed, and conditionally passing it to the
+   platform.
 
 ### DevOps Changes, in summary
 
@@ -402,6 +452,8 @@ The App will decide a network transplant sequence based on the following heurist
    into a Roster.
 2. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster,
    including the new TSS encryption key.
+3. DevOps will be responsible for providing the Genesis Roster or Override Roster as files in a location App desires.
+4. DevOps will be responsible for cleaning up the Override Roster file after the network transplant process is complete.
 
 ## Core Behaviors, in summary
 
@@ -409,9 +461,8 @@ The App will decide a network transplant sequence based on the following heurist
 - Roster Submission: App will trigger roster submission by setting the `Roster` object in the
   `PlatformState` API.
 - Roster Validation: The submitted roster is validated and hashed, if valid, and the hash is not already in the state.
-- Roster Storage: The Roster is stored in the State as a States API map of Roster Hash to Roster. A reference to the
-  candidate
-  roster's hash is also stored in the `RosterState` singleton object.
+- Roster Storage: The Roster is stored in the State as a States API map of Roster Hash to Roster.
+  A reference to the candidate roster's hash is also stored in the `RosterState` singleton object.
 - Roster Adoption: The candidate roster is always adopted on the next software upgrade.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the previous.
@@ -425,7 +476,8 @@ There are a few existing technical debts that the team has agreed to tackle as d
    highly improbable, we’re lucky there hasn’t been a collision so far. The result would be that the software would try
    to start both nodes on the same machine.
    The resolution is that nodes should get their identity (Node Id) specified explicitly through the node.properties
-   file. Services and DevOps will implement this.
+   file.
+   Services and DevOps will implement this.
 
 2. Off-by-1 problem: Node IDs are 1 less than the node name. For example, the name of the node with node id 0
    is `node1`. This is confusing. The node name is used as the alias in the cryptography and used to name the pem files
@@ -480,8 +532,9 @@ Some of the obvious test cases to be covered in the plan include validating one 
 
 ## Metrics
 
-We propose that some metrics be added. One useful metric we will
-introduce is the number of candidate rosters that have been set. Others may be introduced during implementation.
+We propose that some metrics be added. One useful metric we will introduce is the number of candidate rosters that have
+been set.
+Others may be introduced during implementation.
 
 ## Implementation and Delivery Plan
 
