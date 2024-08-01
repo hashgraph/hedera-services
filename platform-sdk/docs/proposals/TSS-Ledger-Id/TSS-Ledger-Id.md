@@ -616,7 +616,7 @@ Keys in the `TssMessageMap` have the following structure:
 message TssMessageMapKey {
 
   /**
-   * The roster hash is the hash of the target roster that the value in the tss data map is related to.
+   * A hash of the target roster for the associated value in the map.
    */
   bytes roster_hash = 1;
 
