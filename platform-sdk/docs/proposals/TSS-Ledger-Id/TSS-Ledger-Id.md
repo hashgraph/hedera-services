@@ -966,11 +966,13 @@ The following metrics should be added to the platform:
 
 ### Performance
 
-The `TSS State Manager` execution on the transaction handling through routes TSS related system transactions to the
-relevant components and updates the TSS related data structures in the state. The routing should be a negligible
-impact provided the receiving components receive the messages and handles them on their own thread. The state
-updates should be simple crud operations, adds and deletes to data structures. All other computation on the
-transaction handling thread should be basic bookkeeping calculations and TSS signature verifications.
+The `TSS State Manager` execution on the transaction handling thread routes TSS
+related system transactions to the relevant components and updates the TSS
+related data structures in the state. This routing should be a negligible
+impact provided the receiving components receive the messages and handle them
+on their own thread(s). The state updates should be simple "crud" operations,
+to add, update, and delete from data structures. All other computation on the
+transaction handling thread should be basic bookkeeping calculations.
 
 ---
 
