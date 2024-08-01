@@ -568,7 +568,10 @@ message LedgerId {
   bytes ledger_id = 1;
 
   /**
-   * The round number when the new ledger id becomes active.  Must not be null.
+   * A round number.<br/>
+   * This identifies when this ledger id becomes active.
+   * <p>
+   * This value is REQUIRED.
    */
   uint64 round = 2;
 
