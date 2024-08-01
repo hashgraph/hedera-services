@@ -104,7 +104,7 @@ public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt
                 .cryptoAllowances(CryptoAllowance.newBuilder()
                         .owner(owner)
                         .spender(operatorId)
-                        .amount(amount.longValue())
+                        .amount(amount.longValueExact())
                         .build())
                 .build();
     }

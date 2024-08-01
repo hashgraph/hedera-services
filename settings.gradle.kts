@@ -122,6 +122,9 @@ include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
+// Platform cryptography projects
+include(":hedera-cryptography-tss", "hedera-cryptography/hedera-cryptography-tss")
+
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 
@@ -146,7 +149,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.52.0"
+val hapiProtoVersion = "0.53.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions

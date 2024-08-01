@@ -16,12 +16,11 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.io.SerializableWithKnownLength;
-import com.swirlds.platform.util.PayloadUtils;
+import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -31,23 +30,23 @@ import java.util.concurrent.locks.ReadWriteLock;
  * transaction internally uses a {@link ReadWriteLock} to provide atomic reads and writes to the underlying list of
  * signatures.
  */
-public sealed interface Transaction extends SerializableWithKnownLength permits ConsensusTransaction {
+public sealed interface Transaction permits ConsensusTransaction {
 
     /**
-     * Returns the payload as a PBJ record
-     * @return the payload
+     * Returns the transaction as a PBJ record
+     * @return the transaction
      */
     @NonNull
-    OneOf<EventPayload.PayloadOneOfType> getPayload();
+    OneOf<EventTransaction.TransactionOneOfType> getTransaction();
 
     /**
-     * A convenience method for retrieving the application payload {@link Bytes} object. Before calling this method,
+     * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
      *
-     * @return the application payload Bytes or null if the payload is a system payload
+     * @return the application transaction Bytes or null if the transaction is a system transaction
      */
-    default @NonNull Bytes getApplicationPayload() {
-        return !isSystem() ? getPayload().as() : Bytes.EMPTY;
+    default @NonNull Bytes getApplicationTransaction() {
+        return !isSystem() ? getTransaction().as() : Bytes.EMPTY;
     }
 
     /**
@@ -64,7 +63,7 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		transaction
      */
     default boolean isSystem() {
-        return PayloadUtils.isSystemPayload(getPayload());
+        return TransactionUtils.isSystemTransaction(getTransaction());
     }
 
     /**

@@ -15,10 +15,10 @@
  */
 
 
-package com.swirlds.pairings.spi;
+package com.hedera.cryptography.pairings.spi;
 
-import com.swirlds.pairings.api.BilinearPairing;
-import com.swirlds.pairings.api.Curve;
+import com.hedera.cryptography.pairings.api.BilinearPairing;
+import com.hedera.cryptography.pairings.api.Curve;
 
 /**
  * A provider to facilitate fetching of a {@link BilinearPairing} instance

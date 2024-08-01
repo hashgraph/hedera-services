@@ -84,7 +84,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.InstantSource;
@@ -104,7 +104,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private static final long DEFAULT_CONFIG_VERSION = 1L;
 
     @Mock(strictness = LENIENT)
-    private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
+    private Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
 
     @Mock
     private SubmissionManager submissionManager;

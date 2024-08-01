@@ -29,7 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.util.ArrayList;
@@ -108,9 +108,7 @@ final class ServicesMainTest {
     @Test
     void createsNewMerkleStateRoot() {
         // expect:
-        assertThat(subject.newMerkleStateRoot(), instanceOf(State.class));
-        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
-        // assertThat(subject.newMerkleStateRoot(), instanceOf(MerkleHederaState.class));
+        assertThat(subject.newMerkleStateRoot(), instanceOf(MerkleStateRoot.class));
     }
 
     private void withBadCommandLineArgs() {

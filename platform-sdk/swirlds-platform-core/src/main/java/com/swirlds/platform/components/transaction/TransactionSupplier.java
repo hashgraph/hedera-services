@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.transaction;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -33,5 +33,5 @@ public interface TransactionSupplier {
      * @return an list with 0 or more transactions
      */
     @NonNull
-    List<OneOf<PayloadOneOfType>> getTransactions();
+    List<OneOf<TransactionOneOfType>> getTransactions();
 }

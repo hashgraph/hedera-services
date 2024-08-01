@@ -19,7 +19,7 @@ The default Gradle `test` task instructs these extensions to create the target n
 four child subprocesses as nodes. Meanwhile, the `testEmbedded` and `testRepeatable` tasks instruct
 the extensions to embed a single `Hedera` instance in the test process, invoking its workflows
 directly. In embedded mode, there is no hashgraph consensus because the `Platform` is replaced with
-a simple mock, and the `HederaState` implementation uses in-memory data structures instead of a
+a simple mock, and the `MerkleState` implementation uses in-memory data structures instead of a
 Merkle tree.
 
 ## Table of contents
@@ -79,7 +79,7 @@ There are four implementations of the `HederaNetwork` interface, as follows:
    implementation supports starting and stopping nodes, and provides access to each node's block
    stream, logs, and upgrade artifacts. However, it does not support direct access to working state.
 3. `ConcurrentEmbeddedNetwork` - a simulated network that instantiates a single `Hedera` instance
-   directly in the test process. The internal state is a `FakeHederaState` implementation whose data
+   directly in the test process. The internal state is a `FakeMerkleState` implementation whose data
    sources are collections from the `java.util.concurrent` package. This allows direct access to,
    and modification of, the network's state.
 4. `RepeatableEmbeddedNetwork` - an embedded variant automatically selected when running a
@@ -141,7 +141,7 @@ misbehaving nodes which might submit duplicate or malformed transactions.
 We can address the testing deficiencies of a subprocess network by trading off the realism of a live
 network for greater control. Maximum control is achieved by directly instantiating a `Hedera`
 instance in the test process, and initializing it with fake `Platform`, `ServicesRegistry`, and
-`HederaState` implementations that are created and managed by the testing framework. Instead of
+`MerkleState` implementations that are created and managed by the testing framework. Instead of
 submitting transactions through gRPC, we can call the ingest, query, pre-handle, and handle
 workflows directly.
 
