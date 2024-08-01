@@ -621,7 +621,8 @@ message TssMessageMapKey {
   bytes roster_hash = 1;
 
   /**
-   * The sequence number is the order in which the mapped value came to consensus for the given roster hash.
+   * A number representing consensus order.<br/>
+   * This declares the order in which the mapped value came to consensus.
    */
   uint64 sequence_number = 2;
 }
