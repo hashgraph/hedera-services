@@ -115,9 +115,9 @@ tasks.register("versionAsSnapshot") {
 tasks.register("versionAsSpecified") {
     group = "versioning"
 
-    inputs.property("newVersion", providers.gradleProperty("newVersion").orElse("INVALID"))
+    inputs.property("newVersion", providers.gradleProperty("newVersion").orElse(""))
 
-    if(inputs.properties["newVersion"] as String == "INVALID"){
+    if(inputs.properties["newVersion"] as String == "") {
         throw IllegalArgumentException(
             "No newVersion property provided! " +
                 "Please add the parameter -PnewVersion=<version> when running this task."
