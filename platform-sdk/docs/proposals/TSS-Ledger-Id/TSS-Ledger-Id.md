@@ -591,8 +591,10 @@ message LedgerId {
   bytes ledger_signature = 3;
 
   /**
-   * A map from node ids to the node signatures on the ledger id.  The node signatures are produced by signing the
-   * ledger id with the node's RSA private key.
+   * A map of node RSA signatures.
+   * This is a map from node ids to the _RSA_ node signatures on the ledger id.
+   * <p>
+   * This value MUST be present when the ledger signature of a previous ledger id is absent.
    */
   map<uint64, bytes> node_signatures = 4;
 }
