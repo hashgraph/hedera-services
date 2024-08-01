@@ -41,7 +41,6 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
@@ -706,7 +705,7 @@ class IssDetectorTests extends PlatformTest {
     private static ReservedSignedState mockState(final long round, final Hash hash) {
         final ReservedSignedState rs = mock(ReservedSignedState.class);
         final SignedState ss = mock(SignedState.class);
-        final MerkleRoot s = mock(State.class);
+        final MerkleRoot s = mock(MerkleRoot.class);
         when(rs.get()).thenReturn(ss);
         when(ss.getState()).thenReturn(s);
         when(ss.getRound()).thenReturn(round);
