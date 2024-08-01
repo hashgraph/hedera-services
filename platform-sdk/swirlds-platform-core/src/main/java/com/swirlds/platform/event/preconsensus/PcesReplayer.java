@@ -185,7 +185,7 @@ public class PcesReplayer {
                 final PlatformEvent event = eventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getPayloadCount();
+                transactionCount += event.getTransactionCount();
 
                 eventOutputWire.forward(event);
             }

@@ -227,7 +227,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return;
         }
         final int delta =
-                ByteUtils.byteArrayToInt(transaction.getApplicationPayload().toByteArray(), 0);
+                ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
     }
 

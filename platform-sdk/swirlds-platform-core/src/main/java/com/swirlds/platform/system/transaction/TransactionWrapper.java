@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
-import com.swirlds.platform.util.PayloadUtils;
+import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -27,7 +27,7 @@ import java.util.Objects;
 /**
  * A transaction that may or may not reach consensus.
  */
-public non-sealed class PayloadWrapper implements ConsensusTransaction {
+public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
@@ -36,7 +36,7 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final OneOf<PayloadOneOfType> payload;
+    private final OneOf<TransactionOneOfType> payload;
 
     /**
      * Constructs a new payload wrapper
@@ -45,7 +45,7 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
      *
      * @throws NullPointerException if payload is null
      */
-    public PayloadWrapper(@NonNull final OneOf<PayloadOneOfType> payload) {
+    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> payload) {
         this.payload = Objects.requireNonNull(payload, "payload should not be null");
     }
 
@@ -60,8 +60,8 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PayloadWrapper that = (PayloadWrapper) o;
-        return Objects.equals(getPayload(), that.getPayload());
+        TransactionWrapper that = (TransactionWrapper) o;
+        return Objects.equals(getTransaction(), that.getTransaction());
     }
 
     /**
@@ -69,7 +69,7 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getPayload());
+        return Objects.hash(getTransaction());
     }
 
     /**
@@ -97,7 +97,7 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
      */
     @NonNull
     @Override
-    public OneOf<PayloadOneOfType> getPayload() {
+    public OneOf<TransactionOneOfType> getTransaction() {
         return payload;
     }
 
@@ -109,7 +109,7 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
      */
     @Override
     public int getSize() {
-        return PayloadUtils.getLegacyPayloadSize(payload);
+        return TransactionUtils.getLegacyTransactionSize(payload);
     }
 
     /**
