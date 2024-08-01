@@ -195,7 +195,6 @@ public class GrpcUtils {
             case TokenAirdrop -> clients.getTokenSvcStub(nodeAccountId, false).airdropTokens(transaction);
             case TokenCancelAirdrop -> clients.getTokenSvcStub(nodeAccountId, false)
                     .cancelAirdrop(transaction);
-            case TokenAirdrop -> clients.getTokenSvcStub(nodeAccountId, false).airdropTokens(transaction);
             default -> throw new IllegalArgumentException(functionality + " is not a transaction");
         };
     }

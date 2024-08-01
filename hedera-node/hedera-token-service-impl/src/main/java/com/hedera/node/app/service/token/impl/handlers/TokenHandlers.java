@@ -142,8 +142,7 @@ public class TokenHandlers {
             @NonNull final TokenRejectHandler tokenRejectHandler,
             @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler,
             @NonNull final TokenAirdropHandler tokenAirdropHandler,
-            @NonNull final TokenCancelAirdropHandler tokenCancelAirdropHandler,
-            @NonNull final TokenAirdropHandler tokenAirdropHandler) {
+            @NonNull final TokenCancelAirdropHandler tokenCancelAirdropHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -203,7 +202,6 @@ public class TokenHandlers {
         this.tokenAirdropHandler = Objects.requireNonNull(tokenAirdropHandler, "tokenAirdropsHandler must not be null");
         this.tokenCancelAirdropHandler =
                 Objects.requireNonNull(tokenCancelAirdropHandler, "tokenCancelAirdropHandler must not be null");
-        this.tokenAirdropHandler = Objects.requireNonNull(tokenAirdropHandler, "tokenAirdropsHandler must not be null");
     }
 
     /**
@@ -516,16 +514,7 @@ public class TokenHandlers {
         return tokenAirdropHandler;
     }
 
-    /**
-     * Gets the tokenCancelAirdropHandler.
-     *
-     * @return the tokenCancelAirdropHandler
-     */
     public TokenCancelAirdropHandler tokenCancelAirdropHandler() {
         return tokenCancelAirdropHandler;
-    }
-
-    public TokenAirdropHandler tokenAirdropsHandler() {
-        return tokenAirdropHandler;
     }
 }

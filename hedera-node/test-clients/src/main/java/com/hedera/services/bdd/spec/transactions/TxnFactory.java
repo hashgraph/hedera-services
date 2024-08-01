@@ -457,8 +457,4 @@ public class TxnFactory {
     public Consumer<TokenCancelAirdropTransactionBody.Builder> defaultDefTokenCancelAirdropTransactionBody() {
         return builder -> {};
     }
-
-    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
-        return builder -> {};
-    }
 }

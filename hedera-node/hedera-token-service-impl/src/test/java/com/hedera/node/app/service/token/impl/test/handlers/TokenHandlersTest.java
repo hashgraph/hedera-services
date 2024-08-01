@@ -97,7 +97,6 @@ public class TokenHandlersTest {
     private TokenRejectHandler tokenRejectHandler;
     private TokenAirdropHandler tokenAirdropHandler;
     private TokenCancelAirdropHandler tokenCancelAirdropHandler;
-    private TokenAirdropHandler tokenAirdropHandler;
 
     private TokenHandlers tokenHandlers;
 
@@ -176,8 +175,7 @@ public class TokenHandlersTest {
                 tokenRejectHandler,
                 tokenUpdateNftsHandler,
                 tokenAirdropHandler,
-                tokenCancelAirdropHandler,
-                tokenAirdropHandler);
+                tokenCancelAirdropHandler);
     }
 
     @Test
