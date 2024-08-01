@@ -573,7 +573,12 @@ message LedgerId {
   uint64 round = 2;
 
   /**
-   * The signature of the previous ledger private key on the new ledger id.  May be null.
+   * A signature from the prior ledger key.<br/>
+   * This signature is the _previous_ ledger ID signing _this_ ledger ID.
+   * <p>
+   * This value MAY be unset, if there is no prior ledger ID.<br/>
+   * This value SHOULD be set if a prior ledger ID exists
+   * to generate the signature.
    */
   bytes ledger_signature = 3;
 
