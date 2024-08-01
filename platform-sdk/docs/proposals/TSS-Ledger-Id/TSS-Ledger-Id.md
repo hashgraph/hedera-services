@@ -820,7 +820,7 @@ Inputs:
 3. If there existed a previous active roster and the candidate roster is different from the new active roster, log an
    error.
 4. Set the new active roster
-5. If the active roster has private shares set and there exists a candidate roster, then `createTssMessageTransactions`.
+5. If the active roster has private shares set, and there exists a candidate roster, then `createTssMessageTransactions`.
 
 `On Candidate Roster`:
 
