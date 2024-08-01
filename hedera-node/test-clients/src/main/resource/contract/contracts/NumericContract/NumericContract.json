@@ -152,6 +152,32 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "tinybars",
+        "type": "uint256"
+      }
+    ],
+    "name": "convertTinybarsToTinycents",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tinycents",
+        "type": "uint256"
+      }
+    ],
+    "name": "convertTinycentsToTinybars",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "token",
         "type": "address"
@@ -219,6 +245,47 @@
     "name": "getTokenKey",
     "outputs": [],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "int256",
+        "name": "amount",
+        "type": "int256"
+      }
+    ],
+    "name": "hbarApprove",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "int256",
+        "name": "amount",
+        "type": "int256"
+      }
+    ],
+    "name": "hbarApproveProxy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

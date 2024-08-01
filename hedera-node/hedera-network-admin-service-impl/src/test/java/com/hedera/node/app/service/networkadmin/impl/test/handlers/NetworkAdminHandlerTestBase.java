@@ -57,6 +57,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
@@ -159,6 +160,9 @@ public class NetworkAdminHandlerTestBase {
 
     @Mock
     private DeduplicationCache dedupeCache;
+
+    @Mock
+    private SavepointStackImpl stack;
 
     @Mock
     private WorkingStateAccessor wsa;
@@ -293,13 +297,13 @@ public class NetworkAdminHandlerTestBase {
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)));
-        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)));
-        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)));
-        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)), stack);
+        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)), stack);
+        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)), stack);
+        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)), stack);
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {

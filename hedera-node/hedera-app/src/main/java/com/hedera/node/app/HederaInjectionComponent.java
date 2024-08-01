@@ -19,6 +19,7 @@ package com.hedera.node.app;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
@@ -111,6 +112,8 @@ public interface HederaInjectionComponent {
     QueryWorkflow queryWorkflow();
 
     BlockRecordManager blockRecordManager();
+
+    BlockStreamManager blockStreamManager();
 
     FeeManager feeManager();
 

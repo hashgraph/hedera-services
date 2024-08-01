@@ -29,6 +29,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
@@ -53,7 +54,11 @@ public class RoundStateChangeListener implements StateChangesListener {
 
     private SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
     private SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
-    private Instant lastUsedConsensusTime = null;
+    private Instant lastUsedConsensusTime;
+
+    public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
+        this.lastUsedConsensusTime = requireNonNull(lastUsedConsensusTime);
+    }
 
     @Override
     public Set<DataType> targetDataTypes() {
@@ -94,6 +99,29 @@ public class RoundStateChangeListener implements StateChangesListener {
         singletonUpdates.put(stateName, stateChange);
     }
 
+    public BlockItem stateChanges() {
+        final var allStateChanges = new LinkedList<StateChange>();
+        for (final var entry : singletonUpdates.entrySet()) {
+            allStateChanges.add(entry.getValue());
+        }
+        for (final var entry : queueUpdates.entrySet()) {
+            allStateChanges.addAll(entry.getValue());
+        }
+        final var stateChanges = StateChanges.newBuilder()
+                .stateChanges(allStateChanges)
+                .consensusTimestamp(endOfBlockTimestamp())
+                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
+        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+    }
+
+    public @NonNull Timestamp endOfBlockTimestamp() {
+        return asTimestamp(lastUsedConsensusTime.plusNanos(1));
+    }
+
+    public void setLastUsedConsensusTime(@NonNull final Instant nextAvailableConsensusTime) {
+        this.lastUsedConsensusTime = requireNonNull(nextAvailableConsensusTime);
+    }
+
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
         switch (value) {
             case Bytes protoBytesElement -> {
@@ -111,7 +139,7 @@ public class RoundStateChangeListener implements StateChangesListener {
         }
     }
 
-    private static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
+    public static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
             @NotNull V value) {
         switch (value) {
             case BlockInfo blockInfo -> {
@@ -147,27 +175,11 @@ public class RoundStateChangeListener implements StateChangesListener {
             case Timestamp timestamp -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.TIMESTAMP_VALUE, timestamp);
             }
+            case BlockStreamInfo blockStreamInfo -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_STREAM_INFO_VALUE, blockStreamInfo);
+            }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
-    }
-
-    public BlockItem stateChanges() {
-        final var allStateChanges = new LinkedList<StateChange>();
-        for (final var entry : singletonUpdates.entrySet()) {
-            allStateChanges.add(entry.getValue());
-        }
-        for (final var entry : queueUpdates.entrySet()) {
-            allStateChanges.addAll(entry.getValue());
-        }
-        final var stateChanges = StateChanges.newBuilder()
-                .stateChanges(allStateChanges)
-                .consensusTimestamp(asTimestamp(lastUsedConsensusTime.plusNanos(1)))
-                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
-        return BlockItem.newBuilder().stateChanges(stateChanges).build();
-    }
-
-    public void setLastUsedConsensusTime(final Instant nextAvailableConsensusTime) {
-        this.lastUsedConsensusTime = nextAvailableConsensusTime;
     }
 }

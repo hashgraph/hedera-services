@@ -49,7 +49,7 @@ public class DefaultEventHasher implements EventHasher {
         if (migrateEventHashing
                 && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, event.getSoftwareVersion())
                         == 0) {
-            new PbjHasher().hashEvent(event);
+            new PbjStreamHasher().hashEvent(event);
             return event;
         }
         new StatefulEventHasher().hashEvent(event);

@@ -29,8 +29,6 @@ public class FileCompressionUtils {
 
     private FileCompressionUtils() {}
 
-    public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
-
     public static byte[] readUncompressedFileBytes(final String fileLoc) throws IOException {
         try (final var fin = new GZIPInputStream(new FileInputStream(fileLoc));
                 final var byteArrayOutputStream = new ByteArrayOutputStream()) {

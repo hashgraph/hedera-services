@@ -29,4 +29,5 @@ public enum ExternalPath {
     RECORD_STREAMS_DIR,
     BLOCK_STREAMS_DIR,
     UPGRADE_ARTIFACTS_DIR,
+    SAVED_STATES_DIR,
 }

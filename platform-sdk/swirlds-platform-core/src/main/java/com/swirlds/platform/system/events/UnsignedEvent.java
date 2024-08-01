@@ -17,6 +17,7 @@
 package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
@@ -31,7 +32,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,15 +82,15 @@ public class UnsignedEvent extends AbstractHashable {
     /**
      * the self parent event descriptor
      */
-    private final EventDescriptor selfParent;
+    private final EventDescriptorWrapper selfParent;
 
     /**
      * the other parents' event descriptors
      */
-    private final List<EventDescriptor> otherParents;
+    private final List<EventDescriptorWrapper> otherParents;
 
     /** a combined list of all parents, selfParent + otherParents */
-    private final List<EventDescriptor> allParents;
+    private final List<EventDescriptorWrapper> allParents;
 
     /**
      * creation time, as claimed by its creator
@@ -115,7 +115,7 @@ public class UnsignedEvent extends AbstractHashable {
     /**
      * The event descriptor for this event. Is not itself hashed.
      */
-    private EventDescriptor descriptor;
+    private EventDescriptorWrapper descriptor;
 
     /**
      * Create a UnsignedEvent object
@@ -131,8 +131,8 @@ public class UnsignedEvent extends AbstractHashable {
     public UnsignedEvent(
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
-            @Nullable final EventDescriptor selfParent,
-            @NonNull final List<EventDescriptor> otherParents,
+            @Nullable final EventDescriptorWrapper selfParent,
+            @NonNull final List<EventDescriptorWrapper> otherParents,
             final long birthRound,
             @NonNull final Instant timeCreated,
             @NonNull final List<OneOf<PayloadOneOfType>> transactions) {
@@ -152,8 +152,7 @@ public class UnsignedEvent extends AbstractHashable {
                 birthRound,
                 HapiUtils.asTimestamp(timeCreated),
                 this.allParents.stream()
-                        .map(ed -> new com.hedera.hapi.platform.event.EventDescriptor(
-                                ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
+                        .map(EventDescriptorWrapper::eventDescriptor)
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
         this.transactions = transactions.stream().map(PayloadWrapper::new).toList();
@@ -183,8 +182,8 @@ public class UnsignedEvent extends AbstractHashable {
         out.writeSerializable(softwareVersion, true);
         out.writeInt(NodeId.ClassVersion.ORIGINAL);
         out.writeLong(eventCore.creatorNodeId());
-        out.writeSerializable(selfParent, false);
-        out.writeSerializableList(otherParents, false, true);
+        EventDescriptorWrapper.serialize(out, selfParent);
+        EventDescriptorWrapper.serializeList(out, otherParents);
         out.writeLong(eventCore.birthRound());
         out.writeInstant(HapiUtils.asInstant(eventCore.timeCreated()));
 
@@ -259,9 +258,8 @@ public class UnsignedEvent extends AbstractHashable {
         if (creatorId == null) {
             throw new IOException("creatorId is null");
         }
-        final EventDescriptor selfParent = in.readSerializable(false, EventDescriptor::new);
-        final List<EventDescriptor> otherParents =
-                in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        final EventDescriptorWrapper selfParent = EventDescriptorWrapper.deserialize(in);
+        final List<EventDescriptorWrapper> otherParents = EventDescriptorWrapper.deserializeList(in);
         final long birthRound = in.readLong();
 
         final Instant timeCreated = in.readInstant();
@@ -396,7 +394,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the event descriptor for the self parent
      */
     @Nullable
-    public EventDescriptor getSelfParent() {
+    public EventDescriptorWrapper getSelfParent() {
         return selfParent;
     }
 
@@ -406,18 +404,18 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the event descriptors for the other parents
      */
     @NonNull
-    public List<EventDescriptor> getOtherParents() {
+    public List<EventDescriptorWrapper> getOtherParents() {
         return otherParents;
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
     @NonNull
-    public List<EventDescriptor> getAllParents() {
+    public List<EventDescriptorWrapper> getAllParents() {
         return allParents;
     }
 
     @NonNull
-    private List<EventDescriptor> createAllParentsList() {
+    private List<EventDescriptorWrapper> createAllParentsList() {
         return !hasSelfParent()
                 ? otherParents
                 : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
@@ -432,7 +430,7 @@ public class UnsignedEvent extends AbstractHashable {
         if (selfParent == null) {
             return EventConstants.GENERATION_UNDEFINED;
         }
-        return selfParent.getGeneration();
+        return selfParent.eventDescriptor().generation();
     }
 
     /**
@@ -447,7 +445,7 @@ public class UnsignedEvent extends AbstractHashable {
             return EventConstants.GENERATION_UNDEFINED;
         }
         if (otherParents.size() == 1) {
-            return otherParents.get(0).getGeneration();
+            return otherParents.getFirst().eventDescriptor().generation();
         }
         // 0.46.0 adds support for multiple other parents in the serialization scheme, but not yet in the
         // implementation. This exception should never be reached unless we have multiple parents and need to
@@ -465,7 +463,7 @@ public class UnsignedEvent extends AbstractHashable {
         if (selfParent == null) {
             return null;
         }
-        return selfParent.getHash();
+        return selfParent.hash();
     }
 
     /**
@@ -480,7 +478,7 @@ public class UnsignedEvent extends AbstractHashable {
             return null;
         }
         if (otherParents.size() == 1) {
-            return otherParents.get(0).getHash();
+            return otherParents.getFirst().hash();
         }
         // 0.46.0 adds support for multiple other parents in the serialization scheme, but not yet in the
         // implementation. This exception should never be reached unless we have multiple parents and need to
@@ -542,13 +540,14 @@ public class UnsignedEvent extends AbstractHashable {
      * @throws IllegalStateException if called prior to this event being hashed
      */
     @NonNull
-    public EventDescriptor getDescriptor() {
+    public EventDescriptorWrapper getDescriptor() {
         if (descriptor == null) {
             if (getHash() == null) {
                 throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
             }
 
-            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), eventCore.birthRound());
+            descriptor = new EventDescriptorWrapper(new EventDescriptor(
+                    getHash().getBytes(), getEventCore().creatorNodeId(), getBirthRound(), getGeneration()));
         }
 
         return descriptor;
