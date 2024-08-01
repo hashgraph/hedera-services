@@ -159,7 +159,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                         continue;
                     }
                     final var receiver = transfer.accountID();
-                    if (!skipCustomFeeValidation(token, receiver)) {
+                    if (!isExemptFromCustomFees(token, receiver)) {
                         validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
                     }
                 }
@@ -221,7 +221,7 @@ public class TokenAirdropHandler implements TransactionHandler {
             if (!xfers.nftTransfers().isEmpty()) {
                 for (var transfer : xfers.nftTransfers()) {
                     final var receiver = transfer.receiverAccountID();
-                    if (!skipCustomFeeValidation(token, receiver)) {
+                    if (!isExemptFromCustomFees(token, receiver)) {
                         validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
                     }
                 }
@@ -272,12 +272,12 @@ public class TokenAirdropHandler implements TransactionHandler {
 
     /**
      * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver.
-     * If there are, an error is returned.
+     * If there are, an error is returned from the HAPI call.
      * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account
      * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
      * This method returns if the receiver is the fee collector or the treasury account.
      */
-    private static boolean skipCustomFeeValidation(Token token, AccountID receiverId) {
+    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
         return token.customFees().stream()
                 .anyMatch(customFee ->
                         CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
