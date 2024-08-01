@@ -35,10 +35,6 @@ mainModuleInfo {
 }
 
 sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-
     create("rcdiff")
     create("yahcli")
 }
