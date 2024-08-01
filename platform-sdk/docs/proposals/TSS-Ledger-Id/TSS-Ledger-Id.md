@@ -774,36 +774,38 @@ full-fledged wiring component outside the consensus round handler.
 Responsibilities:
 
 1. At node startup
-   - read all rosters, `TssMessageTransactions`, and `TssVoteTransactions` from the state.
+   - Read all rosters, `TssMessageTransactions`, and `TssVoteTransactions` from the state.
    - If a candidate roster exists and has sufficient votes to be adopted, rotate the rosters.
      - If the Ledger ID in the votes is new, add a new ledger id entry into the history in the state.
-   - send the active roster to the `TssMessageCreator` and `TssMessageValidator`.
+   - Send the active roster to the `TssMessageCreator` and `TssMessageValidator`.
    - If it exists, send the candidate roster to the `TssMessageCreator` and `TssMessageValidator`.
-   - send all `TssMessageTransactions` to the `TssMessageValidator`.
-   - send all `TssVoteTransactions` to the `TssMessageValidator`.
-   - wait for the pubic shares and ledger id to come back for the active roster.
+   - Send all `TssMessageTransactions` to the `TssMessageValidator`.
+   - Send all `TssVoteTransactions` to the `TssMessageValidator`.
+   - Wait for the pubic shares and ledger id to come back for the active roster.
    - Verify that the returned ledger id matches what exists in the state.
-     - (NOTE: handling changes to the LedgerId are addressed in the `TSS-Ledger-ID-Updates` proposal.)
-   - If there was no Ledger Id in the state, set the ledger Id in the state.
-2. Handle `TssMessageTransaction` system transactions
-   - handled in consensus order
+     - NOTE: handling changes to the LedgerId are addressed in the `TSS-Ledger-ID-Updates` proposal.
+     - If there was no Ledger Id in the state, set the ledger Id in the state.
+2. Handle `TssMessageTransaction` system transactions.
+   - Handle items in consensus order.
    - Verify the signature on the `TssMessageTransaction` is valid.
-   - determine the next sequence number to use for the `TssMessageMap` key.
-   - insert into the `TssMessageMap` if it is legal to do so
-     - don’t insert multiple messages for the same share index
-   - if successfully inserted into the `TssMessageMap`, send the `TssMessageTransaction` to the `TssMessageValidator`.
-3. Handle `TssVoteTransaction` system transactions
-   - If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte array, have
-     already been received for the candidate roster, discard the `TssVoteTransaction`.
+   - Determine the next sequence number to use for the `TssMessageMap` key.
+   - Insert into the `TssMessageMap` if it is correct to do so.
+     - Don’t insert multiple messages for the same share index.
+   - If successfully inserted into the `TssMessageMap`, send the `TssMessageTransaction`
+     to the `TssMessageValidator`.
+3. Handle `TssVoteTransaction` system transactions.
+   - If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte
+     array, have already been received for the candidate roster, discard the `TssVoteTransaction`.
    - Otherwise, Verify the signature on the `TssVoteTransaction` is valid.
-   - insert into the `TssVoteMap` if it is legal to do so.
-     - don’t insert multiple votes from the same node, discard it if it is redundant.
+   - Insert into the `TssVoteMap` if it is correct to do so.
+     - Don’t insert multiple votes from the same node; discard it if it is redundant.
    - Send the `TssVoteTransaction` to the TSS Message Validator.
-4. At end of round handling
+4. At end of round handling.
    - Detect if there is a new candidate roster set in the state.
-   - send the candidate roster to the `TssMessageCreator` and `TssMessageValidator`.
-   - if the previous candidate roster has been replaced, use its saved roster hash to clear the roster map of the
-     old candidate roster and clear the `TssMessageMap` and `TssVoteMap` of entries related to the roster hash.
+   - Send the candidate roster to the `TssMessageCreator` and `TssMessageValidator`.
+   - If the previous candidate roster has been replaced, use its saved roster hash to clear the
+     roster map of the old candidate roster and clear the `TssMessageMap` and `TssVoteMap` of
+     entries related to the roster hash.
 
 #### TSS Message Creator
 
