@@ -709,27 +709,36 @@ A mismatch is a critical error that will cause the node to shut down.
 
 This release must be at least 1 release after the `tssEncryptionKey` release.
 
-The following startup sequence occurs: (This sequence should work for this release and all subsequent releases
-unless the startup sequence is modified by subsequent releases.)
+This sequence will work for this release and all subsequent releases, unless the
+startup sequence is modified by subsequent releases.<br/>
+The following startup sequence will occur:
 
-1. The app reads the state and cryptography from disk (including support for reading the private `tssEncryptionKey`)
-2. The app hands the state and private keys to the platform.
-3. The platform validates that its private `tssEncryptionKey`  matches its public `tssEncryptionKey` in the active
-   roster. If there is a mismatch, a critical error is logged and the node shuts down.
+1. The app will read the state and cryptography from disk (including support for
+   reading the private `tssEncryptionKey`)
+2. The app will transfer the state and private key material to the platform.
+3. The platform will validate that its private `tssEncryptionKey` matches its
+   public `tssEncryptionKey` in the active roster. If there is a mismatch, a
+   critical error will be logged and the node will shut down.
 4. If a software upgrade is detected,
-   1. If the existing active roster and candidate roster do not have complete key material and the network does not
-      yet have a ledger id, adopt the candidate roster immediately on software upgrade.  (This keeps the pre-ledger
-      id behavior of the network until the ledger id can be created for the first time.)
-   2. If the candidate roster exists, has key material, and the number of yes votes passes the threshold for
-      adoption, then the candidate roster is adopted.
-      1. Validation Check: if the state already has a ledger id set, the ledger id recovered from the key material
-         must match the ledger id in the state.
-      2. If there is no ledger id in the state and the previously active roster has no key material, the ledger
-         id recovered from the candidate roster key material is set in the state as the new ledger id.
-   3. In all other cases the existing active roster remains the active roster.
-5. The platform goes through its normal startup sequence.
-6. When the platform is (`ACTIVE`) and a candidate roster is set, the platform will start or continue the TSS bootstrap
-   process to key the candidate roster.
+   1. If the existing active roster and candidate roster do not have complete
+      key material and the network does not yet have a ledger id, the node will
+      adopt the candidate roster immediately on software upgrade.
+      - This will retain the pre-ledger id behavior of the network until the
+        ledger id can be created for the first time.
+   2. If the candidate roster exists, has key material, and the number of yes
+      votes passes the threshold for adoption, then the candidate roster
+      will be  adopted.
+      1. Validation Check: if the state already has a ledger id set, the ledger
+         id recovered from the key material must match the ledger id
+         in the state.
+      2. If there is no ledger id in the state and the previously active roster
+         has no key material, the ledger id recovered from the candidate roster
+         key material will be set in the state as the new ledger id.
+   3. In all other cases the existing active roster will remain the
+      active roster.
+5. The platform will continue through its normal startup sequence.
+6. When the platform is (`ACTIVE`) and a candidate roster is set, the platform
+   will start or continue the TSS bootstrap process to key the candidate roster.
 
 Note: If this is release N, then if all goes well and the candidate roster is successfully keyed, the next software
 upgrade (release N+1) is when the network will receive its ledger id. No additional code deployment is required to
