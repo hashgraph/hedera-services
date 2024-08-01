@@ -58,7 +58,7 @@ public class SimpleFreezeOnly extends HapiSuite {
     final Stream<DynamicTest> simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
-                .when(sleepFor(1000))
+                .when(sleepFor(40000))
                 .then();
     }
 }
