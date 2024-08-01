@@ -333,9 +333,12 @@ the `config.txt` file using that state. This will change to the use of a Genesis
 The new startup sequence will be determined by the presence of a Genesis Roster, State, or Override Roster as described
 in the following sections.
 
-#### Genesis Roster
+### The new Startup Behaviour
 
 ![](TSS%20Roster%20Lifecycle-Proposed%20Startup%20Behavior.drawio.svg)
+
+#### Genesis Roster
+
 A `Genesis Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a Genesis Network
 Process.
 It is essential to distinguish the Genesis Roster from the Candidate, Active, or Override rosters.
