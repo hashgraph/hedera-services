@@ -125,6 +125,7 @@ public record TransactionHandlers(
         @NonNull TokenRejectHandler tokenRejectHandler,
         @NonNull TokenAirdropHandler tokenAirdropHandler,
         @NonNull TokenCancelAirdropHandler tokenCancelAirdropHandler,
+        @NonNull TokenAirdropHandler tokenAirdropHandler,
         @NonNull NodeCreateHandler nodeCreateHandler,
         @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull NodeDeleteHandler nodeDeleteHandler,

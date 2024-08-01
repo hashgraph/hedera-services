@@ -31,6 +31,7 @@ testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
+    requires("org.assertj.core")
     requires("org.mockito.junit.jupiter")
     requires("com.swirlds.metrics.api")
     requires("org.mockito")

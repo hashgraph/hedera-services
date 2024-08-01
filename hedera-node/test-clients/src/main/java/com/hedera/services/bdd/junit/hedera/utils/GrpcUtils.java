@@ -192,6 +192,7 @@ public class GrpcUtils {
                     .createNode(transaction);
             case NodeUpdate -> clients.getAddressBookSvcStub(nodeAccountId, false)
                     .updateNode(transaction);
+            case TokenAirdrop -> clients.getTokenSvcStub(nodeAccountId, false).airdropTokens(transaction);
             case TokenCancelAirdrop -> clients.getTokenSvcStub(nodeAccountId, false)
                     .cancelAirdrop(transaction);
             case TokenAirdrop -> clients.getTokenSvcStub(nodeAccountId, false).airdropTokens(transaction);
