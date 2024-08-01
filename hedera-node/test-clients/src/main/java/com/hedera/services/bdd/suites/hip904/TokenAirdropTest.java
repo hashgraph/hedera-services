@@ -692,7 +692,6 @@ public class TokenAirdropTest {
                     tokenAssociate(spender, NON_FUNGIBLE_TOKEN),
                     tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
                                     .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            // Should be signed by owner as well
                             .signedByPayerAnd(spender, OWNER)
                             .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
         }

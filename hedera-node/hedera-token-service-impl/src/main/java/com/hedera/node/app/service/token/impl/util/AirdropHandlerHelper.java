@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -246,6 +247,7 @@ public class AirdropHandlerHelper {
      * @return boolean value indicating if the account is a system account
      */
     public static boolean validateIfSystemAccount(@NonNull AccountID accountID) {
-        return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT ? true : false;
+        requireNonNull(accountID);
+        return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
     }
 }
