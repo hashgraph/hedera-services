@@ -663,7 +663,8 @@ messages from one roster to the next roster
 #### Startup for New Networks
 
 At the start of a new network there will be a new pre-genesis phase to generate the key material for the genesis
-roster and then restart the network adding the new key material and ledger id to the genesis state.
+roster and then restart the network, after adding the new key material and ledger id
+to the genesis state.
 
 The following startup sequence on new networks is modified from existing practices.
 
