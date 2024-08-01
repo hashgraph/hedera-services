@@ -696,6 +696,34 @@ public class TokenAirdropTest {
                             .signedByPayerAnd(spender, OWNER)
                             .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
         }
+
+        @HapiTest
+        @DisplayName("spender has more allowances more that the owner balance")
+        final Stream<DynamicTest> spenderHasMoreAllowancesThatTheOwner() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String CAROL = "carol";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_A),
+                    cryptoApproveAllowance()
+                            .payingWith(ALICE)
+                            .addTokenAllowance(ALICE, FUNGIBLE_TOKEN_A, BOB, 10L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
+                            .signedByPayerAnd(ALICE),
+                    tokenAirdrop(movingWithAllowance(6L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
+                            .signedBy(BOB)
+                            .payingWith(BOB)
+                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+        }
     }
 
     @Nested
