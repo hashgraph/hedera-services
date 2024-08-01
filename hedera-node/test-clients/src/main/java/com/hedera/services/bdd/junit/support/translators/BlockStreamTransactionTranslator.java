@@ -96,8 +96,18 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     public TransactionRecord translate(@NonNull final BlockTransaction transaction) {
         validateBlockItems(transaction.asItems());
 
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var receiptBuilder = TransactionReceipt.newBuilder();
+        final var txnType =
+                transaction.txnInput().transaction().bodyOrThrow().data().kind();
+        final var txnRecord =
+                switch (txnType) {
+                    case CONSENSUS_SUBMIT_MESSAGE -> new ConsensusSubmitMessageTranslator().translate(transaction);
+                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
+                    default -> TransactionRecord.newBuilder().build();
+                };
+
+        final var recordBuilder = txnRecord.copyBuilder();
+        final var receiptBuilder =
+                txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
 
         BlockItem txnBlockItem = transaction.txnInput();
         if (txnBlockItem.hasTransaction()) {
@@ -214,12 +224,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasTopicCreate()) {
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
-
-        if (txnOutput.hasSubmitMessage()) {
-            //                rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-            rb.topicRunningHashVersion(
-                    txnOutput.submitMessage().topicRunningHashVersion().protoOrdinal());
-        }
 
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());
