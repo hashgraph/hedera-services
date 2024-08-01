@@ -830,8 +830,8 @@ Inputs:
 
 `On Private Shares`:
 
-1. record the private shares in the internal private shares map for the appropriate roster hash.
-2. If the active roster has private shares set and there exists a candidate roster, then `createTssMessageTransactions`.
+1. Record the private shares in the internal private shares map for the appropriate roster hash.
+2. If the active roster has private shares set, and there exists a candidate roster, then `createTssMessageTransactions`.
 
 `createTssMessageTransactions`:
 
