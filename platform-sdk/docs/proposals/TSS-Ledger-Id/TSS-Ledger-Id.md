@@ -945,9 +945,9 @@ Outputs
 
 #### Transaction Resubmitter
 
-The transaction resubmitter is extended to detect which the new `TssMessageTransaction` and `TssVoteTransaction`
-system transactions have not reached consensus because the event containing them has become stale. The Transaction
-Resubmitter will resubmit these transactions to the transaction pool for reprocessing.
+The transaction resubmitter is extended to detect which of the new `TssMessageTransaction` and `TssVoteTransaction`
+system transactions have not reached consensus because the event containing them has become stale. The transaction
+resubmitter will resubmit these transactions to the transaction pool for reprocessing.
 
 ### Configuration
 
