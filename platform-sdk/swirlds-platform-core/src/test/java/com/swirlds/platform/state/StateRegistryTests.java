@@ -26,6 +26,7 @@ import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.State;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;

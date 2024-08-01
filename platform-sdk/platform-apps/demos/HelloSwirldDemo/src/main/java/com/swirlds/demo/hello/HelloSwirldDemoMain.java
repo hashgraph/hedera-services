@@ -36,11 +36,11 @@ import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.test.fixtures.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 

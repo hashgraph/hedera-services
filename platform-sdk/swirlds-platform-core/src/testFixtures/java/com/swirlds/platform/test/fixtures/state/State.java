@@ -14,42 +14,29 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
-
-import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
+package com.swirlds.platform.test.fixtures.state;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
  * application and the state used by the platform.
  *
- * @deprecated This class is deprecated for usage as production code.
- * It should be only used for testing purposes and will be moved to testFixtures in 0.54.
  */
-@Deprecated(forRemoval = true, since = "0.53.0")
 public class State extends PartialNaryMerkleInternal implements MerkleRoot {
-
-    private static final Logger logger = LogManager.getLogger(State.class);
 
     private static final long CLASS_ID = 0x2971b4ba7dd84402L;
 
     public static class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int ADD_MIN_GEN = 2;
-        public static final int EVENT_REFACTOR = 3;
-        public static final int MIGRATE_TO_SERIALIZABLE = 4;
-        public static final int ADD_DUAL_STATE = 5;
-        public static final int REMOVE_DUAL_STATE = 6;
         public static final int MIGRATE_PLATFORM_STATE = 7;
     }
 
@@ -59,14 +46,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
          * order from all events with received rounds up through the round this State represents.
          */
         public static final int SWIRLD_STATE = 0;
-        /**
-         * The state written and used by the platform.
-         */
-        public static final int PLATFORM_STATE = 1;
-        /**
-         * Not used after migration.
-         */
-        public static final int DUAL_STATE = 2;
     }
 
     /**
@@ -74,6 +53,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     private final RuntimeObjectRecord registryRecord;
 
+    /**
+     * Constructs a new state.
+     */
     public State() {
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
@@ -82,13 +64,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         super(that);
 
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-
-        if (that.getSwirldState() != null) {
-            this.setSwirldState(that.getSwirldState().copy());
-        }
-        if (that.getPlatformState() != null) {
-            this.setPlatformState(that.getPlatformState().copy());
-        }
     }
 
     /**
@@ -96,20 +71,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public MerkleNode migrate(final int version) {
-        if (version < ClassVersion.REMOVE_DUAL_STATE) {
-            throw new UnsupportedOperationException("State migration from version " + version + " is not supported."
-                    + " The minimum supported version is " + getMinimumSupportedVersion());
-        }
-
-        if (version < ClassVersion.MIGRATE_PLATFORM_STATE
-                && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            PlatformState platformState = getPlatformState().copy();
-            setChild(ChildIndices.PLATFORM_STATE, null);
-            merkleStateRoot.setPlatformState(platformState);
-
-            return merkleStateRoot.copy();
-        }
-
         return this;
     }
 
@@ -118,7 +79,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVE_DUAL_STATE;
+        return ClassVersion.MIGRATE_PLATFORM_STATE;
     }
 
     /**
@@ -126,7 +87,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      *
      * @return the application state
      */
-    @Override
     @NonNull
     public SwirldState getSwirldState() {
         return getChild(ChildIndices.SWIRLD_STATE);
@@ -149,7 +109,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public PlatformState getPlatformState() {
-        return getChild(ChildIndices.PLATFORM_STATE);
+        throw new UnsupportedOperationException("PlatformState is not supported in this implementation of MerkleRoot");
     }
 
     /**
@@ -159,7 +119,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public void setPlatformState(@NonNull final PlatformState platformState) {
-        setChild(ChildIndices.PLATFORM_STATE, platformState);
+        throw new UnsupportedOperationException("PlatformState is not supported in this implementation of MerkleRoot");
     }
 
     /**
@@ -183,7 +143,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @NonNull
     @Override
-    public MerkleRoot copy() {
+    public State copy() {
         throwIfImmutable();
         throwIfDestroyed();
         return new State(this);
@@ -209,8 +169,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             return false;
         }
         final MerkleRoot state = (MerkleRoot) other;
-        return Objects.equals(getPlatformState(), state.getPlatformState())
-                && Objects.equals(getSwirldState(), state.getSwirldState());
+        return Objects.equals(getSwirldState(), state.getSwirldState());
     }
 
     /**
@@ -218,7 +177,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getPlatformState(), getSwirldState());
+        return Objects.hash(getSwirldState());
     }
 
     /**
@@ -229,8 +188,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        final PlatformState platformState = getPlatformState();
-        return createInfoString(hashDepth, platformState, getHash(), this);
+        return "<State>";
     }
 
     /**
@@ -238,9 +196,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("platformState", getPlatformState())
-                .append("swirldState", getSwirldState())
-                .toString();
+        return new ToStringBuilder(this).append("swirldState", getSwirldState()).toString();
     }
 }

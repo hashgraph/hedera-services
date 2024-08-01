@@ -17,11 +17,9 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,11 +30,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.state.State;
 import java.util.Random;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -85,35 +81,6 @@ class StateTest {
 
         assertTrue(state.isDestroyed(), "state should be destroyed when fully released.");
         assertFalse(state.tryReserve(), "tryReserve() should fail when the state is destroyed");
-    }
-
-    @Test
-    public void migratePlatformState() {
-        final MerkleRoot state = randomSignedState().getState();
-
-        PlatformState expectedPlatformState = state.getPlatformState().copy();
-        // expected platform state will have reservation count = 1
-        expectedPlatformState.reserve();
-        MerkleStateRoot oldRoot = (MerkleStateRoot) state.getSwirldState();
-        MerkleStateRoot newRoot = (MerkleStateRoot) state.migrate(State.ClassVersion.REMOVE_DUAL_STATE);
-        assertNotSame(newRoot, oldRoot, "migrate should return a new root");
-        assertThat(oldRoot.isImmutable()).isTrue();
-        assertThat(oldRoot.getReservationCount()).isEqualTo(1);
-        assertThat(newRoot)
-                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                        .withIgnoredFields("immutable", "registryRecord.creationTime", "reservationCount")
-                        .build())
-                .isEqualTo(oldRoot);
-        assertThat(newRoot.getReservationCount()).isEqualTo(0);
-        assertThat(newRoot.isMutable()).isTrue();
-
-        assertNull(state.getPlatformState(), "platform state should be null in the old root");
-
-        assertThat(newRoot.getPlatformState())
-                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                        .withIgnoredFields("route")
-                        .build())
-                .isEqualTo(expectedPlatformState);
     }
 
     private static SignedState randomSignedState() {

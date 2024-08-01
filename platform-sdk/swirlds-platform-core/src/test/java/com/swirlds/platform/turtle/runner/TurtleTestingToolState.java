@@ -23,9 +23,9 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.test.fixtures.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
