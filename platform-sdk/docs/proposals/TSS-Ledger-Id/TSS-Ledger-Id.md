@@ -872,10 +872,10 @@ Input Invariants
 `On Active Roster`:
 
 1. If the new active roster is the same as the existing one, do nothing.
-2. If the new active roster == the candidate roster
-   1. clear the candidate roster hash
-   2. clear the map data for the previous active roster.
-   3. remove the previous active roster hash from the voting closed set.
+2. If the new active roster == the candidate roster.
+   1. Clear the candidate roster hash.
+   2. Clear the map data for the previous active roster.
+   3. Remove the previous active roster hash from the voting closed set.
 3. If a previous active roster existed and the candidate roster is different from the new active roster, log an error.
 4. Set the new active roster.
 
