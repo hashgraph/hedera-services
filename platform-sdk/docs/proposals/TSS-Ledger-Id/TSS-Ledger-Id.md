@@ -959,7 +959,7 @@ The following are new configuration:
 
 The following metrics should be added to the platform:
 
-1. When a candidate roster is set.
+1. The consensus time when a candidate roster is set.
 2. The number of TSS Messages collected for a candidate roster.
 3. The number of votes collected for a candidate roster.
 4. The time it takes to compute shares from the key material.
