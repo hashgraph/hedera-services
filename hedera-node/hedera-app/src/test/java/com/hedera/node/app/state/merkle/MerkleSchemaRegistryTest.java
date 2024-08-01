@@ -24,13 +24,16 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -60,7 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MerkleSchemaRegistryTest extends MerkleTestBase {
     @Mock
-    private HederaLifecycles lifecycles;
+    private MerkleStateLifecycles lifecycles;
 
     private MerkleSchemaRegistry schemaRegistry;
     private Configuration config;
@@ -166,7 +169,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(lifecycles),
+                    new MerkleStateRoot(lifecycles),
                     version(9, 0, 0),
                     version(10, 0, 0),
                     config,
@@ -180,12 +183,12 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
     @Nested
     @DisplayName("Migration Tests")
     class MigrationTest {
-        private MerkleHederaState merkleTree;
+        private MerkleStateRoot merkleTree;
         private SemanticVersion[] versions;
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(lifecycles);
+            merkleTree = new MerkleStateRoot(lifecycles);
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];

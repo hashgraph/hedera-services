@@ -56,7 +56,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -94,10 +94,10 @@ class IngestWorkflowImplTest extends AppTestBase {
 
     // The following fields are all mocked dependencies of the workflow.
     @Mock(strictness = LENIENT)
-    HederaState state;
+    State state;
 
     @Mock(strictness = LENIENT)
-    Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    Supplier<AutoCloseableWrapper<State>> stateAccessor;
 
     @Mock(strictness = LENIENT)
     TransactionChecker transactionChecker;

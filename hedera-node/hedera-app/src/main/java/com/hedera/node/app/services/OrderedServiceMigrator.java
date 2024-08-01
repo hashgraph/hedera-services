@@ -21,11 +21,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.HederaState;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -56,7 +56,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
      */
     @Override
     public void doMigrations(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
@@ -127,7 +127,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             sharedValues);
                     // Now commit any changes that were made to the entity ID state (since other service entities could
                     // depend on newly-generated entity IDs)
-                    if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+                    if (entityIdWritableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
                         mws.commit();
                     }
                 });

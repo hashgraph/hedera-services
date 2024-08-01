@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -101,9 +101,9 @@ class IngestComponentTest {
                 .metrics(metrics)
                 .build();
 
-        final var state = new FakeHederaState();
+        final var state = new FakeState();
         state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));
-        app.workingStateAccessor().setHederaState(state);
+        app.workingStateAccessor().setState(state);
     }
 
     @Test

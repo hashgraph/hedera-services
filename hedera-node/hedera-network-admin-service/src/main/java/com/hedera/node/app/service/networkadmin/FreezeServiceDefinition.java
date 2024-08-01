@@ -28,6 +28,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class FreezeServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The global singleton FreezeServiceDefinition INSTANCE.
+     */
     public static final FreezeServiceDefinition INSTANCE = new FreezeServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods =
@@ -37,12 +40,22 @@ public final class FreezeServiceDefinition implements RpcServiceDefinition {
         // Forbid instantiation
     }
 
+    /**
+     * Returns the the base path for the freeze service
+     *
+     * @return the base path
+     */
     @Override
     @NonNull
     public String basePath() {
         return "proto.FreezeService";
     }
 
+    /**
+     * Returns the set of rpc methods supported by the freeze service
+     *
+     * @return the methods
+     */
     @Override
     @NonNull
     public Set<RpcMethodDefinition<?, ?>> methods() {

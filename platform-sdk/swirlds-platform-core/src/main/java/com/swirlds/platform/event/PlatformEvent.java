@@ -30,16 +30,16 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -211,13 +211,13 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      *
      * @return the descriptor for the event
      */
-    public EventDescriptor getDescriptor() {
+    public EventDescriptorWrapper getDescriptor() {
         return unsignedEvent.getDescriptor();
     }
 
     @Override
     public Iterator<Transaction> transactionIterator() {
-        return Arrays.asList((Transaction[]) unsignedEvent.getTransactions()).iterator();
+        return new TypedIterator<>(unsignedEvent.getTransactions().iterator());
     }
 
     @Override
@@ -256,10 +256,10 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * @return the number of payloads this event contains
+     * @return the number of transactions this event contains
      */
-    public int getPayloadCount() {
-        return unsignedEvent.getTransactions().length;
+    public int getTransactionCount() {
+        return unsignedEvent.getTransactions().size();
     }
 
     /**
@@ -317,8 +317,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
 
     @Override
     public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
-        return Arrays.asList((ConsensusTransaction[]) unsignedEvent.getTransactions())
-                .iterator();
+        return new TypedIterator<>(unsignedEvent.getTransactions().iterator());
     }
 
     /**
@@ -346,20 +345,17 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
+     * Set the consensus timestamp on the transaction wrappers for this event. This must be done after the consensus time is
      * set for this event.
      */
-    public void setConsensusTimestampsOnPayloads() {
+    public void setConsensusTimestampsOnTransactions() {
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
-        final ConsensusTransactionImpl[] transactions = unsignedEvent.getTransactions();
-        if (transactions == null) {
-            return;
-        }
+        final List<TransactionWrapper> transactions = unsignedEvent.getTransactions();
 
-        for (int i = 0; i < transactions.length; i++) {
-            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
+        for (int i = 0; i < transactions.size(); i++) {
+            transactions.get(i).setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
         }
     }
 
@@ -408,7 +404,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the event descriptor for the self parent
      */
     @Nullable
-    public EventDescriptor getSelfParent() {
+    public EventDescriptorWrapper getSelfParent() {
         return unsignedEvent.getSelfParent();
     }
 
@@ -418,13 +414,13 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the event descriptors for the other parents
      */
     @NonNull
-    public List<EventDescriptor> getOtherParents() {
+    public List<EventDescriptorWrapper> getOtherParents() {
         return unsignedEvent.getOtherParents();
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
     @NonNull
-    public List<EventDescriptor> getAllParents() {
+    public List<EventDescriptorWrapper> getAllParents() {
         return unsignedEvent.getAllParents();
     }
 
@@ -436,7 +432,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         stringBuilder.append("\n");
         stringBuilder.append("    sp: ");
 
-        final EventDescriptor selfParent = unsignedEvent.getSelfParent();
+        final EventDescriptorWrapper selfParent = unsignedEvent.getSelfParent();
         if (selfParent != null) {
             stringBuilder.append(selfParent);
         } else {
@@ -445,7 +441,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         stringBuilder.append("\n");
 
         int otherParentCount = 0;
-        for (final EventDescriptor otherParent : unsignedEvent.getOtherParents()) {
+        for (final EventDescriptorWrapper otherParent : unsignedEvent.getOtherParents()) {
             stringBuilder.append("    op");
             stringBuilder.append(otherParentCount);
             stringBuilder.append(": ");

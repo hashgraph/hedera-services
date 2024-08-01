@@ -3,9 +3,9 @@ release:
     execution:
       time: "20:00:00"
     schedule:
-      - on: "2024-06-28"
-        name: release/0.52
+      - on: "2024-07-26"
+        name: release/0.53
         initial-tag:
-          create: true
-          name: v0.52.0-alpha.2
+          create: false
+          name: v0.53.0-alpha.0
 

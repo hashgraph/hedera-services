@@ -67,6 +67,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -93,6 +94,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -170,7 +172,6 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
@@ -194,6 +195,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -543,6 +545,35 @@ public class UtilVerbs {
             }
             return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, syntheticVersion);
         };
+    }
+
+    /**
+     * Returns an operation that changes the state of an embedded network to appear to be handling
+     * the first transaction after an upgrade.
+     *
+     * @return the operation that simulates the first transaction after an upgrade
+     */
+    public static SpecOperation simulatePostUpgradeTransaction() {
+        return withOpContext((spec, opLog) -> {
+            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
+                final var platformState = embeddedHedera.platformState();
+                // First make the freeze and last freeze times non-null and identical
+                final var aTime = spec.consensusTime();
+                platformState.setLastFrozenTime(aTime);
+                platformState.setFreezeTime(aTime);
+                // Next mark the migration records as not streamed
+                final var writableStates = embeddedHedera.state().getWritableStates("BlockRecordService");
+                final var blockInfo = writableStates.<BlockInfo>getSingleton("BLOCKS");
+                blockInfo.put(requireNonNull(blockInfo.get())
+                        .copyBuilder()
+                        .migrationRecordsStreamed(false)
+                        .build());
+                ((CommittableWritableStates) writableStates).commit();
+            } else {
+                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
+            }
+        });
     }
 
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
@@ -1769,7 +1800,7 @@ public class UtilVerbs {
                     (allowedPercentDiff / 100.0) * expectedUsd,
                     String.format(
                             "%s fee (%s) more than %.2f percent different than expected!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+                            sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
         });
     }
 
@@ -1782,17 +1813,38 @@ public class UtilVerbs {
                     (allowedPercentDiff / 100.0) * expectedUsd,
                     String.format(
                             "%s fee (%s) more than %.2f percent different than expected!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+                            sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
         });
+    }
+
+    /**
+     * Validates that an amount is within a certain percentage of an expected value.
+     * @param expected expected value
+     * @param actual actual value
+     * @param allowedPercentDiff allowed percentage difference
+     * @param quantity quantity being compared
+     * @param context context of the comparison
+     */
+    public static void assertCloseEnough(
+            final double expected,
+            final double actual,
+            final double allowedPercentDiff,
+            final String quantity,
+            final String context) {
+        assertEquals(
+                expected,
+                actual,
+                (allowedPercentDiff / 100.0) * expected,
+                String.format(
+                        "%s %s (%s) more than %.2f percent different than expected",
+                        sdec(actual, 4), quantity, context, allowedPercentDiff));
     }
 
     public static CustomSpecAssert validateChargedUsdExceeds(String txn, double amount) {
         return validateChargedUsd(txn, actualUsdCharged -> {
             assertTrue(
                     actualUsdCharged > amount,
-                    String.format(
-                            "%s fee (%s) is not greater than %s!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, amount));
+                    String.format("%s fee (%s) is not greater than %s!", sdec(actualUsdCharged, 4), txn, amount));
         });
     }
 

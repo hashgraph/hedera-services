@@ -77,7 +77,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
     /** The default transaction generator used to create transaction for generated events. */
     protected static final TransactionGenerator DEFAULT_TRANSACTION_GENERATOR =
-            r -> TransactionUtils.randomSwirldTransactions(
+            r -> TransactionUtils.randomApplicationTransactions(
                     r, DEFAULT_AVG_TX_SIZE, DEFAULT_TX_SIZE_STD_DEV, DEFAULT_TX_COUNT_AVG, DEFAULT_TX_COUNT_STD_DEV);
 
     /**
