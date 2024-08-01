@@ -266,7 +266,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
                     continue;
                 }
                 final MigrationTestingToolTransaction mTrans =
-                        TransactionUtils.parseTransaction(trans.getApplicationPayload());
+                        TransactionUtils.parseTransaction(trans.getApplicationTransaction());
                 mTrans.applyTo(this);
             }
         }

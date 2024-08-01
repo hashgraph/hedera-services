@@ -63,8 +63,8 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -225,7 +225,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Nested
     @DisplayName("Handling of exceptions caused by bugs in our code")
     final class ExceptionTest {
-        private PayloadWrapper platformTx;
+        private TransactionWrapper platformTx;
         private Stream<Transaction> transactions;
         private AccountID creator;
 
