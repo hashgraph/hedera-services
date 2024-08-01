@@ -1,6 +1,6 @@
 /**
- * # Event Payload
- * An Event Payload gossiped between nodes as part of events.
+ * # Event Transaction
+ * An Event Transaction gossiped between nodes as part of events.
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -29,34 +29,34 @@ package com.hedera.hapi.platform.event;
  * limitations under the License.
  */
 
-import "event/state_signature_payload.proto";
+import "event/state_signature_transaction.proto";
 
 option java_package = "com.hedera.hapi.platform.event.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.platform.event">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 /**
- * An Event Payload gossiped between nodes as part of events.
- * Each node MUST extract this payload and process according to the type
- * of payload encoded.
+ * An Event Transaction gossiped between nodes as part of events.
+ * Each node MUST extract this transaction and process according to the type
+ * of transaction encoded.
  * Both the platform and the application built on that platform MAY define event
- * payloads.
+ * transactions.
  * The encoded data SHOULD be a serialized protobuf message.
  */
-message EventPayload {
-  oneof payload {
-      /**
-       * An application payload.<br/>
-       * The contents of this payload SHALL be defined by the application
-       * subsystem that created the event.<br/>
-       * The contents SHOULD be a serialized protobuf message.
-       */
-      bytes application_payload = 1;
-      /**
-       * A state signature.<br/>
-       * This payload SHALL be a valid state signature for a state snapshot.
-       */
-      StateSignaturePayload state_signature_payload = 2;
+message EventTransaction {
+  oneof transaction {
+    /**
+     * An application transaction.<br/>
+     * The contents of this transaction SHALL be defined by the application
+     * subsystem that created the event.<br/>
+     * The contents SHOULD be a serialized protobuf message.
+     */
+    bytes application_transaction = 1;
+    /**
+     * A state signature.<br/>
+     * This transaction SHALL be a valid state signature for a state snapshot.
+     */
+    StateSignatureTransaction state_signature_transaction = 2;
   }
 
 }

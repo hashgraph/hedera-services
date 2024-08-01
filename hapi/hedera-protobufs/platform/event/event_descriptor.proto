@@ -54,7 +54,7 @@ message EventDescriptor {
    * The hash SHALL be a SHA-384 hash.<br/>
    * The hash SHALL have the following inputs, in the specified order:<br/>
    * 1. The bytes of the `EventCore` protobuf<br/>
-   * 2. The SHA-384 hash of each individual `EventPayload`, in the order the payloads appear in the `event_payloads` field of the `GossipEvent` protobuf
+   * 2. The SHA-384 hash of each individual `EventTransaction`, in the order the transactions appear in the `event_transactions` field of the `GossipEvent` protobuf
    */
   bytes hash = 1;
 
