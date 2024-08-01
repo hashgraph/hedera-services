@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.records;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -40,6 +41,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -48,6 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,13 +66,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@HapiTestLifecycle
+@DisplayName("Records Suite")
 public class RecordsSuite {
     public static final String LOG_NOW = "logNow";
     public static final String AUTO_ACCOUNT = "autoAccount";
@@ -297,6 +308,43 @@ public class RecordsSuite {
 
                     assertEquals(Bytes32.ZERO, secondBlockHash);
                 }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> blockHashReturnsTheHashOfTheLatest256Blocks() {
+        final var contract = "EmitBlockTimestamp";
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(4_000_000L),
+                cryptoCreate(ACCOUNT).balance(6 * ONE_MILLION_HBARS),
+                cryptoCreate(RECEIVER),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    doNTransfers(spec, 256);
+                    waitUntilStartOfNextAdhocPeriod(2_000L);
+                    allRunFor(
+                            spec,
+                            ethereumCall(contract, "getAllBlockHashes")
+                                    .logged()
+                                    .gasLimit(4_000_000L)
+                                    .via("blockHashes"),
+                            getTxnRecord("blockHashes").logged());
+                }));
+    }
+
+    private void doNTransfers(@NonNull final HapiSpec spec, final int amount) {
+
+        allRunFor(
+                spec,
+                Stream.iterate(1, i -> i + 1)
+                        .limit(amount)
+                        .mapMulti((Integer i, Consumer<HapiSpecOperation> consumer) -> {
+                            consumer.accept(waitUntilStartOfNextAdhocPeriod(2_000L));
+                            consumer.accept(
+                                    cryptoTransfer(TokenMovement.movingHbar(i).between(ACCOUNT, RECEIVER)));
+                        })
+                        .toArray(HapiSpecOperation[]::new));
     }
 
     /**
