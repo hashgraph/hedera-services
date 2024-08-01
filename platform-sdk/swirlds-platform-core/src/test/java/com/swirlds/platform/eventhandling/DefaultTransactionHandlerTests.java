@@ -33,16 +33,25 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -50,11 +59,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Unit tests for {@link DefaultTransactionHandler}.
@@ -62,14 +74,43 @@ import org.junit.jupiter.api.Test;
 class DefaultTransactionHandlerTests {
     private static final long ROUND_NUMBER = 5L;
 
-    private Random random;
+    private Randotron random;
     private Time time;
+    private AddressBook addressBook;
 
     @BeforeEach
     void setUp() {
-        random = getRandomPrintSeed();
+        random = Randotron.create();
         time = new FakeTime();
+        addressBook = RandomAddressBookBuilder.create(random)
+                .withRealKeysEnabled(false)
+                .withSize(4)
+                .build();
     }
+
+    private ConsensusRound newConsensusRound(
+            final boolean pcesRound) {
+        final List<PlatformEvent> events = Stream.generate(
+                        () -> new TestingEventBuilder(random).setConsensusTimestamp(random.nextInstant()).build())
+                .limit(3)
+                .toList();
+        events.forEach(PlatformEvent::signalPrehandleCompletion);
+        final PlatformEvent keystone = new TestingEventBuilder(random).build();
+        keystone.signalPrehandleCompletion();
+        final ConsensusRound round = new ConsensusRound(
+                addressBook,
+                events,
+                keystone,
+                new Generations(),
+                EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD),
+                SyntheticSnapshot.GENESIS_SNAPSHOT,
+                pcesRound,
+                random.nextInstant());
+
+        round.getStreamedEvents().forEach(cesEvent -> cesEvent.getRunningHash().setHash(random.nextHash()));
+        return round;
+    }
+
 
     private static ConsensusRound mockConsensusRound(
             @NonNull final EventImpl keystoneEvent,
@@ -126,23 +167,26 @@ class DefaultTransactionHandlerTests {
                         transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
-    private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
-        assertTrue(event.getBaseEvent().getTransactionCount() > 0, "event should have transactions");
-        event.getBaseEvent()
-                .consensusTransactionIterator()
+    private static void assertEventReachedConsensus(@NonNull final PlatformEvent event) {
+        assertTrue(event.getTransactionCount() > 0, "event should have transactions");
+        event.consensusTransactionIterator()
+                .forEachRemaining(transaction -> assertNotNull(
+                        transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
+    }
+
+    private static void assertEventDidNotReachConsensus(@NonNull final PlatformEvent event) {
+        assertTrue(event.getTransactionCount() > 0, "event should have transactions");
+        event                .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
                         transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }
 
-    @Test
     @DisplayName("Normal operation")
-    void normalOperation() {
-        final TransactionHandlerTester tester = new TransactionHandlerTester();
-
-        final EventImpl keystoneEvent = buildEvent();
-        final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
-
-        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, false);
+    @ParameterizedTest
+    @CsvSource({"false", "true"})
+    void normalOperation(final boolean pcesRound) {
+        final TransactionHandlerTester tester = new TransactionHandlerTester(addressBook);
+        final ConsensusRound consensusRound = newConsensusRound(pcesRound);
 
         final StateAndRound handlerOutput = tester.getTransactionHandler().handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
@@ -151,112 +195,46 @@ class DefaultTransactionHandlerTests {
                 handlerOutput.reservedSignedState().get().getReservationCount(),
                 "state should be returned with a reservation");
 
-        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
+        consensusRound.getConsensusEvents().forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
 
         assertTrue(tester.getSubmittedActions().isEmpty(), "no status should have been submitted");
         tester.verifyRoundHandled(consensusRound);
-        tester.verifyFreezeRound();
+        tester.verifyFrozen(false);
 
-        assertFalse(handlerOutput.reservedSignedState().get().isPcesRound());
+        assertEquals(pcesRound, handlerOutput.reservedSignedState().get().isPcesRound());
     }
 
     @Test
     @DisplayName("Round in freeze period")
-    void freezeHandling() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        final PlatformState platformState = mock(PlatformState.class);
-        final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
-        when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
+    void freezeHandling() {
+        final TransactionHandlerTester tester = new TransactionHandlerTester(addressBook);
+        final ConsensusRound consensusRound = newConsensusRound(false);
+        tester.platformState.setFreezeTime(consensusRound.getConsensusTimestamp());
 
-        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
-        final DefaultTransactionHandler defaultTransactionHandler = new DefaultTransactionHandler(
-                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
-
-        final EventImpl keystoneEvent = buildEvent();
-        final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
-
-        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, false);
-
-        final StateAndRound handlerOutput = defaultTransactionHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = tester.getTransactionHandler().handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
         assertEquals(
                 1,
                 handlerOutput.reservedSignedState().get().getReservationCount(),
                 "state should be returned with a reservation");
 
-        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
+        consensusRound.getConsensusEvents().forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
 
-        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(swirldStateManager).handleConsensusRound(consensusRound);
-        verify(swirldStateManager).savedStateInFreezePeriod();
-        verify(platformState)
-                .setLegacyRunningEventHash(consensusRound
-                        .getStreamedEvents()
-                        .getLast()
-                        .getRunningHash()
-                        .getFutureHash()
-                        .getAndRethrow());
+        assertEquals(1, tester.getSubmittedActions().size(), "the freeze status should have been submitted");
+        assertEquals(FreezePeriodEnteredAction.class, tester.getSubmittedActions().getFirst().getClass());
+        tester.verifyRoundHandled(consensusRound);
+        tester.verifyFrozen(true);
 
-        final List<EventImpl> postFreezeEvents = List.of(buildEvent(), buildEvent(), buildEvent());
-
-        final ConsensusRound postFreezeConsensusRound =
-                mockConsensusRound(keystoneEvent, postFreezeEvents, false);
-        final StateAndRound postFreezeOutput = defaultTransactionHandler.handleConsensusRound(postFreezeConsensusRound);
+        final ConsensusRound postFreezeConsensusRound = newConsensusRound(false);
+        final StateAndRound postFreezeOutput = tester.getTransactionHandler().handleConsensusRound(postFreezeConsensusRound);
         assertNull(postFreezeOutput, "no state should be created after freeze period");
 
-        postFreezeEvents.forEach(DefaultTransactionHandlerTests::assertEventDidNotReachConsensus);
+        postFreezeConsensusRound.getConsensusEvents().forEach(DefaultTransactionHandlerTests::assertEventDidNotReachConsensus);
 
-        verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(swirldStateManager).handleConsensusRound(consensusRound);
-        verify(swirldStateManager).savedStateInFreezePeriod();
-        verify(platformState)
-                .setLegacyRunningEventHash(consensusRound
-                        .getStreamedEvents()
-                        .getLast()
-                        .getRunningHash()
-                        .getFutureHash()
-                        .getAndRethrow());
-    }
-
-    @Test
-    void pcesRoundHandling() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        final PlatformState platformState = mock(PlatformState.class);
-        final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
-
-        final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
-
-        final DefaultTransactionHandler defaultTransactionHandler = new DefaultTransactionHandler(
-                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
-
-        final EventImpl keystoneEvent = buildEvent();
-        final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
-
-        final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, true);
-
-        final StateAndRound handlerOutput = defaultTransactionHandler.handleConsensusRound(consensusRound);
-        assertNotEquals(null, handlerOutput, "new state should have been created");
-        assertEquals(
-                1,
-                handlerOutput.reservedSignedState().get().getReservationCount(),
-                "state should be returned with a reservation");
-
-        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
-
-        verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
-        verify(swirldStateManager).handleConsensusRound(consensusRound);
-        verify(swirldStateManager, never()).savedStateInFreezePeriod();
-        verify(platformState)
-                .setLegacyRunningEventHash(consensusRound
-                        .getStreamedEvents()
-                        .getLast()
-                        .getRunningHash()
-                        .getFutureHash()
-                        .getAndRethrow());
-
-        assertTrue(handlerOutput.reservedSignedState().get().isPcesRound());
+        assertEquals(1, tester.getSubmittedActions().size(), "no new status should have been submitted");
+        //verify(swirldStateManager).handleConsensusRound(consensusRound);
+        //TODO verify round ont handled
+        tester.verifyRoundHandled(consensusRound);
     }
 }
