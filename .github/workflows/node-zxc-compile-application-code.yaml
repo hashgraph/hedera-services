@@ -242,7 +242,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestMisc --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestMisc hapiEmbeddedMisc hapiRepeatableMisc --scan --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
