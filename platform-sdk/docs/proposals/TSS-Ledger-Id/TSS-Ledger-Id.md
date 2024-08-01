@@ -884,9 +884,9 @@ Input Invariants
 1. If the input candidate roster is equal to the active roster, do nothing.
 2. If the input candidate roster is equal to the internal candidate roster, do nothing.
 3. Set the internal candidate roster.
-4. If a previous candidate roster existed
-   1. clear the associated `TssMessageTransaction` and `TssVoteTransaction` data.
-   2. remove the previous candidate roster hash from the voting closed set.
+4. If a previous candidate roster existed.
+   1. Clear the associated `TssMessageTransaction` and `TssVoteTransaction` data.
+   2. Remove the previous candidate roster hash from the voting closed set.
 
 `On TssMessageTransaction`:
 
