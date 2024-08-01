@@ -131,7 +131,7 @@ public class LoggingSystem implements LogEventConsumer {
      * handlers are not removed for now.
      */
     public void update(final @NonNull Configuration configuration) {
-        if (ConfigUtils.haveSameProperties(this.configuration, configuration)) {
+        if (ConfigUtils.haveEqualProperties(this.configuration, configuration)) {
             return;
         }
         this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));

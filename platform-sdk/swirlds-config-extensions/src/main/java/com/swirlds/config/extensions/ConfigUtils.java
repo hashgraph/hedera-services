@@ -22,9 +22,27 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for configuration operations.
+ */
 public class ConfigUtils {
 
-    public static boolean haveSameProperties(
+    /**
+     * Utility class constructor.
+     */
+    private ConfigUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
+    /**
+     * Check if two configurations have exactly the same properties (key and value for each property must be equals).
+     * Everything next to the properties is ignored in this check.
+     *
+     * @param config1 the first configuration
+     * @param config2 the second configuration
+     * @return true if the two configurations have exactly the same properties, false otherwise
+     */
+    public static boolean haveEqualProperties(
             @NonNull final Configuration config1, @NonNull final Configuration config2) {
         Objects.requireNonNull(config1, "config1 must not be null");
         Objects.requireNonNull(config2, "config2 must not be null");
@@ -34,17 +52,10 @@ public class ConfigUtils {
         if (names1.size() != names2.size()) {
             return false;
         }
-        for (int i = 0; i < names1.size(); i++) {
-            if (!names2.contains(names1.get(i))) {
-                return false;
-            }
-            final String name = names1.get(i);
-            final String value1 = config1.getValue(name);
-            final String value2 = config2.getValue(name);
-            if (!Objects.equals(value1, value2)) {
-                return false;
-            }
-        }
-        return true;
+        return names1.stream()
+                        .filter(name -> names2.contains(name))
+                        .filter(name -> Objects.equals(config1.getValue(name), config2.getValue(name)))
+                        .count()
+                == names1.size();
     }
 }

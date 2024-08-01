@@ -30,11 +30,11 @@ public class ConfigUtilsTests {
         final Configuration config = new TestConfigBuilder().getOrCreateConfig();
 
         // then
-        Assertions.assertThatThrownBy(() -> ConfigUtils.haveSameProperties(config, null))
+        Assertions.assertThatThrownBy(() -> ConfigUtils.haveEqualProperties(config, null))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> ConfigUtils.haveSameProperties(null, config))
+        Assertions.assertThatThrownBy(() -> ConfigUtils.haveEqualProperties(null, config))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> ConfigUtils.haveSameProperties(null, null))
+        Assertions.assertThatThrownBy(() -> ConfigUtils.haveEqualProperties(null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -47,7 +47,7 @@ public class ConfigUtilsTests {
                 new TestConfigBuilder().withValue("foo", "bar").getOrCreateConfig();
 
         // then
-        Assertions.assertThat(ConfigUtils.haveSameProperties(config1, config2)).isTrue();
+        Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isTrue();
     }
 
     @Test
@@ -59,7 +59,7 @@ public class ConfigUtilsTests {
                 new TestConfigBuilder().withValue("foo", "barWrong").getOrCreateConfig();
 
         // then
-        Assertions.assertThat(ConfigUtils.haveSameProperties(config1, config2)).isFalse();
+        Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isFalse();
     }
 
     @Test
@@ -70,7 +70,7 @@ public class ConfigUtilsTests {
         final Configuration config2 = new TestConfigBuilder().getOrCreateConfig();
 
         // then
-        Assertions.assertThat(ConfigUtils.haveSameProperties(config1, config2)).isFalse();
+        Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isFalse();
     }
 
     @Test
@@ -84,6 +84,6 @@ public class ConfigUtilsTests {
                 .getOrCreateConfig();
 
         // then
-        Assertions.assertThat(ConfigUtils.haveSameProperties(config1, config2)).isFalse();
+        Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isFalse();
     }
 }

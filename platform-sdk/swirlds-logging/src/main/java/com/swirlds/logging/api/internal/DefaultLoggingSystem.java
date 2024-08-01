@@ -27,11 +27,13 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
+import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,8 +98,10 @@ public class DefaultLoggingSystem {
                     .forEach(internalLoggingSystem::accept);
             initialized.set(true);
 
-            BaseExecutorFactory.getInstance().scheduleAtFixedRate(this::updateConfiguration, 0, 10, TimeUnit.SECONDS);
-
+            final InternalLoggingConfig loggingConfig = configuration.getConfigData(InternalLoggingConfig.class);
+            final long millis = loggingConfig.updatePeriode().get(ChronoUnit.MILLIS);
+            BaseExecutorFactory.getInstance()
+                    .scheduleAtFixedRate(this::updateConfiguration, 0, millis, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Unable to initialize logging system", e);
             throw e;
