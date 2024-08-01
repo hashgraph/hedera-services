@@ -644,7 +644,8 @@ message TssDataMapKey {
   bytes roster_hash = 1;
 
   /**
-   * The node id of the node that generated the TssVote.
+   * A node identifier.<br/>
+   * This identifies the node that generated this TssVote.
    */
   uint64 node_id = 2;
 }
