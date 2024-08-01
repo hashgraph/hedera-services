@@ -117,7 +117,7 @@ tasks.register("versionAsSpecified") {
 
     inputs.property("newVersion", providers.gradleProperty("newVersion").orElse(""))
 
-    if(inputs.properties["newVersion"] as String == "") {
+    if (inputs.properties["newVersion"] as String == "") {
         throw IllegalArgumentException(
             "No newVersion property provided! " +
                 "Please add the parameter -PnewVersion=<version> when running this task."
