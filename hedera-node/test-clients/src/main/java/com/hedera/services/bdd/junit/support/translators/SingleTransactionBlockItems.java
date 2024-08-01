@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A logical transaction wrapper for the block items produced for/by processing a single
@@ -96,7 +97,15 @@ public record SingleTransactionBlockItems(
             return this;
         }
 
+        /**
+         * Builds the logical transaction wrapper for the block items. Note that, as annotated,
+         * the {@link Transaction} and {@link TransactionResult} fields are required.
+         * @return the built object
+         * @throws NullPointerException if either the transaction or result fields are null
+         */
         public SingleTransactionBlockItems build() {
+            Objects.requireNonNull(txn, "transaction is required");
+            Objects.requireNonNull(result, "result is required");
             return new SingleTransactionBlockItems(txn, result, output);
         }
     }
