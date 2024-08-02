@@ -527,5 +527,4 @@ public class TokenHandlers {
     public TokenClaimAirdropHandler tokenClaimAirdropHandler() {
         return tokenClaimAirdropHandler;
     }
-    
 }
