@@ -713,9 +713,7 @@ public class TokenAirdropTest {
                             .initialSupply(15L),
                     tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
                     tokenAssociate(CAROL, FUNGIBLE_TOKEN_A),
-                    cryptoApproveAllowance()
-                            .payingWith(ALICE)
-                            .addTokenAllowance(ALICE, FUNGIBLE_TOKEN_A, BOB, 10L),
+                    cryptoApproveAllowance().payingWith(ALICE).addTokenAllowance(ALICE, FUNGIBLE_TOKEN_A, BOB, 10L),
                     tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
                             .signedByPayerAnd(ALICE),
                     tokenAirdrop(movingWithAllowance(6L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
