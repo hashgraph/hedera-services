@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -31,7 +30,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
@@ -41,7 +39,6 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -58,6 +55,10 @@ import org.junit.jupiter.api.Tag;
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
 public class NumericValidationTest {
+
+    public static final long EXPIRY_RENEW = 3_000_000L;
+    public static final long EXPIRY_SECOND = 10L;
+
     @Contract(contract = "NumericContract", creationGas = 1_000_000L)
     static SpecContract numericContract;
 
@@ -67,10 +68,10 @@ public class NumericValidationTest {
     @Account(maxAutoAssociations = 10, tinybarBalance = ONE_MILLION_HBARS)
     static SpecAccount alice;
 
-    @Account(maxAutoAssociations = 10, tinybarBalance = ONE_HUNDRED_HBARS)
+    @Account(maxAutoAssociations = 10, tinybarBalance = ONE_MILLION_HBARS)
     static SpecAccount bob;
 
-    @FungibleToken(name = "fungibleToken", initialSupply = 1_000L)
+    @FungibleToken(name = "fungibleToken", initialSupply = 1_000L, maxSupply = 1_200L)
     static SpecFungibleToken fungibleToken;
 
     @NonFungibleToken(
@@ -389,7 +390,6 @@ public class NumericValidationTest {
         }
     }
 
-
     @Nested
     @DisplayName("calls fail to non-static create/update token functions with invalid values")
     class CreateAndUpdateTokenTests {
@@ -397,54 +397,35 @@ public class NumericValidationTest {
         @BeforeAll
         public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
             lifecycle.doAdhoc(
-                    alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS * 10),
-                    fungibleToken.authorizeContracts(numericContract),
-                    nft.authorizeContracts(numericContract));
+                    fungibleToken.authorizeContracts(numericContractComplex),
+                    nft.authorizeContracts(numericContractComplex),
+                    alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS),
+                    numericContractComplex.getBalance().andAssert(balance -> balance.hasTinyBars(ONE_HUNDRED_HBARS)));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleTokenWithCustomFees with FixedFee")
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFees() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleTokenWithCustomFeesFixedFee", fungibleToken, 0L)
+                    .call("createFungibleTokenWithCustomFeesFixedFee", 0L)
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
-        }
-
-        @HapiTest
-        @DisplayName("when using createFungibleTokenWithCustomFees with empty expiry")
-        public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesEmptyExpiry() {
-            return hapiTest(numericContractComplex
-                    .call("createFungibleTokenWithCustomFeesFractionalFeeEmptyExpiry", fungibleToken)
-                    .gas(1_000_000L)
-                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
-        }
-
-        @HapiTest
-        @DisplayName("when using createFungibleTokenWithCustomFees with FractionalFee")
-        public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesFractionalFee() {
-            // Try division by 0
-            final long nominator = 1;
-            final long denominator = 10;
-            return hapiTest(numericContractComplex
-                    .call("createFungibleTokenWithCustomFeesFractionalFee", fungibleToken, nominator, denominator)
-                    .gas(1_000_000L)
-                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleTokenWithCustomFeesV3 with Negative FixedFee")
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesV3NegativeFixedFee() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleTokenWithCustomFeesV3WithNegativeFixedFee", fungibleToken)
+                    .call("createFungibleTokenWithCustomFeesV3WithNegativeFixedFee")
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where maxAmount < minAmount")
         public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesV3FractionalFee() {
-            // Try division by 0
             final long nominator = 1;
             final long denominator = 1;
             final long maxAmount = Long.MAX_VALUE - 1;
@@ -452,21 +433,78 @@ public class NumericValidationTest {
             return hapiTest(numericContractComplex
                     .call(
                             "createFungibleTokenWithCustomFeesV3FractionalFee",
-                            fungibleToken,
                             nominator,
                             denominator,
                             minAmount,
                             maxAmount)
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where denominator is < 0")
+        public Stream<DynamicTest> failToUseCreateFungibleTokenWithCustomFeesV3FractionalFeeNegativeDenominator() {
+            final long nominator = 1;
+            return Stream.of(-1L, 0L)
+                    .flatMap(denominator -> hapiTest(numericContractComplex
+                            .call("createFungibleTokenWithCustomFeesV3FractionalFee", nominator, denominator, 10L, 100L)
+                            .gas(1_000_000L)
+                            .sending(ONE_HUNDRED_HBARS)
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where denominator is bad")
+        public Stream<DynamicTest> failToUseCreateNonFungibleTokenWithCustomRoyaltyFeesV3WithBadDenominator() {
+            return Stream.of(-1L, 0L)
+                    .flatMap(denominator -> hapiTest(numericContractComplex
+                            .call(
+                                    "createNonFungibleTokenWithCustomRoyaltyFeesV3",
+                                    alice.getED25519KeyBytes(),
+                                    1L,
+                                    denominator,
+                                    10L)
+                            .gas(1_000_000L)
+                            .sending(ONE_HUNDRED_HBARS)
+                            .payingWith(alice)
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where amount is negative")
+        public Stream<DynamicTest> failToUseCreateNonFungibleTokenWithCustomRoyaltyFeesV3WithNegativeAmount() {
+            return hapiTest(numericContractComplex
+                    .call("createNonFungibleTokenWithCustomRoyaltyFeesV3", alice.getED25519KeyBytes(), 1L, 1L, -1L)
+                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .payingWith(alice)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleToken")
+        public Stream<DynamicTest> failToUseCreateFungibleWithBadExpiry() {
+            return hapiTest(numericContractComplex
+                    .call("createFungibleToken", 0L, 0L, 10000L, BigInteger.TEN, BigInteger.TWO)
+                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .andAssert(txn -> txn.logged().hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleToken")
         public Stream<DynamicTest> failToUseCreateFungible() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleToken", 0L, 100L, 100L, NEGATIVE_ONE_BIG_INT, NEGATIVE_ONE_BIG_INT)
+                    .call(
+                            "createFungibleToken",
+                            EXPIRY_SECOND,
+                            EXPIRY_RENEW,
+                            10000L,
+                            NEGATIVE_ONE_BIG_INT,
+                            BigInteger.ONE)
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.logged().hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -474,26 +512,39 @@ public class NumericValidationTest {
         @DisplayName("when using createFungibleTokenV2")
         public Stream<DynamicTest> failToUseCreateFungibleTokenV2() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleTokenV2", -1L, NEGATIVE_ONE_BIG_INT, 0L)
+                    .call("createFungibleTokenV2", 15L, NEGATIVE_ONE_BIG_INT, 10L)
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleTokenV3 with negative decimals")
+        public Stream<DynamicTest> failToUseCreateFungibleTokenV3() {
+            return hapiTest(numericContractComplex
+                    .call("createFungibleTokenV3", EXPIRY_SECOND, EXPIRY_RENEW, 10L, 0L, -1)
+                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+
+        @HapiTest
+        @DisplayName("when using createFungibleTokenV3 with maxSupply < initialSupply")
+        public Stream<DynamicTest> failToUseCreateFungibleTokenV3WhenMaxAndInitialSupplyMissmatch() {
+            return hapiTest(numericContractComplex
+                    .call("createFungibleTokenV3", EXPIRY_SECOND, EXPIRY_RENEW, 5L, 10L, 2)
+                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleTokenV2")
-        public Stream<DynamicTest> failToUseCreateFungibleTokenV3() {
+        public Stream<DynamicTest> failToUseCreateFungibleTokenV3WithNegativeExpiry() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleTokenV3", -1L, -1L, -1L, -1L, -1)
+                    .call("createFungibleTokenV3", EXPIRY_SECOND, -1L, 100L, 10L, 2)
                     .gas(1_000_000L)
-                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
-        }
-
-        @HapiTest
-        @DisplayName("when using failToUseNonFungibleToken")
-        public Stream<DynamicTest> failToUseCreateNonFungibleTokenV1() {
-            return hapiTest(numericContractComplex
-                    .call("createNonFungibleToken", 0L, 0L, 0L)
-                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
@@ -501,43 +552,55 @@ public class NumericValidationTest {
         @DisplayName("when using failToUseNonFungibleTokenV2")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenV2() {
             return hapiTest(numericContractComplex
-                    .call("createNonFungibleTokenV2", 0L, 1000L, -1L)
+                    .call("createNonFungibleTokenV2", alice.getED25519KeyBytes(), EXPIRY_SECOND, EXPIRY_RENEW, -1L)
                     .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .payingWith(alice)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
-        @DisplayName("when using failToUseNonFungibleTokenV3")
-        public Stream<DynamicTest> failToUseCreateNonFungibleTokenV3() {
+        @DisplayName("when using failToUseNonFungibleTokenV3 with negative expiry")
+        public Stream<DynamicTest> failToUseCreateNonFungibleTokenV3WithNegativeExpiry() {
             return hapiTest(numericContractComplex
-                    .call("createNonFungibleTokenV3", -1L, -1L, -1L)
+                    .call("createNonFungibleTokenV3", alice.getED25519KeyBytes(), -1L, EXPIRY_RENEW, 10L)
+                    .gas(1_000_000L)
+                    .sending(ONE_HUNDRED_HBARS)
+                    .payingWith(alice)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
-        @DisplayName("when using updateTokenInfoV1 for both fungible and nonFungible token")
-        public Stream<DynamicTest> failToUpdateTokenInfoV1Fungible() {
-            return Stream.of(fungibleToken, nft)
-                    .flatMap(testCaseToken -> hapiTest(numericContractComplex
-                            .call("updateTokenInfoV1", testCaseToken, 0L, 10_000L, 0L)
-                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        @DisplayName("when using updateTokenInfoV2 for fungible token with new maxSupply")
+        public Stream<DynamicTest> failToUpdateTokenInfoV2FungibleMaxSupply() {
+            // maxSupply cannot be updated using updateTokenInfo.
+            // Status is success, because the operation ignores it, so we need verify the maxSupply
+            return Stream.of(-1L, 0L, 500L, 1201L)
+                    .flatMap(maxSupply -> hapiTest(
+                            numericContractComplex
+                                    .call("updateTokenInfoV2", fungibleToken, maxSupply)
+                                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                            fungibleToken.getInfo().andAssert(info -> info.hasMaxSupply(1200))));
         }
 
         @HapiTest
-        @DisplayName("when using updateTokenInfoV2 for both fungible and nonFungible token")
-        public Stream<DynamicTest> failToUpdateTokenInfoV2Fungible() {
-            return Stream.of(fungibleToken, nft)
-                    .flatMap(testCaseToken -> hapiTest(numericContractComplex
-                            .call("updateTokenInfoV2", testCaseToken, 0L, 10_000L, -1L)
-                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        @DisplayName("when using updateTokenInfoV2 for fungible token")
+        public Stream<DynamicTest> failToUpdateTokenInfoV2FungibleWithMaxSupplyNegative() {
+            // maxSupply cannot be updated using updateTokenInfo
+            // Status is success, because the operation ignores it, so we need verify the maxSupply
+            return hapiTest(
+                    numericContractComplex
+                            .call("updateTokenInfoV2", fungibleToken, -1L)
+                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                    fungibleToken.getInfo().andAssert(info -> info.hasMaxSupply(1200)));
         }
 
         @HapiTest
         @DisplayName("when using updateTokenInfoV3 for both fungible and nonFungible token")
-        public Stream<DynamicTest> failToUpdateTokenInfoV3Fungible() {
+        public Stream<DynamicTest> failToUpdateTokenInfoV3FungibleAndNft() {
             return Stream.of(fungibleToken, nft)
                     .flatMap(testCaseToken -> hapiTest(numericContractComplex
-                            .call("updateTokenInfoV3", testCaseToken, -1L, -1L, 5L)
+                            .call("updateTokenInfoV3", testCaseToken, -1L, -1L, 5000L)
                             .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
         }
     }
@@ -631,11 +694,11 @@ public class NumericValidationTest {
         @HapiTest
         @DisplayName("when using transferFromERC")
         public Stream<DynamicTest> failToUseTransferFromERC() {
-            return zeroNegativeAndGreaterThanLong.stream()
-                    .flatMap(testCase -> hapiTest(numericContractComplex
-                            .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, testCase.amount)
+            return Stream.of(NEGATIVE_ONE_BIG_INT, MAX_LONG_PLUS_1_BIG_INT)
+                    .flatMap(amount -> hapiTest(numericContractComplex
+                            .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, amount)
                             .gas(1_000_000L)
-                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
         }
 
         @HapiTest

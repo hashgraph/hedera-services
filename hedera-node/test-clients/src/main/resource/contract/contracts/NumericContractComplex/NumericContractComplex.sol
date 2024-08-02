@@ -2,9 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "./IHederaTokenService.sol";
+import "./KeyHelper.sol";
 import {Structs, NumericHelperV2, NumericHelperV3} from "./NumericHelper.sol";
 
-contract NumericContractComplex  {
+contract NumericContractComplex is KeyHelper {
 
     int32 public constant SUCCESS_CODE = 22;
 
@@ -12,7 +13,10 @@ contract NumericContractComplex  {
     /*             Utilities for building HederaToken             */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function buildFixedFeeV1(uint32 amount) private returns (IHederaTokenService.FixedFee memory fixedFee) {
-        fixedFee = IHederaTokenService.FixedFee(amount, address(0), true, true, msg.sender);
+        fixedFee.amount = amount;
+        fixedFee.useHbarsForPayment = true;
+        fixedFee.feeCollector = msg.sender;
+        return fixedFee;
     }
 
     function buildFixedFeeV2(int64 amount) private returns (Structs.FixedFeeV2 memory fixedFee) {
@@ -23,6 +27,8 @@ contract NumericContractComplex  {
     private
     returns (IHederaTokenService.HederaToken memory token)
     {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 1, "");
         token = IHederaTokenService.HederaToken({
             name: "NAME",
             symbol: "SYMBOL",
@@ -31,7 +37,7 @@ contract NumericContractComplex  {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: new IHederaTokenService.TokenKey[](0),
+            tokenKeys: keys,
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
@@ -40,7 +46,8 @@ contract NumericContractComplex  {
         address autoRenewAccount,
         uint32 autoRenewPeriod
     ) internal returns (IHederaTokenService.HederaToken memory token) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](0);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 1, "");
 
         IHederaTokenService.Expiry memory expiry;
         expiry.autoRenewAccount = autoRenewAccount;
@@ -52,13 +59,16 @@ contract NumericContractComplex  {
         token.tokenKeys = keys;
         token.expiry = expiry;
         token.memo = "MEMO";
+        token.maxSupply = 10000;
     }
-}
 
     function buildTokenV2(uint32 expirySecond, uint32 expiryRenew, int64 maxSupply)
     private
     returns (Structs.HederaTokenV2 memory token)
     {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 1, "");
+
         token = Structs.HederaTokenV2({
             name: "NAME",
             symbol: "SYMBOL",
@@ -67,7 +77,7 @@ contract NumericContractComplex  {
             tokenSupplyType: true,
             maxSupply: maxSupply,
             freezeDefault: false,
-            tokenKeys: new IHederaTokenService.TokenKey[](0),
+            tokenKeys: keys,
             expiry: IHederaTokenService.Expiry(expirySecond, address(this), expiryRenew)
         });
     }
@@ -89,15 +99,17 @@ contract NumericContractComplex  {
         });
     }
 
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Non-static Complex HTS functions - Create          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    function createFungibleTokenWithCustomFeesFixedFee(address token, uint32 fixedFee) public {
+    function createFungibleTokenWithCustomFeesFixedFee(uint32 fixedFee) public payable {
         IHederaTokenService.HederaToken memory token = buildTokenV1({
-            expirySecond: 0, expiryRenew: 10000, maxSupply: 10000});
+            expirySecond: 0, expiryRenew: 3_000_000, maxSupply: 10000});
 
-        IHederaTokenService.FixedFee memory _fixedFee = buildFixedFeeV1(fixedFee);
-        (bool success, bytes memory result) = address(0x167).call(
+        IHederaTokenService.FixedFee[] memory _fixedFee = new IHederaTokenService.FixedFee[](1);
+        _fixedFee[0] = buildFixedFeeV1(fixedFee);
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), _fixedFee, new IHederaTokenService.FractionalFee[](0))
         );
 
@@ -108,12 +120,18 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createFungibleTokenWithCustomFeesFractionalFeeEmptyExpiry(address token) public {
+    function createFungibleTokenWithCustomFeesFractionalFee(uint32 second, uint32 renew, uint32 numerator, uint32 denominator) public payable {
         IHederaTokenService.HederaToken memory token = buildTokenV1({
-            expirySecond: 0, expiryRenew: 0, maxSupply: 10000});
+            expirySecond: second, expiryRenew: renew, maxSupply: 10000});
 
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), buildFixedFeeV1(1), new IHederaTokenService.FractionalFee[](0))
+        IHederaTokenService.FractionalFee[] memory fractionalFee = new IHederaTokenService.FractionalFee[](1);
+        fractionalFee[0].numerator = numerator;
+        fractionalFee[0].denominator = denominator;
+        fractionalFee[0].netOfTransfers = true;
+        fractionalFee[0].feeCollector = address(this);
+
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
+            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), new IHederaTokenService.FixedFee[](0), new IHederaTokenService.FractionalFee[](0))
         );
 
         (int32 responseCode, address addressToken) =
@@ -123,33 +141,15 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createFungibleTokenWithCustomFeesFractionalFee(address token, uint32 numerator, uint32 denominator) public {
-        IHederaTokenService.HederaToken memory token = buildTokenV1({
-            expirySecond: 0, expiryRenew: 10000, maxSupply: 10000});
-
-        IHederaTokenService.FractionalFee memory fractionalFee;
-        fractionalFee.numerator = numerator;
-        fractionalFee.denominator = denominator;
-        fractionalFee.netOfTransfers = false;
-        fractionalFee.feeCollector = address(this);
-
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector, token, uint(100), uint(2), new IHederaTokenService.FixedFee[](0), fractionalFee)
-        );
-
-        (int32 responseCode, address addressToken) =
-            success
-                ? abi.decode(result, (int32, address))
-                : (int32(0), address(0));
-        require(responseCode == SUCCESS_CODE);
-    }
-
-    function createFungibleTokenWithCustomFeesV3WithNegativeFixedFee(address token) public {
+    function createFungibleTokenWithCustomFeesV3WithNegativeFixedFee() public payable {
         Structs.HederaTokenV3 memory token = buildTokenV3({
-            expirySecond: 0, expiryRenew: 10_000, maxSupply: 10000});
+            expirySecond: 10, expiryRenew: 3_000_000, maxSupply: 10000});
 
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(NumericHelperV3.createFungibleTokenWithCustomFees.selector, token, int64(100), int64(2), buildFixedFeeV2(int64(-1)), new Structs.FractionalFeeV2[](0))
+        Structs.FixedFeeV2[] memory _fixedFee = new Structs.FixedFeeV2[](1);
+        _fixedFee[0] = buildFixedFeeV2(int64(-1));
+
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
+            abi.encodeWithSelector(NumericHelperV3.createFungibleTokenWithCustomFees.selector, token, int64(100), int64(2), _fixedFee, new Structs.FractionalFeeV2[](0))
         );
 
         (int32 responseCode, address addressToken) =
@@ -159,15 +159,15 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    // Note: We skip V2 test, as its already validated via normal create flow.
-    function createFungibleTokenWithCustomFeesV3FractionalFee(address token, int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount) public {
+    // Test-note: We skip V2 test, as its already validated via normal create flow.
+    function createFungibleTokenWithCustomFeesV3FractionalFee(int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount) public payable {
         Structs.HederaTokenV3 memory token = buildTokenV3({
-            expirySecond: 0, expiryRenew: 0, maxSupply: 10000});
+            expirySecond: 10, expiryRenew: 3_000_000, maxSupply: 10000});
 
         Structs.FractionalFeeV2[] memory fractionalFees = new Structs.FractionalFeeV2[](1);
         fractionalFees[0] = Structs.FractionalFeeV2(numerator, denominator, minimumAmount, maximumAmount, false, address(this));
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(NumericHelperV3.createFungibleTokenWithCustomFees.selector, token, int64(100), int64(2), new Structs.FixedFeeV2[](0), fractionalFees));
         (int32 responseCode, address addressToken) =
             success
@@ -176,11 +176,39 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createFungibleToken(uint32 _expirySecond, uint32 _expiryRenew, uint32 _maxSupply, uint initialTotalSupply, uint decimals) public {
+    function createNonFungibleTokenWithCustomRoyaltyFeesV3(bytes memory key, int64 numerator, int64 denominator, int64 amount) public payable {
+        Structs.HederaTokenV3 memory token = buildTokenV3({
+            expirySecond: 1, expiryRenew: 3_000_000, maxSupply: 10000});
+        IHederaTokenService.TokenKey[] memory keys = getAllTypeKeys(3, key);
+        token.tokenKeys = keys;
+
+        Structs.RoyaltyFeeV2[] memory royaltyFees = new Structs.RoyaltyFeeV2[](1);
+        Structs.RoyaltyFeeV2 memory royalty;
+        royalty.numerator = numerator;
+        royalty.denominator = denominator;
+        royalty.amount = amount;
+        royalty.useHbarsForPayment = true;
+        royalty.feeCollector = address(this);
+        royaltyFees[0] = royalty;
+
+
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
+            abi.encodeWithSelector(NumericHelperV3.createNonFungibleTokenWithCustomFees.selector, token, new Structs.FixedFeeV2[](0), royaltyFees)
+        );
+
+        (int32 responseCode, address addressToken) =
+            success
+                ? abi.decode(result, (int32, address))
+                : (int32(0), address(0));
+        require(responseCode == SUCCESS_CODE);
+    }
+
+
+    function createFungibleToken(uint32 _expirySecond, uint32 _expiryRenew, uint32 _maxSupply, uint initialTotalSupply, uint decimals) public payable {
         IHederaTokenService.HederaToken memory token = buildTokenV1({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
         (int32 responseCode, address addressToken) =
@@ -190,11 +218,11 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createFungibleTokenV2(int64 _maxSupply, uint64 initialTotalSupply, uint32 decimals) public {
+    function createFungibleTokenV2(int64 _maxSupply, uint64 initialTotalSupply, uint32 decimals) public payable {
         Structs.HederaTokenV2 memory token = buildTokenV2({
-            expirySecond: 0, expiryRenew: 10000, maxSupply: _maxSupply});
+            expirySecond: 10, expiryRenew: 3_000_000, maxSupply: _maxSupply});
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(NumericHelperV2.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
         (int32 responseCode, address addressToken) =
@@ -204,11 +232,11 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createFungibleTokenV3(int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply, int64 initialTotalSupply, int32 decimals) public {
+    function createFungibleTokenV3(int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply, int64 initialTotalSupply, int32 decimals) public payable {
         Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(NumericHelperV3.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
         (int32 responseCode, address addressToken) =
@@ -218,25 +246,13 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createNonFungibleToken(uint32 _expirySecond, uint32 _expiryRenew, uint32 _maxSupply) public {
-        IHederaTokenService.HederaToken memory token = buildTokenV1({
-            expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
-
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.createNonFungibleToken.selector, token)
-        );
-        (int32 responseCode, address addressToken) =
-            success
-                ? abi.decode(result, (int32, address))
-                : (int32(0), address(0));
-        require(responseCode == SUCCESS_CODE);
-    }
-
-    function createNonFungibleTokenV2(uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public {
+    function createNonFungibleTokenV2(bytes memory key, uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public payable {
         Structs.HederaTokenV2 memory token = buildTokenV2({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
+        IHederaTokenService.TokenKey[] memory keys = getAllTypeKeys(3, key);
+        token.tokenKeys = keys;
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(NumericHelperV2.createNonFungibleToken.selector, token)
         );
         (int32 responseCode, address addressToken) =
@@ -246,11 +262,13 @@ contract NumericContractComplex  {
         require(responseCode == SUCCESS_CODE);
     }
 
-    function createNonFungibleTokenV3(int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply) public {
+    function createNonFungibleTokenV3(bytes memory key, int64 _expirySecond, int64 _expiryRenew, int64 _maxSupply) public payable {
         Structs.HederaTokenV3 memory token = buildTokenV3({
             expirySecond: _expirySecond, expiryRenew: _expiryRenew, maxSupply: _maxSupply});
+        IHederaTokenService.TokenKey[] memory keys = getAllTypeKeys(3, key);
+        token.tokenKeys = keys;
 
-        (bool success, bytes memory result) = address(0x167).call(
+        (bool success, bytes memory result) = address(0x167).call{value: msg.value}(
             abi.encodeWithSelector(NumericHelperV3.createNonFungibleToken.selector, token)
         );
         (int32 responseCode, address addressToken) =
@@ -263,20 +281,9 @@ contract NumericContractComplex  {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Non-static Complex HTS functions - Update          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    function updateTokenInfoV1(address token, uint32 _expirySecond, uint32 _expiryRenew, uint32 _maxSupply) public {
-        IHederaTokenService.HederaToken memory newToken;
-        newToken.expiry = IHederaTokenService.Expiry(_expirySecond, address(this), _expiryRenew);
-
-        (bool success, bytes memory result) = address(0x167).call(
-            abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, token, newToken));
-
-        int32 responseCode = abi.decode(result, (int32));
-        require(responseCode == SUCCESS_CODE);
-    }
-
-    function updateTokenInfoV2(address token, uint32 _expirySecond, uint32 _expiryRenew, int64 _maxSupply) public {
+    function updateTokenInfoV2(address token, int64 _maxSupply) public {
         Structs.HederaTokenV2 memory newToken;
-        newToken.expiry = IHederaTokenService.Expiry(_expirySecond, address(this), _expiryRenew);
+        newToken.maxSupply = _maxSupply;
 
         (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(NumericHelperV2.updateTokenInfo.selector, token, newToken));

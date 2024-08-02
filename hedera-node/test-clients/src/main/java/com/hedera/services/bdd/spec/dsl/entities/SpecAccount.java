@@ -57,6 +57,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     private final Account.Builder builder = Account.newBuilder();
 
     private long centBalance = UNSPECIFIED_CENT_BALANCE;
+    private com.hederahashgraph.api.proto.java.Key keyProto;
 
     public SpecAccount(@NonNull final String name) {
         super(name);
@@ -217,6 +218,22 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     }
 
     /**
+     * Returns the proto key of the account.
+     * @return the proto key
+     */
+    public com.hederahashgraph.api.proto.java.Key getKeyProto() {
+        return keyProto;
+    }
+
+    /**
+     * Returns the bytes of the ED25519 key of the account.
+     * @return the bytes of the ED25519 key
+     */
+    public byte[] getED25519KeyBytes() {
+        return getKeyProto().getEd25519().toByteArray();
+    }
+
+    /**
      * Gets the account model for the given network, or throws if it doesn't exist.
      *
      * @param network the network
@@ -294,6 +311,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         final var keyMetadata = KeyMetadata.from(fromPbj(model.keyOrThrow()), spec);
         return new Result<>(model, atMostOnce(siblingSpec -> {
             keyMetadata.registerAs(name, siblingSpec);
+            this.keyProto = keyMetadata.protoKey();
             siblingSpec
                     .registry()
                     .saveAccountId(

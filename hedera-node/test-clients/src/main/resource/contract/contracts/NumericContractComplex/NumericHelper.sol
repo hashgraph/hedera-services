@@ -10,31 +10,31 @@ import "./IHederaTokenService.sol";
 interface NumericHelperV3 {
 
     //V3
-    function createFungibleToken(HederaTokenV3 memory token, int64 initialTotalSupply, int32 decimals) external payable
+    function createFungibleToken(Structs.HederaTokenV3 memory token, int64 initialTotalSupply, int32 decimals) external payable
     returns (int64 responseCode, address tokenAddress);
 
     //V3
-    function createNonFungibleToken(HederaTokenV3 memory token) external payable
+    function createNonFungibleToken(Structs.HederaTokenV3 memory token) external payable
     returns (int64 responseCode, address tokenAddress);
 
     //V3
     function createFungibleTokenWithCustomFees(
-        IHederaTokenService.HederaToken memory token,
+        Structs.HederaTokenV3 memory token,
         int64 initialTotalSupply,
         int32 decimals,
-        FixedFeeV2[] memory fixedFees,
-        FractionalFeeV2[] memory fractionalFees
+        Structs.FixedFeeV2[] memory fixedFees,
+        Structs.FractionalFeeV2[] memory fractionalFees
     ) external payable returns (int64 responseCode, address tokenAddress);
 
     //V3
     function createNonFungibleTokenWithCustomFees(
-        HederaTokenV3 memory token,
-        FixedFeeV2[] memory fixedFees,
-        RoyaltyFeeV2[] memory royaltyFees
+        Structs.HederaTokenV3 memory token,
+        Structs.FixedFeeV2[] memory fixedFees,
+        Structs.RoyaltyFeeV2[] memory royaltyFees
     ) external payable returns (int64 responseCode, address tokenAddress);
 
     //V3
-    function updateTokenInfo(address token, HederaTokenV3 memory tokenInfo)
+    function updateTokenInfo(address token, Structs.HederaTokenV3 memory tokenInfo)
     external
     returns (int64 responseCode);
 }
@@ -42,11 +42,11 @@ interface NumericHelperV3 {
 interface NumericHelperV2 {
 
     //V2
-    function createFungibleToken(HederaTokenV2 memory token, uint64 initialTotalSupply, uint32 decimals) external payable
+    function createFungibleToken(Structs.HederaTokenV2 memory token, uint64 initialTotalSupply, uint32 decimals) external payable
     returns (int64 responseCode, address tokenAddress);
 
     //V2
-    function createNonFungibleToken(HederaTokenV2 memory token) external payable
+    function createNonFungibleToken(Structs.HederaTokenV2 memory token) external payable
     returns (int64 responseCode, address tokenAddress);
 
     //V2
@@ -60,18 +60,18 @@ interface NumericHelperV2 {
 
     //V2
     function createNonFungibleTokenWithCustomFees(
-        HederaTokenV2 memory token,
+        Structs.HederaTokenV2 memory token,
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.RoyaltyFee[] memory royaltyFees
     ) external payable returns (int64 responseCode, address tokenAddress);
 
     //V2
-    function updateTokenInfo(address token, HederaTokenV2 memory tokenInfo)
+    function updateTokenInfo(address token, Structs.HederaTokenV2 memory tokenInfo)
     external
     returns (int64 responseCode);
 
     //V2
-    function cryptoTransfer(TransferList memory transferList, TokenTransferList[] memory tokenTransfers)
+    function cryptoTransfer(Structs.TransferList memory transferList, Structs.TokenTransferList[] memory tokenTransfers)
     external
     returns (int64 responseCode);
 }
@@ -94,7 +94,7 @@ interface Structs {
         bool isApproval;
     }
 
-        struct AccountAmount {
+    struct AccountAmount {
         address accountID;
         int64 amount;
         bool isApproval;

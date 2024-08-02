@@ -42,7 +42,7 @@
     ],
     "name": "createFungibleToken",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -65,7 +65,7 @@
     ],
     "name": "createFungibleTokenV2",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -98,16 +98,11 @@
     ],
     "name": "createFungibleTokenV3",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
       {
         "internalType": "uint32",
         "name": "fixedFee",
@@ -116,15 +111,20 @@
     ],
     "name": "createFungibleTokenWithCustomFeesFixedFee",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
+        "internalType": "uint32",
+        "name": "second",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "renew",
+        "type": "uint32"
       },
       {
         "internalType": "uint32",
@@ -139,29 +139,11 @@
     ],
     "name": "createFungibleTokenWithCustomFeesFractionalFee",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "createFungibleTokenWithCustomFeesFractionalFeeEmptyExpiry",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
       {
         "internalType": "int64",
         "name": "numerator",
@@ -185,47 +167,23 @@
     ],
     "name": "createFungibleTokenWithCustomFeesV3FractionalFee",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "name": "createFungibleTokenWithCustomFeesV3WithNegativeFixedFee",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "uint32",
-        "name": "_expirySecond",
-        "type": "uint32"
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
       },
-      {
-        "internalType": "uint32",
-        "name": "_expiryRenew",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_maxSupply",
-        "type": "uint32"
-      }
-    ],
-    "name": "createNonFungibleToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       {
         "internalType": "uint32",
         "name": "_expirySecond",
@@ -244,11 +202,16 @@
     ],
     "name": "createNonFungibleTokenV2",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
+      },
       {
         "internalType": "int64",
         "name": "_expirySecond",
@@ -267,7 +230,35 @@
     ],
     "name": "createNonFungibleTokenV3",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
+      },
+      {
+        "internalType": "int64",
+        "name": "numerator",
+        "type": "int64"
+      },
+      {
+        "internalType": "int64",
+        "name": "denominator",
+        "type": "int64"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "name": "createNonFungibleTokenWithCustomRoyaltyFeesV3",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -346,6 +337,25 @@
     ],
     "name": "cryptoTransferV2",
     "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "pauseToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -551,44 +561,6 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_expirySecond",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_expiryRenew",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_maxSupply",
-        "type": "uint32"
-      }
-    ],
-    "name": "updateTokenInfoV1",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_expirySecond",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_expiryRenew",
-        "type": "uint32"
       },
       {
         "internalType": "int64",
