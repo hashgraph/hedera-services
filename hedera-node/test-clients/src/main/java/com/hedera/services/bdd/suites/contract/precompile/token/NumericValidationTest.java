@@ -496,7 +496,13 @@ public class NumericValidationTest {
         @DisplayName("when using createFungibleToken with negative decimals")
         public Stream<DynamicTest> failToUseCreateFungible() {
             return hapiTest(numericContractComplex
-                    .call("createFungibleToken", EXPIRY_SECOND, EXPIRY_RENEW, 10000L, 10L, NEGATIVE_ONE_BIG_INT)
+                    .call(
+                            "createFungibleToken",
+                            EXPIRY_SECOND,
+                            EXPIRY_RENEW,
+                            10000L,
+                            BigInteger.TEN,
+                            NEGATIVE_ONE_BIG_INT)
                     .gas(1_000_000L)
                     .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.logged().hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
@@ -543,7 +549,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using failToUseNonFungibleTokenV2 with negative maxSupply")
+        @DisplayName("when using createNonFungibleTokenV2 with negative maxSupply")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenV2() {
             return hapiTest(numericContractComplex
                     .call("createNonFungibleTokenV2", alice.getED25519KeyBytes(), EXPIRY_SECOND, EXPIRY_RENEW, -1L)
@@ -554,7 +560,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using failToUseNonFungibleTokenV3 with negative expiry")
+        @DisplayName("when using createNonFungibleTokenV3 with negative expiry")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenV3WithNegativeExpiry() {
             return hapiTest(numericContractComplex
                     .call("createNonFungibleTokenV3", alice.getED25519KeyBytes(), EXPIRY_RENEW, -EXPIRY_RENEW, 10L)
