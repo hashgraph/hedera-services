@@ -42,7 +42,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
      *
-     * @return the application transaction Bytes or null if the transaction is a system transaction
+     * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
     default @NonNull Bytes getApplicationTransaction() {
         return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
