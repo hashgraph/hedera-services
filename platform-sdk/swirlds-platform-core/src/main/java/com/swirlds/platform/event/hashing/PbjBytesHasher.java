@@ -18,6 +18,7 @@ package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
@@ -53,9 +54,13 @@ public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
         EventCore.PROTOBUF.toBytes(event.getEventCore()).writeTo(eventDigest);
-        event.getEventTransactions().forEach(transaction -> {
-            EventTransaction.PROTOBUF.toBytes(transaction).writeTo(transactionDigest);
-            eventDigest.update(transactionDigest.digest());
+        event.getTransactions().forEach(transactionWrapper -> {
+            EventTransaction.PROTOBUF
+                    .toBytes(transactionWrapper.getTransaction())
+                    .writeTo(transactionDigest);
+            byte[] transactionHash = transactionDigest.digest();
+            transactionWrapper.setHash(Bytes.wrap(transactionHash));
+            eventDigest.update(transactionHash);
         });
         event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
     }
