@@ -455,7 +455,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where denominator is bad")
+        @DisplayName("when using createNonFungibleTokenWithCustomFeesV3 with fractionalFee where denominator is bad")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenWithCustomRoyaltyFeesV3WithBadDenominator() {
             return Stream.of(-1L, 0L)
                     .flatMap(denominator -> hapiTest(numericContractComplex
@@ -472,7 +472,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee where amount is negative")
+        @DisplayName("when using createNonFungibleTokenWithCustomFeesV3 with fractionalFee where amount is negative")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenWithCustomRoyaltyFeesV3WithNegativeAmount() {
             return hapiTest(numericContractComplex
                     .call("createNonFungibleTokenWithCustomRoyaltyFeesV3", alice.getED25519KeyBytes(), 1L, 1L, -1L)
@@ -483,7 +483,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleToken")
+        @DisplayName("when using createFungibleToken with bad expiry")
         public Stream<DynamicTest> failToUseCreateFungibleWithBadExpiry() {
             return hapiTest(numericContractComplex
                     .call("createFungibleToken", 0L, 0L, 10000L, BigInteger.TEN, BigInteger.TWO)
@@ -493,7 +493,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleToken")
+        @DisplayName("when using createFungibleToken with negative decimals")
         public Stream<DynamicTest> failToUseCreateFungible() {
             return hapiTest(numericContractComplex
                     .call(
@@ -501,15 +501,15 @@ public class NumericValidationTest {
                             EXPIRY_SECOND,
                             EXPIRY_RENEW,
                             10000L,
-                            NEGATIVE_ONE_BIG_INT,
-                            BigInteger.ONE)
+                            10L,
+                            NEGATIVE_ONE_BIG_INT)
                     .gas(1_000_000L)
                     .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.logged().hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleTokenV2")
+        @DisplayName("when using createFungibleTokenV2 with negative initial supply")
         public Stream<DynamicTest> failToUseCreateFungibleTokenV2() {
             return hapiTest(numericContractComplex
                     .call("createFungibleTokenV2", 15L, NEGATIVE_ONE_BIG_INT, 10L)
@@ -530,7 +530,7 @@ public class NumericValidationTest {
 
         @HapiTest
         @DisplayName("when using createFungibleTokenV3 with maxSupply < initialSupply")
-        public Stream<DynamicTest> failToUseCreateFungibleTokenV3WhenMaxAndInitialSupplyMissmatch() {
+        public Stream<DynamicTest> failToUseCreateFungibleTokenV3WhenMaxAndInitialSupplyMismatch() {
             return hapiTest(numericContractComplex
                     .call("createFungibleTokenV3", EXPIRY_SECOND, EXPIRY_RENEW, 5L, 10L, 2)
                     .gas(1_000_000L)
@@ -539,7 +539,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using createFungibleTokenV2")
+        @DisplayName("when using createFungibleTokenV3 with negative expiry")
         public Stream<DynamicTest> failToUseCreateFungibleTokenV3WithNegativeExpiry() {
             return hapiTest(numericContractComplex
                     .call("createFungibleTokenV3", EXPIRY_SECOND, -1L, 100L, 10L, 2)
@@ -549,7 +549,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using failToUseNonFungibleTokenV2")
+        @DisplayName("when using failToUseNonFungibleTokenV2 with negative maxSupply")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenV2() {
             return hapiTest(numericContractComplex
                     .call("createNonFungibleTokenV2", alice.getED25519KeyBytes(), EXPIRY_SECOND, EXPIRY_RENEW, -1L)
@@ -633,7 +633,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using transferNFTs")
+        @DisplayName("when using transferNFTs with invalid serial numbers")
         public Stream<DynamicTest> failToUseTransferNFTs() {
             return hapiTest(numericContractComplex
                     .call("transferNFTs", nft, nft.treasury(), alice, new long[] {-1L})
@@ -642,7 +642,7 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using transferToken")
+        @DisplayName("when using transferToken with negative amount")
         public Stream<DynamicTest> failToUseTransferToken() {
             return hapiTest(numericContractComplex
                     .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, -1L)
