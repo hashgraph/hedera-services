@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
@@ -253,6 +254,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         if (isReceiverAssociated) {
             receiver = tokenReceiverId;
         }
+        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
 
         TokenTransferList fundgibleTokenTransferList = TokenTransferList.newBuilder()
                 .token(fungibleTokenId)
@@ -267,12 +269,13 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         final var tokenAirdropTransactionBody = TokenAirdropTransactionBody.newBuilder();
         if (transferType == AirDropTransferType.TOKEN_AIRDROP
                 || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
-            tokenAirdropTransactionBody.tokenTransfers(fundgibleTokenTransferList);
+            tokenTransferLists.add(fundgibleTokenTransferList);
         }
         if (transferType == AirDropTransferType.NFT_AIRDROP
                 || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
-            tokenAirdropTransactionBody.tokenTransfers(nonFungibleTokenTransferList);
+            tokenTransferLists.add(nonFungibleTokenTransferList);
         }
+        tokenAirdropTransactionBody.tokenTransfers(tokenTransferLists);
         airdropBody = tokenAirdropTransactionBody.build();
         givenAirdropTxn(airdropBody, payerId);
     }
