@@ -21,7 +21,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -133,7 +133,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl> {
     /**
      * @return list of transactions inside this event instance
      */
-    public List<PayloadWrapper> getTransactions() {
+    public List<TransactionWrapper> getTransactions() {
         return baseEvent.getUnsignedEvent().getTransactions();
     }
 
@@ -206,7 +206,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl> {
      * @return true iff this event has no transactions
      */
     public boolean isEmpty() {
-        return baseEvent.getPayloadCount() == 0;
+        return baseEvent.getTransactionCount() == 0;
     }
 
     @Override

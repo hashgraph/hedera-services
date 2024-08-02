@@ -20,18 +20,28 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A dummy swirld state for SignedStateManager unit tests.
+ * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
+ * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
+ * {@link com.swirlds.platform.state.MerkleStateRoot} should be used instead.
  */
-public class DummySwirldState extends AbstractDummySwirldState implements SwirldState {
+public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf, SwirldState, MerkleRoot {
+
+    private static final long DEFAULT_UNIT_TEST_SECS = 10;
 
     // The version history of this class.
     // Versions that have been released must NEVER be given a different value.
@@ -49,39 +59,24 @@ public class DummySwirldState extends AbstractDummySwirldState implements Swirld
     private static final int CLASS_VERSION = VERSION_MIGRATE_TO_SERIALIZABLE;
 
     private static final long CLASS_ID = 0xa7d6e4b5feda7ce5L;
+    private PlatformState platformState;
 
     private CountDownLatch serializationLatch;
 
-    public DummySwirldState() {
-        super();
-    }
-
-    public DummySwirldState(final AddressBook addressBook) {
-        super();
-        this.addressBook = addressBook;
-    }
+    protected AtomicBoolean released = new AtomicBoolean(false);
 
     /**
-     * Protection should always be enabled but current unit tests don't expect this behavior
-     *
-     * @param protectionEnabled If protection is enabled then this SignedState can only be deleted after explicitly
-     *                          enabled.
+     * Constructs a new instance of {@link BlockingSwirldState}.
      */
-    public DummySwirldState(final boolean protectionEnabled) {
-        super(protectionEnabled);
+    public BlockingSwirldState() {
+        super();
     }
 
-    private DummySwirldState(final DummySwirldState that) {
+    private BlockingSwirldState(final BlockingSwirldState that) {
         super(that);
-        this.addressBook = that.addressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AddressBook getAddressBookCopy() {
-        return super.getAddressBookCopy();
+        this.platformState = that.platformState;
+        this.released = new AtomicBoolean(that.released.get());
+        this.serializationLatch = that.serializationLatch;
     }
 
     @Override
@@ -93,9 +88,9 @@ public class DummySwirldState extends AbstractDummySwirldState implements Swirld
      * {@inheritDoc}
      */
     @Override
-    public DummySwirldState copy() {
+    public BlockingSwirldState copy() {
         throwIfImmutable();
-        return new DummySwirldState(this);
+        return new BlockingSwirldState(this);
     }
 
     /**
@@ -106,10 +101,12 @@ public class DummySwirldState extends AbstractDummySwirldState implements Swirld
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof final DummySwirldState that)) {
+        if (!(obj instanceof final BlockingSwirldState that)) {
             return false;
         }
-        return Objects.equals(this.addressBook, that.addressBook);
+        return Objects.equals(
+                this.getPlatformState().getAddressBook(),
+                that.getPlatformState().getAddressBook());
     }
 
     /**
@@ -153,16 +150,73 @@ public class DummySwirldState extends AbstractDummySwirldState implements Swirld
     /**
      * {@inheritDoc}
      */
+    @NonNull
+    public PlatformState getPlatformState() {
+        return platformState;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setPlatformState(@NonNull PlatformState platformState) {
+        this.platformState = platformState;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public SwirldState getSwirldState() {
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getInfoString(int hashDepth) {
+        return "<test info string>";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNumberOfChildren() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends MerkleNode> T getChild(int index) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setChild(int index, MerkleNode child, MerkleRoute childRoute, boolean childMayBeImmutable) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         if (serializationLatch != null) {
             abortAndThrowIfInterrupted(serializationLatch::await, "interrupted while waiting for latch");
         }
-        out.writeSerializable(addressBook, true);
+        out.writeSerializable(platformState, true);
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        addressBook = in.readSerializable();
+        platformState = in.readSerializable();
     }
 }
