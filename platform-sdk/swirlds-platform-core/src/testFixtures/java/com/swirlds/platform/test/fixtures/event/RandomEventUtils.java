@@ -17,8 +17,7 @@
 package com.swirlds.platform.test.fixtures.event;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -93,7 +92,7 @@ public class RandomEventUtils {
                         otherParent.getBaseEvent().getBirthRound(),
                         otherParent.getGeneration()));
 
-        final List<OneOf<TransactionOneOfType>> convertedTransactions = new ArrayList<>();
+        final List<EventTransaction> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
             Stream.of(transactions).map(TransactionWrapper::getTransaction).forEach(convertedTransactions::add);
         }

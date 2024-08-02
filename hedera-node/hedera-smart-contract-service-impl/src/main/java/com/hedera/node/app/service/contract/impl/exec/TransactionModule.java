@@ -47,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
@@ -192,7 +192,7 @@ public interface TransactionModule {
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.savepointStack().getBaseBuilder(ContractOperationRecordBuilder.class),
+                context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class),
                 pendingCreationMetadataRef);
     }
 

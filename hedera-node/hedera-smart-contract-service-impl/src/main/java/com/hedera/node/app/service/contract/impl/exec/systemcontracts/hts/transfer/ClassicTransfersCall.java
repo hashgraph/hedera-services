@@ -40,7 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -154,7 +154,7 @@ public class ClassicTransfersCall extends AbstractCall {
                         .build()
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
-                .dispatch(transferToDispatch, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(transferToDispatch, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(op, frame);

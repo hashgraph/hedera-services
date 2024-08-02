@@ -45,14 +45,15 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeS
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -69,19 +70,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock
-    protected CryptoTransferRecordBuilder xferRecordBuilder;
+    protected CryptoTransferStreamBuilder xferRecordBuilder;
 
     @Mock
-    protected CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
+    protected CryptoCreateStreamBuilder cryptoCreateRecordBuilder;
 
     @Mock
-    protected TokenAirdropRecordBuilder tokenAirdropRecordBuilder;
+    protected TokenAirdropStreamBuilder tokenAirdropRecordBuilder;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected HandleContext handleContext;
+    protected DispatchHandleContext handleContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext.SavepointStack stack;
@@ -195,7 +196,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(),
-                        eq(CryptoCreateRecordBuilder.class),
+                        eq(CryptoCreateStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class)))
@@ -211,7 +212,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)
@@ -235,9 +236,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(stack.getBaseBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
-        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
-        given(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoCreateStreamBuilder.class)).willReturn(cryptoCreateRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferStreamBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(StreamBuilder.class)).willReturn(xferRecordBuilder);
     }
 
     protected void givenAirdropTxn() {
@@ -274,7 +275,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(),
-                        eq(TokenAirdropRecordBuilder.class),
+                        eq(TokenAirdropStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class)))
