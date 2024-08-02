@@ -496,13 +496,7 @@ public class NumericValidationTest {
         @DisplayName("when using createFungibleToken with negative decimals")
         public Stream<DynamicTest> failToUseCreateFungible() {
             return hapiTest(numericContractComplex
-                    .call(
-                            "createFungibleToken",
-                            EXPIRY_SECOND,
-                            EXPIRY_RENEW,
-                            10000L,
-                            10L,
-                            NEGATIVE_ONE_BIG_INT)
+                    .call("createFungibleToken", EXPIRY_SECOND, EXPIRY_RENEW, 10000L, 10L, NEGATIVE_ONE_BIG_INT)
                     .gas(1_000_000L)
                     .sending(ONE_HUNDRED_HBARS)
                     .andAssert(txn -> txn.logged().hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
