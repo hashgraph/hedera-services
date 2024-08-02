@@ -76,8 +76,9 @@ However, its replacement will continue to have this new API to set a candidate r
 ## Data Structure
 
 The App is already responsible for managing the address book.
-We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
-and passes it to the platform via the new API. The platform will then validate the roster and store it in the state.
+We propose that it continues to do so, and when it deems necessary (such as when it receives a HAPI transaction),
+creates a candidate Roster object and passes it to the platform via the new API.
+The platform will then validate the roster and store it in the state.
 
 ### Protobuf
 
@@ -168,10 +169,6 @@ message RosterEntry {
      * then endpoints in this list MAY supply either IP address or FQDN, but
      * SHALL NOT supply both values for the same endpoint.<br/>
      * This list SHALL NOT be empty.<br/>
-     * This list SHALL NOT contain more than `10` entries.<br/>
-     * The first two entries in this list SHALL be the endpoints published to
-     * all consensus nodes.<br/>
-     * All other entries SHALL be reserved for future use.
      */
     repeated proto.ServiceEndpoint gossip_endpoint = 5;
 }
@@ -372,16 +369,16 @@ The logic to determine whether to invoke this method could be determined by some
 
 #### Override Roster
 
-An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network in a
-specific state,
-with a specific set of nodes, such as during a Network Transplant Process. A common example of this is Mainnet State
-being transplanted into Testnet.
+An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network using
+a
+specific state, with a specific set of nodes, such as during a Network Transplant Process.
+A common example of this is Mainnet State being transplanted into a testing network.
 Provided an existing State and an `Override Roster`, the platform will adopt that roster.
 The next round number for this network will continue from the last round number in the provided state.
 The trigger for adopting the `Override Roster` will be the presence of an Override Roster at start-up with a State
 existing on disk.
 Bear in mind the Network Transplant process is designed primarily with test networks in mind.
-Upon adoption of the Override Roster, the Override Roster will be deleted from disk.
+Upon adoption of the Override Roster, the Override Roster should be deleted from disk.
 In test networks where this process is designed to be used, the Override Roster can be easily accessed and deleted by
 DevOps.
 
