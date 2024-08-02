@@ -1,5 +1,5 @@
 /**
- * # State Signature Payload
+ * # State Signature Transaction
  * An signature of a state snapshot gossiped to other nodes.
  *
  * ### Keywords
@@ -38,9 +38,9 @@ option java_multiple_files = true;
  * Each node SHALL hash the root of the merkle tree of a state snapshot every
  * round. Once this hash is calculated, it SHOULD be signed with the nodes
  * private signing key. This signature, together with the hash SHOULD be added
- * to an event as a StateSignaturePayload.
+ * to an event as a StateSignatureTransaction.
  */
-message StateSignaturePayload {
+message StateSignatureTransaction {
 
   /**
    * The round number corresponding to the round number of the state snapshot

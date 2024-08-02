@@ -192,6 +192,10 @@ public class GrpcUtils {
                     .createNode(transaction);
             case NodeUpdate -> clients.getAddressBookSvcStub(nodeAccountId, false)
                     .updateNode(transaction);
+            case TokenCancelAirdrop -> clients.getTokenSvcStub(nodeAccountId, false)
+                    .cancelAirdrop(transaction);
+            case TokenClaimAirdrop -> clients.getTokenSvcStub(nodeAccountId, false)
+                    .claimAirdrop(transaction);
             default -> throw new IllegalArgumentException(functionality + " is not a transaction");
         };
     }
