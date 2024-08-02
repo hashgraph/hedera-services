@@ -40,13 +40,13 @@ import java.util.Set;
  * Defines API for constructing stream items of a single transaction dispatch.
  * The implementation may produce only records or could produce block items
  */
-public interface SingleTransactionRecordBuilder {
+public interface StreamBuilder {
     /**
      * Sets the transaction for this stream item builder.
      * @param transaction the transaction
      * @return this builder
      */
-    SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
+    StreamBuilder transaction(@NonNull Transaction transaction);
 
     /**
      * Returns the transaction for this stream item builder.
@@ -107,7 +107,7 @@ public interface SingleTransactionRecordBuilder {
      * @param status the receipt status
      * @return the builder
      */
-    SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
+    StreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * The transaction category of the transaction that created this record
@@ -130,21 +130,21 @@ public interface SingleTransactionRecordBuilder {
      * Sets the transactionID of the record based on the user transaction record.
      * @return the builder
      */
-    SingleTransactionRecordBuilder syncBodyIdFromRecordId();
+    StreamBuilder syncBodyIdFromRecordId();
 
     /**
      * Sets the memo of the record.
      * @param memo the memo
      * @return the builder
      */
-    SingleTransactionRecordBuilder memo(@NonNull String memo);
+    StreamBuilder memo(@NonNull String memo);
 
     /**
      * Sets the consensus timestamp of the record.
      * @param now the consensus timestamp
      * @return the builder
      */
-    SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now);
+    StreamBuilder consensusTimestamp(@NonNull final Instant now);
 
     /**
      * Returns the transaction ID of the record.
@@ -157,28 +157,28 @@ public interface SingleTransactionRecordBuilder {
      * @param transactionID the transaction ID
      * @return the builder
      */
-    SingleTransactionRecordBuilder transactionID(@NonNull TransactionID transactionID);
+    StreamBuilder transactionID(@NonNull TransactionID transactionID);
 
     /**
      * Sets the parent consensus timestamp of the record.
      * @param parentConsensus the parent consensus timestamp
      * @return the builder
      */
-    SingleTransactionRecordBuilder parentConsensus(@NonNull Instant parentConsensus);
+    StreamBuilder parentConsensus(@NonNull Instant parentConsensus);
 
     /**
      * Sets the transaction bytes of this builder.
      * @param transactionBytes the transaction bytes
      * @return this builder
      */
-    SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes);
+    StreamBuilder transactionBytes(@NonNull Bytes transactionBytes);
 
     /**
      * Sets the exchange rate of this builder.
      * @param exchangeRate the exchange rate
      * @return this builder
      */
-    SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
+    StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
      * Returns the number of automatic token associations

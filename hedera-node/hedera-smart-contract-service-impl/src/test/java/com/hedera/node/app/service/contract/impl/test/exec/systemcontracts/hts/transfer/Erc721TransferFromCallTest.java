@@ -37,7 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -64,7 +64,7 @@ class Erc721TransferFromCallTest extends CallTestBase {
     private SpecialRewardReceivers specialRewardReceivers;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     private Erc721TransferFromCall subject;
 
@@ -76,7 +76,7 @@ class Erc721TransferFromCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(SENDER_ID);
@@ -101,7 +101,7 @@ class Erc721TransferFromCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 

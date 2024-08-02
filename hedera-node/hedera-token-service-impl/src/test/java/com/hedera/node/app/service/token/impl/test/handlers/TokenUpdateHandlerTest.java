@@ -81,7 +81,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -112,7 +112,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private ConfigProvider configProvider;
 
     @Mock(strictness = LENIENT)
-    private TokenUpdateRecordBuilder recordBuilder;
+    private TokenUpdateStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
