@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
+import static com.swirlds.platform.state.MerkleStateRoot.PLATFORM_STATE_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -802,6 +805,80 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(onUpdateWeightCalled).isFalse();
             stateRoot.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
             assertThat(onUpdateWeightCalled).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Platform State configuration test")
+    final class PlatformStateConfigurationTest {
+        @Test
+        @DisplayName("Platform state is the first child")
+        void platformStateIsTheFirst() {
+            final var platformState = Mockito.mock(PlatformState.class);
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.getPlatformState()).isSameAs(platformState);
+        }
+
+        @Test
+        @DisplayName("Platform state is NOT the first child")
+        void platformStateIsNotTheFirst() {
+            setupAnimalMerkleMap();
+            setupSingletonCountry();
+            setupSteamQueue();
+
+            // Given a State with the fruit and animal and country states
+            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
+            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
+            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
+            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
+
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(0);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(1);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
+                    .isEqualTo(2);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(3);
+
+            final var platformState = Mockito.mock(PlatformState.class);
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.<MerkleNode>getChild(PLATFORM_STATE_INDEX)).isSameAs(platformState);
+
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(1);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(2);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
+                    .isEqualTo(3);
+            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Platform state is set twice (same instance) ")
+        void platformStatSetTwice_sameInstance() {
+            final var platformState = new PlatformState();
+            platformState.setRound(nextLong());
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState);
+            stateRoot.setPlatformState(platformState);
+            assertThat(stateRoot.getPlatformState())
+                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                            .withIgnoredFields("reservationCount")
+                            .build())
+                    .isEqualTo(platformState);
+        }
+
+        @Test
+        @DisplayName("Platform state is set twice (different instance) ")
+        void platformStatSetTwice_differentInstance() {
+            final var platformState1 = new PlatformState();
+            platformState1.setRound(nextLong());
+            stateRoot.setPlatformState(platformState1);
+            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState1);
+            final var platformState2 = new PlatformState();
+            platformState2.setRound(nextLong());
+            stateRoot.setPlatformState(platformState2);
+            assertThat(stateRoot.getPlatformState())
+                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                            .withIgnoredFields("route")
+                            .build())
+                    .isEqualTo(platformState2);
         }
     }
 }

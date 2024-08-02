@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -30,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
@@ -56,7 +58,7 @@ import org.junit.jupiter.api.Tag;
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
 public class NumericValidationTest {
-    @Contract(contract = "NumericContract", creationGas = 1_000_000L, tinybarBalance = ONE_HUNDRED_HBARS)
+    @Contract(contract = "NumericContract", creationGas = 1_000_000L)
     static SpecContract numericContract;
 
     @Contract(contract = "NumericContractComplex", creationGas = 1_000_000L)
@@ -92,7 +94,8 @@ public class NumericValidationTest {
             new BigIntegerTestCase(BigInteger.ZERO, CONTRACT_REVERT_EXECUTED));
 
     /**
-     * Validate that functions calls to the HTS system contract that take numeric values handle error cases correctly.
+     * Validate that functions calls to the HTS system contract that take numeric values
+     * handle error cases correctly.
      */
     @Nested
     @DisplayName("calls fail to approve functions with invalid amounts")
@@ -333,6 +336,59 @@ public class NumericValidationTest {
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
     }
+
+    @Nested
+    @DisplayName("fail to call HAS functions with invalid amounts")
+    class HASFunctionsTests {
+
+        @Account(name = "owner", tinybarBalance = ONE_HUNDRED_HBARS)
+        static SpecAccount owner;
+
+        @Account(name = "spender")
+        static SpecAccount spender;
+
+        @HapiTest
+        @DisplayName("when using hbarAllowance")
+        public Stream<DynamicTest> failToApproveHbar() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("hbarApproveProxy", spender, testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+
+        @HapiTest
+        @DisplayName("when using hbarApprove")
+        public Stream<DynamicTest> failToHbarApprove() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("hbarApprove", owner, spender, testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+    }
+
+    @Nested
+    @DisplayName("fail to call Exchange Rate System contract functions")
+    class ExchangeRateSystemContractTests {
+
+        @HapiTest
+        @DisplayName("when converting tinycents to tinybars")
+        public Stream<DynamicTest> convertTinycentsToTinybars() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("convertTinycentsToTinybars", testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+
+        @HapiTest
+        @DisplayName("when converting tinybars to tinycents")
+        public Stream<DynamicTest> convertTinybarsToTinycents() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("convertTinybarsToTinycents", testCase.amount())
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status()))));
+        }
+    }
+
 
     @Nested
     @DisplayName("calls fail to non-static create/update token functions with invalid values")

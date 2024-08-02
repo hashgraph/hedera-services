@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signer;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -45,15 +45,15 @@ public class DefaultStateSigner implements StateSigner {
     }
 
     /**
-     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. This method assumes
+     * Sign the given state and produce a {@link StateSignatureTransaction} containing the signature. This method assumes
      * that the given {@link ReservedSignedState} is reserved by the caller and will release the state when done.
      *
      * @param reservedSignedState the state to sign
-     * @return a {@link StateSignaturePayload} containing the signature, or null if the state should not be signed
+     * @return a {@link StateSignatureTransaction} containing the signature, or null if the state should not be signed
      */
     @Override
     @Nullable
-    public StateSignaturePayload signState(@NonNull final ReservedSignedState reservedSignedState) {
+    public StateSignatureTransaction signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
             if (reservedSignedState.get().isPcesRound()) {
                 // don't sign states produced during PCES replay
@@ -65,7 +65,7 @@ public class DefaultStateSigner implements StateSigner {
             final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            return StateSignaturePayload.newBuilder()
+            return StateSignatureTransaction.newBuilder()
                     .round(reservedSignedState.get().getRound())
                     .signature(signature)
                     .hash(stateHash.getBytes())

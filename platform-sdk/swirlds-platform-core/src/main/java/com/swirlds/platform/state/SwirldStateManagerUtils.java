@@ -34,7 +34,7 @@ public final class SwirldStateManagerUtils {
     private SwirldStateManagerUtils() {}
 
     /**
-     * Performs a fast copy on a {@link State}. The {@code state} must not be modified during execution of this method.
+     * Performs a fast copy on a {@link MerkleRoot}. The {@code state} must not be modified during execution of this method.
      *
      * @param state           the state object to fast copy
      * @param stats           object to record stats in
