@@ -60,8 +60,7 @@ val prCheckTags =
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to
-            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
+        "hapiTestMisc" to "!(CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
     )
 val prCheckStartPorts =
     mapOf(
@@ -158,7 +157,7 @@ tasks.register<Test>("testEmbedded") {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED)"
+            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
             else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
         )
     }
@@ -188,16 +187,36 @@ tasks.register<Test>("testEmbedded") {
     modularity.inferModulePath.set(false)
 }
 
+val prRepeatableCheckTags =
+    mapOf(
+        "hapiRepeatableMisc" to "REPEATABLE",
+    )
+
+tasks {
+    prRepeatableCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testRepeatable") }
+    }
+}
+
 // Runs tests against an embedded network that achieves repeatable results by running tests in a
 // single thread
 tasks.register<Test>("testRepeatable") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prRepeatableCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
-        // mode
-        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_REPEATABLE")
+        includeTags(
+            if (ciTagExpression.isBlank())
+                "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
     }
 
     // Disable all parallelism
@@ -209,7 +228,7 @@ tasks.register<Test>("testRepeatable") {
     // Tell our launcher to target a repeatable embedded network
     systemProperty("hapi.spec.repeatable.mode", true)
     // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+    systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
