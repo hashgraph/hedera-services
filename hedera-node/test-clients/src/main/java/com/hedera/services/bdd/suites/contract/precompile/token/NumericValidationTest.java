@@ -563,7 +563,7 @@ public class NumericValidationTest {
         @DisplayName("when using failToUseNonFungibleTokenV3 with negative expiry")
         public Stream<DynamicTest> failToUseCreateNonFungibleTokenV3WithNegativeExpiry() {
             return hapiTest(numericContractComplex
-                    .call("createNonFungibleTokenV3", alice.getED25519KeyBytes(), -1L, EXPIRY_RENEW, 10L)
+                    .call("createNonFungibleTokenV3", alice.getED25519KeyBytes(), EXPIRY_RENEW, -EXPIRY_RENEW, 10L)
                     .gas(1_000_000L)
                     .sending(ONE_HUNDRED_HBARS)
                     .payingWith(alice)
