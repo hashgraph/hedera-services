@@ -53,6 +53,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
@@ -64,6 +65,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -144,13 +146,24 @@ public class TokenAirdropHandler implements TransactionHandler {
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
-
+            final var token = getIfUsable(tokenId, tokenStore);
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
 
             // process fungible token transfers if any
             if (!xfers.transfers().isEmpty()) {
+                for (var transfer : xfers.transfers()) {
+                    // We want to validate only the receivers. If it's a sender we skip the check.
+                    boolean isSender = transfer.amount() < 0;
+                    if (isSender) {
+                        continue;
+                    }
+                    final var receiver = transfer.accountID();
+                    if (!isExemptFromCustomFees(token, receiver)) {
+                        validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
+                    }
+                }
+
                 final var senderOptionalAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
@@ -168,8 +181,9 @@ public class TokenAirdropHandler implements TransactionHandler {
 
                 // 3. create and save pending airdrops in to state
                 fungibleLists.pendingFungibleAmounts().forEach(accountAmount -> {
+                    final var receiver = accountAmount.accountID();
                     final var pendingId = createFungibleTokenPendingAirdropId(
-                            tokenId, senderOptionalAmount.orElseThrow().accountID(), accountAmount.accountID());
+                            tokenId, senderOptionalAmount.orElseThrow().accountID(), receiver);
                     final var pendingValue = PendingAirdropValue.newBuilder()
                             .amount(accountAmount.amount())
                             .build();
@@ -205,20 +219,20 @@ public class TokenAirdropHandler implements TransactionHandler {
 
             // process non-fungible tokens transfers if any
             if (!xfers.nftTransfers().isEmpty()) {
-                validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+                for (var transfer : xfers.nftTransfers()) {
+                    final var receiver = transfer.receiverAccountID();
+                    if (!isExemptFromCustomFees(token, receiver)) {
+                        validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
+                    }
+                }
+
                 // 1. validate NFT transfers
                 final var nftTransfer = xfers.nftTransfers().stream().findFirst();
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
                 final var senderAccount = accountStore.get(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 validateNftTransfers(
-                        context.payer(),
-                        senderAccount,
-                        tokenId,
-                        xfers.nftTransfers(),
-                        tokenRelStore,
-                        tokenStore,
-                        nftStore);
+                        context.payer(), senderAccount, tokenId, xfers.nftTransfers(), tokenRelStore, token, nftStore);
                 // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
@@ -256,17 +270,29 @@ public class TokenAirdropHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver.
+     * If there are, an error is returned from the HAPI call.
+     * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account
+     * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
+     * This method returns if the receiver is the fee collector or the treasury account.
+     */
+    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
+        return token.customFees().stream()
+                .anyMatch(customFee ->
+                        CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
+    }
+
     private void validateNftTransfers(
             AccountID payer,
             Account senderAccount,
             TokenID tokenId,
             List<NftTransfer> nftTransfers,
             ReadableTokenRelationStore tokenRelStore,
-            ReadableTokenStore tokenStore,
+            Token token,
             ReadableNftStore nftStore) {
         final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-        final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
 
         for (NftTransfer nftTransfer : nftTransfers) {
@@ -476,8 +502,7 @@ public class TokenAirdropHandler implements TransactionHandler {
         }
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
-        final var token = getIfUsable(tokenId, tokenStore);
+    private boolean tokenHasNoCustomFeesPaidByReceiver(Token token) {
         final var feeMeta = customFeeMetaFrom(token);
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
             for (var fee : feeMeta.customFees()) {
