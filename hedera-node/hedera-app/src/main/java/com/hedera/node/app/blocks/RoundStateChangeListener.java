@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
@@ -124,11 +125,8 @@ public class RoundStateChangeListener implements StateChangesListener {
 
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
         switch (value) {
-            case Bytes protoBytesElement -> {
-                return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement);
-            }
-            case String protoStringElement -> {
-                return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_STRING_ELEMENT, protoStringElement);
+            case ProtoBytes protoBytesElement -> {
+                return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement.value());
             }
             case TransactionRecordEntry transactionRecordEntryElement -> {
                 return new OneOf<>(

@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
+import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
@@ -277,7 +278,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
                 case QUEUE_PUSH -> {
                     final var queueState = writableStates.getQueue(stateKey);
-                    queueState.add(stateChange.queuePushOrThrow().value().value());
+                    queueState.add(queuePushFor(stateChange.queuePushOrThrow()));
                     stateChangesSummary.countQueuePush(serviceName, stateKey);
                 }
                 case QUEUE_POP -> {
@@ -495,6 +496,14 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
         }
         return hashes;
+    }
+
+    private static Object queuePushFor(@NonNull final QueuePushChange queuePushChange) {
+        return switch (queuePushChange.value().kind()) {
+            case UNSET, PROTO_STRING_ELEMENT -> throw new IllegalStateException("Queue push value is not supported");
+            case PROTO_BYTES_ELEMENT -> new ProtoBytes(queuePushChange.protoBytesElementOrThrow());
+            case TRANSACTION_RECORD_ENTRY_ELEMENT -> queuePushChange.transactionRecordEntryElementOrThrow();
+        };
     }
 
     private static Object mapKeyFor(@NonNull final MapChangeKey mapChangeKey) {
