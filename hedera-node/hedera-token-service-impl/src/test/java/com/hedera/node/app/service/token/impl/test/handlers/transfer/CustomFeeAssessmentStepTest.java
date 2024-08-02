@@ -46,9 +46,9 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,13 +63,12 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     private Token nonFungibleWithNoKyc;
 
     @Mock
-    private CryptoTransferRecordBuilder builder;
+    private CryptoTransferStreamBuilder builder;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -77,7 +76,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
+                    return new RecordStreamBuilder().status(SUCCESS);
                 });
 
         refreshWritableStores();
@@ -85,7 +84,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferStreamBuilder.class)).willReturn(xferRecordBuilder);
         givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
@@ -385,15 +384,14 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                                 .transfers(List.of(aaWith(payerId, -10), aaWith(ownerId, +10)))
                                 .build())
                 .build();
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation = new TokenRelation(fungibleTokenId, ownerId, 1, false, true, true, null, null);
                     final var relation1 =
                             new TokenRelation(fungibleTokenIDB, payerId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
+                    return new RecordStreamBuilder().status(SUCCESS);
                 });
         givenDifferentTxn(body, payerId);
 

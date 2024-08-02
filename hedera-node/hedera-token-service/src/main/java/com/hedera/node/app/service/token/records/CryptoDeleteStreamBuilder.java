@@ -16,19 +16,10 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.TokenAssociation;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
  * transaction.
  */
-public interface TokenUpdateRecordBuilder extends TokenBaseRecordBuilder {
-    /**
-     * Adds the token relations that are created by auto associations.
-     * This information is needed while building the transfer list, to set the auto association flag.
-     * @param tokenAssociation the token association that is created by auto association
-     * @return the builder
-     */
-    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
-}
+public interface CryptoDeleteStreamBuilder extends DeleteCapableTransactionRecordBuilder {}

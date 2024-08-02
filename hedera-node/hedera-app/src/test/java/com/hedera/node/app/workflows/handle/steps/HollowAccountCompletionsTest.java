@@ -45,7 +45,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -53,7 +53,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -88,7 +88,7 @@ public class HollowAccountCompletionsTest {
     private PreHandleResult preHandleResult;
 
     @Mock(strictness = LENIENT)
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordStreamBuilder recordBuilder;
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;
@@ -164,7 +164,7 @@ public class HollowAccountCompletionsTest {
         verify(keyVerifier).verificationFor(Bytes.wrap(new byte[] {1, 2, 3}));
         verify(handleContext, never())
                 .dispatchPrecedingTransaction(
-                        eq(txBody), eq(CryptoUpdateRecordBuilder.class), isNull(), eq(AccountID.DEFAULT));
+                        eq(txBody), eq(CryptoUpdateStreamBuilder.class), isNull(), eq(AccountID.DEFAULT));
     }
 
     @Test

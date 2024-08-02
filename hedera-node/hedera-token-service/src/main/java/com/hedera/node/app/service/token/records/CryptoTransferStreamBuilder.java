@@ -22,16 +22,16 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
+ * A {@code StreamBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
  * transaction.
  */
-public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuilder {
+public interface CryptoTransferStreamBuilder extends StreamBuilder {
     /**
      * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
      * (accounts are specified in the {@code TransferList} input param)
@@ -40,7 +40,7 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers);
+    CryptoTransferStreamBuilder transferList(@NonNull TransferList hbarTransfers);
 
     /**
      * Tracks the <b>net</b> token transfers that need to be applied to the associated accounts,
@@ -51,7 +51,7 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
+    CryptoTransferStreamBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
 
     /**
      * Tracks the total custom fees assessed in the transaction
@@ -59,14 +59,14 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees);
+    CryptoTransferStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees);
 
     /**
      * Tracks the total amount of hbars paid as staking rewards in the transaction
      * @param paidStakingRewards the total amount of hbars paid as staking rewards
      * @return this builder
      */
-    CryptoTransferRecordBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards);
+    CryptoTransferStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards);
 
     /**
      * Adds the token relations that are created by auto associations.
@@ -74,7 +74,7 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    CryptoTransferRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    CryptoTransferStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 
     /**
      * Tracks the result of a contract call, if any. It is used to update the transaction record.
@@ -82,5 +82,5 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+    CryptoTransferStreamBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }

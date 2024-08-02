@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
@@ -36,8 +36,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadata;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -328,7 +328,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
         final var recordBuilder = context.savepointStack()
-                .addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+                .addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
@@ -365,7 +365,7 @@ public class HandleHederaOperations implements HederaOperations {
         final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
-                ContractCreateRecordBuilder.class,
+                ContractCreateStreamBuilder.class,
                 null,
                 context.payer(),
                 isTopLevelCreation
@@ -382,7 +382,7 @@ public class HandleHederaOperations implements HederaOperations {
         // initcode in the bytecode sidecar if it's not already externalized via a body
         final var pendingCreationMetadata = new PendingCreationMetadata(
                 isTopLevelCreation
-                        ? context.savepointStack().getBaseBuilder(ContractOperationRecordBuilder.class)
+                        ? context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class)
                         : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();

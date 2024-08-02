@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -59,7 +59,7 @@ public class CryptoTransferExecutor {
             TransferContextImpl transferContext,
             HandleContext context,
             CryptoTransferValidator validator,
-            CryptoTransferRecordBuilder recordBuilder) {
+            CryptoTransferStreamBuilder recordBuilder) {
         executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder, false);
     }
 
@@ -84,7 +84,7 @@ public class CryptoTransferExecutor {
             TransferContextImpl transferContext,
             HandleContext context,
             CryptoTransferValidator validator,
-            CryptoTransferRecordBuilder recordBuilder) {
+            CryptoTransferStreamBuilder recordBuilder) {
         executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder, true);
     }
 
@@ -103,7 +103,7 @@ public class CryptoTransferExecutor {
             TransferContextImpl transferContext,
             HandleContext context,
             CryptoTransferValidator validator,
-            CryptoTransferRecordBuilder recordBuilder,
+            CryptoTransferStreamBuilder recordBuilder,
             boolean skipCustomFee) {
         final var topLevelPayer = context.payer();
         // Use the op with replaced aliases in further steps
