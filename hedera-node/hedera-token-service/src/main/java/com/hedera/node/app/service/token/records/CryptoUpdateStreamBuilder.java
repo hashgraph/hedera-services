@@ -21,7 +21,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
  * transaction.
  */
 public interface CryptoUpdateStreamBuilder extends StreamBuilder {

@@ -22,7 +22,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
 public interface CryptoCreateStreamBuilder extends StreamBuilder {

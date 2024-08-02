@@ -22,7 +22,7 @@ import com.hedera.hapi.node.base.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code TokenCreate}
  * transaction.
  */
 public interface TokenCreateStreamBuilder extends TokenBaseStreamBuilder {

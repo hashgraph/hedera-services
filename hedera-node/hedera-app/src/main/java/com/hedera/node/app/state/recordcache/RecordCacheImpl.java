@@ -38,7 +38,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableStates;
@@ -92,8 +91,6 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private static final History EMPTY_HISTORY = new History();
 
-    /** Gives access to the current working state. */
-    //    private final WorkingStateAccessor workingStateAccessor;
     /** Used for looking up the max valid duration window for a transaction. This must be looked up dynamically. */
     private final ConfigProvider configProvider;
     /**
@@ -171,7 +168,8 @@ public class RecordCacheImpl implements HederaRecordCache {
             final long nodeId,
             @NonNull final AccountID payerAccountId,
             @NonNull final List<SingleTransactionRecord> transactionRecords,
-            final SavepointStackImpl stack) {
+            @NonNull final SavepointStackImpl stack) {
+        requireNonNull(stack);
         requireNonNull(payerAccountId);
         requireNonNull(transactionRecords);
 
@@ -193,10 +191,6 @@ public class RecordCacheImpl implements HederaRecordCache {
             final var rec = singleTransactionRecord.transactionRecord();
             addToInMemoryCache(nodeId, payerAccountId, rec);
             queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
-        }
-
-        if (states instanceof CommittableWritableStates committable) {
-            committable.commit();
         }
     }
 

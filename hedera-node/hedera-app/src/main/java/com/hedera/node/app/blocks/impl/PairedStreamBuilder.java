@@ -49,8 +49,8 @@ import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBui
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
-import com.hedera.node.app.service.token.records.ChildRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeStreamBuilder;
+import com.hedera.node.app.service.token.records.ChildStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
@@ -86,7 +86,7 @@ public class PairedStreamBuilder
                 CreateFileStreamBuilder,
                 CryptoCreateStreamBuilder,
                 CryptoTransferStreamBuilder,
-                ChildRecordBuilder,
+                ChildStreamBuilder,
                 PrngStreamBuilder,
                 ScheduleStreamBuilder,
                 TokenMintStreamBuilder,
@@ -99,7 +99,7 @@ public class PairedStreamBuilder
                 CryptoDeleteStreamBuilder,
                 TokenUpdateStreamBuilder,
                 NodeStakeUpdateStreamBuilder,
-                FeeRecordBuilder,
+                FeeStreamBuilder,
                 ContractDeleteStreamBuilder,
                 GenesisAccountStreamBuilder,
                 ContractOperationStreamBuilder,

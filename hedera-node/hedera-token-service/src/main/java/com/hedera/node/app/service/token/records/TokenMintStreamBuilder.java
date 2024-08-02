@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
 public interface TokenMintStreamBuilder extends TokenBaseStreamBuilder {

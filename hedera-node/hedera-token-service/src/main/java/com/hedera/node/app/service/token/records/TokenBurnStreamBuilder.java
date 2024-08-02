@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenBurn}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code TokenBurn}
  * transaction.
  */
 public interface TokenBurnStreamBuilder extends TokenBaseStreamBuilder {

@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractUpdate}.
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code ContractUpdate}.
  */
 public interface ContractUpdateStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**

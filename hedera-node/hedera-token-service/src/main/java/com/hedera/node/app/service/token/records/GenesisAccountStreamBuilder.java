@@ -24,7 +24,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} that collects and builds the information required to create a synthetic
+ * A {@code StreamBuilder} that collects and builds the information required to create a synthetic
  * account record, specifically for a system account created during node genesis (startup)
  */
 public interface GenesisAccountStreamBuilder extends StreamBuilder {

@@ -66,7 +66,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"DataFlowIssue"})
 @ExtendWith(MockitoExtension.class)
-public class SingleTransactionRecordBuilderTest {
+public class StreamBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
     public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;

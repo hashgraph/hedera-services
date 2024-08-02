@@ -37,7 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
-import com.hedera.node.app.service.token.records.ChildRecordBuilder;
+import com.hedera.node.app.service.token.records.ChildStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -192,7 +192,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
-        context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
+        context.forEachChildRecord(ChildStreamBuilder.class, childRecord -> {
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
                     : childRecord.transferList().accountAmounts();

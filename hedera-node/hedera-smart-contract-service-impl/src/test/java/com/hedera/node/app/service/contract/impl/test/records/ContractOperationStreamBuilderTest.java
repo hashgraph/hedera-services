@@ -47,7 +47,7 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-class ContractOperationRecordBuilderTest {
+class ContractOperationStreamBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationStreamBuilder() {

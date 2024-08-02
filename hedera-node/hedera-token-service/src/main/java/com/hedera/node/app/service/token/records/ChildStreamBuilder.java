@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.api;
+package com.hedera.node.app.service.token.records;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
+import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
- * transaction.
+ * A {@code StreamBuilder} specialization for reading the transfer list from child records.
  */
-public interface FeeRecordBuilder {
-    /**
-     * Gets the current value of the transaction fee in this builder.
-     * @return The current transaction fee value.
-     */
-    long transactionFee();
+public interface ChildStreamBuilder {
 
     /**
-     * Sets the consensus transaction fee.
+     * Get the transfer list from the child record.
      *
-     * @param transactionFee the transaction fee
-     * @return the builder
+     * @return the transfer list
      */
-    @NonNull
-    FeeRecordBuilder transactionFee(final long transactionFee);
+    TransferList transferList();
+
+    /**
+     * Get the token transfer lists, if any, from the child record.
+     *
+     * @return the token transfer lists
+     */
+    List<TokenTransferList> tokenTransferLists();
 }

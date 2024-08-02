@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.records;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code TokenWipe}
  * transaction.
  */
 public interface TokenAccountWipeStreamBuilder extends TokenBaseStreamBuilder {

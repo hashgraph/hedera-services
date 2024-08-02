@@ -22,7 +22,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
+ * A {@code StreamBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
  */
 public interface NodeStakeUpdateStreamBuilder extends StreamBuilder {
     /**

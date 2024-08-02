@@ -61,6 +61,17 @@ public final class TransactionUtils {
     }
 
     /**
+     * Get the size of a transaction.<br>
+     * This is a convenience method that delegates to {@link #getLegacyTransactionSize(OneOf)}.
+     *
+     * @param transaction the transaction to get the size of
+     * @return the size of the transaction
+     */
+    public static int getLegacyTransactionSize(@NonNull final EventTransaction transaction) {
+        return getLegacyTransactionSize(transaction.transaction());
+    }
+
+    /**
      * Get the size of a transaction.
      *
      * @param transaction the transaction to get the size of
@@ -81,6 +92,17 @@ public final class TransactionUtils {
         } else {
             throw new IllegalArgumentException("Unknown transaction type: " + transaction.kind());
         }
+    }
+
+    /**
+     * Check if a transaction is a system transaction.<br>
+     * This is a convenience method that delegates to {@link #isSystemTransaction(OneOf)}.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
+     */
+    public static boolean isSystemTransaction(@NonNull final EventTransaction transaction) {
+        return isSystemTransaction(transaction.transaction());
     }
 
     /**

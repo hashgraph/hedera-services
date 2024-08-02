@@ -327,6 +327,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
+     * May only be called on the root stack to get the entire list of stream builders created in the course
+     * of handling a user transaction.
+     * @return all stream builders created when handling the user transaction
+     * @throws NullPointerException if called on a non-root stack
+     */
+    public List<StreamBuilder> allStreamBuilders() {
+        return requireNonNull(builderSink).allBuilders();
+    }
+
+    /**
      * May only be called on the root stack to determine if this stack has capacity to create more system records to
      * as preceding dispatches.
      *

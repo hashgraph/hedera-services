@@ -53,14 +53,14 @@ public interface HederaRecordCache extends RecordCache {
      *                           only contains the user transaction. Or it may be a list including preceding
      *                           transactions, user transactions, and child transactions. There is no requirement as to
      *                           the order of items in this list.
-     * @param stack
+     * @param stack              The {@link SavepointStackImpl} to use in persisting records
      */
     /*HANDLE THREAD ONLY*/
     void add(
             long nodeId,
             @NonNull AccountID payerAccountId,
             @NonNull List<SingleTransactionRecord> transactionRecords,
-            final SavepointStackImpl stack);
+            @NonNull SavepointStackImpl stack);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is
