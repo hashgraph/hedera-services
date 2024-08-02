@@ -37,7 +37,9 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Utility class that provides static methods
@@ -45,10 +47,13 @@ import java.util.List;
 public class AirdropHandlerHelper {
     public record FungibleAirdropLists(
             @NonNull List<AccountAmount> transferFungibleAmounts,
-            @NonNull List<AccountAmount> pendingFungibleAmounts) {}
+            @NonNull List<AccountAmount> pendingFungibleAmounts,
+            int numUnlimitedAssociationTransfers) {}
 
     public record NftAirdropLists(
-            @NonNull List<NftTransfer> transferNftList, @NonNull List<NftTransfer> pendingNftList) {}
+            @NonNull List<NftTransfer> transferNftList,
+            @NonNull List<NftTransfer> pendingNftList,
+            int numUnlimitedAssociationTransfers) {}
 
     private AirdropHandlerHelper() {
         throw new UnsupportedOperationException("Utility class only");
@@ -69,9 +74,11 @@ public class AirdropHandlerHelper {
             HandleContext context, TokenID tokenId, List<AccountAmount> transfers) {
         List<AccountAmount> transferFungibleAmounts = new ArrayList<>();
         List<AccountAmount> pendingFungibleAmounts = new ArrayList<>();
+        Set<AccountID> accountsForUnlimitedAssociationTransfers = new HashSet<>();
+
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
-
+        var numUnlimitedAssociationTransfers = 0;
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
             // if not existing account, create transfer
@@ -89,10 +96,14 @@ public class AirdropHandlerHelper {
                 pendingFungibleAmounts.add(aa);
             } else {
                 transferFungibleAmounts.add(aa);
+                if (account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
+                    accountsForUnlimitedAssociationTransfers.add(accountId);
+                }
             }
         }
 
-        return new FungibleAirdropLists(transferFungibleAmounts, pendingFungibleAmounts);
+        return new FungibleAirdropLists(
+                transferFungibleAmounts, pendingFungibleAmounts, accountsForUnlimitedAssociationTransfers.size());
     }
 
     /**
@@ -110,6 +121,8 @@ public class AirdropHandlerHelper {
             HandleContext context, TokenID tokenId, List<NftTransfer> transfers) {
         List<NftTransfer> transferNftList = new ArrayList<>();
         List<NftTransfer> pendingNftList = new ArrayList<>();
+        Set<AccountID> accountsForUnlimitedAssociationTransfers = new HashSet<>();
+
         for (final var nftTransfer : transfers) {
             final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
             final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
@@ -124,15 +137,18 @@ public class AirdropHandlerHelper {
             var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             var tokenRel = tokenRelStore.get(receiverId, tokenId);
-            var shouldAddAirdropToPendingState = isPendingAirdrop(account, tokenRel);
+            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
 
-            if (shouldAddAirdropToPendingState) {
+            if (isPendingAirdrop) {
                 pendingNftList.add(nftTransfer);
             } else {
                 transferNftList.add(nftTransfer);
+                if (account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
+                    accountsForUnlimitedAssociationTransfers.add(receiverId);
+                }
             }
         }
-        return new NftAirdropLists(transferNftList, pendingNftList);
+        return new NftAirdropLists(transferNftList, pendingNftList, accountsForUnlimitedAssociationTransfers.size());
     }
 
     /**

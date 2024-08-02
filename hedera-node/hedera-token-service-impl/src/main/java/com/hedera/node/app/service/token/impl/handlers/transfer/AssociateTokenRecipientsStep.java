@@ -219,7 +219,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
     }
 
-    private long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
+    public static long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
         return context.dispatchComputeFees(txnBody, context.payer(), ComputeDispatchFeesAsTopLevel.NO)
                 .totalFee();
     }

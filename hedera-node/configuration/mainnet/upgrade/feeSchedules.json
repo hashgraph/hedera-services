@@ -440,7 +440,7 @@
             {
               "subType": "DEFAULT",
               "nodedata": {
-                "constant": 47619047619,
+                "constant": 47142857142,
                 "bpt": 0,
                 "vpt": 31908136,
                 "rbh": 0,
@@ -452,7 +452,7 @@
                 "max": 1000000000000000
               },
               "networkdata": {
-                "constant": 952380952381,
+                "constant": 942857142858,
                 "bpt": 0,
                 "vpt": 638162730,
                 "rbh": 0,
@@ -4137,7 +4137,7 @@
             {
               "subType": "DEFAULT",
               "nodedata": {
-                "constant": 47619047619,
+                "constant": 47142857142,
                 "bpt": 0,
                 "vpt": 31908136,
                 "rbh": 0,
@@ -4149,7 +4149,7 @@
                 "max": 1000000000000000
               },
               "networkdata": {
-                "constant": 952380952381,
+                "constant": 942857142858,
                 "bpt": 0,
                 "vpt": 638162730,
                 "rbh": 0,
