@@ -59,13 +59,6 @@ interface NumericHelperV2 {
     ) external payable returns (int64 responseCode, address tokenAddress);
 
     //V2
-    function createNonFungibleTokenWithCustomFees(
-        Structs.HederaTokenV2 memory token,
-        IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.RoyaltyFee[] memory royaltyFees
-    ) external payable returns (int64 responseCode, address tokenAddress);
-
-    //V2
     function updateTokenInfo(address token, Structs.HederaTokenV2 memory tokenInfo)
     external
     returns (int64 responseCode);
