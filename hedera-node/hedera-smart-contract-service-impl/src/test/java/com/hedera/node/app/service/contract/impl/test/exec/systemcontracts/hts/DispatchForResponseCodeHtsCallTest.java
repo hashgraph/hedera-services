@@ -34,7 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -58,7 +58,7 @@ class DispatchForResponseCodeHtsCallTest extends CallTestBase {
     private DispatchGasCalculator dispatchGasCalculator;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -83,7 +83,7 @@ class DispatchForResponseCodeHtsCallTest extends CallTestBase {
                         TransactionBody.DEFAULT,
                         verificationStrategy,
                         AccountID.DEFAULT,
-                        ContractCallRecordBuilder.class))
+                        ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
@@ -128,7 +128,7 @@ class DispatchForResponseCodeHtsCallTest extends CallTestBase {
                         TransactionBody.DEFAULT,
                         verificationStrategy,
                         AccountID.DEFAULT,
-                        ContractCallRecordBuilder.class))
+                        ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))

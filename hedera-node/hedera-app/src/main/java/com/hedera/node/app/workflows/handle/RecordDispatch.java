@@ -24,7 +24,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -37,7 +37,7 @@ import java.time.Instant;
 import java.util.Set;
 
 public record RecordDispatch(
-        @NonNull SingleTransactionRecordBuilder recordBuilder,
+        @NonNull StreamBuilder recordBuilder,
         @NonNull Configuration config,
         @NonNull Fees fees,
         @NonNull TransactionInfo txnInfo,

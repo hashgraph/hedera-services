@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -57,7 +57,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private HandleContext.SavepointStack stack;
 
     @Mock
-    private CryptoTransferRecordBuilder builder;
+    private CryptoTransferStreamBuilder builder;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;

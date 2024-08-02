@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.records;
+package com.hedera.node.app.service.addressbook.impl.records;
 
-import com.hedera.hapi.node.base.TokenType;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The base interface for Token Service record builders that record operations on Tokens.
+ * A {@code StreamBuilder} specialization for tracking the side-effects of a {@code NodeCreate} transaction.
  */
-public interface TokenBaseRecordBuilder extends SingleTransactionRecordBuilder {
+public interface NodeCreateStreamBuilder extends StreamBuilder {
     /**
-     * Sets the {@link TokenType} of the token the recorded transaction created or modified.
-     * @param tokenType the token type
+     * Tracks creation of a new node by nodeID.
+     *
+     * @param nodeID  the new node
      * @return this builder
      */
-    TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType);
+    @NonNull
+    NodeCreateStreamBuilder nodeID(long nodeID);
 }

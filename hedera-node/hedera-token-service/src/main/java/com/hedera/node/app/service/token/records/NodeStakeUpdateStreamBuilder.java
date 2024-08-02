@@ -18,20 +18,20 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
+ * A {@code StreamBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
  */
-public interface NodeStakeUpdateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface NodeStakeUpdateStreamBuilder extends StreamBuilder {
     /**
      * Sets the status.
      *
      * @param status the status
      * @return the builder
      */
-    NodeStakeUpdateRecordBuilder status(@NonNull ResponseCodeEnum status);
+    NodeStakeUpdateStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Sets the transaction.
@@ -40,7 +40,7 @@ public interface NodeStakeUpdateRecordBuilder extends SingleTransactionRecordBui
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateRecordBuilder transaction(@NonNull final Transaction transaction);
+    NodeStakeUpdateStreamBuilder transaction(@NonNull final Transaction transaction);
 
     /**
      * Sets the record's memo.
@@ -49,5 +49,5 @@ public interface NodeStakeUpdateRecordBuilder extends SingleTransactionRecordBui
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateRecordBuilder memo(@NonNull final String memo);
+    NodeStakeUpdateStreamBuilder memo(@NonNull final String memo);
 }

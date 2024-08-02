@@ -17,15 +17,15 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface CryptoCreateStreamBuilder extends StreamBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
@@ -35,7 +35,7 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder accountID(@NonNull AccountID accountID);
+    CryptoCreateStreamBuilder accountID(@NonNull AccountID accountID);
 
     /**
      * The new EVM address of the account created by this transaction.
@@ -43,7 +43,7 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
+    CryptoCreateStreamBuilder evmAddress(@NonNull final Bytes evmAddress);
 
     /**
      * The transactionFee charged for this transaction.
@@ -51,7 +51,7 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee);
+    CryptoCreateStreamBuilder transactionFee(@NonNull final long transactionFee);
 
     /**
      * The memo associated with the transaction.
@@ -59,5 +59,5 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder memo(@NonNull final String memo);
+    CryptoCreateStreamBuilder memo(@NonNull final String memo);
 }

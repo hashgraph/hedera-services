@@ -75,7 +75,7 @@ class ConsistencyTestingToolRoundTests {
             });
 
             final PlatformEvent e = new TestingEventBuilder(randotron)
-                    .setTransactions(transactions)
+                    .setOneOfTransactions(transactions)
                     .build();
             mockEvents.add(e);
         });

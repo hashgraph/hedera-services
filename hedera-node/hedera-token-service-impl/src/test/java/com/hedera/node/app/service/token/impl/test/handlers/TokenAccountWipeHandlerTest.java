@@ -70,14 +70,14 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -86,6 +86,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -101,7 +102,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
-    private TokenAccountWipeRecordBuilder recordBuilder;
+    private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -110,7 +111,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        recordBuilder = new TokenAccountWipeRecordBuilder() {
+        recordBuilder = new TokenAccountWipeStreamBuilder() {
             private long newTotalSupply;
 
             @Override
@@ -144,22 +145,22 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+            public StreamBuilder memo(@NonNull String memo) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+            public StreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+            public StreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+            public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
                 return this;
             }
 
@@ -180,7 +181,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+            public StreamBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
@@ -198,12 +199,12 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             public void nullOutSideEffectFields() {}
 
             @Override
-            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+            public StreamBuilder syncBodyIdFromRecordId() {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
                 return null;
             }
 
@@ -213,25 +214,25 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder parentConsensus(@NonNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
                 return null;
             }
 
             @NonNull
             @Override
-            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
+            public TokenAccountWipeStreamBuilder newTotalSupply(final long supply) {
                 newTotalSupply = supply;
                 return this;
             }
 
             @NonNull
             @Override
-            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
+            public TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType) {
                 return this;
             }
 
@@ -1009,7 +1010,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             lenient().when(context.savepointStack()).thenReturn(stack);
             lenient()
-                    .when(stack.getBaseBuilder(TokenAccountWipeRecordBuilder.class))
+                    .when(stack.getBaseBuilder(TokenAccountWipeStreamBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;
