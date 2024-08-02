@@ -96,9 +96,8 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
             final var senderId = airdrop.senderIdOrThrow();
-            // validate if pending airdrop is existing in state
+            // validate existence and custom fees
             validateTrue(pendingAirdropStore.exists(airdrop), INVALID_TRANSACTION_BODY);
-            // validate custom fees
             validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
 
             if (airdrop.hasFungibleTokenType()) {
@@ -119,8 +118,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
             } else {
                 // process non-fungible tokens
                 var nftTransfer = NftTransfer.newBuilder()
-                        // todo check if it is approval
-                        //                        .isApproval()
                         .senderAccountID(senderId)
                         .receiverAccountID(receiverId)
                         .serialNumber(airdrop.nonFungibleToken().serialNumber())
@@ -155,7 +152,8 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         executor.executeCryptoTransferWithoutCustomFee(
                 syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
         // removePendingAirdrop
-        op.pendingAirdrops().forEach(airdrop -> removePendingAirdropAndUpdateStores(airdrop, pendingAirdropStore, accountStore));
+        op.pendingAirdrops()
+                .forEach(airdrop -> removePendingAirdropAndUpdateStores(airdrop, pendingAirdropStore, accountStore));
     }
 
     @Override
@@ -163,7 +161,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         return Fees.FREE;
     }
 
-    // todo add unit test to test this!
     private void removePendingAirdropAndUpdateStores(
             PendingAirdropId airdrop, WritableAirdropStore pendingAirdropStore, WritableAccountStore accountStore) {
         var currentAirdrop = requireNonNull(pendingAirdropStore.get(airdrop));
@@ -174,7 +171,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
 
         var senderAccount = requireNonNull(accountStore.getAccountById(airdrop.senderIdOrThrow()));
 
-        // if no prev, should check if we have next and update it + change the head in the account
+        // if no prev, should check if we have next and update it + change the head id in the sender's account
         if (!currentAirdrop.hasPreviousAirdrop() && airdrop.equals(senderAccount.headPendingAirdropId())) {
             // update the nex, if exists
             // update account's head

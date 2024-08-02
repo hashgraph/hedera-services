@@ -28,11 +28,14 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
@@ -44,9 +47,11 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.impl.test.fixtures.FakeTokenAirdropRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -68,6 +73,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class StepsBase extends CryptoTokenHandlerTestBase {
     protected CryptoTransferRecordBuilder xferRecordBuilder = new FakeCryptoTransferRecordBuilder().create();
     protected CryptoCreateRecordBuilder cryptoCreateRecordBuilder = new FakeCryptoCreateRecordBuilder().create();
+    protected TokenAirdropRecordBuilder tokenAirdropRecordBuilder = new FakeTokenAirdropRecordBuilder().create();
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected ConfigProvider configProvider;
@@ -88,6 +94,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected AdjustHbarChangesStep adjustHbarChangesStep;
     protected AdjustFungibleTokenChangesStep adjustFungibleTokenChangesStep;
     protected CryptoTransferTransactionBody body;
+    protected TokenAirdropTransactionBody airdropBody;
+    protected TokenClaimAirdropTransactionBody claimAirdropBody;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
 
@@ -125,6 +133,26 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         .transactionValidStart(consensusTimestamp)
                         .build())
                 .cryptoTransfer(body)
+                .build();
+    }
+
+    protected TransactionBody asAirdropTxn(final TokenAirdropTransactionBody body, final AccountID payerId) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .tokenAirdrop(body)
+                .build();
+    }
+
+    protected TransactionBody asClaimAirdropTxn(final TokenClaimAirdropTransactionBody body, final AccountID payerId) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .tokenClaimAirdrop(body)
                 .build();
     }
 
@@ -218,5 +246,61 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(stack.getBaseBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
         given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+    }
+
+    protected void givenAirdropTxn() {
+        givenAirdropTxn(false);
+    }
+
+    protected void givenAirdropTxn(boolean isReceiverAssociated) {
+        var receiver = tokenReceiverNoAssociationId;
+        if (isReceiverAssociated) {
+            receiver = tokenReceiverId;
+        }
+        airdropBody = TokenAirdropTransactionBody.newBuilder()
+                .tokenTransfers(
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenId)
+                                .expectedDecimals(1000)
+                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(receiver, +1_000)))
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .token(nonFungibleTokenId)
+                                .expectedDecimals(1000)
+                                .nftTransfers(nftTransferWith(ownerId, receiver, 1))
+                                .build())
+                .build();
+        givenAirdropTxn(airdropBody, payerId);
+    }
+
+    protected void givenAirdropTxn(TokenAirdropTransactionBody txnBody, AccountID payerId) {
+        airdropBody = txnBody;
+        txn = asAirdropTxn(airdropBody, payerId);
+        given(handleContext.payer()).willReturn(payerId);
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(),
+                        eq(TokenAirdropRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(payerId),
+                        any(ExternalizedRecordCustomizer.class)))
+                .willReturn(tokenAirdropRecordBuilder);
+        given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
+        given(configProvider.getConfiguration()).willReturn(versionedConfig);
+    }
+
+    protected void givenClaimAirdrop(List<PendingAirdropId> airdrops) {
+        claimAirdropBody = TokenClaimAirdropTransactionBody.newBuilder()
+                .pendingAirdrops(airdrops)
+                .build();
+        txn = asClaimAirdropTxn(claimAirdropBody, payerId);
+        given(handleContext.payer()).willReturn(payerId);
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
+        given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 }
