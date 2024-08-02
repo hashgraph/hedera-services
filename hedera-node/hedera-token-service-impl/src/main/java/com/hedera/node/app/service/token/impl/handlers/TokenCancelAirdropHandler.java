@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -202,8 +203,20 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             }
         }
 
+        final var updatedPayer = getAccountWithUpdatedNumberOfPendingAirdrops(payerAccount, pendingAirdropIds.size());
+        accountStore.put(updatedPayer);
+
         // delete the pending airdrops from the airdrop store
         pendingAirdropIds.forEach(airdropStore::remove);
+    }
+
+    private static Account getAccountWithUpdatedNumberOfPendingAirdrops(
+            Account payerAccount, int canceledPendingAirdropsSize) {
+        var newNumberPendingAirdrops = payerAccount.numberPendingAirdrops() - canceledPendingAirdropsSize;
+        return payerAccount
+                .copyBuilder()
+                .numberPendingAirdrops(newNumberPendingAirdrops)
+                .build();
     }
 
     private static void handleConfigValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
