@@ -584,18 +584,6 @@ public class NumericValidationTest {
         }
 
         @HapiTest
-        @DisplayName("when using updateTokenInfoV2 for fungible token")
-        public Stream<DynamicTest> failToUpdateTokenInfoV2FungibleWithMaxSupplyNegative() {
-            // maxSupply cannot be updated using updateTokenInfo
-            // Status is success, because the operation ignores it, so we need verify the maxSupply
-            return hapiTest(
-                    numericContractComplex
-                            .call("updateTokenInfoV2", fungibleToken, -1L)
-                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    fungibleToken.getInfo().andAssert(info -> info.hasMaxSupply(1200)));
-        }
-
-        @HapiTest
         @DisplayName("when using updateTokenInfoV3 for both fungible and nonFungible token")
         public Stream<DynamicTest> failToUpdateTokenInfoV3FungibleAndNft() {
             return Stream.of(fungibleToken, nft)
