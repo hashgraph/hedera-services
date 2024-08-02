@@ -232,7 +232,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         if (transaction.isSystem()) {
             return;
         }
-        final Bytes contents = transaction.getApplicationPayload();
+        final Bytes contents = transaction.getApplicationTransaction();
         if (contents.length() < 3) {
             return;
         }
