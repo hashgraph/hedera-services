@@ -45,17 +45,17 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class NFTOwnersChangeStepTest extends StepsBase {
     @Mock
-    private CryptoTransferRecordBuilder builder;
+    private CryptoTransferStreamBuilder builder;
 
     @BeforeEach
     public void setUp() {
@@ -68,7 +68,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
                 });
 
         refreshWritableStores();

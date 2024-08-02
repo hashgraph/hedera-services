@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.RoundStateChangeListener;
-import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -41,7 +41,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.HandleOutput;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
@@ -327,6 +327,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
+     * May only be called on the root stack to get the entire list of stream builders created in the course
+     * of handling a user transaction.
+     * @return all stream builders created when handling the user transaction
+     * @throws NullPointerException if called on a non-root stack
+     */
+    public List<StreamBuilder> allStreamBuilders() {
+        return requireNonNull(builderSink).allBuilders();
+    }
+
+    /**
      * May only be called on the root stack to determine if this stack has capacity to create more system records to
      * as preceding dispatches.
      *
@@ -490,8 +500,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 builder.parentConsensus(consensusTime);
             }
             switch (HandleWorkflow.STREAM_MODE) {
-                case RECORDS -> records.add(((RecordBuilderImpl) builder).build());
-                case BLOCKS -> requireNonNull(blockItems).addAll(((IoBlockItemsBuilder) builder).build());
+                case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
+                case BLOCKS -> requireNonNull(blockItems).addAll(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
                     records.add(pairedBuilder.recordBuilder().build());

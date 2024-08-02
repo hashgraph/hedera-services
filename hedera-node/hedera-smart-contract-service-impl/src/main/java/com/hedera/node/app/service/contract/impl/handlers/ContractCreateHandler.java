@@ -31,7 +31,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -75,7 +75,7 @@ public class ContractCreateHandler implements TransactionHandler {
 
         // Assemble the appropriate top-level record for the result
         outcome.addCreateDetailsTo(
-                context.savepointStack().getBaseBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
+                context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

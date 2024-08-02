@@ -105,7 +105,7 @@ import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -218,10 +218,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
-    private RecordBuilderImpl oneChildBuilder;
+    private RecordStreamBuilder oneChildBuilder;
 
     @Mock
-    private RecordBuilderImpl twoChildBuilder;
+    private RecordStreamBuilder twoChildBuilder;
 
     @Mock
     private ChildDispatchFactory childDispatchFactory;
@@ -274,7 +274,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private RecordBuilderImpl childRecordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+    private RecordStreamBuilder childRecordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private final TransactionBody txnBodyWithoutId = TransactionBody.newBuilder()
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
@@ -542,7 +542,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         private State baseState;
 
         @Mock(strictness = LENIENT, answer = Answers.RETURNS_SELF)
-        private RecordBuilderImpl childRecordBuilder;
+        private RecordStreamBuilder childRecordBuilder;
 
         @BeforeEach
         void setup() {

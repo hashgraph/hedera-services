@@ -39,9 +39,9 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbo
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -146,15 +146,15 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.savepointStack()
-                .getBaseBuilder(EthereumTransactionRecordBuilder.class)
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
             outcome.addCallDetailsTo(
-                    context.savepointStack().getBaseBuilder(ContractCallRecordBuilder.class),
+                    context.savepointStack().getBaseBuilder(ContractCallStreamBuilder.class),
                     ExternalizeAbortResult.YES);
         } else {
             outcome.addCreateDetailsTo(
-                    context.savepointStack().getBaseBuilder(ContractCreateRecordBuilder.class),
+                    context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class),
                     ExternalizeAbortResult.YES);
         }
 

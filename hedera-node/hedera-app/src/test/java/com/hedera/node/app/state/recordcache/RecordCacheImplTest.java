@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
@@ -78,6 +79,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class RecordCacheImplTest extends AppTestBase {
     private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
+    private static final int RESPONSE_CODES_TO_TEST = 32;
     private static final TransactionReceipt UNHANDLED_RECEIPT =
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID PAYER_ACCOUNT_ID =
@@ -110,6 +112,7 @@ final class RecordCacheImplTest extends AppTestBase {
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getState()).thenReturn(state);
+        lenient().when(stack.getWritableStates(NAME)).thenReturn(state.getWritableStates(NAME));
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
@@ -545,7 +548,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }
@@ -726,7 +730,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }

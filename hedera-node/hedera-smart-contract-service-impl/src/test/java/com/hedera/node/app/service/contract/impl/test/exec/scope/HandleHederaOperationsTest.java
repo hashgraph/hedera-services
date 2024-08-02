@@ -63,7 +63,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -112,7 +112,7 @@ class HandleHederaOperationsTest {
     private WritableContractStateStore stateStore;
 
     @Mock
-    private ContractCreateRecordBuilder contractCreateRecordBuilder;
+    private ContractCreateStreamBuilder contractCreateRecordBuilder;
 
     @Mock
     private TinybarValues tinybarValues;
@@ -340,7 +340,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
@@ -380,7 +380,7 @@ class HandleHederaOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
@@ -427,7 +427,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture()))
@@ -503,7 +503,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
@@ -517,7 +517,7 @@ class HandleHederaOperationsTest {
         verify(context)
                 .dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class));
@@ -553,7 +553,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
@@ -567,7 +567,7 @@ class HandleHederaOperationsTest {
         verify(context)
                 .dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         captor.capture());
@@ -590,7 +590,7 @@ class HandleHederaOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovableChildTransaction(
                         eq(synthTxn),
-                        eq(ContractCreateRecordBuilder.class),
+                        eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
                         any(ExternalizedRecordCustomizer.class)))
@@ -636,7 +636,7 @@ class HandleHederaOperationsTest {
         // given
         var contractId = ContractID.newBuilder().contractNum(1001).build();
         given(context.savepointStack()).willReturn(stack);
-        given(stack.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
+        given(stack.addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(contractId)).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);
