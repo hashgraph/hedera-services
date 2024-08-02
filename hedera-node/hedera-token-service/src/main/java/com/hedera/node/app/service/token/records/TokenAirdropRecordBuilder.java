@@ -18,22 +18,12 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenAirdrops}
  * transaction.
  */
 public interface TokenAirdropRecordBuilder extends CryptoTransferRecordBuilder {
-
-    /**
-     * Sets the pending airdrop record list
-     *
-     * @param pendingAirdropRecords the pending airdrop record list
-     * @return the builder
-     */
-    TokenAirdropRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
-
     /**
      * Adds to the pending airdrop record list
      *

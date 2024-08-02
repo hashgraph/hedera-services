@@ -66,7 +66,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * only on the number of tokens associated and nothing else; so a placeholder transaction body works
      * fine for us when calling dispatchComputeFees()
      */
-    private static final TransactionBody PLACEHOLDER_SYNTHETIC_ASSOCIATION = TransactionBody.newBuilder()
+    public static final TransactionBody PLACEHOLDER_SYNTHETIC_ASSOCIATION = TransactionBody.newBuilder()
             .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
                     .account(AccountID.DEFAULT)
                     .tokens(TokenID.DEFAULT)
@@ -219,7 +219,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
     }
 
-    private long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
+    public static long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
         return context.dispatchComputeFees(txnBody, context.payer(), ComputeDispatchFeesAsTopLevel.NO)
                 .totalFee();
     }

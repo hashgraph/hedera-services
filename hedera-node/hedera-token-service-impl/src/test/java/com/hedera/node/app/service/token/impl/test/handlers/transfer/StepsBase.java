@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -81,7 +82,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected HandleContext handleContext;
+    protected DispatchHandleContext handleContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext.SavepointStack stack;
