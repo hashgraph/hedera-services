@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  * This object is not thread safe. Only one thread should attempt to read data from stream at any point in time.
  * </p>
  */
-public class AsyncInputStream implements AutoCloseable {
+public class AsyncInputStream {
 
     private static final Logger logger = LogManager.getLogger(AsyncInputStream.class);
 
@@ -130,7 +130,7 @@ public class AsyncInputStream implements AutoCloseable {
     private void run() {
         logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
-            while (alive.get() && !Thread.currentThread().isInterrupted()) {
+            while (!Thread.currentThread().isInterrupted()) {
                 final int viewId = inputStream.readInt();
                 if (viewId < 0) {
                     logger.info(RECONNECT.getMarker(), "Async input stream is done");
@@ -261,25 +261,12 @@ public class AsyncInputStream implements AutoCloseable {
      * encounters an exception). This method ensures that any resources used by the buffered messages are released.
      */
     public void abort() {
-        close();
-
+        alive.set(false);
         try {
             finishedLatch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    /**
-     * Close this buffer and release resources.
-     */
-    @Override
-    public void close() {
-        alive.set(false);
-    }
-
-    public void waitForCompletion() throws InterruptedException {
-        finishedLatch.await();
     }
 
     private static record SharedQueueItem(int viewId, byte[] messageBytes) {}

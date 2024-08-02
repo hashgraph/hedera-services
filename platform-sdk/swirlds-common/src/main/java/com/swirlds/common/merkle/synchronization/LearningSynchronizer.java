@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -226,6 +227,15 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     }
 
     /**
+     * Checks if synchronization is still in progress. It's true, when the input stream is still
+     * alive (so new messages may be received) and there are tree views to sync. This check is
+     * used to terminate the output stream.
+     */
+    private boolean inProgress() {
+        return in.isAlive() && !views.isEmpty();
+    }
+
+    /**
      * Receive the tree from the teacher.
      */
     private void receiveTree() throws InterruptedException {
@@ -233,7 +243,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final long start = System.currentTimeMillis();
 
         in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
-        out = buildOutputStream(workGroup, outputStream);
+        out = buildOutputStream(workGroup, this::inProgress, outputStream);
 
         final boolean rootScheduled = receiveNextSubtree();
         assert rootScheduled;
@@ -297,8 +307,6 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         if (view.usesSharedInputQueue()) {
             in.setNeedsSharedQueue(viewId);
         }
-
-        receiveNextSubtree();
     }
 
     private synchronized boolean receiveNextSubtree() {
@@ -334,19 +342,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         reconstructedRoots.add(reconstructedRoot);
         viewsToInitialize.addFirst(view);
         final Consumer<Integer> completeListener = id -> {
-            views.get(id).close();
-            final int wasInProgress = viewsInProgress.decrementAndGet();
-            boolean newScheduled = false;
             boolean nextViewScheduled = receiveNextSubtree();
             while (nextViewScheduled) {
-                newScheduled = true;
                 nextViewScheduled = receiveNextSubtree();
             }
-            // Check if it was the last subtree to sync
-            if ((wasInProgress == 0) && !newScheduled) {
-                in.close();
-                out.close();
-            }
+            // Close the view and remove it from the list of views to sync. If this was the last
+            // view to sync, it will cause the async output stream to terminate
+            views.remove(id).close();
         };
         view.startLearnerTasks(
                 this, workGroup, in, out, views, this::newSubtreeEncountered, reconstructedRoot, completeListener);
@@ -436,8 +438,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
     public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
-            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream(out, workGroup, reconnectConfig);
+            final StandardWorkGroup workGroup, final Supplier<Boolean> alive, final SerializableDataOutputStream out) {
+        return new AsyncOutputStream(out, workGroup, alive, reconnectConfig);
     }
 
     /**

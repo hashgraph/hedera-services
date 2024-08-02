@@ -30,8 +30,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +49,7 @@ import org.apache.logging.log4j.Logger;
  * This object is not thread safe. Only one thread should attempt to send data over this stream at any point in time.
  * </p>
  */
-public class AsyncOutputStream implements AutoCloseable {
+public class AsyncOutputStream {
 
     private static final Logger logger = LogManager.getLogger(AsyncOutputStream.class);
 
@@ -75,13 +74,6 @@ public class AsyncOutputStream implements AutoCloseable {
     private final Duration flushInterval;
 
     /**
-     * If this becomes false then this object's worker thread will stop transmitting messages.
-     */
-    private final AtomicBoolean alive = new AtomicBoolean(true);
-
-    private final CountDownLatch finishedLatch = new CountDownLatch(1);
-
-    /**
      * The number of messages that have been written to the stream but have not yet been flushed
      */
     private int bufferedMessageCount;
@@ -96,12 +88,12 @@ public class AsyncOutputStream implements AutoCloseable {
      */
     private final DataOutputStream dataOut = new DataOutputStream(bufferedOut);
 
-    /**
-     * The maximum amount of time to wait when writing a message.
-     */
-    private final Duration timeout;
-
     private final StandardWorkGroup workGroup;
+
+    /**
+     * A condition to check whether it's time to terminate this output stream.
+     */
+    private final Supplier<Boolean> alive;
 
     /**
      * Constructs a new instance using the given underlying {@link SerializableDataOutputStream} and
@@ -114,16 +106,17 @@ public class AsyncOutputStream implements AutoCloseable {
     public AsyncOutputStream(
             @NonNull final SerializableDataOutputStream outputStream,
             @NonNull final StandardWorkGroup workGroup,
+            @NonNull final Supplier<Boolean> alive,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(config, "config must not be null");
 
         this.outputStream = Objects.requireNonNull(outputStream, "outputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
+        this.alive = Objects.requireNonNull(alive, "alive must not be null");
         this.streamQueue = new ConcurrentLinkedQueue<>();
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
         this.flushInterval = config.asyncOutputStreamFlush();
-        this.timeout = config.asyncStreamTimeout();
     }
 
     /**
@@ -131,15 +124,6 @@ public class AsyncOutputStream implements AutoCloseable {
      */
     public void start() {
         workGroup.execute("async-output-stream", this::run);
-    }
-
-    /**
-     * Returns true if the message pump is still running or false if the message pump has terminated or will terminate.
-     *
-     * @return true if the message pump is still running; false if the message pump has terminated or will terminate
-     */
-    protected final boolean isAlive() {
-        return alive.get();
     }
 
     public void run() {
@@ -170,8 +154,6 @@ public class AsyncOutputStream implements AutoCloseable {
             }
         } catch (final Exception e) {
             workGroup.handleError(e);
-        } finally {
-            finishedLatch.countDown();
         }
     }
 
@@ -206,19 +188,6 @@ public class AsyncOutputStream implements AutoCloseable {
             }
             throw new MerkleSynchronizationException("Timed out waiting to send data");
         }
-    }
-
-    /**
-     * Close this buffer and release resources. If there are still messages awaiting transmission then resources will
-     * not be immediately freed.
-     */
-    @Override
-    public void close() {
-        alive.set(false);
-    }
-
-    public void waitForCompletion() throws InterruptedException {
-        finishedLatch.await();
     }
 
     /**

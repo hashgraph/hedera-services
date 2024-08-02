@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 /**
  * A {@link LearningSynchronizer} with simulated latency.
@@ -59,7 +60,7 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
      */
     @Override
     public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
-            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new LaggingAsyncOutputStream(out, workGroup, latencyMilliseconds, reconnectConfig);
+            final StandardWorkGroup workGroup, final Supplier<Boolean> alive, final SerializableDataOutputStream out) {
+        return new LaggingAsyncOutputStream(out, workGroup, alive, latencyMilliseconds, reconnectConfig);
     }
 }

@@ -71,7 +71,8 @@ class AsyncStreamTest {
             final int viewId = 11;
 
             final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
-            final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
+            final AsyncOutputStream out =
+                    new AsyncOutputStream(streams.getLearnerOutput(), workGroup, in::isAlive, reconnectConfig);
 
             in.start();
             out.start();
@@ -88,8 +89,6 @@ class AsyncStreamTest {
             streams.getLearnerOutput().writeInt(-1);
             streams.getLearnerOutput().flush();
 
-            in.close();
-            out.close();
             workGroup.waitForTermination();
         }
     }
@@ -105,7 +104,8 @@ class AsyncStreamTest {
             final int viewId = 12;
 
             final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
-            final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
+            final AsyncOutputStream out =
+                    new AsyncOutputStream(streams.getLearnerOutput(), workGroup, in::isAlive, reconnectConfig);
 
             in.start();
             out.start();
@@ -122,8 +122,6 @@ class AsyncStreamTest {
             streams.getLearnerOutput().writeInt(-1);
             streams.getLearnerOutput().flush();
 
-            in.close();
-            out.close();
             workGroup.waitForTermination();
         }
     }
@@ -148,8 +146,8 @@ class AsyncStreamTest {
         blockingOut.lock();
 
         final int viewId = 13;
-        final AsyncOutputStream out =
-                new AsyncOutputStream(new SerializableDataOutputStream(blockingOut), workGroup, reconnectConfig);
+        final AsyncOutputStream out = new AsyncOutputStream(
+                new SerializableDataOutputStream(blockingOut), workGroup, () -> true, reconnectConfig);
 
         out.start();
 
@@ -186,7 +184,6 @@ class AsyncStreamTest {
 
         assertEquals(count, messagesSent.get(), "all messages should have been sent");
 
-        out.close();
         workGroup.waitForTermination();
 
         // Sanity check, make sure all the messages were written to the stream
@@ -275,7 +272,6 @@ class AsyncStreamTest {
         out.writeInt(-1);
         out.flush();
 
-        in.close();
         workGroup.waitForTermination();
     }
 
@@ -294,7 +290,7 @@ class AsyncStreamTest {
                     new StandardWorkGroup(getStaticThreadManager(), "input-stream-abort-deadlock", null);
 
             final AsyncOutputStream teacherOut =
-                    new AsyncOutputStream(pairedStreams.getTeacherOutput(), workGroup, reconnectConfig);
+                    new AsyncOutputStream(pairedStreams.getTeacherOutput(), workGroup, () -> true, reconnectConfig);
 
             final int viewId = 15;
             final AsyncInputStream learnerIn =
@@ -314,9 +310,6 @@ class AsyncStreamTest {
 
             teacherOut.sendAsync(viewId, new ExplodingSelfSerializable());
             Thread.sleep(100);
-
-            teacherOut.close();
-            learnerIn.close();
 
             workGroup.waitForTermination();
             assertTrue(workGroup.hasExceptions(), "work group is expected to have an exception");

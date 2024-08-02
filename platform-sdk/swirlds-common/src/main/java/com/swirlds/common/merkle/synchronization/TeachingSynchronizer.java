@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -182,7 +183,7 @@ public class TeachingSynchronizer {
     public void synchronize() throws InterruptedException {
         in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         in.start();
-        out = buildOutputStream(workGroup, outputStream);
+        out = buildOutputStream(workGroup, in::isAlive, outputStream);
         out.start();
 
         final boolean rootScheduled = synchronizeNextSubtree(workGroup, in, out);
@@ -223,8 +224,6 @@ public class TeachingSynchronizer {
         if (view.usesSharedInputQueue()) {
             in.setNeedsSharedQueue(viewId);
         }
-
-        synchronizeNextSubtree(workGroup, in, out);
     }
 
     private synchronized boolean synchronizeNextSubtree(
@@ -255,24 +254,9 @@ public class TeachingSynchronizer {
             final String rte = rt == null ? "[]" : rt.getRoute().toString();
             logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", rte);
 
-            final int wasInProgress = viewsInProgress.decrementAndGet();
-            boolean newScheduled = false;
             boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
             while (nextViewScheduled) {
-                newScheduled = true;
                 nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
-            }
-            // Check if this was the last subtree to sync
-            if ((wasInProgress == 0) && !newScheduled) {
-                try {
-                    in.close();
-                    in.waitForCompletion();
-                    out.close();
-                    out.waitForCompletion();
-                } catch (final InterruptedException e) {
-                    logger.warn(RECONNECT.getMarker(), "Interrupted while waiting for async streams");
-                    workGroup.handleError(e);
-                }
             }
         };
         view.startTeacherTasks(
@@ -294,7 +278,7 @@ public class TeachingSynchronizer {
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
     public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
-            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream(out, workGroup, reconnectConfig);
+            final StandardWorkGroup workGroup, final Supplier<Boolean> alive, final SerializableDataOutputStream out) {
+        return new AsyncOutputStream(out, workGroup, alive, reconnectConfig);
     }
 }

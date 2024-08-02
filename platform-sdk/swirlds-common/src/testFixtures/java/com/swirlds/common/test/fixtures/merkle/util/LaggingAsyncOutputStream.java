@@ -20,11 +20,11 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Supplier;
 
 /**
  * This variant of the async output stream introduces extra latency.
@@ -38,9 +38,10 @@ public class LaggingAsyncOutputStream extends AsyncOutputStream {
     public LaggingAsyncOutputStream(
             final SerializableDataOutputStream out,
             final StandardWorkGroup workGroup,
+            final Supplier<Boolean> alive,
             final long latencyMilliseconds,
             final ReconnectConfig reconnectConfig) {
-        super(out, workGroup, reconnectConfig);
+        super(out, workGroup, alive, reconnectConfig);
         this.messageTimes = new LinkedBlockingQueue<>();
         this.latencyMilliseconds = latencyMilliseconds;
     }
@@ -50,9 +51,6 @@ public class LaggingAsyncOutputStream extends AsyncOutputStream {
      */
     @Override
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
-        if (!isAlive()) {
-            throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
-        }
         messageTimes.put(System.currentTimeMillis());
         super.sendAsync(viewId, message);
     }

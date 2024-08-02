@@ -20,11 +20,11 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Random;
+import java.util.function.Supplier;
 
 /**
  * This variant of the async output stream introduces an extra delay for every single
@@ -39,13 +39,14 @@ public class BenchmarkSlowAsyncOutputStream extends AsyncOutputStream {
     public BenchmarkSlowAsyncOutputStream(
             final SerializableDataOutputStream out,
             final StandardWorkGroup workGroup,
+            final Supplier<Boolean> alive,
             final long randomSeed,
             final long delayStorageMicroseconds,
             final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
             final double delayNetworkFuzzRangePercent,
             final ReconnectConfig reconnectConfig) {
-        super(out, workGroup, reconnectConfig);
+        super(out, workGroup, alive, reconnectConfig);
 
         // Note that we use randomSeed and -randomSeed for the two fuzzers
         // to ensure that they don't end up returning the exact same
@@ -62,9 +63,6 @@ public class BenchmarkSlowAsyncOutputStream extends AsyncOutputStream {
      */
     @Override
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
-        if (!isAlive()) {
-            throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
-        }
         sleepMicros(delayStorageMicrosecondsFuzzer.next());
         super.sendAsync(viewId, message);
     }
