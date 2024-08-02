@@ -208,7 +208,7 @@ public class AddedEventMetrics {
 
         // count all transactions ever in the hashgraph
         if (!event.isEmpty()) {
-            numTrans.add(event.getBaseEvent().getPayloadCount());
+            numTrans.add(event.getBaseEvent().getTransactionCount());
         }
     }
 }
