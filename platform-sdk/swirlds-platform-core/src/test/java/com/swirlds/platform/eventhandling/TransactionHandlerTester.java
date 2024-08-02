@@ -21,12 +21,21 @@ import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A helper class for testing the {@link DefaultTransactionHandler}.
+ */
 public class TransactionHandlerTester {
     private final PlatformState platformState;
     private final DefaultTransactionHandler defaultTransactionHandler;
     private final List<PlatformStatusAction> submittedActions = new ArrayList<>();
     private final List<Round> handledRounds = new ArrayList<>();
 
+    /**
+     * Constructs a new {@link TransactionHandlerTester} with the given {@link AddressBook}.
+     *
+     * @param addressBook
+     *     the {@link AddressBook} to use
+     */
     public TransactionHandlerTester(final AddressBook addressBook) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -54,18 +63,30 @@ public class TransactionHandlerTester {
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
     }
 
+    /**
+     * @return the {@link DefaultTransactionHandler} used by this tester
+     */
     public DefaultTransactionHandler getTransactionHandler() {
         return defaultTransactionHandler;
     }
 
+    /**
+     * @return the {@link PlatformState} used by this tester
+     */
     public PlatformState getPlatformState() {
         return platformState;
     }
 
+    /**
+     * @return a list of all {@link PlatformStatusAction}s that have been submitted by the transaction handler
+     */
     public List<PlatformStatusAction> getSubmittedActions() {
         return submittedActions;
     }
 
+    /**
+     * @return a list of all {@link Round}s that have been provided to the {@link SwirldState} for handling
+     */
     public List<Round> getHandledRounds() {
         return handledRounds;
     }
