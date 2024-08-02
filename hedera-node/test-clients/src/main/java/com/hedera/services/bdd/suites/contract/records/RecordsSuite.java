@@ -72,10 +72,12 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 @HapiTestLifecycle
+@Order(Integer.MAX_VALUE)
 @DisplayName("Records Suite")
 public class RecordsSuite {
     public static final String LOG_NOW = "logNow";
@@ -311,6 +313,7 @@ public class RecordsSuite {
     }
 
     @HapiTest
+    @Order(Integer.MAX_VALUE)
     final Stream<DynamicTest> blockHashReturnsTheHashOfTheLatest256Blocks() {
         final var contract = "EmitBlockTimestamp";
         return hapiTest(
@@ -321,20 +324,30 @@ public class RecordsSuite {
                 cryptoCreate(RECEIVER),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 withOpContext((spec, opLog) -> {
-                    doNTransfers(spec, 256);
+                    // test in CI to expect 256 blocks to be created
+                    //                    doNTransfers(spec, 256);
                     waitUntilStartOfNextAdhocPeriod(2_000L);
-                    allRunFor(
-                            spec,
-                            ethereumCall(contract, "getAllBlockHashes")
-                                    .logged()
-                                    .gasLimit(4_000_000L)
-                                    .via("blockHashes"),
-                            getTxnRecord("blockHashes").logged());
+                    final var ethCall = ethereumCall(contract, "getAllBlockHashes")
+                            .logged()
+                            .gasLimit(4_000_000L)
+                            .via("blockHashes");
+                    final var blockHashRes = getTxnRecord("blockHashes").logged();
+                    allRunFor(spec, ethCall, waitUntilStartOfNextAdhocPeriod(2_000L), blockHashRes);
+                    assertTrue(blockHashRes
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getErrorMessage()
+                            .isEmpty());
+                    final var res = blockHashRes
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getContractCallResult()
+                            .substring(64);
+                    assertEquals(res.size() / 32, 256);
                 }));
     }
 
     private void doNTransfers(@NonNull final HapiSpec spec, final int amount) {
-
         allRunFor(
                 spec,
                 Stream.iterate(1, i -> i + 1)
