@@ -32,17 +32,11 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,8 +64,7 @@ class DefaultTransactionHandlerTests {
      * @param pcesRound whether the round is a PCES round
      * @return the new round
      */
-    private ConsensusRound newConsensusRound(
-            final boolean pcesRound) {
+    private ConsensusRound newConsensusRound(final boolean pcesRound) {
         final List<PlatformEvent> events = List.of(
                 new TestingEventBuilder(random)
                         .setAppTransactionCount(3)
@@ -83,13 +76,13 @@ class DefaultTransactionHandlerTests {
                         .setSystemTransactionCount(0)
                         .setConsensusTimestamp(random.nextInstant())
                         .build(),
-                // test should have at least one event with no transactions to ensure that these events are provided to the app
+                // test should have at least one event with no transactions to ensure that these events are provided to
+                // the app
                 new TestingEventBuilder(random)
                         .setAppTransactionCount(0)
                         .setSystemTransactionCount(0)
                         .setConsensusTimestamp(random.nextInstant())
-                        .build()
-        );
+                        .build());
         events.forEach(PlatformEvent::signalPrehandleCompletion);
         final PlatformEvent keystone = new TestingEventBuilder(random).build();
         keystone.signalPrehandleCompletion();
@@ -123,7 +116,10 @@ class DefaultTransactionHandlerTests {
 
         assertTrue(tester.getSubmittedActions().isEmpty(), "no status should have been submitted");
         assertEquals(1, tester.getHandledRounds().size(), "a round should have been handled");
-        assertSame(consensusRound, tester.getHandledRounds().getFirst(), "the round handled should be the one we provided");
+        assertSame(
+                consensusRound,
+                tester.getHandledRounds().getFirst(),
+                "the round handled should be the one we provided");
         boolean eventWithNoTransactions = false;
         for (final ConsensusEvent consensusEvent : tester.getHandledRounds().getFirst()) {
             if (!consensusEvent.consensusTransactionIterator().hasNext()) {
@@ -131,7 +127,9 @@ class DefaultTransactionHandlerTests {
                 break;
             }
         }
-        assertTrue(eventWithNoTransactions, "at least one event with no transactions should have been provided to the app");
+        assertTrue(
+                eventWithNoTransactions,
+                "at least one event with no transactions should have been provided to the app");
         assertNull(tester.getPlatformState().getLastFrozenTime(), "no freeze time should have been set");
 
         assertEquals(
@@ -143,7 +141,10 @@ class DefaultTransactionHandlerTests {
                         .getFutureHash()
                         .getAndRethrow(),
                 "the running hash should be updated");
-        assertEquals(pcesRound, handlerOutput.reservedSignedState().get().isPcesRound(), "the state should match the PCES boolean");
+        assertEquals(
+                pcesRound,
+                handlerOutput.reservedSignedState().get().isPcesRound(),
+                "the state should match the PCES boolean");
     }
 
     @Test
@@ -161,14 +162,16 @@ class DefaultTransactionHandlerTests {
                 "state should be returned with a reservation");
 
         assertEquals(1, tester.getSubmittedActions().size(), "the freeze status should have been submitted");
-        assertEquals(FreezePeriodEnteredAction.class, tester.getSubmittedActions().getFirst().getClass());
+        assertEquals(
+                FreezePeriodEnteredAction.class,
+                tester.getSubmittedActions().getFirst().getClass());
         assertEquals(1, tester.getHandledRounds().size(), "a round should have been handled");
         assertSame(consensusRound, tester.getHandledRounds().getFirst(), "it should be the round we provided");
         assertNotNull(tester.getPlatformState().getLastFrozenTime(), "freeze time should have been set");
 
         final ConsensusRound postFreezeConsensusRound = newConsensusRound(false);
-        final StateAndRound postFreezeOutput = tester.getTransactionHandler()
-                .handleConsensusRound(postFreezeConsensusRound);
+        final StateAndRound postFreezeOutput =
+                tester.getTransactionHandler().handleConsensusRound(postFreezeConsensusRound);
         assertNull(postFreezeOutput, "no state should be created after freeze period");
 
         assertEquals(1, tester.getSubmittedActions().size(), "no new status should have been submitted");
