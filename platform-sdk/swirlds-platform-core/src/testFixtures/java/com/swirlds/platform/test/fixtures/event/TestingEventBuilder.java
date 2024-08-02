@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventDescriptor;
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -101,7 +101,7 @@ public class TestingEventBuilder {
      * <p>
      * If not set, transactions will be auto generated, based on configured settings.
      */
-    private List<OneOf<PayloadOneOfType>> transactions;
+    private List<OneOf<TransactionOneOfType>> transactions;
 
     /**
      * The self parent of the event.
@@ -283,7 +283,8 @@ public class TestingEventBuilder {
      * @param transactions the transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setTransactions(@Nullable final List<OneOf<PayloadOneOfType>> transactions) {
+    public @NonNull TestingEventBuilder setTransactions(
+            @Nullable final List<OneOf<TransactionOneOfType>> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(
                     "Cannot set transactions when app transaction count, system transaction count, or transaction "
@@ -437,7 +438,7 @@ public class TestingEventBuilder {
      * @return the generated transactions
      */
     @NonNull
-    private List<OneOf<PayloadOneOfType>> generateTransactions() {
+    private List<OneOf<TransactionOneOfType>> generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
         }
@@ -446,7 +447,7 @@ public class TestingEventBuilder {
             systemTransactionCount = DEFAULT_SYSTEM_TRANSACTION_COUNT;
         }
 
-        final List<OneOf<PayloadOneOfType>> generatedTransactions = new ArrayList<>();
+        final List<OneOf<TransactionOneOfType>> generatedTransactions = new ArrayList<>();
 
         if (transactionSize == null) {
             transactionSize = DEFAULT_TRANSACTION_SIZE;
@@ -455,13 +456,13 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
+            generatedTransactions.add(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(bytes)));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
             generatedTransactions.add(new OneOf<>(
-                    STATE_SIGNATURE_PAYLOAD,
-                    StateSignaturePayload.newBuilder()
+                    STATE_SIGNATURE_TRANSACTION,
+                    StateSignatureTransaction.newBuilder()
                             .round(random.nextLong(0, Long.MAX_VALUE))
                             .signature(RandomUtils.randomSignatureBytes(random))
                             .hash(RandomUtils.randomHashBytes(random))
