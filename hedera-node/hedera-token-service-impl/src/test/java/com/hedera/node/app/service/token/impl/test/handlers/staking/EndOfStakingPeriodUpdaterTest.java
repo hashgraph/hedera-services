@@ -39,7 +39,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
-import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -79,7 +79,7 @@ public class EndOfStakingPeriodUpdaterTest {
     private TokenContext context;
 
     @Mock
-    private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
+    private NodeStakeUpdateStreamBuilder nodeStakeUpdateRecordBuilder;
 
     private ReadableAccountStore accountStore;
 
@@ -420,7 +420,7 @@ public class EndOfStakingPeriodUpdaterTest {
                 .willReturn((WritableSingletonState) stakingRewardsState);
         stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
         given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
     }

@@ -58,7 +58,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.Builder;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -124,7 +124,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     private TokensConfig tokensConfig;
 
     @Mock
-    private ContractUpdateRecordBuilder recordBuilder;
+    private ContractUpdateStreamBuilder recordBuilder;
 
     @Mock
     private HandleContext.SavepointStack stack;
@@ -472,7 +472,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.savepointStack()).thenReturn(stack);
-        when(stack.getBaseBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(stack.getBaseBuilder(ContractUpdateStreamBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -703,7 +703,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.savepointStack()).thenReturn(stack);
-        when(stack.getBaseBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(stack.getBaseBuilder(ContractUpdateStreamBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 

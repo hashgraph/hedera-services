@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record PendingCreationMetadata(
-        @NonNull ContractOperationRecordBuilder recordBuilder, boolean externalizeInitcodeOnSuccess) {}
+        @NonNull ContractOperationStreamBuilder recordBuilder, boolean externalizeInitcodeOnSuccess) {}

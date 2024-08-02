@@ -16,23 +16,19 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.hapi.node.base.TokenAssociation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
+ * A {@code StreamBuilder} specialization for tracking the effects of a {@code TokenUpdate}
  * transaction.
  */
-public interface CryptoUpdateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenUpdateStreamBuilder extends TokenBaseStreamBuilder {
     /**
-     * Tracks update of a new account by number. Even if someday we support creating multiple
-     * accounts within a smart contract call, we will still only need to track one created account
-     * per child record.
-     *
-     * @param accountID the {@link AccountID} of the new account
-     * @return this builder
+     * Adds the token relations that are created by auto associations.
+     * This information is needed while building the transfer list, to set the auto association flag.
+     * @param tokenAssociation the token association that is created by auto association
+     * @return the builder
      */
-    @NonNull
-    CryptoUpdateRecordBuilder accountID(@NonNull AccountID accountID);
+    TokenUpdateStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }

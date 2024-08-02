@@ -34,9 +34,9 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -47,17 +47,17 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-class ContractOperationRecordBuilderTest {
+class ContractOperationStreamBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
-        final var subject = new ContractOperationRecordBuilder() {
+        final var subject = new ContractOperationStreamBuilder() {
             @Override
             public int getNumAutoAssociations() {
                 return 0;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+            public StreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }
 
@@ -82,17 +82,17 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+            public StreamBuilder memo(@NonNull String memo) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+            public StreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+            public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
                 return this;
             }
 
@@ -120,14 +120,14 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public ContractOperationRecordBuilder transactionFee(final long transactionFee) {
+            public ContractOperationStreamBuilder transactionFee(final long transactionFee) {
                 totalFee = transactionFee;
                 return this;
             }
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractActions(
+            public ContractOperationStreamBuilder addContractActions(
                     @NonNull ContractActions contractActions, boolean isMigration) {
                 this.actions = contractActions;
                 return this;
@@ -135,14 +135,14 @@ class ContractOperationRecordBuilderTest {
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractBytecode(
+            public ContractOperationStreamBuilder addContractBytecode(
                     @NonNull ContractBytecode contractBytecode, boolean isMigration) {
                 return this;
             }
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractStateChanges(
+            public ContractOperationStreamBuilder addContractStateChanges(
                     @NonNull ContractStateChanges contractStateChanges, boolean isMigration) {
                 stateChanges = contractStateChanges;
                 return this;
@@ -172,7 +172,7 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+            public StreamBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
@@ -190,12 +190,12 @@ class ContractOperationRecordBuilderTest {
             public void nullOutSideEffectFields() {}
 
             @Override
-            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+            public StreamBuilder syncBodyIdFromRecordId() {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
                 return null;
             }
 
@@ -205,12 +205,12 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
                 return null;
             }
         };
