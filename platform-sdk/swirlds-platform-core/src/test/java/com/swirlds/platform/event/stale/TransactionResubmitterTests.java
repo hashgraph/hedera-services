@@ -21,6 +21,7 @@ import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfTy
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
@@ -70,11 +71,11 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
-        final List<OneOf<TransactionOneOfType>> systemTransactions = new ArrayList<>();
+        final List<EventTransaction> transactions = new ArrayList<>();
+        final List<EventTransaction> systemTransactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
             final boolean systemTransaction = randotron.nextBoolean();
-            final OneOf<TransactionOneOfType> transaction;
+            final EventTransaction transaction;
             if (systemTransaction) {
 
                 final boolean tooOld = randotron.nextBoolean(0.1);
@@ -92,7 +93,7 @@ class TransactionResubmitterTests {
 
                 final StateSignatureTransaction payload = new StateSignatureTransaction(
                         round, randotron.nextSignature().getBytes(), randotron.nextHashBytes());
-                transaction = new OneOf<>(STATE_SIGNATURE_TRANSACTION, payload);
+                transaction = new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, payload));
 
                 if (!tooOld) {
                     systemTransactions.add(transaction);
@@ -100,7 +101,7 @@ class TransactionResubmitterTests {
             } else {
                 final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
                 buffer.putLong(randotron.nextLong());
-                transaction = new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
+                transaction = new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array())));
             }
             transactions.add(transaction);
         }
@@ -108,7 +109,7 @@ class TransactionResubmitterTests {
         final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
-        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<EventTransaction> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
 
         assertEquals(systemTransactions.size(), transactionsToResubmit.size());
         for (int i = 0; i < systemTransactions.size(); i++) {
@@ -143,10 +144,11 @@ class TransactionResubmitterTests {
             transactions.add(transaction);
         }
 
-        final PlatformEvent event =
-                new TestingEventBuilder(randotron).setTransactions(transactions).build();
+        final PlatformEvent event = new TestingEventBuilder(randotron)
+                .setOneOfTransactions(transactions)
+                .build();
 
-        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<EventTransaction> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 
@@ -171,7 +173,7 @@ class TransactionResubmitterTests {
                 .setTransactions(Collections.emptyList())
                 .build();
 
-        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<EventTransaction> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 

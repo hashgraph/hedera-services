@@ -54,7 +54,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessm
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -209,7 +209,7 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
         // create a new transfer context that is specific only for this transaction
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
-        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
         executeCryptoTransfer(txn, transferContext, context, recordBuilder);
     }

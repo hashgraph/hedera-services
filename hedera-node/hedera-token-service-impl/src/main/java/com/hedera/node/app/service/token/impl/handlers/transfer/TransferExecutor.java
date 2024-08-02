@@ -39,7 +39,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -97,14 +97,14 @@ public class TransferExecutor {
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
-            CryptoTransferRecordBuilder recordBuilder) {
+            CryptoTransferStreamBuilder recordBuilder) {
         executeCryptoTransfer(txn, transferContext, context, recordBuilder, false);
     }
 
     protected void executeAirdropCryptoTransfer(
             @NonNull final HandleContext context,
             @NonNull final List<TokenTransferList> tokenTransferList,
-            @NonNull final CryptoTransferRecordBuilder recordBuilder) {
+            @NonNull final CryptoTransferStreamBuilder recordBuilder) {
         var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(tokenTransferList)
                 .build();
@@ -115,8 +115,7 @@ public class TransferExecutor {
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
 
         // We should skip custom fee steps here, because they must be already prepaid
-        executeCryptoTransferWithoutCustomFee(
-                syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
+        executeCryptoTransferWithoutCustomFee(syntheticCryptoTransferTxn, transferContext, context, recordBuilder);
     }
 
     /**
@@ -149,15 +148,13 @@ public class TransferExecutor {
      * @param txn             transaction body
      * @param transferContext transfer context
      * @param context         handle context
-     * @param validator       crypto transfer validator
      * @param recordBuilder   record builder
      */
     protected void executeCryptoTransferWithoutCustomFee(
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
-            CryptoTransferValidator validator,
-            CryptoTransferRecordBuilder recordBuilder) {
+            CryptoTransferStreamBuilder recordBuilder) {
         executeCryptoTransfer(txn, transferContext, context, recordBuilder, true);
     }
 
@@ -174,7 +171,7 @@ public class TransferExecutor {
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
-            CryptoTransferRecordBuilder recordBuilder,
+            CryptoTransferStreamBuilder recordBuilder,
             boolean skipCustomFee) {
         final var topLevelPayer = context.payer();
         // Use the op with replaced aliases in further steps

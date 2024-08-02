@@ -80,6 +80,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCancelAirdrop;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
@@ -172,6 +173,11 @@ public class TxnVerbs {
     public static HapiTokenCancelAirdrop tokenCancelAirdrop(
             final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
         return new HapiTokenCancelAirdrop(pendingAirdropIds);
+    }
+
+    @SafeVarargs
+    public static HapiTokenClaimAirdrop tokenClaimAirdrop(Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+        return new HapiTokenClaimAirdrop(pendingAirdropIds);
     }
 
     public static HapiCryptoUpdate cryptoUpdate(String account) {

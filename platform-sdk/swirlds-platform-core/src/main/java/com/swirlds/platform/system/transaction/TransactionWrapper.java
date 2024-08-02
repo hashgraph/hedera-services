@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.platform.util.TransactionUtils;
@@ -36,17 +37,29 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final OneOf<TransactionOneOfType> payload;
+    private final EventTransaction payload;
 
     /**
-     * Constructs a new payload wrapper
+     * Constructs a new transaction wrapper
      *
-     * @param payload the hapi payload
+     * @param transaction the hapi transaction
      *
-     * @throws NullPointerException if payload is null
+     * @throws NullPointerException if transaction is null
      */
-    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> payload) {
-        this.payload = Objects.requireNonNull(payload, "payload should not be null");
+    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
+        Objects.requireNonNull(transaction, "transaction should not be null");
+        this.payload = new EventTransaction(transaction);
+    }
+
+    /**
+     * Constructs a new transaction wrapper
+     *
+     * @param transaction the hapi transaction
+     *
+     * @throws NullPointerException if transaction is null
+     */
+    public TransactionWrapper(@NonNull final EventTransaction transaction) {
+        this.payload = Objects.requireNonNull(transaction, "transaction should not be null");
     }
 
     /**
@@ -97,7 +110,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @NonNull
     @Override
-    public OneOf<TransactionOneOfType> getTransaction() {
+    public EventTransaction getTransaction() {
         return payload;
     }
 

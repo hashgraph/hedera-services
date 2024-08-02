@@ -54,7 +54,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextI
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -119,7 +119,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
-        var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropRecordBuilder.class);
+        var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
 
         // validate the transaction body token transfers and NFT transfers
@@ -250,7 +250,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             @NonNull final WritableAirdropStore pendingStore,
             @NonNull final AccountID senderId,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final TokenAirdropRecordBuilder recordBuilder) {
+            @NonNull final TokenAirdropStreamBuilder recordBuilder) {
         nftLists.forEach(item -> {
             // Each time it is important to get the latest sender account, as we are updating the account
             // with new pending airdrop
@@ -304,7 +304,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             @NonNull final AccountID senderId,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableAirdropStore pendingStore,
-            @NonNull final TokenAirdropRecordBuilder recordBuilder) {
+            @NonNull final TokenAirdropStreamBuilder recordBuilder) {
         fungibleAmounts.forEach(accountAmount -> {
             // Each time it is important to get the latest sender account , as we are updating the account
             // with new pending airdrop

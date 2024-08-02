@@ -47,7 +47,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
@@ -319,7 +319,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
         var nftWithNoCustomFees = nonFungibleToken
@@ -333,7 +333,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();

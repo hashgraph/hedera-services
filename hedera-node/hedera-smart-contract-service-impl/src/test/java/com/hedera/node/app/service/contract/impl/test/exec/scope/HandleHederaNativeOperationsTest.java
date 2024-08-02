@@ -63,7 +63,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -93,7 +93,7 @@ class HandleHederaNativeOperationsTest {
     private ReadableTokenStore tokenStore;
 
     @Mock
-    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
+    private CryptoCreateStreamBuilder cryptoCreateRecordBuilder;
 
     @Mock
     private ReadableTokenRelationStore relationStore;
@@ -183,7 +183,7 @@ class HandleHederaNativeOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         when(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -201,7 +201,7 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
