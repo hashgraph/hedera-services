@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
@@ -47,7 +48,7 @@ public class V0530TokenSchema extends StakingInfoManagementSchema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(
-                AIRDROPS_KEY, PendingAirdropId.PROTOBUF, PendingAirdropValue.PROTOBUF, MAX_PENDING_AIRDROPS));
+                AIRDROPS_KEY, PendingAirdropId.PROTOBUF, AccountPendingAirdrop.PROTOBUF, MAX_PENDING_AIRDROPS));
     }
 
     @Override
