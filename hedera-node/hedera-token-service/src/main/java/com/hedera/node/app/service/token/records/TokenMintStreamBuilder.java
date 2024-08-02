@@ -20,30 +20,31 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenBurn}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
-
+public interface TokenMintStreamBuilder extends TokenBaseStreamBuilder {
     /**
-     * Gets the new total supply of a token
-     * @return new total supply of a token
+     * Tracks creation of a new account by number. Even if someday we support creating multiple
+     * accounts within a smart contract call, we will still only need to track one created account
+     * per child record.
+     *
+     * @param serialNumbers the list of new serial numbers minted
+     * @return this builder
      */
-    long getNewTotalSupply();
+    @NonNull
+    TokenMintStreamBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 
     /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
-    @NonNull
-    TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
+    TokenMintStreamBuilder newTotalSupply(final long newTotalSupply);
 
     /**
-     * Sets the list of serial numbers burned
-     * @param serialNumbers list of serial numbers burned
-     * @return this builder
+     * Gets the new total supply of a token
+     * @return new total supply of a token
      */
-    @NonNull
-    TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+    long getNewTotalSupply();
 }

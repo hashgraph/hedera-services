@@ -54,8 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
@@ -88,13 +88,13 @@ import org.junit.jupiter.api.DynamicTest;
  * HIP-993 <a href="https://hips.hedera.com/hip/hip-993#natural-ordering-of-preceding-records">here</a>.
  * <p>
  * The only stream items created in a savepoint that are <b>not</b> expected to be present are those with reversing
- * behavior {@link SingleTransactionRecordBuilder.ReversingBehavior#REMOVABLE}, and whose originating savepoint was rolled back.
+ * behavior {@link StreamBuilder.ReversingBehavior#REMOVABLE}, and whose originating savepoint was rolled back.
  * <p>
  * All other stream items are expected to be present in the record stream once created; but if they are
- * {@link SingleTransactionRecordBuilder.ReversingBehavior#REVERSIBLE}, their status may be changed from {@code SUCCESS} to
+ * {@link StreamBuilder.ReversingBehavior#REVERSIBLE}, their status may be changed from {@code SUCCESS} to
  * {@code REVERTED_SUCCESS} when their originating savepoint is rolled back.
  * <p>
- * Only {@link SingleTransactionRecordBuilder.ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
+ * Only {@link StreamBuilder.ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
  * their originating savepoint is rolled back.
  */
 @DisplayName("given HIP-993 natural dispatch ordering")

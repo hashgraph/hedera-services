@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction;
+package com.hedera.node.app.service.token.api;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * A source of transactions.
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * transaction.
  */
-@FunctionalInterface
-public interface TransactionSupplier {
+public interface FeeStreamBuilder {
+    /**
+     * Gets the current value of the transaction fee in this builder.
+     * @return The current transaction fee value.
+     */
+    long transactionFee();
 
     /**
-     * Returns an array of transactions. May return an empty array.
+     * Sets the consensus transaction fee.
      *
-     * @return an list with 0 or more transactions
+     * @param transactionFee the transaction fee
+     * @return the builder
      */
     @NonNull
-    List<EventTransaction> getTransactions();
+    FeeStreamBuilder transactionFee(final long transactionFee);
 }

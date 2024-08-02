@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.records;
+package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractUpdate}.
+ * A {@code StreamBuilder} specialization for tracking the side-effects of a {@code ConsensusCreateTopic} transaction.
  */
-public interface ContractUpdateRecordBuilder extends DeleteCapableTransactionRecordBuilder {
+public interface ConsensusCreateTopicStreamBuilder extends StreamBuilder {
     /**
-     * Tracks the contract id updated by a successful top-level contract update operation.
+     * Tracks creation of a new topic by {@link TopicID}. Even if someday we support creating multiple topics within a
+     * smart contract call, we will still only need to track one created topic per child record.
      *
-     * @param contractId the {@link ContractID} of the updated top-level contract
+     * @param topicID the {@link TopicID} the new topic
      * @return this builder
      */
     @NonNull
-    ContractUpdateRecordBuilder contractID(@Nullable ContractID contractId);
+    ConsensusCreateTopicStreamBuilder topicID(@NonNull TopicID topicID);
 }

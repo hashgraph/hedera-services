@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCallRecordBuilder extends ContractOperationRecordBuilder {
+public interface ContractCallStreamBuilder extends ContractOperationStreamBuilder {
     /**
      * Returns all assessed custom fees for this call.
      *
@@ -46,7 +46,7 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder status(@NonNull ResponseCodeEnum status);
+    ContractCallStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Returns final status of this contract call's record.
@@ -63,7 +63,7 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder contractID(@Nullable ContractID contractId);
+    ContractCallStreamBuilder contractID(@Nullable ContractID contractId);
 
     /**
      * Returns the token id created.
@@ -79,7 +79,7 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+    ContractCallStreamBuilder contractCallResult(@Nullable ContractFunctionResult result);
 
     /**
      * Returns the in-progress {@link ContractFunctionResult}.
@@ -95,7 +95,7 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
      * @return this builder
      */
     @NonNull
-    ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
+    ContractCallStreamBuilder transaction(@NonNull final Transaction txn);
 
     /**
      * Gets the newly minted serial numbers.
@@ -112,7 +112,7 @@ public interface ContractCallRecordBuilder extends ContractOperationRecordBuilde
     long getNewTotalSupply();
 
     @NonNull
-    ContractCallRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
+    ContractCallStreamBuilder entropyBytes(@NonNull final Bytes prngBytes);
 
     /**
      * Returns the number of auto-associations created in the dispatch.

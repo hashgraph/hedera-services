@@ -24,7 +24,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -59,7 +59,7 @@ public interface SystemContractOperations {
      * @param preemptingStatus the status code causing the preemption
      * @return the record of the preemption
      */
-    ContractCallRecordBuilder externalizePreemptedDispatch(
+    ContractCallStreamBuilder externalizePreemptedDispatch(
             @NonNull TransactionBody syntheticBody, @NonNull ResponseCodeEnum preemptingStatus);
 
     /**

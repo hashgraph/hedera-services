@@ -21,14 +21,14 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Exposes the record customizations needed for a HAPI contract create transaction.
  */
-public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuilder, ContractOperationRecordBuilder {
+public interface ContractCreateStreamBuilder extends StreamBuilder, ContractOperationStreamBuilder {
 
     /**
      * Tracks the final status of a top-level contract creation.
@@ -37,7 +37,7 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder status(@NonNull ResponseCodeEnum status);
+    ContractCreateStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Tracks the contract id created by a successful top-level contract creation.
@@ -46,7 +46,7 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractID(@Nullable ContractID contractId);
+    ContractCreateStreamBuilder contractID(@Nullable ContractID contractId);
 
     /**
      * Tracks the account id created by a successful top-level contract creation.
@@ -54,7 +54,7 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder accountID(@Nullable AccountID accountID);
+    ContractCreateStreamBuilder accountID(@Nullable AccountID accountID);
 
     /**
      * Tracks the result of a top-level contract creation.
@@ -63,8 +63,8 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractCreateResult(@Nullable ContractFunctionResult result);
+    ContractCreateStreamBuilder contractCreateResult(@Nullable ContractFunctionResult result);
 
     @NonNull
-    ContractCreateRecordBuilder transaction(@NonNull Transaction transaction);
+    ContractCreateStreamBuilder transaction(@NonNull Transaction transaction);
 }

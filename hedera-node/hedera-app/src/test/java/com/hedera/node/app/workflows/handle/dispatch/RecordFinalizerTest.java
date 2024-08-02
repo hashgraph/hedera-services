@@ -45,7 +45,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -97,7 +97,7 @@ public class RecordFinalizerTest {
             Bytes.EMPTY,
             HederaFunctionality.CRYPTO_TRANSFER);
 
-    private SingleTransactionRecordBuilderImpl recordBuilder = new SingleTransactionRecordBuilderImpl();
+    private RecordStreamBuilder recordBuilder = new RecordStreamBuilder();
     private RecordFinalizer subject;
 
     @BeforeEach
