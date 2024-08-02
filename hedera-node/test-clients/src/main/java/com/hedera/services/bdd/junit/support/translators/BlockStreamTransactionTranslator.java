@@ -19,13 +19,16 @@ package com.hedera.services.bdd.junit.support.translators;
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.swirlds.common.exceptions.NotImplementedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -68,6 +71,25 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 List.of(),
                 // TODO: construct TransactionOutputs correctly when we have access to token-related transaction types
                 new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    /**
+     * Computes the {@link SingleTransactionRecord}(s) for an ordered collection of transactions,
+     * represented as groups of {@link BlockItem}s and summary {@link StateChanges}. Note that
+     * {@link Transaction}s in the input collection will be associated based on having the same
+     * {@code accountID} and {@code transactionValidStart} (from their {@link TransactionID}s). In
+     * other words, this code will assume that transactions with the same payer account and valid
+     * start time are part of the same user transaction, sharing some sort of parent-children
+     * relationship.
+     *
+     * @param transactions a collection of transactions to translate
+     * @param stateChanges any state changes that occurred during transaction processing
+     * @return the equivalent transaction record outputs
+     */
+    @Override
+    public List<SingleTransactionRecord> translateAll(
+            @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
+        throw new NotImplementedException();
     }
 
     private TransactionRecord.Builder parseTransaction(
