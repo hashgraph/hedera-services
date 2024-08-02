@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -642,35 +643,128 @@ public class TokenAirdropTest {
     @DisplayName("with allowance ")
     class WithAllowance {
 
-        // TODO: fix that.
-        //        @HapiTest
-        //        @DisplayName("and missing owner's signature should fail - INVALID_SIGNATURE")
-        //        final Stream<DynamicTest> missingPayerSigFails() {
-        //            var spender = "spender";
-        //            return hapiTest(
-        //                cryptoCreate(spender),
-        //                cryptoApproveAllowance()
-        //                    .payingWith(OWNER)
-        //                    .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100),
-        //                tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
-        //                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-        //                    // Should be signed by owner as well
-        //                    .signedBy(spender)
-        //                    .hasPrecheck(INVALID_SIGNATURE)
-        //            );
-        //        }
-
         @HapiTest
         @DisplayName("should create an airdrop")
         final Stream<DynamicTest> shouldCreateAnAirdrop() {
             var spender = "spender";
             return hapiTest(
-                    cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
-                    cryptoApproveAllowance().payingWith(OWNER).addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100),
-                    tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
-                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            .signedBy(spender)
-                            .payingWith(spender));
+                cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
+                cryptoApproveAllowance().payingWith(OWNER).addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100),
+                tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
+                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                    .signedBy(spender)
+                    .payingWith(spender));
+        }
+
+        @HapiTest
+        @DisplayName("test")
+        final Stream<DynamicTest> test() {
+            var alice = "alice";
+            var bob = "bob";
+            return hapiTest(
+                cryptoCreate(alice).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
+
+                tokenAssociate(alice, FUNGIBLE_TOKEN),
+                tokenAssociate(bob, FUNGIBLE_TOKEN),
+
+                cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(OWNER, alice)),
+
+                cryptoApproveAllowance().payingWith(alice).addTokenAllowance(alice, FUNGIBLE_TOKEN, bob, 5),
+
+                tokenAirdrop(moving(5, FUNGIBLE_TOKEN)
+                    .between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .signedBy(alice)
+                    .payingWith(alice)
+                    .via("alice airdrop"),
+
+                tokenAssociate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN),
+                cryptoTransfer(movingWithAllowance(5, FUNGIBLE_TOKEN)
+                    .between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .signedBy(bob)
+                    .payingWith(bob),
+
+                // assert txn record
+                getTxnRecord("alice airdrop")
+                    .hasPriority(recordWith()
+                        .pendingAirdrops(includingFungiblePendingAirdrop(
+                            moving(5, FUNGIBLE_TOKEN).between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                // assert balances
+                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                    .hasTokenBalance(FUNGIBLE_TOKEN, 5)
+            );
+        }
+
+        @HapiTest
+        @DisplayName("both owner and spender create an airdrop for the same receiver")
+        final Stream<DynamicTest> ownerAndSpenderCreateAnAirdropForTheSameReceiver() {
+            var alice = "alice";
+            var bob = "bob";
+            return hapiTest(
+                cryptoCreate(alice).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
+
+                tokenAssociate(alice, FUNGIBLE_TOKEN),
+                tokenAssociate(bob, FUNGIBLE_TOKEN),
+
+                cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(OWNER, alice)),
+
+                cryptoApproveAllowance().payingWith(alice).addTokenAllowance(alice, FUNGIBLE_TOKEN, bob, 5),
+
+                tokenAirdrop(moving(5, FUNGIBLE_TOKEN)
+                    .between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .signedBy(alice)
+                    .payingWith(alice)
+                    .via("alice airdrop"),
+
+                tokenAirdrop(movingWithAllowance(5, FUNGIBLE_TOKEN)
+                    .between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .signedBy(bob)
+                    .payingWith(bob)
+                    .via("bob airdrop"),
+
+                // assert txn record
+                getTxnRecord("alice airdrop")
+                    .hasPriority(recordWith()
+                        .pendingAirdrops(includingFungiblePendingAirdrop(
+                            moving(5, FUNGIBLE_TOKEN).between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                getTxnRecord("bob airdrop")
+                    .hasPriority(recordWith()
+                        .pendingAirdrops(includingFungiblePendingAirdrop(
+                            moving(10, FUNGIBLE_TOKEN).between(alice, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                // assert balances
+                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                    .hasTokenBalance(FUNGIBLE_TOKEN, 0)
+            );
+        }
+
+        @HapiTest
+        @DisplayName("spender has more allowances more that the owner balance")
+        final Stream<DynamicTest> spenderHasMoreAllowancesThatTheOwner() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String CAROL = "carol";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_A)
+                    .treasury(ALICE)
+                    .tokenType(FUNGIBLE_COMMON)
+                    .initialSupply(15L),
+                tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                tokenAssociate(CAROL, FUNGIBLE_TOKEN_A),
+
+                cryptoApproveAllowance()
+                    .payingWith(ALICE)
+                    .addTokenAllowance(ALICE, FUNGIBLE_TOKEN_A, BOB, 10L),
+                tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
+                    .signedByPayerAnd(ALICE),
+                tokenAirdrop(movingWithAllowance(6L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
+                    .signedBy(BOB)
+                    .payingWith(BOB)
+                    .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
     }
 
@@ -700,7 +794,7 @@ public class TokenAirdropTest {
                 tokenCreate(FUNGIBLE_TOKEN)
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(1000L),
+                    .initialSupply(10000L),
                 tokenCreate("dummy").treasury(OWNER).tokenType(FUNGIBLE_COMMON).initialSupply(100L),
                 newKeyNamed(nftSupplyKey),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
