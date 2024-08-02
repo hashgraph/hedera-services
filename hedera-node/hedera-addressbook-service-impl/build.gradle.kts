@@ -37,5 +37,3 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }
-
-dependencies { testImplementation("org.bouncycastle:bcprov-jdk18on:1.78") }
