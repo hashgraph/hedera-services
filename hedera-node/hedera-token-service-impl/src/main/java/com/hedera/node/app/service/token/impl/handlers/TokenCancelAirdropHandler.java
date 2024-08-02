@@ -56,6 +56,7 @@ import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -138,17 +139,38 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenCancelAirdropOrThrow();
-
-        handleConfigValidation(context.configuration(), op);
-
-        final var pendingAirdropIds = op.pendingAirdrops();
-        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
-        final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var airdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
-        final var payer = context.payer();
 
-        // Validate the pending airdrop ids
+        final var pendingAirdropIds = op.pendingAirdrops();
+        final var payer = context.payer();
+        final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+        validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
+
+        configValidation(context.configuration(), op);
+        validatePendingAirdropIds(context, pendingAirdropIds, payer, accountStore, airdropStore);
+        deleteAccountAirdropsFromAccount(pendingAirdropIds, airdropStore, payerAccount, accountStore);
+        updateAccountsNumberOfPendingAirdrops(payerAccount, pendingAirdropIds.size(), accountStore);
+        deletePendingAirdropsFromStore(pendingAirdropIds, airdropStore);
+    }
+
+    private static void configValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
+        var tokensConfig = configuration.getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+        validateFalse(
+                op.pendingAirdrops().size() > tokensConfig.maxAllowedPendingAirdropsToCancel(),
+                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+    }
+
+    private static void validatePendingAirdropIds(
+            HandleContext context,
+            List<PendingAirdropId> pendingAirdropIds,
+            AccountID payer,
+            WritableAccountStore accountStore,
+            WritableAirdropStore airdropStore) {
+        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
+        final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
+
         for (var pendingAirdropId : pendingAirdropIds) {
             validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
             if (pendingAirdropId.hasFungibleTokenType()) {
@@ -163,11 +185,13 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                     pendingAirdropId.receiverIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             validateTrue(airdropStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
         }
+    }
 
-        // delete the account airdrops from the linked list
-        final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-        validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
-
+    private static void deleteAccountAirdropsFromAccount(
+            List<PendingAirdropId> pendingAirdropIds,
+            WritableAirdropStore airdropStore,
+            Account payerAccount,
+            WritableAccountStore accountStore) {
         for (var pendingAirdropsToCancel : pendingAirdropIds) {
             final var accountAirdropToCancel = airdropStore.getForModify(pendingAirdropsToCancel);
             validateTrue(accountAirdropToCancel != null, INVALID_TRANSACTION_BODY);
@@ -202,29 +226,21 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                 airdropStore.patch(nextAirdropId, nextAirdropToUpdate);
             }
         }
-
-        final var updatedPayer = getAccountWithUpdatedNumberOfPendingAirdrops(payerAccount, pendingAirdropIds.size());
-        accountStore.put(updatedPayer);
-
-        // delete the pending airdrops from the airdrop store
-        pendingAirdropIds.forEach(airdropStore::remove);
     }
 
-    private static Account getAccountWithUpdatedNumberOfPendingAirdrops(
-            Account payerAccount, int canceledPendingAirdropsSize) {
+    private static void updateAccountsNumberOfPendingAirdrops(
+            Account payerAccount, int canceledPendingAirdropsSize, WritableAccountStore accountStore) {
         var newNumberPendingAirdrops = payerAccount.numberPendingAirdrops() - canceledPendingAirdropsSize;
-        return payerAccount
+        final var updatedAccount = payerAccount
                 .copyBuilder()
                 .numberPendingAirdrops(newNumberPendingAirdrops)
                 .build();
+        accountStore.put(updatedAccount);
     }
 
-    private static void handleConfigValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
-        var tokensConfig = configuration.getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
-        validateFalse(
-                op.pendingAirdrops().size() > tokensConfig.maxAllowedPendingAirdropsToCancel(),
-                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+    private static void deletePendingAirdropsFromStore(
+            List<PendingAirdropId> pendingAirdropIds, WritableAirdropStore airdropStore) {
+        pendingAirdropIds.forEach(airdropStore::remove);
     }
 
     @NonNull
