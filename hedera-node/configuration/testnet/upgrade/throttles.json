@@ -12,6 +12,7 @@
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
+            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",

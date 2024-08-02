@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -62,7 +62,7 @@ class UtilPrngHandlerTest {
     private HandleContext handleContext;
 
     @Mock
-    private PrngRecordBuilder recordBuilder;
+    private PrngStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
@@ -85,7 +85,7 @@ class UtilPrngHandlerTest {
 
         subject = new UtilPrngHandler();
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(PrngStreamBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 

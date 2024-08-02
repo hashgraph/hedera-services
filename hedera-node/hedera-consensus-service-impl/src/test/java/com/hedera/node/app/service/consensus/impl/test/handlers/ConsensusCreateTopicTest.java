@@ -45,7 +45,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
@@ -80,7 +80,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private ConsensusCreateTopicRecordBuilder recordBuilder;
+    private ConsensusCreateTopicStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
@@ -125,7 +125,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(ConsensusCreateTopicRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 

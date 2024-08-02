@@ -48,7 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -78,7 +78,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private NodeCreateRecordBuilder recordBuilder;
+    private NodeCreateStreamBuilder recordBuilder;
 
     @Mock
     private StoreFactory storeFactory;
@@ -382,6 +382,31 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint8))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveInvalidIp2() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint9))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveInvalidIp3() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint10))
                 .build();
         setupHandle();
 

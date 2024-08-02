@@ -21,7 +21,7 @@ import java.time.Instant;
 /**
  * A transaction that has reached consensus.
  */
-public sealed interface ConsensusTransaction extends Transaction permits ConsensusTransactionImpl {
+public sealed interface ConsensusTransaction extends Transaction permits TransactionWrapper {
     /**
      * Returns the community's consensus timestamp for this item.
      *

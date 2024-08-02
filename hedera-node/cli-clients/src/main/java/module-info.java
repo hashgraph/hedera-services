@@ -8,7 +8,6 @@ module com.hedera.node.services.cli {
     requires transitive com.swirlds.platform.core;
     requires transitive info.picocli;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;

@@ -47,7 +47,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -83,7 +83,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private StoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
-    private TokenBaseRecordBuilder recordBuilder;
+    private TokenBaseStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;

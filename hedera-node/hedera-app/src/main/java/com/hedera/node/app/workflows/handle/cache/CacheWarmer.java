@@ -36,7 +36,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.Executor;
@@ -66,7 +66,7 @@ public class CacheWarmer {
         final int parallelism = configProvider
                 .getConfiguration()
                 .getConfigData(CacheConfig.class)
-                .cryptoTransferWarmThreads();
+                .warmThreads();
         this.executor = new ForkJoinPool(parallelism);
     }
 
@@ -76,7 +76,7 @@ public class CacheWarmer {
      * @param state the current state
      * @param round the current round
      */
-    public void warm(@NonNull final HederaState state, @NonNull final Round round) {
+    public void warm(@NonNull final State state, @NonNull final Round round) {
         executor.execute(() -> {
             final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
             final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
@@ -109,7 +109,7 @@ public class CacheWarmer {
         // We can potentially optimize this by limiting the code to the bare minimum needed
         // or keeping the result for later.
         try {
-            final Bytes buffer = platformTransaction.getApplicationPayload();
+            final Bytes buffer = platformTransaction.getApplicationTransaction();
             return checker.parseAndCheck(buffer).txBody();
         } catch (PreCheckException ex) {
             return null;

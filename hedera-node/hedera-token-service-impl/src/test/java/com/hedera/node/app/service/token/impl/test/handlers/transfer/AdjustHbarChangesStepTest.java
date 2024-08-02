@@ -42,21 +42,24 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRe
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class AdjustHbarChangesStepTest extends StepsBase {
+    @Mock
+    private CryptoTransferStreamBuilder builder;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -64,7 +67,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
+                    return new RecordStreamBuilder().status(SUCCESS);
                 });
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
@@ -87,6 +90,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         final var receiver = asAccount(hbarReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 
@@ -113,6 +117,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         final var receiver = asAccount(hbarReceiver);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
