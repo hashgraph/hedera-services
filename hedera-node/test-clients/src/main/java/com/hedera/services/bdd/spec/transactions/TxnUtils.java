@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAliasAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
@@ -117,6 +118,7 @@ public class TxnUtils {
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
     private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
     private static final Pattern POSNEG_NUMERIC_LITERAL_PATTERN = Pattern.compile("^-?\\d+");
+    private static final Pattern HEX_ALIAS_PATTERN = Pattern.compile("^(0x|0X)?[a-fA-F0-9]{40}$");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     // Wait just a bit longer than the 2-second block period to be certain we've ended the period
@@ -200,6 +202,10 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isAlias(final String s) {
+        return HEX_ALIAS_PATTERN.matcher(s).matches();
+    }
+
     public static boolean isNumericLiteral(final String s) {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
@@ -213,6 +219,9 @@ public class TxnUtils {
     }
 
     public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
+        if (isAlias(s)) {
+            return asAliasAccount(s);
+        }
         return isIdLiteral(s)
                 ? asAccount(s)
                 : (lookupSpec.registry().hasAccountId(s)

@@ -59,6 +59,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -1005,6 +1007,153 @@ public class TokenAirdropTest {
                             .signedBy(OWNER)
                             .payingWith(OWNER)
                             .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to incorrect account")
+        final Stream<DynamicTest> transferFungibleTokenToIncorrectAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, "0.0.999999999999999"))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to from account")
+        final Stream<DynamicTest> transferFungibleTokenFromIncorrectAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between("0.0.999999999999999", ALICE))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer NFT to incorrect account")
+        final Stream<DynamicTest> transferNFTTokenToIncorrectAccount() {
+            final String ALICE = "alice";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between(ALICE, "0.0.999999999999999"))
+                            .signedByPayerAnd(ALICE, OWNER)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer NFT to from account")
+        final Stream<DynamicTest> transferNFTTokenFromIncorrectAccount() {
+            final String ALICE = "alice";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between("0.0.999999999999999", ALICE))
+                            .signedByPayerAnd(ALICE, OWNER)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to incorrect alias")
+        final Stream<DynamicTest> transferFungibleTokenToIncorrectAliasAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
+                                    .between(ALICE, "0x0000000000000000000000691752902764108185"))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ALIAS_KEY));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token from incorrect alias")
+        final Stream<DynamicTest> transferFungibleTokenFromIncorrectAliasAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
+                                    .between("0x0000000000000000000000691752902764108185", ALICE))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer invalid fungible token")
+        final Stream<DynamicTest> transferInvalidFungibleToken() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    withOpContext((spec, opLog) -> {
+                        spec.registry()
+                                .saveTokenId(
+                                        FUNGIBLE_TOKEN_A,
+                                        TokenID.newBuilder()
+                                                .setTokenNum(5555555L)
+                                                .build());
+                    }),
+                    tokenAirdrop(moving(50L, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_TOKEN_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to incorrect alias")
+        final Stream<DynamicTest> transferInvalidNFT() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String nftKey = "nftKey";
+
+            final String NON_FUNGIBLE_TOKEN_A = "onnFungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    newKeyNamed(nftKey),
+                    tokenCreate(NON_FUNGIBLE_TOKEN_A)
+                            .treasury(OWNER)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .initialSupply(0L)
+                            .name(NON_FUNGIBLE_TOKEN_A)
+                            .supplyKey(nftKey),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN_A),
+                    withOpContext((spec, opLog) -> {
+                        spec.registry()
+                                .saveTokenId(
+                                        NON_FUNGIBLE_TOKEN_A,
+                                        TokenID.newBuilder()
+                                                .setTokenNum(5555555L)
+                                                .build());
+                    }),
+                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN_A, 1L)
+                                    .between(ALICE, BOB))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_TOKEN_ID));
         }
     }
 
