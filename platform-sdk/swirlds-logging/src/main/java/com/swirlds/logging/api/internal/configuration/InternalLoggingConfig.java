@@ -23,7 +23,7 @@ import java.time.Duration;
 /**
  * Configuration for the internal logging system.
  *
- * @param updatePeriode the update period for the logging system. The logging system will check for updates regarding
+ * @param reloadConfigPeriod the update period for the logging system. The logging system will check for updates regarding
  *                      levels and markers every updatePeriode.
  */
 @ConfigData("logging")
