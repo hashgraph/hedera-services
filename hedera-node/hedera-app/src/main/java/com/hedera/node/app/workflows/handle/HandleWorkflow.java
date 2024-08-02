@@ -390,10 +390,7 @@ public class HandleWorkflow {
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
             recordCache.add(
-                    userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().payerID(),
-                    handleOutput.recordStreamItems(),
-                    userTxn.stack());
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -419,8 +416,7 @@ public class HandleWorkflow {
         recordCache.add(
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidRecord),
-                userTxn.stack());
+                List.of(failInvalidRecord));
         // TODO: Add block items
         return new HandleOutput(List.of(), List.of(failInvalidRecord));
     }

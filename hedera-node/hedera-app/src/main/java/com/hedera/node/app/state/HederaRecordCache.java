@@ -19,8 +19,9 @@ package com.hedera.node.app.state;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -53,14 +54,9 @@ public interface HederaRecordCache extends RecordCache {
      *                           only contains the user transaction. Or it may be a list including preceding
      *                           transactions, user transactions, and child transactions. There is no requirement as to
      *                           the order of items in this list.
-     * @param stack
      */
     /*HANDLE THREAD ONLY*/
-    void add(
-            long nodeId,
-            @NonNull AccountID payerAccountId,
-            @NonNull List<SingleTransactionRecord> transactionRecords,
-            final SavepointStackImpl stack);
+    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is
@@ -74,6 +70,10 @@ public interface HederaRecordCache extends RecordCache {
      */
     @NonNull
     DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId);
+
+    void resetRoundReceipts();
+
+    void commitAndPurgeIfAny(final State state, final Instant blockTimestamp);
 
     /** The possible results of a duplicate check */
     enum DuplicateCheckResult {

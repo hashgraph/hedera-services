@@ -24,6 +24,7 @@ package proto;
 
 import "basic_types.proto";
 import "transaction_record.proto";
+import "response_code.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.recordcache">>> This comment is special code for setting PBJ Compiler java package
@@ -52,4 +53,26 @@ message TransactionRecordEntry {
      * The transaction record for the transaction.
      */
     TransactionRecord transaction_record = 3;
+}
+
+message TransactionReceiptEntry {
+    /**
+    * The ID of the node that submitted the transaction to consensus. The ID is the ID of the node as known by the
+    * address book. Valid node IDs are in the range 0..2^63-1, inclusive.
+    */
+    int64 node_id = 1;
+
+    /**
+     * The id of the submitted transaction.
+     */
+    TransactionID transaction_id = 2;
+
+    /**
+     * The resulting status of handling the transaction.
+     */
+    ResponseCodeEnum status = 3;
+}
+
+message TransactionReceiptEntries {
+    repeated TransactionReceiptEntry entries = 1;
 }

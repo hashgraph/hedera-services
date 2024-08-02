@@ -42,6 +42,7 @@ import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -84,6 +85,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final ExecutorService executor;
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
+    private final HederaRecordCache recordCache;
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
@@ -105,10 +107,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final InitTrigger initTrigger,
             @NonNull final BlockItemWriter writer,
             @NonNull final ExecutorService executor,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final HederaRecordCache recordCache) {
         this.writer = requireNonNull(writer);
         this.executor = requireNonNull(executor);
         this.initTrigger = requireNonNull(initTrigger);
+        this.recordCache = recordCache;
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.nodeVersion = nodeVersionFrom(config);
@@ -143,6 +147,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .softwareVersion(nodeVersion)
                         .hapiProtoVersion(hapiVersion))
                 .build());
+        recordCache.resetRoundReceipts();
         writer.openBlock(blockNumber);
     }
 
@@ -153,6 +158,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         //                blockNumber,
         //                roundStateChangeListener.stateChanges());
         writeFuture.join();
+
+        recordCache.commitAndPurgeIfAny(state, blockTimestamp);
 
         final var writableState = state.getWritableStates(BlockStreamService.NAME);
         final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);

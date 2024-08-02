@@ -155,8 +155,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                                 .receipt(TransactionReceipt.newBuilder()
                                         .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
                                         .build())
-                                .build())),
-                stack);
+                                .build())));
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var answer = response.transactionGetReceiptOrThrow();
@@ -197,8 +196,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                                 .receipt(TransactionReceipt.newBuilder()
                                         .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
                                         .build())
-                                .build())),
-                stack);
+                                .build())));
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var answer = response.transactionGetReceiptOrThrow();
