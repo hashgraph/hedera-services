@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
@@ -41,7 +40,6 @@ import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -254,16 +252,9 @@ public class HandleWorkflow {
         }
     }
 
-    // (FUTURE) Determine if/how we should fill in the birthRound, event descriptors, signature below
     private void streamMetadata(@NonNull final ConsensusEvent event) {
-        final var eventCore = new EventCore(
-                event.getCreatorId().id(),
-                0L,
-                asTimestamp(event.getTimeCreated()),
-                List.of(),
-                event.getSoftwareVersion());
         final var metadataItem = BlockItem.newBuilder()
-                .startEvent(new EventMetadata(eventCore, Bytes.EMPTY))
+                .startEvent(new EventMetadata(event.getEventCore(), event.getSignature()))
                 .build();
         blockStreamManager.writeItem(metadataItem);
     }
