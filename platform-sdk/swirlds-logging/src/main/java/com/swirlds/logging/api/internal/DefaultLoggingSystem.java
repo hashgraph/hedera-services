@@ -33,6 +33,7 @@ import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +100,9 @@ public class DefaultLoggingSystem {
             initialized.set(true);
 
             final InternalLoggingConfig loggingConfig = configuration.getConfigData(InternalLoggingConfig.class);
-            final long millis = loggingConfig.updatePeriode().get(ChronoUnit.MILLIS);
+            final long millis = Optional.ofNullable(loggingConfig.reloadConfigPeriod())
+                    .orElse(Duration.ofSeconds(10))
+                    .get(ChronoUnit.MILLIS);
             BaseExecutorFactory.getInstance()
                     .scheduleAtFixedRate(this::updateConfiguration, 0, millis, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
