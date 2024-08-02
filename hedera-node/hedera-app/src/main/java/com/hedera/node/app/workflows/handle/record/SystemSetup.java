@@ -35,7 +35,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
-import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -267,7 +267,7 @@ public class SystemSetup {
         for (final Account account : accts) {
             // Since this is only called at genesis, the active savepoint's preceding record capacity will be
             // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
-            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class);
             recordBuilder.accountID(account.accountId());
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);

@@ -48,7 +48,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
-import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -60,7 +60,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class IoBlockItemsBuilderTest {
+public class BlockStreamBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
     public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
@@ -203,10 +203,10 @@ public class IoBlockItemsBuilderTest {
         assertEquals(transaction, txnBlockItem.transaction());
     }
 
-    private IoBlockItemsBuilder createBaseBuilder() {
+    private BlockStreamBuilder createBaseBuilder() {
         final List<TokenTransferList> tokenTransferLists = List.of(tokenTransfer);
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
-        return new IoBlockItemsBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
+        return new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
                 .status(status)
                 .consensusTimestamp(CONSENSUS_TIME)
                 .parentConsensus(PARENT_CONSENSUS_TIME)

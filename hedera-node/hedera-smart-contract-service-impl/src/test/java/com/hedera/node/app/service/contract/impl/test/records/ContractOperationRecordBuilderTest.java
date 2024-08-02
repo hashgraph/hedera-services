@@ -34,7 +34,7 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 class ContractOperationRecordBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
-        final var subject = new ContractOperationRecordBuilder() {
+        final var subject = new ContractOperationStreamBuilder() {
             @Override
             public int getNumAutoAssociations() {
                 return 0;
@@ -125,14 +125,14 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public ContractOperationRecordBuilder transactionFee(final long transactionFee) {
+            public ContractOperationStreamBuilder transactionFee(final long transactionFee) {
                 totalFee = transactionFee;
                 return this;
             }
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractActions(
+            public ContractOperationStreamBuilder addContractActions(
                     @NonNull ContractActions contractActions, boolean isMigration) {
                 this.actions = contractActions;
                 return this;
@@ -140,14 +140,14 @@ class ContractOperationRecordBuilderTest {
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractBytecode(
+            public ContractOperationStreamBuilder addContractBytecode(
                     @NonNull ContractBytecode contractBytecode, boolean isMigration) {
                 return this;
             }
 
             @NonNull
             @Override
-            public ContractOperationRecordBuilder addContractStateChanges(
+            public ContractOperationStreamBuilder addContractStateChanges(
                     @NonNull ContractStateChanges contractStateChanges, boolean isMigration) {
                 stateChanges = contractStateChanges;
                 return this;

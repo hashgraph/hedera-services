@@ -23,7 +23,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public interface EthereumTransactionRecordBuilder extends ContractOperationRecordBuilder {
+public interface EthereumTransactionStreamBuilder extends ContractOperationStreamBuilder {
     /**
      * Tracks the final status of a HAPI Ethereum transaction.
      *
@@ -31,7 +31,7 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      * @return this builder
      */
     @NonNull
-    EthereumTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
+    EthereumTransactionStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Tracks the contract id called or created by the HAPI Ethereum transaction.
@@ -40,7 +40,7 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      * @return this builder
      */
     @NonNull
-    EthereumTransactionRecordBuilder contractID(@Nullable ContractID contractId);
+    EthereumTransactionStreamBuilder contractID(@Nullable ContractID contractId);
 
     /**
      * Tracks the result of a HAPI Ethereum transaction performing a top-level contract call.
@@ -49,7 +49,7 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      * @return this builder
      */
     @NonNull
-    EthereumTransactionRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+    EthereumTransactionStreamBuilder contractCallResult(@Nullable ContractFunctionResult result);
 
     /**
      * Tracks the result of a HAPI Ethereum transaction performing a top-level contract creation.
@@ -58,7 +58,7 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      * @return this builder
      */
     @NonNull
-    EthereumTransactionRecordBuilder contractCreateResult(@Nullable ContractFunctionResult result);
+    EthereumTransactionStreamBuilder contractCreateResult(@Nullable ContractFunctionResult result);
 
     /**
      * Tracks the hash of a HAPI Ethereum transaction.
@@ -67,5 +67,5 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      * @return this builder
      */
     @NonNull
-    EthereumTransactionRecordBuilder ethereumHash(@NonNull Bytes ethereumHash);
+    EthereumTransactionStreamBuilder ethereumHash(@NonNull Bytes ethereumHash);
 }

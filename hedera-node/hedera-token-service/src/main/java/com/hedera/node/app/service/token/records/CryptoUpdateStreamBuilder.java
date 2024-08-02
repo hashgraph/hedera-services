@@ -16,34 +16,23 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenBurn}
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
  * transaction.
  */
-public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
-
+public interface CryptoUpdateStreamBuilder extends StreamBuilder {
     /**
-     * Gets the new total supply of a token
-     * @return new total supply of a token
-     */
-    long getNewTotalSupply();
-
-    /**
-     * Sets the new total supply of a token
-     * @param newTotalSupply the new total supply of a token
+     * Tracks update of a new account by number. Even if someday we support creating multiple
+     * accounts within a smart contract call, we will still only need to track one created account
+     * per child record.
+     *
+     * @param accountID the {@link AccountID} of the new account
      * @return this builder
      */
     @NonNull
-    TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
-
-    /**
-     * Sets the list of serial numbers burned
-     * @param serialNumbers list of serial numbers burned
-     * @return this builder
-     */
-    @NonNull
-    TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);
+    CryptoUpdateStreamBuilder accountID(@NonNull AccountID accountID);
 }

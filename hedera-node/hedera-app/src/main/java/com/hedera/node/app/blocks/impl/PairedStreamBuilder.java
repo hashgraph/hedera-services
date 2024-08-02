@@ -38,36 +38,36 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -77,44 +77,44 @@ import java.util.Set;
 
 /**
  * A temporary implementation of {@link StreamBuilder} that forwards all mutating calls to an
- * {@link IoBlockItemsBuilder} and a {@link RecordBuilderImpl}.
+ * {@link BlockStreamBuilder} and a {@link RecordStreamBuilder}.
  */
 public class PairedStreamBuilder
         implements StreamBuilder,
-                ConsensusCreateTopicRecordBuilder,
-                ConsensusSubmitMessageRecordBuilder,
-                CreateFileRecordBuilder,
-                CryptoCreateRecordBuilder,
-                CryptoTransferRecordBuilder,
+                ConsensusCreateTopicStreamBuilder,
+                ConsensusSubmitMessageStreamBuilder,
+                CreateFileStreamBuilder,
+                CryptoCreateStreamBuilder,
+                CryptoTransferStreamBuilder,
                 ChildRecordBuilder,
-                PrngRecordBuilder,
-                ScheduleRecordBuilder,
-                TokenMintRecordBuilder,
-                TokenBurnRecordBuilder,
-                TokenCreateRecordBuilder,
-                ContractCreateRecordBuilder,
-                ContractCallRecordBuilder,
-                ContractUpdateRecordBuilder,
-                EthereumTransactionRecordBuilder,
-                CryptoDeleteRecordBuilder,
-                TokenUpdateRecordBuilder,
-                NodeStakeUpdateRecordBuilder,
+                PrngStreamBuilder,
+                ScheduleStreamBuilder,
+                TokenMintStreamBuilder,
+                TokenBurnStreamBuilder,
+                TokenCreateStreamBuilder,
+                ContractCreateStreamBuilder,
+                ContractCallStreamBuilder,
+                ContractUpdateStreamBuilder,
+                EthereumTransactionStreamBuilder,
+                CryptoDeleteStreamBuilder,
+                TokenUpdateStreamBuilder,
+                NodeStakeUpdateStreamBuilder,
                 FeeRecordBuilder,
-                ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder,
-                ContractOperationRecordBuilder,
-                TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder,
-                NodeCreateRecordBuilder {
-    private final IoBlockItemsBuilder ioBlockItemsBuilder;
-    private final RecordBuilderImpl recordBuilder;
+                ContractDeleteStreamBuilder,
+                GenesisAccountStreamBuilder,
+                ContractOperationStreamBuilder,
+                TokenAccountWipeStreamBuilder,
+                CryptoUpdateStreamBuilder,
+                NodeCreateStreamBuilder {
+    private final BlockStreamBuilder ioBlockItemsBuilder;
+    private final RecordStreamBuilder recordBuilder;
 
     public PairedStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
-        recordBuilder = new RecordBuilderImpl(reversingBehavior, customizer, category);
-        ioBlockItemsBuilder = new IoBlockItemsBuilder(reversingBehavior, customizer, category);
+        recordBuilder = new RecordStreamBuilder(reversingBehavior, customizer, category);
+        ioBlockItemsBuilder = new BlockStreamBuilder(reversingBehavior, customizer, category);
     }
 
     @Override
@@ -123,11 +123,11 @@ public class PairedStreamBuilder
         return this;
     }
 
-    public IoBlockItemsBuilder ioBlockItemsBuilder() {
+    public BlockStreamBuilder ioBlockItemsBuilder() {
         return ioBlockItemsBuilder;
     }
 
-    public RecordBuilderImpl recordBuilder() {
+    public RecordStreamBuilder recordBuilder() {
         return recordBuilder;
     }
 
@@ -255,7 +255,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public NodeCreateRecordBuilder nodeID(long nodeID) {
+    public NodeCreateStreamBuilder nodeID(long nodeID) {
         recordBuilder.nodeID(nodeID);
         ioBlockItemsBuilder.nodeID(nodeID);
         return this;
@@ -263,7 +263,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ConsensusCreateTopicRecordBuilder topicID(@NonNull TopicID topicID) {
+    public ConsensusCreateTopicStreamBuilder topicID(@NonNull TopicID topicID) {
         recordBuilder.topicID(topicID);
         ioBlockItemsBuilder.topicID(topicID);
         return this;
@@ -271,7 +271,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ConsensusSubmitMessageRecordBuilder topicSequenceNumber(long topicSequenceNumber) {
+    public ConsensusSubmitMessageStreamBuilder topicSequenceNumber(long topicSequenceNumber) {
         recordBuilder.topicSequenceNumber(topicSequenceNumber);
         ioBlockItemsBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
@@ -279,7 +279,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ConsensusSubmitMessageRecordBuilder topicRunningHash(@NonNull Bytes topicRunningHash) {
+    public ConsensusSubmitMessageStreamBuilder topicRunningHash(@NonNull Bytes topicRunningHash) {
         recordBuilder.topicRunningHash(topicRunningHash);
         ioBlockItemsBuilder.topicRunningHash(topicRunningHash);
         return this;
@@ -287,7 +287,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ConsensusSubmitMessageRecordBuilder topicRunningHashVersion(long topicRunningHashVersion) {
+    public ConsensusSubmitMessageStreamBuilder topicRunningHashVersion(long topicRunningHashVersion) {
         recordBuilder.topicRunningHashVersion(topicRunningHashVersion);
         ioBlockItemsBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
@@ -335,7 +335,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public EthereumTransactionRecordBuilder ethereumHash(@NonNull Bytes ethereumHash) {
+    public EthereumTransactionStreamBuilder ethereumHash(@NonNull Bytes ethereumHash) {
         recordBuilder.ethereumHash(ethereumHash);
         ioBlockItemsBuilder.ethereumHash(ethereumHash);
         return this;
@@ -349,7 +349,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ContractOperationRecordBuilder addContractActions(
+    public ContractOperationStreamBuilder addContractActions(
             @NonNull ContractActions contractActions, boolean isMigration) {
         recordBuilder.addContractActions(contractActions, isMigration);
         ioBlockItemsBuilder.addContractActions(contractActions, isMigration);
@@ -358,7 +358,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ContractOperationRecordBuilder addContractBytecode(
+    public ContractOperationStreamBuilder addContractBytecode(
             @NonNull ContractBytecode contractBytecode, boolean isMigration) {
         recordBuilder.addContractBytecode(contractBytecode, isMigration);
         ioBlockItemsBuilder.addContractBytecode(contractBytecode, isMigration);
@@ -367,7 +367,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ContractOperationRecordBuilder addContractStateChanges(
+    public ContractOperationStreamBuilder addContractStateChanges(
             @NonNull ContractStateChanges contractStateChanges, boolean isMigration) {
         recordBuilder.addContractStateChanges(contractStateChanges, isMigration);
         ioBlockItemsBuilder.addContractStateChanges(contractStateChanges, isMigration);
@@ -376,7 +376,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public CreateFileRecordBuilder fileID(@NonNull FileID fileID) {
+    public CreateFileStreamBuilder fileID(@NonNull FileID fileID) {
         recordBuilder.fileID(fileID);
         ioBlockItemsBuilder.fileID(fileID);
         return this;
@@ -384,7 +384,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ScheduleRecordBuilder scheduleRef(ScheduleID scheduleRef) {
+    public ScheduleStreamBuilder scheduleRef(ScheduleID scheduleRef) {
         recordBuilder.scheduleRef(scheduleRef);
         ioBlockItemsBuilder.scheduleRef(scheduleRef);
         return this;
@@ -392,7 +392,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ScheduleRecordBuilder scheduleID(ScheduleID scheduleID) {
+    public ScheduleStreamBuilder scheduleID(ScheduleID scheduleID) {
         recordBuilder.scheduleID(scheduleID);
         ioBlockItemsBuilder.scheduleID(scheduleID);
         return this;
@@ -400,7 +400,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public ScheduleRecordBuilder scheduledTransactionID(TransactionID scheduledTransactionID) {
+    public ScheduleStreamBuilder scheduledTransactionID(TransactionID scheduledTransactionID) {
         recordBuilder.scheduledTransactionID(scheduledTransactionID);
         ioBlockItemsBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
@@ -426,7 +426,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public CryptoCreateRecordBuilder evmAddress(@NonNull Bytes evmAddress) {
+    public CryptoCreateStreamBuilder evmAddress(@NonNull Bytes evmAddress) {
         recordBuilder.evmAddress(evmAddress);
         ioBlockItemsBuilder.evmAddress(evmAddress);
         return this;
@@ -450,7 +450,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers) {
+    public CryptoTransferStreamBuilder transferList(@NonNull TransferList hbarTransfers) {
         recordBuilder.transferList(hbarTransfers);
         ioBlockItemsBuilder.transferList(hbarTransfers);
         return this;
@@ -458,7 +458,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public CryptoTransferRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
+    public CryptoTransferStreamBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
         recordBuilder.tokenTransferLists(tokenTransferLists);
         ioBlockItemsBuilder.tokenTransferLists(tokenTransferLists);
         return this;
@@ -466,14 +466,14 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public CryptoTransferRecordBuilder assessedCustomFees(@NonNull List<AssessedCustomFee> assessedCustomFees) {
+    public CryptoTransferStreamBuilder assessedCustomFees(@NonNull List<AssessedCustomFee> assessedCustomFees) {
         recordBuilder.assessedCustomFees(assessedCustomFees);
         ioBlockItemsBuilder.assessedCustomFees(assessedCustomFees);
         return this;
     }
 
     @Override
-    public CryptoTransferRecordBuilder paidStakingRewards(@NonNull List<AccountAmount> paidStakingRewards) {
+    public CryptoTransferStreamBuilder paidStakingRewards(@NonNull List<AccountAmount> paidStakingRewards) {
         recordBuilder.paidStakingRewards(paidStakingRewards);
         ioBlockItemsBuilder.paidStakingRewards(paidStakingRewards);
         return this;
@@ -496,7 +496,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID) {
+    public TokenCreateStreamBuilder tokenID(@NonNull TokenID tokenID) {
         recordBuilder.tokenID(tokenID);
         ioBlockItemsBuilder.tokenID(tokenID);
         return this;
@@ -528,7 +528,7 @@ public class PairedStreamBuilder
     }
 
     @Override
-    public TokenBaseRecordBuilder tokenType(@NonNull TokenType tokenType) {
+    public TokenBaseStreamBuilder tokenType(@NonNull TokenType tokenType) {
         recordBuilder.tokenType(tokenType);
         ioBlockItemsBuilder.tokenType(tokenType);
         return this;
@@ -536,7 +536,7 @@ public class PairedStreamBuilder
 
     @NonNull
     @Override
-    public PrngRecordBuilder entropyNumber(int num) {
+    public PrngStreamBuilder entropyNumber(int num) {
         recordBuilder.entropyNumber(num);
         ioBlockItemsBuilder.entropyNumber(num);
         return this;

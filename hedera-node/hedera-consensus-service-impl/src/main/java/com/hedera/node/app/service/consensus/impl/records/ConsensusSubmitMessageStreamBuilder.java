@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code ConsensusSubmitMessage}
  * transaction.
  */
-public interface ConsensusSubmitMessageRecordBuilder extends StreamBuilder {
+public interface ConsensusSubmitMessageStreamBuilder extends StreamBuilder {
     /**
      * Tracks the sequence number for the topic receiving the submitted message in the associated transaction.
      *
@@ -32,7 +32,7 @@ public interface ConsensusSubmitMessageRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder topicSequenceNumber(long topicSequenceNumber);
+    ConsensusSubmitMessageStreamBuilder topicSequenceNumber(long topicSequenceNumber);
 
     /**
      * Tracks the running hash for the topic receiving the submitted message in the associated transaction.
@@ -41,7 +41,7 @@ public interface ConsensusSubmitMessageRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder topicRunningHash(@NonNull final Bytes topicRunningHash);
+    ConsensusSubmitMessageStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash);
 
     /**
      * Tracks the running hash version for the topic receiving the submitted message in the associated transaction.
@@ -50,5 +50,5 @@ public interface ConsensusSubmitMessageRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder topicRunningHashVersion(long topicRunningHashVersion);
+    ConsensusSubmitMessageStreamBuilder topicRunningHashVersion(long topicRunningHashVersion);
 }

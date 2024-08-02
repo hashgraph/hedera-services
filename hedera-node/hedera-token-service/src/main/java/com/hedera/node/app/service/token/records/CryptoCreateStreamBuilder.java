@@ -18,15 +18,16 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoUpdate}
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface CryptoUpdateRecordBuilder extends StreamBuilder {
+public interface CryptoCreateStreamBuilder extends StreamBuilder {
     /**
-     * Tracks update of a new account by number. Even if someday we support creating multiple
+     * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
      * per child record.
      *
@@ -34,5 +35,29 @@ public interface CryptoUpdateRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoUpdateRecordBuilder accountID(@NonNull AccountID accountID);
+    CryptoCreateStreamBuilder accountID(@NonNull AccountID accountID);
+
+    /**
+     * The new EVM address of the account created by this transaction.
+     * @param evmAddress the new EVM address
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateStreamBuilder evmAddress(@NonNull final Bytes evmAddress);
+
+    /**
+     * The transactionFee charged for this transaction.
+     * @param transactionFee the transaction fee
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateStreamBuilder transactionFee(@NonNull final long transactionFee);
+
+    /**
+     * The memo associated with the transaction.
+     * @param memo the memo
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateStreamBuilder memo(@NonNull final String memo);
 }

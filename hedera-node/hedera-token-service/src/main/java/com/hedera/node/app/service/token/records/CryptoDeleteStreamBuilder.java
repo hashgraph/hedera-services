@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.utils;
+package com.hedera.node.app.service.token.records;
 
-import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 
-public record PendingCreationMetadata(
-        @NonNull ContractOperationStreamBuilder recordBuilder, boolean externalizeInitcodeOnSuccess) {}
+/**
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
+ * transaction.
+ */
+public interface CryptoDeleteStreamBuilder extends DeleteCapableTransactionStreamBuilder {}

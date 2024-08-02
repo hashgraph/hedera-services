@@ -27,14 +27,14 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.swirlds.state.State;
@@ -122,8 +122,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         requireNonNull(customizer);
         final var builder =
                 switch (HandleWorkflow.STREAM_MODE) {
-                    case RECORDS -> new RecordBuilderImpl(reversingBehavior, customizer, txnCategory);
-                    case BLOCKS -> new IoBlockItemsBuilder(reversingBehavior, customizer, txnCategory);
+                    case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+                    case BLOCKS -> new BlockStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {

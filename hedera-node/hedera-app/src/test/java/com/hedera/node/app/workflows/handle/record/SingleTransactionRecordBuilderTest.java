@@ -117,8 +117,8 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        RecordBuilderImpl singleTransactionRecordBuilder =
-                new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -251,8 +251,8 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testTopLevelRecordBuilder() {
-        RecordBuilderImpl singleTransactionRecordBuilder =
-                new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder.transaction(transaction);
 
@@ -273,8 +273,8 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testBuilderWithAddMethods() {
-        RecordBuilderImpl singleTransactionRecordBuilder =
-                new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)

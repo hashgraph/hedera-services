@@ -23,18 +23,18 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
-public interface ContractOperationRecordBuilder extends DeleteCapableTransactionRecordBuilder {
+public interface ContractOperationStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**
      * Sets the transaction fee.
      *
      * @param transactionFee the new transaction fee
-     * @return the updated {@link ContractOperationRecordBuilder}
+     * @return the updated {@link ContractOperationStreamBuilder}
      */
-    ContractOperationRecordBuilder transactionFee(long transactionFee);
+    ContractOperationStreamBuilder transactionFee(long transactionFee);
 
     /**
      * Tracks the ID of an account that should be explicitly considered
@@ -58,7 +58,7 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @param outcome the EVM transaction outcome
      * @return this updated builder
      */
-    default ContractOperationRecordBuilder withCommonFieldsSetFrom(@NonNull final CallOutcome outcome) {
+    default ContractOperationStreamBuilder withCommonFieldsSetFrom(@NonNull final CallOutcome outcome) {
         transactionFee(transactionFee() + outcome.tinybarGasCost());
         if (outcome.actions() != null) {
             addContractActions(outcome.actions(), false);
@@ -77,7 +77,7 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @return this builder
      */
     @NonNull
-    ContractOperationRecordBuilder addContractActions(@NonNull ContractActions contractActions, boolean isMigration);
+    ContractOperationStreamBuilder addContractActions(@NonNull ContractActions contractActions, boolean isMigration);
 
     /**
      * Updates this record builder to include contract bytecode.
@@ -87,7 +87,7 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @return this builder
      */
     @NonNull
-    ContractOperationRecordBuilder addContractBytecode(@NonNull ContractBytecode contractBytecode, boolean isMigration);
+    ContractOperationStreamBuilder addContractBytecode(@NonNull ContractBytecode contractBytecode, boolean isMigration);
 
     /**
      * Updates this record builder to include contract state changes.
@@ -97,6 +97,6 @@ public interface ContractOperationRecordBuilder extends DeleteCapableTransaction
      * @return this builder
      */
     @NonNull
-    ContractOperationRecordBuilder addContractStateChanges(
+    ContractOperationStreamBuilder addContractStateChanges(
             @NonNull ContractStateChanges contractStateChanges, boolean isMigration);
 }

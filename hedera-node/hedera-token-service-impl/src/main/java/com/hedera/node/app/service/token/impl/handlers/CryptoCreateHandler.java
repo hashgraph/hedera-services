@@ -74,7 +74,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -272,7 +272,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         final var createdAccountID = accountCreated.accountIdOrThrow();
-        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoCreateStreamBuilder.class);
         recordBuilder.accountID(createdAccountID);
 
         // Put if any new alias is associated with the account into account store

@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.records;
+package com.hedera.node.app.service.contract.impl.records;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CreateFile} transaction.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code ContractUpdate}.
  */
-public interface CreateFileRecordBuilder extends StreamBuilder {
-
+public interface ContractUpdateStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**
-     * Tracks creation of a new file by {@link FileID}
+     * Tracks the contract id updated by a successful top-level contract update operation.
      *
-     * @param fileID the {@link FileID} of the new file
+     * @param contractId the {@link ContractID} of the updated top-level contract
      * @return this builder
      */
     @NonNull
-    CreateFileRecordBuilder fileID(@NonNull FileID fileID);
+    ContractUpdateStreamBuilder contractID(@Nullable ContractID contractId);
 }

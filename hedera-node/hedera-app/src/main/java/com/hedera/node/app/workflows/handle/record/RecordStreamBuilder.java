@@ -49,31 +49,31 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -103,7 +103,7 @@ import java.util.Set;
  * <p>The protobuf definition for the record files is defined such that a single protobuf object intermixes the
  * possible fields for all different types of transaction in a single object definition. We wanted to provide something
  * nicer and more modular for service authors, so we broke out each logical grouping of state in the record file into
- * different interfaces, such as {@link ConsensusSubmitMessageRecordBuilder} and {@link CreateFileRecordBuilder}, and
+ * different interfaces, such as {@link ConsensusSubmitMessageStreamBuilder} and {@link CreateFileStreamBuilder}, and
  * so forth. Services interact with these builder interfaces, and are thus isolated from details that don't pertain to
  * their service type.
  *
@@ -111,33 +111,33 @@ import java.util.Set;
  * the interfaces for specific transaction types.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public class RecordBuilderImpl
+public class RecordStreamBuilder
         implements StreamBuilder,
-                ConsensusCreateTopicRecordBuilder,
-                ConsensusSubmitMessageRecordBuilder,
-                CreateFileRecordBuilder,
-                CryptoCreateRecordBuilder,
-                CryptoTransferRecordBuilder,
+                ConsensusCreateTopicStreamBuilder,
+                ConsensusSubmitMessageStreamBuilder,
+                CreateFileStreamBuilder,
+                CryptoCreateStreamBuilder,
+                CryptoTransferStreamBuilder,
                 ChildRecordBuilder,
-                PrngRecordBuilder,
-                ScheduleRecordBuilder,
-                TokenMintRecordBuilder,
-                TokenBurnRecordBuilder,
-                TokenCreateRecordBuilder,
-                ContractCreateRecordBuilder,
-                ContractCallRecordBuilder,
-                ContractUpdateRecordBuilder,
-                EthereumTransactionRecordBuilder,
-                CryptoDeleteRecordBuilder,
-                TokenUpdateRecordBuilder,
-                NodeStakeUpdateRecordBuilder,
+                PrngStreamBuilder,
+                ScheduleStreamBuilder,
+                TokenMintStreamBuilder,
+                TokenBurnStreamBuilder,
+                TokenCreateStreamBuilder,
+                ContractCreateStreamBuilder,
+                ContractCallStreamBuilder,
+                ContractUpdateStreamBuilder,
+                EthereumTransactionStreamBuilder,
+                CryptoDeleteStreamBuilder,
+                TokenUpdateStreamBuilder,
+                NodeStakeUpdateStreamBuilder,
                 FeeRecordBuilder,
-                ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder,
-                ContractOperationRecordBuilder,
-                TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder,
-                NodeCreateRecordBuilder {
+                ContractDeleteStreamBuilder,
+                GenesisAccountStreamBuilder,
+                ContractOperationStreamBuilder,
+                TokenAccountWipeStreamBuilder,
+                CryptoUpdateStreamBuilder,
+                NodeCreateStreamBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -198,7 +198,7 @@ public class RecordBuilderImpl
     private TokenID tokenID;
     private TokenType tokenType;
 
-    public RecordBuilderImpl(
+    public RecordStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category) {
@@ -325,13 +325,13 @@ public class RecordBuilderImpl
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
 
-    public RecordBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
+    public RecordStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
         return this;
     }
 
     @Override
-    public RecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
+    public RecordStreamBuilder consensusTimestamp(@NonNull final Instant now) {
         this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
     }
@@ -344,7 +344,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl transaction(@NonNull final Transaction transaction) {
+    public RecordStreamBuilder transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
         return this;
     }
@@ -356,7 +356,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl transactionBytes(@NonNull final Bytes transactionBytes) {
+    public RecordStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
         this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
         return this;
     }
@@ -377,7 +377,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
+    public RecordStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
     }
@@ -389,7 +389,7 @@ public class RecordBuilderImpl
      */
     @NonNull
     @Override
-    public RecordBuilderImpl syncBodyIdFromRecordId() {
+    public RecordStreamBuilder syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
@@ -405,7 +405,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl memo(@NonNull final String memo) {
+    public RecordStreamBuilder memo(@NonNull final String memo) {
         requireNonNull(memo, "memo must not be null");
         transactionRecordBuilder.memo(memo);
         return this;
@@ -447,7 +447,7 @@ public class RecordBuilderImpl
      */
     @NonNull
     @Override
-    public RecordBuilderImpl transactionFee(final long transactionFee) {
+    public RecordStreamBuilder transactionFee(final long transactionFee) {
         this.transactionFee = transactionFee;
         this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
@@ -474,7 +474,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
+    public RecordStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
         transactionRecordBuilder.contractCallResult(contractCallResult);
         this.contractFunctionResult = contractCallResult;
         return this;
@@ -488,7 +488,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
+    public RecordStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
         transactionRecordBuilder.contractCreateResult(contractCreateResult);
         this.contractFunctionResult = contractCreateResult;
         return this;
@@ -513,7 +513,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl transferList(@Nullable final TransferList transferList) {
+    public RecordStreamBuilder transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }
@@ -526,7 +526,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
+    public RecordStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
         return this;
@@ -544,7 +544,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
+    public RecordStreamBuilder addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
         requireNonNull(tokenTransferList, "tokenTransferList must not be null");
         tokenTransferLists.add(tokenTransferList);
         return this;
@@ -552,7 +552,7 @@ public class RecordBuilderImpl
 
     @Override
     @NonNull
-    public RecordBuilderImpl tokenType(final @NonNull TokenType tokenType) {
+    public RecordStreamBuilder tokenType(final @NonNull TokenType tokenType) {
         this.tokenType = requireNonNull(tokenType);
         return this;
     }
@@ -565,7 +565,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
+    public RecordStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
         requireNonNull(scheduleRef, "scheduleRef must not be null");
         transactionRecordBuilder.scheduleRef(scheduleRef);
         return this;
@@ -579,7 +579,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
+    public RecordStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
         requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
         this.assessedCustomFees = assessedCustomFees;
         return this;
@@ -592,7 +592,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addAssessedCustomFee(@NonNull final AssessedCustomFee assessedCustomFee) {
+    public RecordStreamBuilder addAssessedCustomFee(@NonNull final AssessedCustomFee assessedCustomFee) {
         requireNonNull(assessedCustomFee, "assessedCustomFee must not be null");
         assessedCustomFees.add(assessedCustomFee);
         return this;
@@ -605,7 +605,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl automaticTokenAssociations(
+    public RecordStreamBuilder automaticTokenAssociations(
             @NonNull final List<TokenAssociation> automaticTokenAssociations) {
         requireNonNull(automaticTokenAssociations, "automaticTokenAssociations must not be null");
         this.automaticTokenAssociations = automaticTokenAssociations;
@@ -619,7 +619,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
+    public RecordStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
         automaticTokenAssociations.add(automaticTokenAssociation);
         return this;
@@ -637,7 +637,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl alias(@NonNull final Bytes alias) {
+    public RecordStreamBuilder alias(@NonNull final Bytes alias) {
         requireNonNull(alias, "alias must not be null");
         transactionRecordBuilder.alias(alias);
         return this;
@@ -650,7 +650,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl ethereumHash(@NonNull final Bytes ethereumHash) {
+    public RecordStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
         requireNonNull(ethereumHash, "ethereumHash must not be null");
         transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
@@ -663,7 +663,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
+    public RecordStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
         requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
         this.paidStakingRewards = paidStakingRewards;
         return this;
@@ -676,7 +676,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addPaidStakingReward(@NonNull final AccountAmount paidStakingReward) {
+    public RecordStreamBuilder addPaidStakingReward(@NonNull final AccountAmount paidStakingReward) {
         requireNonNull(paidStakingReward, "paidStakingReward must not be null");
         paidStakingRewards.add(paidStakingReward);
         return this;
@@ -690,7 +690,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl entropyNumber(final int num) {
+    public RecordStreamBuilder entropyNumber(final int num) {
         transactionRecordBuilder.prngNumber(num);
         return this;
     }
@@ -703,7 +703,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
+    public RecordStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
         transactionRecordBuilder.prngBytes(prngBytes);
         return this;
@@ -717,7 +717,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
+    public RecordStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress, "evmAddress must not be null");
         transactionRecordBuilder.evmAddress(evmAddress);
         return this;
@@ -739,7 +739,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl status(@NonNull final ResponseCodeEnum status) {
+    public RecordStreamBuilder status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
         transactionReceiptBuilder.status(status);
         return this;
@@ -777,7 +777,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl accountID(@NonNull final AccountID accountID) {
+    public RecordStreamBuilder accountID(@NonNull final AccountID accountID) {
         requireNonNull(accountID, "accountID must not be null");
         transactionReceiptBuilder.accountID(accountID);
         return this;
@@ -791,7 +791,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl fileID(@NonNull final FileID fileID) {
+    public RecordStreamBuilder fileID(@NonNull final FileID fileID) {
         requireNonNull(fileID, "fileID must not be null");
         transactionReceiptBuilder.fileID(fileID);
         return this;
@@ -806,7 +806,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+    public RecordStreamBuilder contractID(@Nullable final ContractID contractID) {
         // Ensure we don't externalize as an account creation too
         transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
@@ -826,7 +826,7 @@ public class RecordBuilderImpl
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public RecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+    public RecordStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;
         return this;
@@ -847,7 +847,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl topicID(@NonNull final TopicID topicID) {
+    public RecordStreamBuilder topicID(@NonNull final TopicID topicID) {
         requireNonNull(topicID, "topicID must not be null");
         transactionReceiptBuilder.topicID(topicID);
         return this;
@@ -861,7 +861,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
+    public RecordStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
         transactionReceiptBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
     }
@@ -874,7 +874,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
+    public RecordStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
         requireNonNull(topicRunningHash, "topicRunningHash must not be null");
         transactionReceiptBuilder.topicRunningHash(topicRunningHash);
         return this;
@@ -888,7 +888,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
+    public RecordStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
         transactionReceiptBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
     }
@@ -901,7 +901,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
+    public RecordStreamBuilder tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
         this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
@@ -920,7 +920,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl nodeID(long nodeId) {
+    public RecordStreamBuilder nodeID(long nodeId) {
         transactionReceiptBuilder.nodeId(nodeId);
         return this;
     }
@@ -932,7 +932,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+    public RecordStreamBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
@@ -950,7 +950,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
+    public RecordStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
         requireNonNull(scheduleID, "scheduleID must not be null");
         transactionReceiptBuilder.scheduleID(scheduleID);
         return this;
@@ -964,7 +964,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
+    public RecordStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
         transactionReceiptBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
     }
@@ -977,7 +977,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
+    public RecordStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
         requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.serialNumbers = serialNumbers;
         return this;
@@ -995,7 +995,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addSerialNumber(final long serialNumber) {
+    public RecordStreamBuilder addSerialNumber(final long serialNumber) {
         serialNumbers.add(serialNumber);
         return this;
     }
@@ -1010,7 +1010,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl contractStateChanges(
+    public RecordStreamBuilder contractStateChanges(
             @NonNull final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges) {
         requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges = contractStateChanges;
@@ -1025,7 +1025,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addContractStateChanges(
+    public RecordStreamBuilder addContractStateChanges(
             @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
         requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
@@ -1040,7 +1040,7 @@ public class RecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public RecordBuilderImpl addContractActions(
+    public RecordStreamBuilder addContractActions(
             @NonNull final ContractActions contractActions, final boolean isMigration) {
         requireNonNull(contractActions, "contractActions must not be null");
         this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
@@ -1056,7 +1056,7 @@ public class RecordBuilderImpl
      */
     @Override
     @NonNull
-    public RecordBuilderImpl addContractBytecode(
+    public RecordStreamBuilder addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
         requireNonNull(contractBytecode, "contractBytecode must not be null");
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));

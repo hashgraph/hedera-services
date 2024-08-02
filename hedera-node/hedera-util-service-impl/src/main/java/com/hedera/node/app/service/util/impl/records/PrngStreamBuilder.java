@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the side-effects of a
  * {@code ConsensusCreateTopic} transaction.
  */
-public interface PrngRecordBuilder extends StreamBuilder {
+public interface PrngStreamBuilder extends StreamBuilder {
     /**
      * Tracks the random number generated within the range provided in
      * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody} if range is greater than 0.
@@ -33,7 +33,7 @@ public interface PrngRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    PrngRecordBuilder entropyNumber(final int num);
+    PrngStreamBuilder entropyNumber(final int num);
 
     /**
      * Tracks the pseudorandom 384-bit string generated when no output range is provided or range of 0 is provided in
@@ -43,5 +43,5 @@ public interface PrngRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    PrngRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
+    PrngStreamBuilder entropyBytes(@NonNull final Bytes prngBytes);
 }

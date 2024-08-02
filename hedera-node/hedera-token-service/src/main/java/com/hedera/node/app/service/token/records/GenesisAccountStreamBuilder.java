@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} that collects and builds the information required to create a synthetic
  * account record, specifically for a system account created during node genesis (startup)
  */
-public interface GenesisAccountRecordBuilder extends StreamBuilder {
+public interface GenesisAccountStreamBuilder extends StreamBuilder {
 
     /**
      * Tracks the created account ID for the system account
@@ -35,7 +35,7 @@ public interface GenesisAccountRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    GenesisAccountRecordBuilder accountID(@NonNull final AccountID accountID);
+    GenesisAccountStreamBuilder accountID(@NonNull final AccountID accountID);
 
     /**
      * Tracks the synthetic transaction that represents the created system account
@@ -43,7 +43,7 @@ public interface GenesisAccountRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    GenesisAccountRecordBuilder transaction(@NonNull final Transaction txn);
+    GenesisAccountStreamBuilder transaction(@NonNull final Transaction txn);
 
     /**
      * Tracks the synthetic transaction that represents the created system account
@@ -51,7 +51,7 @@ public interface GenesisAccountRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    GenesisAccountRecordBuilder status(@NonNull ResponseCodeEnum status);
+    GenesisAccountStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Tracks the memo for the synthetic record
@@ -59,7 +59,7 @@ public interface GenesisAccountRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    GenesisAccountRecordBuilder memo(@NonNull final String memo);
+    GenesisAccountStreamBuilder memo(@NonNull final String memo);
 
     /**
      * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
@@ -69,5 +69,5 @@ public interface GenesisAccountRecordBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers);
+    CryptoTransferStreamBuilder transferList(@NonNull TransferList hbarTransfers);
 }

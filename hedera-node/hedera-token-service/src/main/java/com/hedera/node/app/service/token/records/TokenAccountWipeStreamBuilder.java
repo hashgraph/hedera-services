@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,25 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.TokenType;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The base interface for Token Service record builders that record operations on Tokens.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
+ * transaction.
  */
-public interface TokenBaseRecordBuilder extends StreamBuilder {
+public interface TokenAccountWipeStreamBuilder extends TokenBaseStreamBuilder {
+
     /**
-     * Sets the {@link TokenType} of the token the recorded transaction created or modified.
-     * @param tokenType the token type
+     * Gets the new total supply of a token
+     * @return new total supply of a token
+     */
+    long getNewTotalSupply();
+
+    /**
+     * Sets the new total supply of a token
+     * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
-    TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType);
+    @NonNull
+    TokenAccountWipeStreamBuilder newTotalSupply(final long newTotalSupply);
 }

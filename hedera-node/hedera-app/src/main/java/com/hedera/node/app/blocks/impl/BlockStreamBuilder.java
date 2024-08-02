@@ -62,31 +62,31 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
-import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -105,37 +105,37 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * An implementation of {@link IoBlockItemsBuilder} that produces block items for a single user or
+ * An implementation of {@link BlockStreamBuilder} that produces block items for a single user or
  * synthetic transaction; that is, the "input" block item with a {@link Transaction} and "output" block items
  * with a {@link TransactionResult} and, optionally, {@link TransactionOutput}.
  */
-public class IoBlockItemsBuilder
+public class BlockStreamBuilder
         implements StreamBuilder,
-                ConsensusCreateTopicRecordBuilder,
-                ConsensusSubmitMessageRecordBuilder,
-                CreateFileRecordBuilder,
-                CryptoCreateRecordBuilder,
-                CryptoTransferRecordBuilder,
+                ConsensusCreateTopicStreamBuilder,
+                ConsensusSubmitMessageStreamBuilder,
+                CreateFileStreamBuilder,
+                CryptoCreateStreamBuilder,
+                CryptoTransferStreamBuilder,
                 ChildRecordBuilder,
-                PrngRecordBuilder,
-                ScheduleRecordBuilder,
-                TokenMintRecordBuilder,
-                TokenBurnRecordBuilder,
-                TokenCreateRecordBuilder,
-                ContractCreateRecordBuilder,
-                ContractCallRecordBuilder,
-                ContractUpdateRecordBuilder,
-                EthereumTransactionRecordBuilder,
-                CryptoDeleteRecordBuilder,
-                TokenUpdateRecordBuilder,
-                NodeStakeUpdateRecordBuilder,
+                PrngStreamBuilder,
+                ScheduleStreamBuilder,
+                TokenMintStreamBuilder,
+                TokenBurnStreamBuilder,
+                TokenCreateStreamBuilder,
+                ContractCreateStreamBuilder,
+                ContractCallStreamBuilder,
+                ContractUpdateStreamBuilder,
+                EthereumTransactionStreamBuilder,
+                CryptoDeleteStreamBuilder,
+                TokenUpdateStreamBuilder,
+                NodeStakeUpdateStreamBuilder,
                 FeeRecordBuilder,
-                ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder,
-                ContractOperationRecordBuilder,
-                TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder,
-                NodeCreateRecordBuilder {
+                ContractDeleteStreamBuilder,
+                GenesisAccountStreamBuilder,
+                ContractOperationStreamBuilder,
+                TokenAccountWipeStreamBuilder,
+                CryptoUpdateStreamBuilder,
+                NodeCreateStreamBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -197,7 +197,7 @@ public class IoBlockItemsBuilder
     private Bytes ethereumHash;
     private TransactionID scheduledTransactionID;
 
-    public IoBlockItemsBuilder(
+    public BlockStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
@@ -341,7 +341,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder parentConsensus(@NonNull final Instant parentConsensus) {
+    public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
         transactionResultBuilder.parentConsensusTimestamp(Timestamp.newBuilder()
                 .seconds(parentConsensus.getEpochSecond())
@@ -352,7 +352,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder consensusTimestamp(@NonNull final Instant now) {
+    public BlockStreamBuilder consensusTimestamp(@NonNull final Instant now) {
         this.consensusNow = requireNonNull(now, "consensus time must not be null");
         transactionResultBuilder.consensusTimestamp(Timestamp.newBuilder()
                 .seconds(now.getEpochSecond())
@@ -364,7 +364,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder transaction(@NonNull final Transaction transaction) {
+    public BlockStreamBuilder transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
         return this;
     }
@@ -372,7 +372,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
+    public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
         this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
         return this;
     }
@@ -387,7 +387,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder transactionID(@NonNull final TransactionID transactionID) {
+    public BlockStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
     }
@@ -395,7 +395,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public IoBlockItemsBuilder syncBodyIdFromRecordId() {
+    public BlockStreamBuilder syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
@@ -407,7 +407,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder memo(@NonNull final String memo) {
+    public BlockStreamBuilder memo(@NonNull final String memo) {
         // No-op
         return this;
     }
@@ -431,7 +431,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public IoBlockItemsBuilder transactionFee(final long transactionFee) {
+    public BlockStreamBuilder transactionFee(final long transactionFee) {
         transactionResultBuilder.transactionFeeCharged(transactionFee);
         this.transactionFee = transactionFee;
         return this;
@@ -453,7 +453,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
+    public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
         transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
                 .contractCallResult(contractCallResult)
                 .build());
@@ -464,7 +464,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
+    public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
         transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
                 .contractCreateResult(contractCreateResult)
                 .build());
@@ -482,7 +482,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder transferList(@Nullable final TransferList transferList) {
+    public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         transactionResultBuilder.transferList(transferList);
         return this;
@@ -491,7 +491,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
+    public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
         transactionResultBuilder.tokenTransferLists(tokenTransferLists);
@@ -507,7 +507,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder tokenType(final @NonNull TokenType tokenType) {
+    public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
         this.tokenType = requireNonNull(tokenType);
         return this;
     }
@@ -515,7 +515,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
+    public BlockStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
         requireNonNull(scheduleRef, "scheduleRef must not be null");
         transactionResultBuilder.scheduleRef(scheduleRef);
         return this;
@@ -524,7 +524,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
+    public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
         requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
         this.assessedCustomFees = assessedCustomFees;
         transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
@@ -535,7 +535,7 @@ public class IoBlockItemsBuilder
 
     /**{@inheritDoc}*/
     @NonNull
-    public IoBlockItemsBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
+    public BlockStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
         automaticTokenAssociations.add(automaticTokenAssociation);
         return this;
@@ -544,7 +544,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
+    public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
         requireNonNull(ethereumHash, "ethereumHash must not be null");
         transactionOutputBuilder.ethereumCall(
                 EthereumOutput.newBuilder().ethereumHash(ethereumHash).build());
@@ -555,7 +555,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
+    public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
         // These need not be externalized to block streams
         requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
         this.paidStakingRewards = paidStakingRewards;
@@ -566,7 +566,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder entropyNumber(final int num) {
+    public BlockStreamBuilder entropyNumber(final int num) {
         transactionOutputBuilder.utilPrng(
                 UtilPrngOutput.newBuilder().prngNumber(num).build());
         return this;
@@ -575,7 +575,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder entropyBytes(@NonNull final Bytes prngBytes) {
+    public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
         transactionOutputBuilder.utilPrng(
                 UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
@@ -585,7 +585,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder evmAddress(@NonNull final Bytes evmAddress) {
+    public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
         // No-op
         return this;
     }
@@ -602,7 +602,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder status(@NonNull final ResponseCodeEnum status) {
+    public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
         transactionResultBuilder.status(status);
         return this;
@@ -630,7 +630,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder accountID(@NonNull final AccountID accountID) {
+    public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
         // No-op
         return this;
     }
@@ -638,7 +638,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder fileID(@NonNull final FileID fileID) {
+    public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
         // No-op
         return this;
     }
@@ -646,7 +646,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder contractID(@Nullable final ContractID contractID) {
+    public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
         // No-op
         return this;
     }
@@ -654,7 +654,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public IoBlockItemsBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+    public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         transactionResultBuilder.exchangeRate(exchangeRate);
         this.exchangeRate = exchangeRate;
@@ -664,7 +664,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public IoBlockItemsBuilder congestionMultiplier(long congestionMultiplier) {
+    public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
         if (congestionMultiplier != 0) {
             transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
         }
@@ -674,7 +674,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder topicID(@NonNull final TopicID topicID) {
+    public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
         // No-op
         return this;
     }
@@ -682,7 +682,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder topicSequenceNumber(final long topicSequenceNumber) {
+    public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
         // No-op
         return this;
     }
@@ -690,7 +690,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
+    public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
         // No-op
         return this;
     }
@@ -698,7 +698,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
+    public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
         // TOD0: Need to confirm what the value should be
         transactionOutputBuilder.submitMessage(
                 new SubmitMessageOutput(RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER));
@@ -708,7 +708,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder tokenID(@NonNull final TokenID tokenID) {
+    public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
         this.tokenID = tokenID;
         return this;
@@ -723,14 +723,14 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder nodeID(long nodeId) {
+    public BlockStreamBuilder nodeID(long nodeId) {
         // No-op
         return this;
     }
 
     /**{@inheritDoc}*/
     @NonNull
-    public IoBlockItemsBuilder newTotalSupply(final long newTotalSupply) {
+    public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
@@ -744,7 +744,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
+    public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
         // No-op
         return this;
     }
@@ -752,7 +752,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
+    public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
         this.scheduledTransactionID = scheduledTransactionID;
         return this;
     }
@@ -760,7 +760,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
+    public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
         requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.serialNumbers = serialNumbers;
         return this;
@@ -778,7 +778,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder addContractStateChanges(
+    public BlockStreamBuilder addContractStateChanges(
             @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
         requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
@@ -788,7 +788,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder addContractActions(
+    public BlockStreamBuilder addContractActions(
             @NonNull final ContractActions contractActions, final boolean isMigration) {
         requireNonNull(contractActions, "contractActions must not be null");
         this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
@@ -798,7 +798,7 @@ public class IoBlockItemsBuilder
     /**{@inheritDoc}*/
     @Override
     @NonNull
-    public IoBlockItemsBuilder addContractBytecode(
+    public BlockStreamBuilder addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
         requireNonNull(contractBytecode, "contractBytecode must not be null");
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));

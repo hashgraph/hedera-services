@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * just-deleted account was going to receive staking rewards in the transaction, those rewards
  * should be redirected to the beneficiary account.
  */
-public interface DeleteCapableTransactionRecordBuilder extends StreamBuilder {
+public interface DeleteCapableTransactionStreamBuilder extends StreamBuilder {
     /**
      * Gets number of deleted accounts in this transaction.
      * @return number of deleted accounts in this transaction

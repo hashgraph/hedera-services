@@ -24,14 +24,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A {@code RecordBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
  */
-public interface NodeStakeUpdateRecordBuilder extends StreamBuilder {
+public interface NodeStakeUpdateStreamBuilder extends StreamBuilder {
     /**
      * Sets the status.
      *
      * @param status the status
      * @return the builder
      */
-    NodeStakeUpdateRecordBuilder status(@NonNull ResponseCodeEnum status);
+    NodeStakeUpdateStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
      * Sets the transaction.
@@ -40,7 +40,7 @@ public interface NodeStakeUpdateRecordBuilder extends StreamBuilder {
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateRecordBuilder transaction(@NonNull final Transaction transaction);
+    NodeStakeUpdateStreamBuilder transaction(@NonNull final Transaction transaction);
 
     /**
      * Sets the record's memo.
@@ -49,5 +49,5 @@ public interface NodeStakeUpdateRecordBuilder extends StreamBuilder {
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateRecordBuilder memo(@NonNull final String memo);
+    NodeStakeUpdateStreamBuilder memo(@NonNull final String memo);
 }
