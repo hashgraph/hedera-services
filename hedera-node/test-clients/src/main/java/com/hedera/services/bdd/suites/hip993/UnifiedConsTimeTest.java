@@ -18,10 +18,12 @@ package com.hedera.services.bdd.suites.hip993;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.pbjTimestampToInstant;
 import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
-import static com.hedera.services.bdd.junit.TestTags.REPEATABLE;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_LAST_ASSIGNED_CONSENSUS_TIME;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTimestamp;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -37,37 +39,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 @DisplayName("given HIP-993 unified consensus times")
 public class UnifiedConsTimeTest {
     /**
      * Tests that a user transaction gets the platform-assigned time. Requires a repeatable network
      * because we need virtual time to stand still between the point we submit the transaction and the
-     * point we validate its consensus time is the platform-assigned time
+     * point we validate that its consensus time is the platform-assigned time
      */
-    @HapiTest
-    @Tag(REPEATABLE)
     @DisplayName("user transaction gets platform assigned time")
+    @RepeatableHapiTest(NEEDS_LAST_ASSIGNED_CONSENSUS_TIME)
     final Stream<DynamicTest> userTxnGetsPlatformAssignedTime() {
         return hapiTest(cryptoCreate("somebody").via("txn"), withOpContext((spec, opLog) -> {
             final var op = getTxnRecord("txn");
             allRunFor(spec, op);
             assertEquals(
-                    Timestamp.newBuilder()
-                            .setSeconds(spec.consensusTime().getEpochSecond())
-                            .setNanos(spec.consensusTime().getNano())
-                            .build(),
+                    asTimestamp(spec.consensusTime()),
                     op.getResponseRecord().getConsensusTimestamp(),
                     "User transaction should get platform-assigned time");
         }));
@@ -79,9 +76,8 @@ public class UnifiedConsTimeTest {
      * cache until consensus, so the immediately following query for the record will not find it unless "consensus"
      * happens synchronously as in repeatable mode.
      */
-    @HapiTest
-    @Tag(REPEATABLE)
     @DisplayName("provides BUSY record if transaction reaches consensus after upgrade")
+    @RepeatableHapiTest(NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW)
     final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
         return hapiTest(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))

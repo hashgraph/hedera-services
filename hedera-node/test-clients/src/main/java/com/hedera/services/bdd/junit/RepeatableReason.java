@@ -17,20 +17,20 @@
 package com.hedera.services.bdd.junit;
 
 /**
- * Enumerates reasons a {@link EmbeddedHapiTest} is marked as such.
+ * Enumerates reasons a {@link RepeatableHapiTest} is marked as such.
  */
-public enum EmbeddedReason {
+public enum RepeatableReason {
     /**
-     * The test must skip the ingest workflow to submit its transactions, as they would always be rejected by
-     * a node in normal operations.
+     * The test takes excessively long to run without virtual time.
      */
-    MUST_SKIP_INGEST,
+    NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
     /**
-     * The test must directly access state to assert expectations that cannot be verified through the gRPC API.
+     * The test needs time to "stop" after each transaction is handled because it wants to assert
+     * something about how the last-assigned consensus time is used.
      */
-    NEEDS_STATE_ACCESS,
+    NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
     /**
-     * The test manipulates the software version of the simulated consensus event for a transaction.
+     * The test needs the handle workflow to be synchronous.
      */
-    MANIPULATES_EVENT_VERSION,
+    NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW,
 }
