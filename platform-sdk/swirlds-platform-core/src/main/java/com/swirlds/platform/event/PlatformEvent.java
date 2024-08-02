@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLog
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -200,9 +201,11 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * @return the signature for the event
+     * {{ @inheritDoc }}
      */
-    public @NonNull Bytes getSignature() {
+    @Override
+    @NonNull
+    public Bytes getSignature() {
         return signature;
     }
 
@@ -229,6 +232,15 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     @Override
     public SemanticVersion getSoftwareVersion() {
         return unsignedEvent.getSoftwareVersion().getPbjSemanticVersion();
+    }
+
+    /**
+     * {{@inheritDoc}}
+     */
+    @NonNull
+    @Override
+    public EventCore getEventCore() {
+        return unsignedEvent.getEventCore();
     }
 
     @NonNull
