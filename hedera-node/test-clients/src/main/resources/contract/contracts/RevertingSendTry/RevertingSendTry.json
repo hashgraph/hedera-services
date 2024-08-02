@@ -1,0 +1,66 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "payable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "name": "ErrorLog",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numA",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numB",
+        "type": "uint32"
+      }
+    ],
+    "name": "revertAfterSending",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numA",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numB",
+        "type": "uint32"
+      }
+    ],
+    "name": "sendTo",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

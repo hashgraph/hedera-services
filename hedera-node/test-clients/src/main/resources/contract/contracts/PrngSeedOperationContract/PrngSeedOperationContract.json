@@ -1,0 +1,1 @@
+[{"inputs":[],"name":"getPseudorandomSeed","outputs":[{"internalType":"bytes32","name":"randomBytes","type":"bytes32"}],"stateMutability":"view","type":"function"}]

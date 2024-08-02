@@ -1,0 +1,3 @@
+name: yahcliReceiver
+account:
+  key: { wordsLoc: yahcliReceiver.words }

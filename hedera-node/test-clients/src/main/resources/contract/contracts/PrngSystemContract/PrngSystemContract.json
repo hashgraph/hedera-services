@@ -1,0 +1,33 @@
+[
+	{
+		"inputs": [],
+		"stateMutability": "payable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "getPseudorandomSeed",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "randomBytes",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPseudorandomSeedPayable",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "randomBytes",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]

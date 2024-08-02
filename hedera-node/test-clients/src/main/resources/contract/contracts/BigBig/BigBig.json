@@ -1,0 +1,23 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "how",
+        "type": "uint32"
+      }
+    ],
+    "name": "pick",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "account_num",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "value",
+        "type": "uint64"
+      }
+    ],
+    "name": "sendTo",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
