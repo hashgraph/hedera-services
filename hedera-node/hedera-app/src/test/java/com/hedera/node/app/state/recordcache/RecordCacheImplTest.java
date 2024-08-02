@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -34,7 +33,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
+import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
+import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.AppTestBase;
@@ -45,7 +45,7 @@ import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
+import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
@@ -135,7 +135,6 @@ final class RecordCacheImplTest extends AppTestBase {
     @SuppressWarnings("DataFlowIssue")
     void nullArgsToConstructorThrowNPE() {
         assertThatThrownBy(() -> new RecordCacheImpl(null, props)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, props)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -166,7 +165,7 @@ final class RecordCacheImplTest extends AppTestBase {
     }
 
     @Nested
-    @DisplayName("Rebuilds from state")
+    @DisplayName("Doesnt Rebuild from state")
     final class RebuildTests {
         @Test
         @DisplayName("Construction adds all entries in state to the in-memory data structures")
@@ -177,166 +176,26 @@ final class RecordCacheImplTest extends AppTestBase {
 
             final var txId1 = transactionID();
             final var txId2 = txId1.copyBuilder().accountID(payer2).build();
-            final var pTxId1 = txId1.copyBuilder().nonce(1).build();
-            final var cTxId1 = txId1.copyBuilder().nonce(2).build();
 
             final var entries = List.of(
                     // preceding tx
-                    new TransactionRecordEntry(0, payer1, transactionRecord(SUCCESS, pTxId1, 99)),
+                    new TransactionReceiptEntry(0, txId1, SUCCESS),
                     // user tx
-                    new TransactionRecordEntry(0, payer1, transactionRecord(SUCCESS, txId1, 100)),
-                    // child tx
-                    new TransactionRecordEntry(0, payer1, childRecord(SUCCESS, cTxId1, 101, 100)),
-                    // user tx
-                    new TransactionRecordEntry(1, payer2, transactionRecord(ACCOUNT_IS_IMMUTABLE, txId2, 200)),
-                    // duplicate  user tx
-                    new TransactionRecordEntry(2, payer2, transactionRecord(DUPLICATE_TRANSACTION, txId2, 300)),
-                    // duplicate  user tx
-                    new TransactionRecordEntry(3, payer1, transactionRecord(DUPLICATE_TRANSACTION, txId1, 400)));
+                    new TransactionReceiptEntry(0, txId2, SUCCESS));
+            final var entry = new TransactionReceiptEntries(entries);
 
             final var state = wsa.getState();
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
-            final WritableQueueState<TransactionRecordEntry> queue =
-                    services.getQueue(V0490RecordCacheSchema.TXN_RECORD_QUEUE);
+            final WritableQueueState<TransactionReceiptEntries> queue =
+                    services.getQueue(V0540RecordCacheSchema.TXN_RECEIPT_QUEUE);
             assertThat(queue).isNotNull();
-            entries.forEach(queue::add);
+            queue.add(entry);
             ((ListWritableQueueState<?>) queue).commit();
 
             // When we create the cache
             final var cache = new RecordCacheImpl(dedupeCache, props);
-
-            // Everything that was in state can be queried
-            assertThat(getRecord(cache, txId1)).isEqualTo(entries.get(1).transactionRecord());
-            assertThat(getReceipt(cache, txId1))
-                    .isEqualTo(entries.get(1).transactionRecordOrThrow().receipt());
-
-            assertThat(getRecords(cache, txId1))
-                    .containsExactly(
-                            entries.get(0).transactionRecord(),
-                            entries.get(1).transactionRecord(),
-                            entries.get(2).transactionRecord(),
-                            entries.get(5).transactionRecord());
-            assertThat(cache.getRecords(payer1))
-                    .containsExactly(
-                            entries.get(0).transactionRecord(),
-                            entries.get(1).transactionRecord(),
-                            entries.get(2).transactionRecord(),
-                            entries.get(5).transactionRecord());
-            assertThat(getReceipts(cache, txId1))
-                    .containsExactly(
-                            entries.get(0).transactionRecordOrThrow().receipt(),
-                            entries.get(1).transactionRecordOrThrow().receipt(),
-                            entries.get(2).transactionRecordOrThrow().receipt(),
-                            entries.get(5).transactionRecordOrThrow().receipt());
-            assertThat(getReceipts(cache, payer1))
-                    .containsExactly(
-                            entries.get(0).transactionRecordOrThrow().receipt(),
-                            entries.get(1).transactionRecordOrThrow().receipt(),
-                            entries.get(2).transactionRecordOrThrow().receipt(),
-                            entries.get(5).transactionRecordOrThrow().receipt());
-
-            assertThat(getRecord(cache, txId2)).isEqualTo(entries.get(3).transactionRecord());
-            assertThat(getReceipt(cache, txId2))
-                    .isEqualTo(entries.get(3).transactionRecordOrThrow().receipt());
-            assertThat(getRecords(cache, txId2))
-                    .containsExactly(
-                            entries.get(3).transactionRecord(), entries.get(4).transactionRecord());
-            assertThat(cache.getRecords(payer2))
-                    .containsExactly(
-                            entries.get(3).transactionRecord(), entries.get(4).transactionRecord());
-            assertThat(getReceipts(cache, txId2))
-                    .containsExactly(
-                            entries.get(3).transactionRecordOrThrow().receipt(),
-                            entries.get(4).transactionRecordOrThrow().receipt());
-            assertThat(getReceipts(cache, payer2))
-                    .containsExactly(
-                            entries.get(3).transactionRecordOrThrow().receipt(),
-                            entries.get(4).transactionRecordOrThrow().receipt());
-        }
-
-        @Test
-        @DisplayName("Rebuild replaces all entries in the in-memory data structures")
-        void reloadsIntoCache() {
-            // Given a state with some entries and a cache created with that state
-            final var oldPayer = accountId(1003);
-            final var oldTxId =
-                    transactionID().copyBuilder().accountID(oldPayer).build();
-            final var oldEntry = new TransactionRecordEntry(0, oldPayer, transactionRecord(SUCCESS, oldTxId, 100));
-
-            final var state = wsa.getState();
-            assertThat(state).isNotNull();
-            final var services = state.getWritableStates(RecordCacheService.NAME);
-            final WritableQueueState<TransactionRecordEntry> queue =
-                    services.getQueue(V0490RecordCacheSchema.TXN_RECORD_QUEUE);
-            assertThat(queue).isNotNull();
-            queue.add(oldEntry);
-            ((ListWritableQueueState<?>) queue).commit();
-
-            final var cache = new RecordCacheImpl(dedupeCache, props);
-
-            // When we replace the data "behind the scenes" (emulating a reconnect) and call rebuild
-            final var payer1 = accountId(1001);
-            final var payer2 = accountId(1002);
-
-            final var txId1 = transactionID();
-            final var txId2 = txId1.copyBuilder().accountID(payer2).build();
-
-            final var entries = List.of(
-                    new TransactionRecordEntry(0, payer1, transactionRecord(SUCCESS, txId1, 100)),
-                    new TransactionRecordEntry(1, payer2, transactionRecord(ACCOUNT_IS_IMMUTABLE, txId2, 200)),
-                    new TransactionRecordEntry(2, payer2, transactionRecord(DUPLICATE_TRANSACTION, txId2, 300)),
-                    new TransactionRecordEntry(3, payer1, transactionRecord(DUPLICATE_TRANSACTION, txId1, 400)));
-
-            assertThat(queue.poll()).isEqualTo(oldEntry);
-            entries.forEach(queue::add);
-            ((ListWritableQueueState<?>) queue).commit();
-
-            cache.reset();
-
-            // Then we find the new state is in the cache
-            assertThat(getRecord(cache, txId1)).isEqualTo(entries.get(0).transactionRecord());
-            assertThat(getReceipt(cache, txId1))
-                    .isEqualTo(entries.get(0).transactionRecordOrThrow().receipt());
-            assertThat(getRecords(cache, txId1))
-                    .containsExactly(
-                            entries.get(0).transactionRecord(), entries.get(3).transactionRecord());
-            assertThat(cache.getRecords(payer1))
-                    .containsExactly(
-                            entries.get(0).transactionRecord(), entries.get(3).transactionRecord());
-            assertThat(getReceipts(cache, txId1))
-                    .containsExactly(
-                            entries.get(0).transactionRecordOrThrow().receipt(),
-                            entries.get(3).transactionRecordOrThrow().receipt());
-            assertThat(getReceipts(cache, payer1))
-                    .containsExactly(
-                            entries.get(0).transactionRecordOrThrow().receipt(),
-                            entries.get(3).transactionRecordOrThrow().receipt());
-
-            assertThat(getRecord(cache, txId2)).isEqualTo(entries.get(1).transactionRecord());
-            assertThat(getReceipt(cache, txId2))
-                    .isEqualTo(entries.get(1).transactionRecordOrThrow().receipt());
-            assertThat(getRecords(cache, txId2))
-                    .containsExactly(
-                            entries.get(1).transactionRecord(), entries.get(2).transactionRecord());
-            assertThat(cache.getRecords(payer2))
-                    .containsExactly(
-                            entries.get(1).transactionRecord(), entries.get(2).transactionRecord());
-            assertThat(getReceipts(cache, txId2))
-                    .containsExactly(
-                            entries.get(1).transactionRecordOrThrow().receipt(),
-                            entries.get(2).transactionRecordOrThrow().receipt());
-            assertThat(getReceipts(cache, payer2))
-                    .containsExactly(
-                            entries.get(1).transactionRecordOrThrow().receipt(),
-                            entries.get(2).transactionRecordOrThrow().receipt());
-            // And the old state is not in the cache
-            assertThat(getRecord(cache, oldTxId)).isNull();
-            assertThat(getReceipt(cache, oldTxId)).isNull();
-            assertThat(getRecords(cache, oldTxId)).isEmpty();
-            assertThat(getReceipts(cache, oldTxId)).isEmpty();
-            assertThat(cache.getRecords(oldPayer)).isEmpty();
-            assertThat(getReceipts(cache, oldPayer)).isEmpty();
+            assertThat(cache.getRecords(payer1).isEmpty());
         }
 
         private AccountID accountId(final int num) {
