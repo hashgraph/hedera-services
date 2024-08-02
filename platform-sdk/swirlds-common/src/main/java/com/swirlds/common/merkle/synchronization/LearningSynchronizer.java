@@ -342,6 +342,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         reconstructedRoots.add(reconstructedRoot);
         viewsToInitialize.addFirst(view);
         final Consumer<Integer> completeListener = id -> {
+            viewsInProgress.decrementAndGet();
             boolean nextViewScheduled = receiveNextSubtree();
             while (nextViewScheduled) {
                 nextViewScheduled = receiveNextSubtree();

@@ -254,6 +254,7 @@ public class TeachingSynchronizer {
             final String rte = rt == null ? "[]" : rt.getRoute().toString();
             logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", rte);
 
+            viewsInProgress.decrementAndGet();
             boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
             while (nextViewScheduled) {
                 nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
