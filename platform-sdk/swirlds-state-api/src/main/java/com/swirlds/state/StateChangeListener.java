@@ -28,6 +28,8 @@ import java.util.Set;
  * A listener is registered with a {@link State} instead of a single {@link com.swirlds.state.spi.WritableStates}
  * because a listening client will want to be notified of changes to all {@link com.swirlds.state.spi.WritableStates}
  * returned by the {@link State}.
+ * <p>
+ * All callbacks have default no-op implementations.
  */
 public interface StateChangeListener {
     /**
@@ -54,7 +56,7 @@ public interface StateChangeListener {
      * @param <K> The type of the key
      * @param <V> The type of the value
      */
-    default <K, V> void mapUpdateChange(@NonNull final String label, @NonNull final K key, @NonNull final V value) {}
+    default <K, V> void mapUpdateChange(@NonNull String label, @NonNull K key, @NonNull V value) {}
 
     /**
      * Save the state change when an entry is removed from a map.
@@ -63,7 +65,7 @@ public interface StateChangeListener {
      * @param key The key removed from the map
      * @param <K> The type of the key
      */
-    default <K> void mapDeleteChange(@NonNull final String label, @NonNull final K key) {}
+    default <K> void mapDeleteChange(@NonNull String label, @NonNull K key) {}
 
     /**
      * Save the state change when a value is added to a queue
@@ -72,14 +74,14 @@ public interface StateChangeListener {
      * @param value The value added to the queue
      * @param <V> The type of the value
      */
-    default <V> void queuePushChange(@NonNull final String label, @NonNull final V value) {}
+    default <V> void queuePushChange(@NonNull String label, @NonNull V value) {}
 
     /**
      * Save the state change when a value is removed from a queue
      *
      * @param label The label of the queue
      */
-    default void queuePopChange(@NonNull final String label) {}
+    default void queuePopChange(@NonNull String label) {}
 
     /**
      * Save the state change when the value of a singleton is written.
@@ -88,5 +90,5 @@ public interface StateChangeListener {
      * @param value The value of the singleton
      * @param <V> The type of the value
      */
-    default <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value) {}
+    default <V> void singletonUpdateChange(@NonNull String label, @NonNull V value) {}
 }

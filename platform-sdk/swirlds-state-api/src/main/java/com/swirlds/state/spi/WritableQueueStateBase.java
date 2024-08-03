@@ -91,15 +91,17 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
      */
     public final void commit() {
         // We only want to remove from the data source elements we actually read from there; not
-        // any elements we read from the list of items added in this changeset
-        final var numReadFromAdded = currentAddedElementIndex - (peekedElement == null ? 0 : 1);
+        // any elements we read from the list of items added in this changeset; if we have peeked
+        // a non-zero number of elements from the added list, then we need to subtract one if the
+        // peeked element is not null, since it was only peeked and not read
+        final var numReadFromAdded =
+                currentAddedElementIndex > 0 ? currentAddedElementIndex - (peekedElement == null ? 0 : 1) : 0;
         for (int i = 0, n = readElements.size() - numReadFromAdded; i < n; i++) {
             removeFromDataSource();
             listeners.forEach(QueueChangeListener::queuePopChange);
         }
 
-        // We only want to add to the data source elements that were added and NOT subsequently
-        // read in this changeset
+        // We only want to add to the data source elements that were added and NOT subsequently read
         for (int i = numReadFromAdded, n = addedElements.size(); i < n; i++) {
             final var addedElement = addedElements.get(i);
             addToDataSource(addedElement);

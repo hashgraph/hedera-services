@@ -340,6 +340,17 @@ final class WritableQueueStateBaseTest<E> extends ReadableQueueStateBaseTest<E> 
             subject.commit();
             assertThat(backingList).containsExactly(CHEMISTRY);
         }
+
+        @Test
+        void commitAfterPeekingAndAddingStillAddsEverything() {
+            final var backingList = new LinkedList<String>();
+            backingList.add(ART);
+            final var subject = new ListWritableQueueState<>(STEAM_STATE_KEY, backingList);
+            subject.peek();
+            subject.add(BIOLOGY);
+            subject.commit();
+            assertThat(backingList).containsExactly(ART, BIOLOGY);
+        }
     }
 
     @Nested

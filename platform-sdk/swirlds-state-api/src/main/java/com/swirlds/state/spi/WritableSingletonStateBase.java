@@ -34,9 +34,9 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     private boolean modified;
     private T value;
     /**
-     * List of listeners to be notified when the singleton changes.
+     * Listeners to be notified when the singleton changes.
      */
-    private final List<OldSingletonChangeListener> listeners = new ArrayList<>();
+    private final List<SingletonChangeListener<T>> listeners = new ArrayList<>();
 
     /**
      * Creates a new instance.
@@ -52,6 +52,18 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
             @NonNull final Consumer<T> backingStoreMutator) {
         super(stateKey, backingStoreAccessor);
         this.backingStoreMutator = requireNonNull(backingStoreMutator);
+    }
+
+    /**
+     * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
+     * a listener, as the lifecycle of a {@link WritableSingletonState} is scoped to the set of mutations made to a
+     * state in a round; and there is no case where an application would only want to be notified of a subset of those
+     * changes.
+     * @param listener the listener to register
+     */
+    public void registerListener(@NonNull final SingletonChangeListener<T> listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     @Override
