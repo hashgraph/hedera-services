@@ -36,7 +36,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     /**
      * A list of listeners to be notified of changes to the state.
      */
-    private final List<KVChangeListener> listeners = new ArrayList<>();
+    private final List<OldKVChangeListener> listeners = new ArrayList<>();
 
     /**
      * Create a new StateBase.
@@ -51,7 +51,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * Register a listener to be notified of changes to the state.
      * @param listener the listener to register
      */
-    public void registerKvListener(@NonNull final KVChangeListener listener) {
+    public void registerKvListener(@NonNull final OldKVChangeListener listener) {
         requireNonNull(listener);
         listeners.add(listener);
     }

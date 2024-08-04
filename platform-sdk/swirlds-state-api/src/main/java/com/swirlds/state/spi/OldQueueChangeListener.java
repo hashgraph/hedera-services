@@ -18,7 +18,7 @@ package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface QueueChangeListener {
+public interface OldQueueChangeListener {
     /**
      * Called when a value is added to a queue.
      *

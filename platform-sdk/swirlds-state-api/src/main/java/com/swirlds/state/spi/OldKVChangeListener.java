@@ -18,12 +18,22 @@ package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface SingletonChangeListener {
+public interface OldKVChangeListener {
     /**
-     * Called when the value of a singleton is written.
+     * Called when an entry is added in to a map.
      *
-     * @param value The value of the singleton
+     * @param key The key added to the map
+     * @param value The value added to the map
+     * @param <K> The type of the key
      * @param <V> The type of the value
      */
-    <V> void singletonUpdateChange(@NonNull V value);
+    <K, V> void mapUpdateChange(@NonNull K key, @NonNull V value);
+
+    /**
+     * Called when an entry is removed from a map.
+     *
+     * @param key The key removed from the map
+     * @param <K> The type of the key
+     */
+    <K> void mapDeleteChange(@NonNull K key);
 }

@@ -36,7 +36,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     /**
      * List of listeners to be notified when the singleton changes.
      */
-    private final List<SingletonChangeListener> listeners = new ArrayList<>();
+    private final List<OldSingletonChangeListener> listeners = new ArrayList<>();
 
     /**
      * Creates a new instance.
@@ -81,7 +81,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
      * Registers a listener to be notified when the singleton changes.
      * @param listener The listener to register
      */
-    public void registerSingletonListener(@NonNull final SingletonChangeListener listener) {
+    public void registerSingletonListener(@NonNull final OldSingletonChangeListener listener) {
         requireNonNull(listener);
         listeners.add(listener);
     }

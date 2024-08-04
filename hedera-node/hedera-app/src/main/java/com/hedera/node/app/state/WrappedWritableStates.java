@@ -25,9 +25,9 @@ import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.KVChangeListener;
-import com.swirlds.state.spi.QueueChangeListener;
-import com.swirlds.state.spi.SingletonChangeListener;
+import com.swirlds.state.spi.OldKVChangeListener;
+import com.swirlds.state.spi.OldQueueChangeListener;
+import com.swirlds.state.spi.OldSingletonChangeListener;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -163,7 +163,7 @@ public class WrappedWritableStates implements WritableStates {
             @NonNull final WrappedWritableSingletonState<?> singletonState,
             @NonNull final StateChangesListener listener) {
         final var stateName = serviceName + "." + singletonState.getStateKey();
-        singletonState.registerSingletonListener(new SingletonChangeListener() {
+        singletonState.registerSingletonListener(new OldSingletonChangeListener() {
             @Override
             public <V> void singletonUpdateChange(@NonNull final V value) {
                 listener.singletonUpdateChange(stateName, value);
@@ -176,7 +176,7 @@ public class WrappedWritableStates implements WritableStates {
             @NonNull final WrappedWritableQueueState<?> queueState,
             @NonNull final StateChangesListener listener) {
         final var stateName = serviceName + "." + queueState.getStateKey();
-        queueState.registerQueueListener(new QueueChangeListener() {
+        queueState.registerQueueListener(new OldQueueChangeListener() {
             @Override
             public <V> void queuePushChange(@NonNull V value) {
                 listener.queuePushChange(stateName, value);
@@ -194,7 +194,7 @@ public class WrappedWritableStates implements WritableStates {
             @NonNull final WrappedWritableKVState<?, ?> kvState,
             @NonNull final StateChangesListener listener) {
         final var stateName = serviceName + "." + kvState.getStateKey();
-        kvState.registerKvListener(new KVChangeListener() {
+        kvState.registerKvListener(new OldKVChangeListener() {
             @Override
             public <K, V> void mapUpdateChange(@NonNull final K key, @NonNull V value) {
                 listener.mapUpdateChange(stateName, key, value);

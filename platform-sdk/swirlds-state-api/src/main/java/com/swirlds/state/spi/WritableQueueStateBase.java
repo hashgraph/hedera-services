@@ -52,7 +52,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /**
      * A list of listeners that will be notified when the queue changes.
      */
-    private final List<QueueChangeListener> listeners = new ArrayList<>();
+    private final List<OldQueueChangeListener> listeners = new ArrayList<>();
 
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {
@@ -73,7 +73,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
      * Registers a listener to be notified when the queue changes.
      * @param listener The listener to register
      */
-    public void registerQueueListener(@NonNull final QueueChangeListener listener) {
+    public void registerQueueListener(@NonNull final OldQueueChangeListener listener) {
         requireNonNull(listener);
         listeners.add(listener);
     }
@@ -86,7 +86,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     public final void commit() {
         for (int i = 0; i < readElements.size(); i++) {
             removeFromDataSource();
-            listeners.forEach(QueueChangeListener::queuePopChange);
+            listeners.forEach(OldQueueChangeListener::queuePopChange);
         }
         for (final var addedElement : addedElements) {
             addToDataSource(addedElement);
