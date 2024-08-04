@@ -38,14 +38,14 @@ import org.junit.jupiter.api.Tag;
 @Order(Integer.MAX_VALUE)
 public class LogValidationTest {
     private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
-    private String SWIRLDS_LOG = "swirlds.log";
-    NodeMetadata metadata =
+    private static final String SWIRLDS_LOG = "swirlds.log";
+    private NodeMetadata metadata =
             new NodeMetadata(0, "node0", null, "", 0, 0, 0, 0, WorkingDirUtils.workingDirFor(0, "EMBEDDED"));
 
     private void validateSwirldsLog() throws IOException {
         final Path workingDir = requireNonNull(metadata.workingDir());
-        Path path = workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
-        String fileContent = Files.readString(path);
+        final Path path = workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
+        final String fileContent = Files.readString(path);
         try (var lines = Files.lines(path)) {
             if (lines.anyMatch(line -> line.contains("Exception"))) {
                 throw new AssertionError("Unexpected problem found in logs: " + fileContent);
