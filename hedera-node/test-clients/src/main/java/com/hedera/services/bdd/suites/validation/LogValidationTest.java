@@ -16,10 +16,18 @@
 
 package com.hedera.services.bdd.suites.validation;
 
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateAllLogsAfter;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -30,9 +38,27 @@ import org.junit.jupiter.api.Tag;
 @Order(Integer.MAX_VALUE)
 public class LogValidationTest {
     private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
+    private String SWIRLDS_LOG = "swirlds.log";
+    NodeMetadata metadata =
+            new NodeMetadata(0, "node0", null, "", 0, 0, 0, 0, WorkingDirUtils.workingDirFor(0, "EMBEDDED"));
+
+    private void validateSwirldsLog() throws IOException {
+        final Path workingDir = requireNonNull(metadata.workingDir());
+        Path path = workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
+        String fileContent = Files.readString(path);
+        try (var lines = Files.lines(path)) {
+            if (lines.anyMatch(line -> line.contains("Exception"))) {
+                throw new AssertionError("Unexpected problem found in logs: " + fileContent);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     @LeakyHapiTest
     final Stream<DynamicTest> logsContainNoUnexpectedProblems() {
-        return hapiTest(validateAllLogsAfter(VALIDATION_DELAY));
+        return Stream.concat(
+                hapiTest(validateAllLogsAfter(VALIDATION_DELAY)),
+                Stream.of(DynamicTest.dynamicTest("Validate swirlds.log", this::validateSwirldsLog)));
     }
 }
