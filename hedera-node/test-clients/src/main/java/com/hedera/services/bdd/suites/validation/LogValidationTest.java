@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Tag;
 public class LogValidationTest {
     private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
     private static final String SWIRLDS_LOG = "swirlds.log";
-    private NodeMetadata metadata =
+    private final NodeMetadata metadata =
             new NodeMetadata(0, "node0", null, "", 0, 0, 0, 0, WorkingDirUtils.workingDirFor(0, "EMBEDDED"));
 
     private void validateSwirldsLog() throws IOException {
