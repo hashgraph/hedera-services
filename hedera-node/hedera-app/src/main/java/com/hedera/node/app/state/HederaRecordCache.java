@@ -71,8 +71,19 @@ public interface HederaRecordCache extends RecordCache {
     @NonNull
     DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId);
 
+    /**
+     * Resets the receipts pf all transactions stored per round. This is called at the end of each round to
+     * clear out the receipts from the previous round.
+     */
     void resetRoundReceipts();
 
+    /**
+     * Looks at the youngest entry of the all the receits in {@link com.hederahashgraph.api.proto.java.TransactionReceiptEntries}.
+     * If the youngest entry's transaction valid start is before 120secs of current block time, purges those from the queue.
+     * Commits the current round's transaction receipts to the transaction receipt queue in {@link State}.
+     * @param state The state to commit the transaction receipts to
+     * @param blockTimestamp The timestamp of the current block
+     */
     void commitAndPurgeIfAny(final State state, final Instant blockTimestamp);
 
     /** The possible results of a duplicate check */

@@ -112,7 +112,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.writer = requireNonNull(writer);
         this.executor = requireNonNull(executor);
         this.initTrigger = requireNonNull(initTrigger);
-        this.recordCache = recordCache;
+        this.recordCache = requireNonNull(recordCache);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.nodeVersion = nodeVersionFrom(config);
