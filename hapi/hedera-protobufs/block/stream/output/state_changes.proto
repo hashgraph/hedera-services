@@ -74,6 +74,7 @@ import "state/token/token.proto";
 import "state/token/token_relation.proto";
 import "timestamp.proto";
 import "state/blockstream/block_stream_info.proto";
+import "state/addressbook/node.proto";
 
 /**
  * The "cause" of a state change.
@@ -579,6 +580,11 @@ message MapChangeValue {
          * An HCS topic value.
          */
         proto.Topic topic_value = 13;
+
+        /**
+         * An network node value.
+         */
+        com.hedera.hapi.node.state.addressbook.Node node_value = 14;
     }
 }
 

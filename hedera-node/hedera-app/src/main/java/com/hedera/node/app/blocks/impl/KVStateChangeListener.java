@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -133,6 +134,7 @@ public class KVStateChangeListener implements StateChangesListener {
 
     private static <V> MapChangeValue mapChangeValueFor(@NonNull final V value) {
         return switch (value) {
+            case Node node -> MapChangeValue.newBuilder().nodeValue(node).build();
             case Account account -> MapChangeValue.newBuilder()
                     .accountValue(account)
                     .build();

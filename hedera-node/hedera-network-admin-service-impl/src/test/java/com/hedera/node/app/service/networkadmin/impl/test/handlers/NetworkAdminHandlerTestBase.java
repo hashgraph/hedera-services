@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -162,7 +163,7 @@ public class NetworkAdminHandlerTestBase {
     private DeduplicationCache dedupeCache;
 
     @Mock
-    private SavepointStackImpl stack;
+    protected SavepointStackImpl stack;
 
     @Mock
     private WorkingStateAccessor wsa;
@@ -223,6 +224,7 @@ public class NetworkAdminHandlerTestBase {
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getState()).thenReturn(state);
+        lenient().when(stack.getWritableStates(NAME)).thenReturn(state.getWritableStates(NAME));
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
@@ -332,7 +334,7 @@ public class NetworkAdminHandlerTestBase {
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
         dedupeCache = new DeduplicationCacheImpl(props, instantSource);
-        return new RecordCacheImpl(dedupeCache, props);
+        return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 
     @NonNull

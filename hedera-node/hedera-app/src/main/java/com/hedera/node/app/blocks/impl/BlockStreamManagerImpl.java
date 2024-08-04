@@ -33,6 +33,7 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateChangesCause;
+import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -96,7 +97,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private StreamingTreeHasher outputTreeHasher;
     private RoundStateChangeListener roundStateChangeListener;
     /**
-     * A future that completes after all items not in the pending list have been fully serialized
+     * A future that completes after all items not in the pendingItems list have been serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
      * hashes if applicable; <b>and</b> written to the block item writer.
      */
@@ -240,17 +241,55 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private void schedulePendingWork() {
-        final var scheduledWork = pendingItems;
-        final var pendingSerialization = CompletableFuture.supplyAsync(
-                () -> {
-                    final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
-                    for (final var item : scheduledWork) {
-                        serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-                    }
-                    return serializedItems;
-                },
-                executor);
-        writeFuture = writeFuture.thenCombine(pendingSerialization, (ignore, serializedItems) -> {
+        final var scheduledWork = new ScheduledWork(pendingItems);
+        final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
+        writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
+        pendingItems = new ArrayList<>();
+    }
+
+    /**
+     * Encapsulates the work to be done for a batch of pending {@link BlockItem}s. This work includes,
+     * <ol>
+     *     <li>Serializing the items to bytes using the {@link BlockItem#PROTOBUF} codec.</li>
+     *     <li>Given the serialized items,
+     *          <ul>
+     *              <Li>For each input item, scheduling its hash to be incorporated in the input item Merkle tree.</Li>
+     *              <li>For each output item, scheduling its hash to be incorporated in the input item Merkle tree.</li>
+     *              <li>For each {@link TransactionResult}, scheduling its hash to be incorporated in the running hash.</li>
+     *              <li>For each item, writing its serialized bytes to the {@link BlockItemWriter}.</li>
+     *          </ul>
+     *     </li>
+     * </ol>
+     */
+    private class ScheduledWork {
+        private final List<BlockItem> scheduledWork;
+
+        public ScheduledWork(@NonNull final List<BlockItem> scheduledWork) {
+            this.scheduledWork = requireNonNull(scheduledWork);
+        }
+
+        /**
+         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec.
+         * @return the serialized items
+         */
+        public List<Bytes> serializeItems() {
+            final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
+            for (final var item : scheduledWork) {
+                serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
+            }
+            return serializedItems;
+        }
+
+        /**
+         * Given the serialized items, schedules the hashes of the input/output items and running hash
+         * for the {@link TransactionResult}s to be incorporated in the input/output trees and running hash
+         * respectively; and writes the serialized bytes to the {@link BlockItemWriter}.
+         *
+         * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
+         * @param serializedItems the serialized items to be processed
+         * @return {@code null}
+         */
+        public Void combineSerializedItems(@Nullable Void ignore, @NonNull final List<Bytes> serializedItems) {
             for (int i = 0, n = scheduledWork.size(); i < n; i++) {
                 final var item = scheduledWork.get(i);
                 final var serializedItem = serializedItems.get(i);
@@ -269,8 +308,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 writer.writeItem(serializedItem);
             }
             return null;
-        });
-        pendingItems = new ArrayList<>();
+        }
     }
 
     private SemanticVersion nodeVersionFrom(@NonNull final Configuration config) {

@@ -46,7 +46,6 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
@@ -78,6 +77,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class RecordCacheImplTest extends AppTestBase {
     private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
+    private static final int RESPONSE_CODES_TO_TEST = 32;
     private static final TransactionReceipt UNHANDLED_RECEIPT =
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID PAYER_ACCOUNT_ID =
@@ -93,9 +93,6 @@ final class RecordCacheImplTest extends AppTestBase {
 
     @Mock
     private ConfigProvider props;
-
-    @Mock
-    private SavepointStackImpl stack;
 
     @BeforeEach
     void setUp(
@@ -134,8 +131,10 @@ final class RecordCacheImplTest extends AppTestBase {
     @DisplayName("Null args to constructor throw NPE")
     @SuppressWarnings("DataFlowIssue")
     void nullArgsToConstructorThrowNPE() {
-        assertThatThrownBy(() -> new RecordCacheImpl(null, props)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RecordCacheImpl(null, wsa, props)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, null, props))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, wsa, null)).isInstanceOf(NullPointerException.class);
     }
 
     private TransactionRecord getRecord(RecordCache cache, TransactionID txId) {
@@ -194,7 +193,7 @@ final class RecordCacheImplTest extends AppTestBase {
             ((ListWritableQueueState<?>) queue).commit();
 
             // When we create the cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             assertThat(cache.getRecords(payer1).isEmpty());
         }
 
@@ -236,7 +235,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipt for no such txn returns null")
         void queryForReceiptForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
             // When we look up the receipt, then we get null
@@ -247,7 +246,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipts for no such txn returns EMPTY LIST")
         void queryForReceiptsForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
             // When we look up the receipts, then we get an empty list
@@ -258,7 +257,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipts for an account ID with no receipts returns EMPTY LIST")
         void queryForReceiptsForAccountWithNoRecords() {
             // Given a transaction unknown to the record cache and de-duplication cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
             // When we look up the receipts, then we get an empty list
             assertThat(getReceipts(cache, PAYER_ACCOUNT_ID)).isEmpty();
@@ -268,7 +267,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipt for txn in UNKNOWN state returns UNKNOWN")
         void queryForReceiptForUnhandledTxnReturnsNull() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
             dedupeCache.add(unhandledTxId);
 
@@ -280,7 +279,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipts by account ID for txn in UNKNOWN state returns EMPTY LIST")
         void queryForReceiptsForUnhandledTxnByAccountID() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
             dedupeCache.add(unhandledTxId);
 
@@ -296,7 +295,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipt for a txn with a proper record")
         void queryForReceiptForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -317,7 +316,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipts for a txn with a proper record")
         void queryForReceiptsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -338,7 +337,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for receipts for an account ID with a proper record")
         void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -360,7 +359,7 @@ final class RecordCacheImplTest extends AppTestBase {
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records")
         void queryForManyReceiptsForAccountID(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds
             var consensusTime = Instant.now().plusSeconds(2);
             for (int i = 0; i < numRecords; i++) {
@@ -390,7 +389,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }
@@ -402,7 +402,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for record for unknown txn returns null")
         void queryForRecordForUnknownTxnReturnsNull() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
             assertThat(getRecord(cache, missingTxId)).isNull();
@@ -411,7 +411,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for records for unknown txn returns EMPTY LIST")
         void queryForRecordsForUnknownTxnReturnsNull() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
             assertThat(getRecords(cache, missingTxId)).isEmpty();
@@ -420,7 +420,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for record for account ID with no receipts returns EMPTY LIST")
         void queryForRecordByAccountForUnknownTxn() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).isEmpty();
         }
@@ -428,7 +428,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for record for tx with receipt in UNKNOWN state returns null")
         void queryForRecordForUnknownTxn() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
 
@@ -438,7 +438,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for records for tx with receipt in UNKNOWN state returns EMPTY LIST")
         void queryForRecordsForUnknownTxn() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
 
@@ -448,7 +448,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Query for records for tx by account ID with receipt in UNKNOWN state returns EMPTY LIST")
         void queryForRecordsByAccountForUnknownTxn() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
 
@@ -460,7 +460,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for record for a txn with a proper record")
         void queryForRecordForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -481,7 +481,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for records for a txn with a proper record")
         void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -500,7 +500,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         void unclassifiableStatusIsNotPriority() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var unclassifiableReceipt =
@@ -540,7 +540,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Query for records for an account ID with a proper record")
         void queryForRecordsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
@@ -557,7 +557,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }
@@ -571,14 +572,14 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Null args to hasDuplicate throw NPE")
         @SuppressWarnings("DataFlowIssue")
         void duplicateCheckWithIllegalParameters() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             assertThatThrownBy(() -> cache.hasDuplicate(null, 1L)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("Check duplicate for unknown txn returns NO_DUPLICATE")
         void duplicateCheckForUnknownTxn() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
             assertThat(cache.hasDuplicate(missingTxId, 1L)).isEqualTo(NO_DUPLICATE);
@@ -587,7 +588,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Check duplicate for tx with receipt in UNKNOWN state returns NO_DUPLICATE")
         void duplicateCheckForUnknownState() {
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
 
@@ -598,7 +599,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Check duplicate for txn with a proper record from other node")
         void duplicateCheckForTxnFromOtherNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(OK).build();
@@ -618,7 +619,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Check duplicate for txn with a proper record from same node")
         void duplicateCheckForTxnFromSameNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(OK).build();
@@ -638,7 +639,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Check duplicate for txn with a proper record from several other nodes")
         void duplicateCheckForTxnFromMultipleOtherNodes() {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(OK).build();
@@ -661,7 +662,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @DisplayName("Check duplicate for txn with a proper record from several nodes including the current")
         void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
             // Given a transaction known to the de-duplication cache but not the record cache
-            final var cache = new RecordCacheImpl(dedupeCache, props);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(OK).build();

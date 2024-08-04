@@ -46,7 +46,6 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,9 +55,6 @@ import org.mockito.Mock;
 class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBase {
     @Mock
     private QueryContext context;
-
-    @Mock
-    private SavepointStackImpl stack;
 
     private NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler;
 

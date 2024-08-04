@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -153,7 +154,7 @@ class TipsetEventCreatorTests {
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final UnsignedEvent newEvent,
-            @NonNull final List<OneOf<TransactionOneOfType>> expectedTransactions,
+            @NonNull final List<EventTransaction> expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
@@ -211,13 +212,15 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<TransactionOneOfType>> convertedTransactions = newEvent.getTransactions().stream()
+        final List<EventTransaction> convertedTransactions = newEvent.getTransactions().stream()
                 .map(Transaction::getTransaction)
                 .toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {
-            final OneOf<TransactionOneOfType> expected = expectedTransactions.get(i);
-            final OneOf<TransactionOneOfType> actual = convertedTransactions.get(i);
+            final OneOf<TransactionOneOfType> expected =
+                    expectedTransactions.get(i).transaction();
+            final OneOf<TransactionOneOfType> actual =
+                    convertedTransactions.get(i).transaction();
             assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
             assertEquals(expected.value(), actual.value(), "Transaction payload " + i + " mismatch");
         });
@@ -274,14 +277,16 @@ class TipsetEventCreatorTests {
      * Generate a small number of random transactions.
      */
     @NonNull
-    private List<OneOf<TransactionOneOfType>> generateRandomTransactions(@NonNull final Random random) {
+    private List<EventTransaction> generateRandomTransactions(@NonNull final Random random) {
         final int transactionCount = random.nextInt(0, 10);
-        final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
+        final List<EventTransaction> transactions = new ArrayList<>();
 
         for (int i = 0; i < transactionCount; i++) {
             final byte[] bytes = new byte[32];
             random.nextBytes(bytes);
-            transactions.add(new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, Bytes.wrap(bytes)));
+            final OneOf<TransactionOneOfType> oneOf =
+                    new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, Bytes.wrap(bytes));
+            transactions.add(new EventTransaction(oneOf));
         }
 
         return transactions;
@@ -303,7 +308,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -357,7 +362,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -425,7 +430,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
@@ -500,7 +505,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -578,7 +583,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -675,7 +680,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -773,7 +778,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -1035,7 +1040,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<TransactionOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,

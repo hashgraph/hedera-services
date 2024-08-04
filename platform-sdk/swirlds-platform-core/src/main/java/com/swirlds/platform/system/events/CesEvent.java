@@ -18,6 +18,7 @@ package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
@@ -181,8 +182,18 @@ public class CesEvent extends AbstractSerializableHashable
     }
 
     /**
-     * @return the signature for the event
+     * {{@inheritDoc}}
      */
+    @NonNull
+    @Override
+    public EventCore getEventCore() {
+        return getPlatformEvent().getEventCore();
+    }
+
+    /**
+     * {{ @inheritDoc }}
+     */
+    @NonNull
     public Bytes getSignature() {
         return platformEvent.getSignature();
     }

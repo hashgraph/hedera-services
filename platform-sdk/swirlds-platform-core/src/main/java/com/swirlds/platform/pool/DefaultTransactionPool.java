@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.pool;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
@@ -47,7 +48,7 @@ public class DefaultTransactionPool implements TransactionPool {
     public void submitSystemTransaction(@NonNull final StateSignatureTransaction payload) {
         Objects.requireNonNull(payload);
         transactionPoolNexus.submitTransaction(
-                new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload), true);
+                new EventTransaction(new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload)), true);
     }
 
     /**
