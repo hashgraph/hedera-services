@@ -8,7 +8,8 @@ In order to support updating the Token Custom Fees via smart contract calls, we 
 
 [HIP-18](https://hips.hedera.com/hip/hip-18) - HIP that introduces token custom fees.\
 [HIP-206](https://hips.hedera.com/hip/hip-206) - HIP that enables the precompiled system contracts for Hedera Token Service.\
-[HIP-514](https://hips.hedera.com/hip/hip-514) - HIP that introduces token management via smart contracts.
+[HIP-514](https://hips.hedera.com/hip/hip-514) - HIP that introduces token management via smart contracts.\
+[HIP-1010](https://hips.hedera.com/hip/hip-1010) - HIP that introduces the updates of token custom fees via smart contracts.
 
 ## Goals
 
@@ -37,7 +38,10 @@ New system contract functions must be added to the `IHederaTokenService` interfa
 ### Smart Contract Service Module
 
 - UpdateTokenCustomFeesTranslator - This class will be responsible for handling the `updateFungibleTokenCustomFees` and `updateNonFungibleTokenCustomFees` selectors and dispatching them to the corresponding HAPI calls.
-- UpdateTokenCustomFeesDecoder - This class provides methods  and constants for decoding the given `HtsCallAttempt` into a `TransactionBody` for `TokenFeeScheduleUpdate` call.
+- UpdateTokenCustomFeesDecoder - This class provides methods  and constants for decoding the given `HtsCallAttempt` into a `TokenFeeScheduleUpdateTransactionBody` for `TokenFeeScheduleUpdate` call.
+
+Similar approaches would be the System Contracts for Update Token Info - `UpdateDecoder`and it's relative `UpdateTranslator`, `UpdateKeysTranslator` and `UpdateExpiryTranslator` classes.
+We can also refer to the Wipe, Pause, Mint, Burn, Freeze and Associate system contracts, as they leverage the same approach.
 
 ## Security Implications
 
