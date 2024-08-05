@@ -16,9 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
-
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
@@ -51,8 +48,17 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         Objects.requireNonNull(transaction, "transaction must not be null");
         Objects.requireNonNull(stateChanges, "stateChanges must not be null");
 
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var receiptBuilder = TransactionReceipt.newBuilder();
+        final var txnType = transaction.txn().bodyOrThrow().data().kind();
+        final var recordBuilder =
+                switch (txnType) {
+                    case UTIL_PRNG -> new UtilPrngTranslator().initRecordBuilder(transaction.output(), stateChanges);
+                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
+                    default -> TransactionRecord.newBuilder();
+                };
+
+        final var receiptBuilder = recordBuilder.build().hasReceipt()
+                ? recordBuilder.build().receipt().copyBuilder()
+                : TransactionReceipt.newBuilder();
 
         parseTransaction(transaction.txn(), recordBuilder);
 
@@ -198,15 +204,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasNodeDelete()) {
         //                rb.nodeId(txnOutput.nodeDelete().nodeID());
         //            }
-
-        if (txnOutput.hasUtilPrng()) {
-            final var entropy = txnOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                trb.prngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                trb.prngNumber(entropy.as());
-            }
-        }
 
         maybeAssignEvmAddressAlias(txnOutput, trb);
 
