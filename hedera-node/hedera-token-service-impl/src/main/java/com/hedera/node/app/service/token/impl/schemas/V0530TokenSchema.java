@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
