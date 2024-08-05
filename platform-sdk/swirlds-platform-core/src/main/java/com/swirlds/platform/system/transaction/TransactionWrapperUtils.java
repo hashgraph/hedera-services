@@ -24,8 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Utility class for creating {@link TransactionWrapper} instances.
  */
-public final class PayloadWrapperUtils {
-    private PayloadWrapperUtils() {
+public final class TransactionWrapperUtils {
+    private TransactionWrapperUtils() {
         // Utility class
     }
 
