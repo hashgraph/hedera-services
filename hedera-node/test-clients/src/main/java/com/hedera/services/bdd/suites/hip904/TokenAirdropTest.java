@@ -1155,6 +1155,27 @@ public class TokenAirdropTest {
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INVALID_TOKEN_ID));
         }
+
+        @HapiTest
+        @DisplayName("duplicate nft airdrop during handle")
+        final Stream<DynamicTest> duplicateNFTHandleTokenAirdrop() {
+            return hapiTest(
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(PENDING_NFT_AIRDROP_ALREADY_EXISTS));
+        }
+
+        @HapiTest
+        @DisplayName("duplicate nft airdrop during pure checks")
+        final Stream<DynamicTest> duplicateNFTPreHAndleTokenAirdrop() {
+            return hapiTest(tokenAirdrop(
+                            movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                            movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .payingWith(OWNER)
+                    .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
+        }
     }
 
     @Nested
