@@ -14,6 +14,8 @@ Allow users to create, update and get info for metadata and metadata key using s
 3. Add new versions of the create and update functions in Translators and Decoders
 4. Add new functions for view operations: `getFungibleTokenInfoWithMetadata(address token)`,
 `getNonFungibleTokenInfoWithMetadata(address token, int64 serialNumber)`, `getTokenInfoWithMetadata(address token)`
+5. Add new function `updateNftsMetadata(address token, int64[] serialNumbers, bytes metadata)` dispatching to
+TokenUpdateNfts HAPI operation
 
 ## Non Goals
 
@@ -39,6 +41,12 @@ versions of `HederaTokenService.sol` functions to continue working
 | 4448ed25          | `getFungibleTokenInfoWithMetadata(address token)`                        |
 | 8284a7cf          | `getTokenInfoWithMetadata(address token)`                                |
 | ded70b6a          | `getNonFungibleTokenInfoWithMetadata(address token, int64 serialNumber)` |
+
+We need to add a new function for the TokenUpdateNfts HAPI operation
+
+| Function Selector |                             Function Signature                             |
+|-------------------|----------------------------------------------------------------------------|
+| 3299b72c          | `updateNftsMetadata(address token, int64[] serialNumbers, bytes metadata)` |
 
 ## Acceptance Tests
 
@@ -66,8 +74,12 @@ versions of `HederaTokenService.sol` functions to continue working
 - Verify `getFungibleTokenInfoWithMetadata` returns the correct metadata for a fungible token with metadata key
 - Verify `getTokenInfoWithMetadata` returns the correct metadata for a token with metadata key
 - Verify `getNonFungibleTokenInfoWithMetadata` returns the correct metadata for a non-fungible token with metadata key
+- Verify `updateNftsMetadata` updates metadata for multiple NFTs
+- Verify `updateNftsMetadata` updates metadata for single NFT
 
 ### Negative Tests
 
 - Verify `updateTokenInfo` fails to update token info with metadata when metadata key is not set
 - Verify `updateTokenInfo` fails to update token info with metadata when metadata key is different
+- Verify `updateNftsMetadata` fails to update metadata for multiple NFTs when metadata key is not set
+- Verify `updateNftsMetadata` fails to update metadata for multiple NFTs when metadata key is different
