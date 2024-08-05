@@ -49,16 +49,21 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         Objects.requireNonNull(stateChanges, "stateChanges must not be null");
 
         final var txnType = transaction.txn().bodyOrThrow().data().kind();
-        final var recordBuilder =
+        final var singleTxnRecord =
                 switch (txnType) {
-                    case UTIL_PRNG -> new UtilPrngTranslator().initRecordBuilder(transaction.output(), stateChanges);
+                    case UTIL_PRNG -> new UtilPrngTranslator().translate(transaction, stateChanges);
                     case UNSET -> throw new IllegalArgumentException("Transaction type not set");
-                    default -> TransactionRecord.newBuilder();
+                    default -> new SingleTransactionRecord(
+                            transaction.txn(),
+                            TransactionRecord.newBuilder().build(),
+                            List.of(),
+                            new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
-        final var receiptBuilder = recordBuilder.build().hasReceipt()
-                ? recordBuilder.build().receipt().copyBuilder()
-                : TransactionReceipt.newBuilder();
+        final var txnRecord = singleTxnRecord.transactionRecord();
+        final var recordBuilder = txnRecord.copyBuilder();
+        final var receiptBuilder =
+                txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
 
         parseTransaction(transaction.txn(), recordBuilder);
 

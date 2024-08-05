@@ -20,17 +20,19 @@ import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfTyp
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-public class UtilPrngTranslator {
-    public TransactionRecord.Builder initRecordBuilder(
-            @NotNull TransactionOutput transaction, @NotNull StateChanges stateChanges) {
+public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    @Override
+    public SingleTransactionRecord translate(
+            @NotNull SingleTransactionBlockItems transaction, @NotNull StateChanges stateChanges) {
         final var recordBuilder = TransactionRecord.newBuilder();
 
-        if (transaction.hasUtilPrng()) {
-            final var entropy = transaction.utilPrng().entropy();
+        if (transaction.output().hasUtilPrng()) {
+            final var entropy = transaction.output().utilPrng().entropy();
             if (entropy.kind() == PRNG_BYTES) {
                 recordBuilder.prngBytes(entropy.as());
             } else if (entropy.kind() == PRNG_NUMBER) {
@@ -38,6 +40,10 @@ public class UtilPrngTranslator {
             }
         }
         recordBuilder.consensusTimestamp(stateChanges.consensusTimestamp());
-        return recordBuilder;
+        return new SingleTransactionRecord(
+                transaction.txn(),
+                recordBuilder.build(),
+                List.of(),
+                new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
