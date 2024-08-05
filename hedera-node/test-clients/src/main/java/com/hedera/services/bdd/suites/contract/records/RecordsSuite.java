@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.records;
 
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -30,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -51,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -72,12 +74,9 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
-@HapiTestLifecycle
-@Order(Integer.MAX_VALUE)
 @DisplayName("Records Suite")
 public class RecordsSuite {
     public static final String LOG_NOW = "logNow";
@@ -312,8 +311,8 @@ public class RecordsSuite {
                 }));
     }
 
-    @HapiTest
-    @Order(Integer.MAX_VALUE)
+    @DisplayName("Block Hash Returns The Hash Of The Latest 256 Blocks")
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     final Stream<DynamicTest> blockHashReturnsTheHashOfTheLatest256Blocks() {
         final var contract = "EmitBlockTimestamp";
         return hapiTest(
@@ -324,8 +323,7 @@ public class RecordsSuite {
                 cryptoCreate(RECEIVER),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 withOpContext((spec, opLog) -> {
-                    // test in CI to expect 256 blocks to be created
-                    //                    doNTransfers(spec, 256);
+                    doNTransfers(spec, 256);
                     waitUntilStartOfNextAdhocPeriod(2_000L);
                     final var ethCall = ethereumCall(contract, "getAllBlockHashes")
                             .logged()
@@ -343,17 +341,19 @@ public class RecordsSuite {
                             .getContractCallResult()
                             .getContractCallResult()
                             .substring(64);
+                    // Ensure that we have 256 block hashes
                     assertEquals(res.size() / 32, 256);
                 }));
     }
 
+    // Helper method to perform multiple transfers and simulate multiple block creations
     private void doNTransfers(@NonNull final HapiSpec spec, final int amount) {
         allRunFor(
                 spec,
                 Stream.iterate(1, i -> i + 1)
                         .limit(amount)
                         .mapMulti((Integer i, Consumer<HapiSpecOperation> consumer) -> {
-                            consumer.accept(waitUntilStartOfNextAdhocPeriod(2_000L));
+                            consumer.accept(sleepFor(2_000L));
                             consumer.accept(
                                     cryptoTransfer(TokenMovement.movingHbar(i).between(ACCOUNT, RECEIVER)));
                         })
