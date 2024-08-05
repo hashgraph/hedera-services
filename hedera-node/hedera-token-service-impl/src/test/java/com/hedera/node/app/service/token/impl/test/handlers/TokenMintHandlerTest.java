@@ -44,7 +44,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -52,7 +52,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -67,7 +67,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordStreamBuilder recordBuilder;
     private TokenMintHandler subject;
 
     @BeforeEach
@@ -76,7 +76,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilderImpl();
+        recordBuilder = new RecordStreamBuilder();
     }
 
     @Test
@@ -298,7 +298,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var stack = mock(HandleContext.SavepointStack.class);
         given(handleContext.savepointStack()).willReturn(stack);
-        lenient().when(stack.getBaseBuilder(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
+        lenient().when(stack.getBaseBuilder(TokenMintStreamBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

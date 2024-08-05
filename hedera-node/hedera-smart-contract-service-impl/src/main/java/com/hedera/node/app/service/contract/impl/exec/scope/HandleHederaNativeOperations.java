@@ -34,7 +34,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -114,7 +114,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
+                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
             return childRecordBuilder.status();

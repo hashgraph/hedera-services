@@ -37,21 +37,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 class TransactionUtilsTest {
 
     @ParameterizedTest
-    @MethodSource("buildArgumentsSwirldTransactions")
-    void testSizeComparisonsSwirldTransactions(
-            final OneOf<TransactionOneOfType> payload, final TransactionWrapper swirldTransaction) {
-        assertEquals(TransactionUtils.getLegacyTransactionSize(payload), swirldTransaction.getSize());
-        assertFalse(TransactionUtils.isSystemTransaction(payload));
+    @MethodSource("buildArgumentsAppTransactions")
+    void testSizeComparisonsAppTransactions(
+            final OneOf<TransactionOneOfType> transaction, final TransactionWrapper swirldTransaction) {
+        assertEquals(TransactionUtils.getLegacyTransactionSize(transaction), swirldTransaction.getSize());
+        assertFalse(TransactionUtils.isSystemTransaction(transaction));
     }
 
-    protected static Stream<Arguments> buildArgumentsSwirldTransactions() {
+    protected static Stream<Arguments> buildArgumentsAppTransactions() {
         final List<Arguments> arguments = new ArrayList<>();
         final Randotron randotron = Randotron.create();
 
         IntStream.range(0, 100).forEach(i -> {
             final Bytes payload = randotron.nextHashBytes();
 
-            OneOf<TransactionOneOfType> oneOfTransaction =
+            final OneOf<TransactionOneOfType> oneOfTransaction =
                     new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, payload);
             arguments.add(Arguments.of(oneOfTransaction, new TransactionWrapper(oneOfTransaction)));
         });

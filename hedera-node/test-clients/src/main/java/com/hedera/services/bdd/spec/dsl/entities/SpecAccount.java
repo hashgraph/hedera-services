@@ -34,8 +34,10 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetAccountInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.ApproveAllowanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.CryptoTransferOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokensOperation;
@@ -55,6 +57,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     private final Account.Builder builder = Account.newBuilder();
 
     private long centBalance = UNSPECIFIED_CENT_BALANCE;
+    private com.hederahashgraph.api.proto.java.Key keyProto;
 
     public SpecAccount(@NonNull final String name) {
         super(name);
@@ -99,6 +102,18 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     }
 
     /**
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
+     *
+     * @param to the beneficiary contract
+     * @param amount the amount of hBars to transfer
+     * @return the operation
+     */
+    public CryptoTransferOperation transferHBarsTo(@NonNull final SpecContract to, final long amount) {
+        requireNonNull(to);
+        return new CryptoTransferOperation(amount, this, to);
+    }
+
+    /**
      * Returns an operation to delete the account, transferring its balance to the given beneficiary.
      *
      * @param beneficiary the beneficiary
@@ -118,6 +133,48 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     public AssociateTokensOperation associateTokens(@NonNull final SpecToken... tokens) {
         requireNonNull(tokens);
         return new AssociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given amount of tokens.
+     *
+     * @param token the token
+     * @param spender the contract to approve
+     * @param amount the amount to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveTokenAllowance(
+            @NonNull final SpecToken token, @NonNull final SpecContract spender, final long amount) {
+        requireNonNull(token);
+        return new ApproveAllowanceOperation(token, this, spender, amount);
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given amount of hBars.
+     *
+     * @param spender the contract to approve
+     * @param amount the amount to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveCryptoAllowance(@NonNull final SpecContract spender, final long amount) {
+        return new ApproveAllowanceOperation(this, spender, amount);
+    }
+
+    /**
+     * Returns an operation to approve an allowance for the given contract to spend the given NFTs.
+     *
+     * @param token the token
+     * @param spender the contract to approve
+     * @param serials the serials to approve
+     * @return the operation
+     */
+    public ApproveAllowanceOperation approveNFTAllowance(
+            @NonNull final SpecToken token,
+            @NonNull final SpecContract spender,
+            final boolean approvedForAll,
+            @NonNull final List<Long> serials) {
+        requireNonNull(token);
+        return new ApproveAllowanceOperation(token, this, spender, approvedForAll, serials);
     }
 
     /**
@@ -158,6 +215,22 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
      */
     public GetAccountInfoOperation getInfo() {
         return new GetAccountInfoOperation(this);
+    }
+
+    /**
+     * Returns the proto key of the account.
+     * @return the proto key
+     */
+    public com.hederahashgraph.api.proto.java.Key getKeyProto() {
+        return keyProto;
+    }
+
+    /**
+     * Returns the bytes of the ED25519 key of the account.
+     * @return the bytes of the ED25519 key
+     */
+    public byte[] getED25519KeyBytes() {
+        return getKeyProto().getEd25519().toByteArray();
     }
 
     /**
@@ -238,6 +311,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         final var keyMetadata = KeyMetadata.from(fromPbj(model.keyOrThrow()), spec);
         return new Result<>(model, atMostOnce(siblingSpec -> {
             keyMetadata.registerAs(name, siblingSpec);
+            this.keyProto = keyMetadata.protoKey();
             siblingSpec
                     .registry()
                     .saveAccountId(

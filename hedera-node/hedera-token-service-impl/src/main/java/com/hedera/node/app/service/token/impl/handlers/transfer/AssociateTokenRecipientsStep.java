@@ -50,7 +50,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -197,9 +197,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
             // We only charge auto-association fees inline if this is a user dispatch; for internal dispatches,
             // the contract service will take the auto-association costs from the remaining EVM gas
-            if (context.savepointStack()
-                    .getBaseBuilder(SingleTransactionRecordBuilder.class)
-                    .isUserDispatch()) {
+            if (context.savepointStack().getBaseBuilder(StreamBuilder.class).isUserDispatch()) {
                 final var unlimitedAssociationsEnabled =
                         config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
                 // And the "sender pays" fee model only applies when using unlimited auto-associations

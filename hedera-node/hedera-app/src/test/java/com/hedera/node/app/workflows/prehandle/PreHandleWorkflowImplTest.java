@@ -27,7 +27,7 @@ import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
-import static com.swirlds.platform.system.transaction.PayloadWrapperUtils.createAppPayloadWrapper;
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;

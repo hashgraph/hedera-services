@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.dsl.operations.transactions.CallTokenOperati
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -243,6 +244,8 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
                 .tokenType(com.hederahashgraph.api.proto.java.TokenType.forNumber(
                         builder.build().tokenType().protoOrdinal()))
                 .treasury(requireNonNull(treasuryAccount).name())
+                .maxSupply(model.maxSupply())
+                .supplyType(model.maxSupply() == 0 ? TokenSupplyType.INFINITE : TokenSupplyType.FINITE)
                 .initialSupply(model.totalSupply());
         if (autoRenewAccount != null) {
             op.autoRenewAccount(autoRenewAccount.name());
