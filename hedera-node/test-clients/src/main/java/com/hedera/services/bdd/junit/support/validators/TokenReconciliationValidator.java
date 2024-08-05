@@ -111,7 +111,8 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
         if (parts.function() == TokenUpdate) {
             final var op = parts.body().getTokenUpdate();
             final var nftTreasury = nonFungibleTreasuries.get(op.getToken());
-            if (nftTreasury != null && op.hasTreasury()) {
+            // A synthetic TokenUpdate dispatched by a system contract will set 0.0.0 when not changing the treasury
+            if (nftTreasury != null && op.hasTreasury() && op.getTreasury().getAccountNum() > 0) {
                 final var tokenNum = op.getToken().getTokenNum();
                 final var treasuryNum = nftTreasury.getAccountNum();
                 final var curTreasuryKey = new AccountNumTokenNum(treasuryNum, tokenNum);
