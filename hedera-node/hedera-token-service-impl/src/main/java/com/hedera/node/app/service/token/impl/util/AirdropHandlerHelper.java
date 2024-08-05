@@ -83,6 +83,7 @@ public class AirdropHandlerHelper {
             // if not existing account, create transfer
             if (!accountStore.contains(accountId)) {
                 transferFungibleAmounts.add(aa);
+                transfersNeedingAutoAssociation.add(accountId);
                 continue;
             }
 
@@ -96,7 +97,8 @@ public class AirdropHandlerHelper {
             } else {
                 transferFungibleAmounts.add(aa);
                 // Any transfer that is with no explicitly associated token will need to be charged $0.1
-                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during auto-association
+                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during
+                // auto-association
                 if (tokenRel == null) {
                     transfersNeedingAutoAssociation.add(accountId);
                 }
@@ -132,6 +134,7 @@ public class AirdropHandlerHelper {
             // if not existing account, create transfer
             if (!accountStore.contains(receiverId)) {
                 transferNftList.add(nftTransfer);
+                transfersNeedingAutoAssociation.add(receiverId);
                 continue;
             }
 
@@ -145,7 +148,8 @@ public class AirdropHandlerHelper {
             } else {
                 transferNftList.add(nftTransfer);
                 // Any transfer that is with no explicitly associated token will need to be charged $0.1
-                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during auto-association
+                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during
+                // auto-association
                 if (tokenRel == null) {
                     transfersNeedingAutoAssociation.add(receiverId);
                 }

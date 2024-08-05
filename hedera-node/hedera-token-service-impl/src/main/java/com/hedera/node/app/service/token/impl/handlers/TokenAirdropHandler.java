@@ -142,7 +142,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
-                chargeAirdropFee(context, fungibleLists.pendingFungibleAmounts().size(), fungibleLists.transfersNeedingAutoAssociation());
+                chargeAirdropFee(
+                        context,
+                        fungibleLists.pendingFungibleAmounts().size(),
+                        fungibleLists.transfersNeedingAutoAssociation());
 
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
@@ -175,8 +178,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
-                chargeAirdropFee(
-                        context, nftLists.pendingNftList().size(), nftLists.transfersNeedingAutoAssociation());
+                chargeAirdropFee(context, nftLists.pendingNftList().size(), nftLists.transfersNeedingAutoAssociation());
 
                 // 3. create and save NFT pending airdrops in to state
                 createPendingAirdropsForNFTs(
