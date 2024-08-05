@@ -173,6 +173,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
      * @param nftStore the nft store
      * @param tokenId the token id
      * @return true if all serial numbers are owned by the treasury account
+     * @throws PreCheckException if the Nft does not exist
      */
     private boolean serialNumbersInTreasury(
             @NonNull final AccountID treasuryAccount,
@@ -180,18 +181,18 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final ReadableNftStore nftStore,
             @NonNull final TokenID tokenId)
             throws PreCheckException {
+        boolean serialNumbersInTreasury = true;
         for (final Long serialNumber : serialNumbers) {
-            Nft nft = nftStore.get(NftID.newBuilder()
+            final Nft nft = nftStore.get(NftID.newBuilder()
                     .tokenId(tokenId)
                     .serialNumber(serialNumber)
                     .build());
-            if (nft == null) {
-                throw new PreCheckException(INVALID_NFT_ID);
-            }
+            validateTruePreCheck(nft != null, INVALID_NFT_ID);
             if (nft.ownerId() != null && !Objects.equals(nft.ownerId(), treasuryAccount)) {
-                return false;
+                serialNumbersInTreasury = false;
+                break;
             }
         }
-        return true;
+        return serialNumbersInTreasury;
     }
 }
