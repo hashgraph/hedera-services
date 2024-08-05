@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -85,7 +84,8 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenUpdateNftsOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var token = getIfUsable(op.tokenOrElse(TokenID.DEFAULT), tokenStore);
+        final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
+        validateTruePreCheck(token != null, INVALID_TOKEN_ID);
 
         final var nftStore = context.createStore(ReadableNftStore.class);
         if (serialNumbersInTreasury(
@@ -178,15 +178,20 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final AccountID treasuryAccount,
             @NonNull final List<Long> serialNumbers,
             @NonNull final ReadableNftStore nftStore,
-            @NonNull final TokenID tokenId) {
-        return serialNumbers.stream()
-                .map(serialNumber -> getIfUsable(
-                        NftID.newBuilder()
-                                .tokenId(tokenId)
-                                .serialNumber(serialNumber)
-                                .build(),
-                        nftStore))
-                .allMatch(nft ->
-                        nft != null && (nft.ownerId() == null || Objects.equals(nft.ownerId(), treasuryAccount)));
+            @NonNull final TokenID tokenId)
+            throws PreCheckException {
+        for (final Long serialNumber : serialNumbers) {
+            Nft nft = nftStore.get(NftID.newBuilder()
+                    .tokenId(tokenId)
+                    .serialNumber(serialNumber)
+                    .build());
+            if (nft == null) {
+                throw new PreCheckException(INVALID_NFT_ID);
+            }
+            if (nft.ownerId() != null && !Objects.equals(nft.ownerId(), treasuryAccount)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
