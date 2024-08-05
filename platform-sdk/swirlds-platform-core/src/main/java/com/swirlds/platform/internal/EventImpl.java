@@ -93,7 +93,9 @@ public class EventImpl implements Clearable {
      */
     private boolean[] votes;
 
-    public EventImpl(@NonNull final PlatformEvent platformEvent, @Nullable final EventImpl selfParent,
+    public EventImpl(
+            @NonNull final PlatformEvent platformEvent,
+            @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent) {
         Objects.requireNonNull(platformEvent, "baseEvent");
         Objects.requireNonNull(platformEvent.getSignature(), "signature");
