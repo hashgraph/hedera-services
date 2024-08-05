@@ -167,12 +167,6 @@ jobs:
           HOME: /x
         with:
           version: v25.0.5
-          daemon-config: |
-            {
-              "registry-mirrors": [
-                "https://artifacts.swirldslabs.io/central-docker-external/"
-              ]
-            }
 
       - name: Configure Default Docker Context
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -384,12 +378,6 @@ jobs:
           HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
         with:
           version: v25.0.5
-          daemon-config: |
-            {
-              "registry-mirrors": [
-                "https://artifacts.swirldslabs.io/central-docker-external/"
-              ]
-            }
 
       - name: Configure Default Docker Context
         env:
