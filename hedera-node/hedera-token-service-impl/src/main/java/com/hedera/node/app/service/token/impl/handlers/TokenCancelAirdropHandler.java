@@ -139,6 +139,8 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenCancelAirdropOrThrow();
+        configValidation(context.configuration(), op);
+
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var airdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
 
@@ -147,7 +149,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
 
-        configValidation(context.configuration(), op);
         validatePendingAirdropIds(context, pendingAirdropIds, payer, accountStore, airdropStore);
         deleteAccountAirdropsFromAccount(pendingAirdropIds, airdropStore, payerAccount, accountStore);
         updateAccountsNumberOfPendingAirdrops(payerAccount, pendingAirdropIds.size(), accountStore);
