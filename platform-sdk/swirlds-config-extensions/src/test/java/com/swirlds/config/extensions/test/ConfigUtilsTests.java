@@ -86,4 +86,22 @@ public class ConfigUtilsTests {
         // then
         Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isFalse();
     }
+
+    @Test
+    void testSimpleDifferentConfigs4() {
+        // given
+        final Configuration config1 = new TestConfigBuilder()
+                .withValue("foo", "bar")
+                .withValue("foo2", "bar2")
+                .withValue("foo3", "bar3")
+                .getOrCreateConfig();
+        final Configuration config2 = new TestConfigBuilder()
+                .withValue("foo", "bar")
+                .withValue("foo3", "bar3")
+                .withValue("foo2", "bar2")
+                .getOrCreateConfig();
+
+        // then
+        Assertions.assertThat(ConfigUtils.haveEqualProperties(config1, config2)).isTrue();
+    }
 }

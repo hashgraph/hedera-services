@@ -18,7 +18,7 @@ package com.swirlds.config.extensions;
 
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -46,16 +46,10 @@ public class ConfigUtils {
             @NonNull final Configuration config1, @NonNull final Configuration config2) {
         Objects.requireNonNull(config1, "config1 must not be null");
         Objects.requireNonNull(config2, "config2 must not be null");
-
-        final List<String> names1 = config1.getPropertyNames().collect(Collectors.toList());
-        final List<String> names2 = config2.getPropertyNames().collect(Collectors.toList());
-        if (names1.size() != names2.size()) {
-            return false;
-        }
-        return names1.stream()
-                        .filter(name -> names2.contains(name))
-                        .filter(name -> Objects.equals(config1.getValue(name), config2.getValue(name)))
-                        .count()
-                == names1.size();
+        final Map<String, String> properties1 =
+                config1.getPropertyNames().collect(Collectors.toMap(s -> s, s -> config1.getValue(s)));
+        final Map<String, String> properties2 =
+                config2.getPropertyNames().collect(Collectors.toMap(s -> s, s -> config2.getValue(s)));
+        return Objects.equals(properties1, properties2);
     }
 }
