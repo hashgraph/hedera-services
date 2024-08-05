@@ -48,12 +48,12 @@ public class AirdropHandlerHelper {
     public record FungibleAirdropLists(
             @NonNull List<AccountAmount> transferFungibleAmounts,
             @NonNull List<AccountAmount> pendingFungibleAmounts,
-            int numUnlimitedAssociationTransfers) {}
+            int transfersNeedingAutoAssociation) {}
 
     public record NftAirdropLists(
             @NonNull List<NftTransfer> transferNftList,
             @NonNull List<NftTransfer> pendingNftList,
-            int numUnlimitedAssociationTransfers) {}
+            int transfersNeedingAutoAssociation) {}
 
     private AirdropHandlerHelper() {
         throw new UnsupportedOperationException("Utility class only");
@@ -74,7 +74,7 @@ public class AirdropHandlerHelper {
             HandleContext context, TokenID tokenId, List<AccountAmount> transfers) {
         List<AccountAmount> transferFungibleAmounts = new ArrayList<>();
         List<AccountAmount> pendingFungibleAmounts = new ArrayList<>();
-        Set<AccountID> accountsForUnlimitedAssociationTransfers = new HashSet<>();
+        Set<AccountID> transfersNeedingAutoAssociation = new HashSet<>();
 
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
@@ -95,14 +95,16 @@ public class AirdropHandlerHelper {
                 pendingFungibleAmounts.add(aa);
             } else {
                 transferFungibleAmounts.add(aa);
-                if (account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
-                    accountsForUnlimitedAssociationTransfers.add(accountId);
+                // Any transfer that is with no explicitly associated token will need to be charged $0.1
+                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during auto-association
+                if (tokenRel == null) {
+                    transfersNeedingAutoAssociation.add(accountId);
                 }
             }
         }
 
         return new FungibleAirdropLists(
-                transferFungibleAmounts, pendingFungibleAmounts, accountsForUnlimitedAssociationTransfers.size());
+                transferFungibleAmounts, pendingFungibleAmounts, transfersNeedingAutoAssociation.size());
     }
 
     /**
@@ -120,7 +122,7 @@ public class AirdropHandlerHelper {
             HandleContext context, TokenID tokenId, List<NftTransfer> transfers) {
         List<NftTransfer> transferNftList = new ArrayList<>();
         List<NftTransfer> pendingNftList = new ArrayList<>();
-        Set<AccountID> accountsForUnlimitedAssociationTransfers = new HashSet<>();
+        Set<AccountID> transfersNeedingAutoAssociation = new HashSet<>();
 
         for (final var nftTransfer : transfers) {
             final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
@@ -142,12 +144,14 @@ public class AirdropHandlerHelper {
                 pendingNftList.add(nftTransfer);
             } else {
                 transferNftList.add(nftTransfer);
-                if (account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
-                    accountsForUnlimitedAssociationTransfers.add(receiverId);
+                // Any transfer that is with no explicitly associated token will need to be charged $0.1
+                // So we charge $0.05 pending airdrop fee and $0.05 is charged in CryptoTransferHandler during auto-association
+                if (tokenRel == null) {
+                    transfersNeedingAutoAssociation.add(receiverId);
                 }
             }
         }
-        return new NftAirdropLists(transferNftList, pendingNftList, accountsForUnlimitedAssociationTransfers.size());
+        return new NftAirdropLists(transferNftList, pendingNftList, transfersNeedingAutoAssociation.size());
     }
 
     /**
