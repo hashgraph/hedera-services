@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
+import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -78,7 +79,7 @@ public class NodeCreateHandler implements TransactionHandler {
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),
                 INVALID_GOSSIP_CA_CERTIFICATE);
-
+        validateX509Certificate(op.gossipCaCertificate());
         final var adminKey = op.adminKey();
         addressBookValidator.validateAdminKey(adminKey);
     }

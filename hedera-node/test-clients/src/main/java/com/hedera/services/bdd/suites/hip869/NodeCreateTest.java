@@ -57,17 +57,30 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
+@HapiTestLifecycle
 public class NodeCreateTest {
 
     public static final String ED_25519_KEY = "ed25519Alias";
@@ -81,14 +94,23 @@ public class NodeCreateTest {
     public static List<ServiceEndpoint> GOSSIP_ENDPOINTS_IPS =
             Arrays.asList(endpointFor("192.168.1.200", 123), endpointFor("192.168.1.201", 123));
     public static List<ServiceEndpoint> SERVICES_ENDPOINTS_IPS = Arrays.asList(endpointFor("192.168.1.205", 234));
+    private static List<X509Certificate> gossipCertificates;
+
+    @BeforeAll
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        gossipCertificates = generateX509Certificates(2);
+    }
 
     /**
      * This test is to check if the node creation fails during ingest when the admin key is missing.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> adminKeyIsMissing() {
-        return hapiTest(nodeCreate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED));
+    final Stream<DynamicTest> adminKeyIsMissing() throws CertificateEncodingException {
+        return hapiTest(nodeCreate("testNode")
+                .adminKey(NONSENSE_KEY)
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                .hasPrecheck(KEY_REQUIRED));
     }
 
     /**
@@ -96,10 +118,12 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
-    final Stream<DynamicTest> adminKeyIsMissingEmbedded() { // skipping ingest but purecheck still throw the same
+    final Stream<DynamicTest> adminKeyIsMissingEmbedded()
+            throws CertificateEncodingException { // skipping ingest but purecheck still throw the same
         return hapiTest(nodeCreate("nodeCreate")
                 .setNode("0.0.4") // exclude 0.0.3
                 .adminKey(NONSENSE_KEY)
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(KEY_REQUIRED));
     }
 
@@ -108,10 +132,11 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> validateAdminKey() {
+    final Stream<DynamicTest> validateAdminKey() throws CertificateEncodingException {
         return hapiTest(nodeCreate("nodeCreate")
                 .adminKey(WRONG_LENGTH_EDDSA_KEY)
                 .signedBy(GENESIS)
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
@@ -158,7 +183,7 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> failOnTooManyGossipEndpoints() {
+    final Stream<DynamicTest> failOnTooManyGossipEndpoints() throws CertificateEncodingException {
         final List<ServiceEndpoint> gossipEndpoints = Arrays.asList(
                 ServiceEndpoint.newBuilder()
                         .setDomainName("test.com")
@@ -208,6 +233,7 @@ public class NodeCreateTest {
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 nodeCreate("nodeCreate")
                         .adminKey(ED_25519_KEY)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .gossipEndpoint(gossipEndpoints)
                         .hasKnownStatus(GOSSIP_ENDPOINTS_EXCEEDED_LIMIT));
     }
@@ -217,7 +243,7 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> failOnTooManyServiceEndpoints() {
+    final Stream<DynamicTest> failOnTooManyServiceEndpoints() throws CertificateEncodingException {
         final List<ServiceEndpoint> serviceEndpoints = Arrays.asList(
                 ServiceEndpoint.newBuilder()
                         .setDomainName("test.com")
@@ -259,6 +285,7 @@ public class NodeCreateTest {
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 nodeCreate("nodeCreate")
                         .adminKey(ED_25519_KEY)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .serviceEndpoint(serviceEndpoints)
                         .hasKnownStatus(SERVICE_ENDPOINTS_EXCEEDED_LIMIT));
     }
@@ -268,12 +295,12 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForIps() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 nodeCreate("nodeCreate")
                         .description("hello")
-                        .gossipCaCertificate("gossip".getBytes())
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .grpcCertificateHash("hash".getBytes())
                         .accountId(asAccount("0.0.100"))
                         .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
@@ -283,10 +310,16 @@ public class NodeCreateTest {
                         .hasKnownStatus(SUCCESS),
                 viewNode("nodeCreate", node -> {
                     assertEquals("hello", node.description(), "Description invalid");
-                    assertEquals(
-                            ByteString.copyFrom("gossip".getBytes()),
-                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
-                            "Gossip CA invalid");
+                    try {
+                        assertEquals(
+                                ByteString.copyFrom(
+                                        gossipCertificates.getFirst().getEncoded()),
+                                ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
+                                "Gossip CA invalid");
+                    } catch (CertificateEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+
                     assertEquals(
                             ByteString.copyFrom("hash".getBytes()),
                             ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
@@ -305,10 +338,10 @@ public class NodeCreateTest {
     @LeakyEmbeddedHapiTest(
             reason = NEEDS_STATE_ACCESS,
             overrides = {"nodes.gossipFqdnRestricted"})
-    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() throws CertificateEncodingException {
         final var nodeCreate = nodeCreate("nodeCreate")
                 .description("hello")
-                .gossipCaCertificate("gossip".getBytes())
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .grpcCertificateHash("hash".getBytes())
                 .accountId(asAccount("0.0.100"))
                 .gossipEndpoint(GOSSIP_ENDPOINTS)
@@ -322,10 +355,15 @@ public class NodeCreateTest {
                 nodeCreate,
                 viewNode("nodeCreate", node -> {
                     assertEquals("hello", node.description(), "Description invalid");
-                    assertEquals(
-                            ByteString.copyFrom("gossip".getBytes()),
-                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
-                            "Gossip CA invalid");
+                    try {
+                        assertEquals(
+                                ByteString.copyFrom(
+                                        gossipCertificates.getFirst().getEncoded()),
+                                ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
+                                "Gossip CA invalid");
+                    } catch (CertificateEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
                     assertEquals(
                             ByteString.copyFrom("hash".getBytes()),
                             ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
@@ -342,10 +380,12 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> minimumFieldsSetHappyCase() {
+    final Stream<DynamicTest> minimumFieldsSetHappyCase() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
-                nodeCreate("ntb").description(description),
+                nodeCreate("ntb")
+                        .description(description)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 viewNode(
                         "ntb", node -> assertEquals(description, node.description(), "Node was created successfully")));
     }
@@ -354,7 +394,7 @@ public class NodeCreateTest {
      * Check that appropriate fees are charged during node creation.
      */
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
-    final Stream<DynamicTest> validateFees() {
+    final Stream<DynamicTest> validateFees() throws CertificateEncodingException {
         return defaultHapiSpec("validateFees")
                 .given(
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
@@ -367,6 +407,8 @@ public class NodeCreateTest {
                                 .payingWith("payer")
                                 .signedBy("payer")
                                 .setNode("0.0.4")
+                                .gossipCaCertificate(
+                                        gossipCertificates.getFirst().getEncoded())
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("nodeCreationFailed"))
                 .when()
@@ -374,7 +416,12 @@ public class NodeCreateTest {
                         getTxnRecord("nodeCreationFailed").logged(),
                         // Validate that the failed transaction charges the correct fees.
                         validateChargedUsdWithin("nodeCreationFailed", 0.001, 3),
-                        nodeCreate("ntb").adminKey(ED_25519_KEY).fee(ONE_HBAR).via("nodeCreation"),
+                        nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
+                                .fee(ONE_HBAR)
+                                .gossipCaCertificate(
+                                        gossipCertificates.getFirst().getEncoded())
+                                .via("nodeCreation"),
                         getTxnRecord("nodeCreation").logged(),
                         // But, note that the fee will not be charged for privileged payer
                         // The fee is charged here because the payer is not privileged
@@ -386,6 +433,8 @@ public class NodeCreateTest {
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .setNode("0.0.4")
+                                .gossipCaCertificate(
+                                        gossipCertificates.getLast().getEncoded())
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("multipleSigsCreation"),
                         validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
@@ -396,7 +445,7 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
-    final Stream<DynamicTest> validateFeesInsufficientAmount() {
+    final Stream<DynamicTest> validateFeesInsufficientAmount() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
                 .given(
@@ -411,6 +460,8 @@ public class NodeCreateTest {
                                 .signedBy("payer")
                                 .description(description)
                                 .setNode("0.0.4")
+                                .gossipCaCertificate(
+                                        gossipCertificates.getFirst().getEncoded())
                                 .fee(1)
                                 .hasKnownStatus(INSUFFICIENT_TX_FEE)
                                 .via("nodeCreationFailed"))
@@ -420,6 +471,8 @@ public class NodeCreateTest {
                         nodeCreate("ntb")
                                 .adminKey(ED_25519_KEY)
                                 .description(description)
+                                .gossipCaCertificate(
+                                        gossipCertificates.getFirst().getEncoded())
                                 .via("nodeCreation"),
                         getTxnRecord("nodeCreation").logged(),
                         // But, note that the fee will not be charged for privileged payer
@@ -433,6 +486,8 @@ public class NodeCreateTest {
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .description(description)
                                 .setNode("0.0.4")
+                                .gossipCaCertificate(
+                                        gossipCertificates.getLast().getEncoded())
                                 .fee(1)
                                 .hasKnownStatus(INSUFFICIENT_TX_FEE)
                                 .via("multipleSigsCreation"));
@@ -453,32 +508,40 @@ public class NodeCreateTest {
 
     @LeakyHapiTest(overrides = {"nodes.maxNumber"})
     @DisplayName("check error code MAX_NODES_CREATED is returned correctly")
-    final Stream<DynamicTest> maxNodesReachedFail() {
+    final Stream<DynamicTest> maxNodesReachedFail() throws CertificateEncodingException {
         return hapiTest(
-                overriding("nodes.maxNumber", "1"), nodeCreate("testNode").hasKnownStatus(MAX_NODES_CREATED));
+                overriding("nodes.maxNumber", "1"),
+                nodeCreate("testNode")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .hasKnownStatus(MAX_NODES_CREATED));
     }
 
     @HapiTest
     @DisplayName("Not existing account as accountId during nodeCreate failed")
-    final Stream<DynamicTest> notExistingAccountFail() {
+    final Stream<DynamicTest> notExistingAccountFail() throws CertificateEncodingException {
         return hapiTest(nodeCreate("testNode")
                 .accountId(AccountID.newBuilder().setAccountNum(50000).build())
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(INVALID_NODE_ACCOUNT_ID));
     }
 
     @LeakyHapiTest(overrides = {"nodes.nodeMaxDescriptionUtf8Bytes"})
     @DisplayName("Check the max description size")
-    final Stream<DynamicTest> updateTooLargeDescriptionFail() {
+    final Stream<DynamicTest> updateTooLargeDescriptionFail() throws CertificateEncodingException {
         return hapiTest(
                 overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
-                nodeCreate("testNode").description("toolarge").hasKnownStatus(INVALID_NODE_DESCRIPTION));
+                nodeCreate("testNode")
+                        .description("toolarge")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .hasKnownStatus(INVALID_NODE_DESCRIPTION));
     }
 
     @HapiTest
     @DisplayName("Check default setting, gossipEndpoint can not have domain names")
-    final Stream<DynamicTest> gossipEndpointHaveDomainNameFail() {
+    final Stream<DynamicTest> gossipEndpointHaveDomainNameFail() throws CertificateEncodingException {
         return hapiTest(nodeCreate("testNode")
                 .gossipEndpoint(GOSSIP_ENDPOINTS)
+                .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN));
     }
 
@@ -497,5 +560,15 @@ public class NodeCreateTest {
                     "Service endpoint domain name invalid");
             assertEquals(expected.get(i).getPort(), actual.get(i).port(), "Service endpoint port invalid");
         }
+    }
+
+    static List<X509Certificate> generateX509Certificates(final int n) {
+        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+                .withSize(n)
+                .withRealKeysEnabled(true)
+                .build();
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
+                .map(Address::getSigCert)
+                .collect(Collectors.toList());
     }
 }
