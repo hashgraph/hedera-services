@@ -38,6 +38,5 @@ public class EventImplTest {
                         createEventImpl(new TestingEventBuilder(random), null, null)),
                 new long[] {1, 1, 2});
         assertTrue(EqualsVerifier.verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)));
-        assertTrue(EqualsVerifier.verifyCompareTo(list.get(0), list.get(1), list.get(2)));
     }
 }

@@ -35,7 +35,7 @@ import java.util.Objects;
  * This class that stores temporary data that is used while calculating consensus inside the platform.
  * This data is not relevant after consensus has been calculated.
  */
-public class EventImpl implements Comparable<EventImpl>, Clearable {
+public class EventImpl implements Clearable {
     /** The base event information, including some gossip specific information */
     private final PlatformEvent baseEvent;
     /** the round number in which this event reached a consensus order */
@@ -557,18 +557,6 @@ public class EventImpl implements Comparable<EventImpl>, Clearable {
     @Override
     public int hashCode() {
         return Objects.hash(baseEvent, roundReceived);
-    }
-
-    /**
-     * Events compare by generation. So sorting is always a topological sort. Returns -1 if this.generation is less than
-     * other.generation, 1 if greater, 0 if equal.
-     *
-     * @param other {@inheritDoc}
-     * @return {@inheritDoc}
-     */
-    @Override
-    public synchronized int compareTo(final EventImpl other) {
-        return Long.compare(getGeneration(), other.getGeneration());
     }
 
     @Override
