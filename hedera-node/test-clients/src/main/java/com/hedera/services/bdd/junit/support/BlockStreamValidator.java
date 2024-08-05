@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.support;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,6 +26,25 @@ import java.util.stream.Stream;
  * Defines API for validating a stream of {@link Block}s either independently or against a record stream.
  */
 public interface BlockStreamValidator {
+    interface Factory {
+        /**
+         * Returns true if this validator applies to the given {@link HapiSpec}.
+         * @param spec the spec
+         * @return true if this validator applies to the spec
+         */
+        default boolean appliesTo(@NonNull final HapiSpec spec) {
+            return true;
+        }
+
+        /**
+         * Creates a new {@link BlockStreamValidator} for the given {@link HapiSpec}.
+         * @param spec the spec
+         * @return the validator
+         */
+        @NonNull
+        BlockStreamValidator create(@NonNull HapiSpec spec);
+    }
+
     /**
      * Validate the given {@link Block}s in the context of the given {@link RecordStreamAccess.Data} and
      * returns a {@link Stream} of {@link Throwable}s representing any validation errors.

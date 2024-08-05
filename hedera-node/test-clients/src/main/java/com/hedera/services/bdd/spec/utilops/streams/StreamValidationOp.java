@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -71,8 +70,8 @@ public class StreamValidationOp extends UtilOp {
             new BalanceReconciliationValidator(),
             new TokenReconciliationValidator());
 
-    private static final List<Function<HapiSpec, BlockStreamValidator>> BLOCK_STREAM_VALIDATOR_FACTORIES =
-            List.of(StateChangesValidator::newValidatorFor);
+    private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES =
+            List.of(StateChangesValidator.FACTORY);
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
@@ -113,7 +112,8 @@ public class StreamValidationOp extends UtilOp {
                             final var data = requireNonNull(dataRef.get());
                             // TODO - append the final record file to the record stream data
                             final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
-                                    .map(factory -> factory.apply(spec))
+                                    .filter(factory -> factory.appliesTo(spec))
+                                    .map(factory -> factory.create(spec))
                                     .flatMap(v -> v.validationErrorsIn(blocks, data))
                                     .map(Throwable::getMessage)
                                     .collect(joining(ERROR_PREFIX));

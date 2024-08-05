@@ -74,7 +74,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
     private enum State {
         UNINITIALIZED,
-        OPEN_WITHOUT_HEADER,
         OPEN,
         CLOSED
     }
