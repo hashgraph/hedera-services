@@ -562,7 +562,7 @@ public class NodeCreateTest {
         }
     }
 
-    static List<X509Certificate> generateX509Certificates(final int n) {
+    public static List<X509Certificate> generateX509Certificates(final int n) {
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
                 .withSize(n)
                 .withRealKeysEnabled(true)
