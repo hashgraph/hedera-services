@@ -349,7 +349,7 @@ events we need to bootstrap a Genesis Network.
   <p>
   @param genesisRoster the Genesis Roster for the network.
  */
-void withGenesisRoster(@NonNull final Roster genesisRoster);
+PlatformBuilder withGenesisRoster(@NonNull final Roster genesisRoster);
 ```
 
 The logic to determine whether to invoke this method could be determined by some mechanism Services deems appropriate.
@@ -382,7 +382,7 @@ the Override Roster except in the events we need to transplant a network.
   <p>
   @param overrideRoster the Override Roster for the network.
  */
-void withOverrideRoster(@NonNull final Roster overrideRoster);
+PlatformBuilder withOverrideRoster(@NonNull final Roster overrideRoster);
 ```
 
 #### New Transplant Procedure
