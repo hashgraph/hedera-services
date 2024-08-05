@@ -132,7 +132,10 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
         final var parts = TransactionParts.from(creation.getTransaction());
         final var op = parts.body().getTokenCreation();
         if (op.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-            nonFungibleTreasuries.put(creation.getRecord().getReceipt().getTokenID(), op.getTreasury());
+            final var tokenId = creation.getRecord().getReceipt().getTokenID();
+            nonFungibleTreasuries.put(tokenId, op.getTreasury());
+            expectedTokenBalances.put(
+                    new AccountNumTokenNum(op.getTreasury().getAccountNum(), tokenId.getTokenNum()), 0L);
         }
     }
 }
