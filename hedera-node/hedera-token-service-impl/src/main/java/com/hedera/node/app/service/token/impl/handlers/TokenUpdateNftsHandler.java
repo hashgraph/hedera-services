@@ -180,7 +180,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final ReadableNftStore nftStore,
             @NonNull final TokenID tokenId)
             throws PreCheckException {
-        for (Long serialNumber : serialNumbers) {
+        for (final Long serialNumber : serialNumbers) {
             Nft nft = nftStore.get(NftID.newBuilder()
                     .tokenId(tokenId)
                     .serialNumber(serialNumber)
