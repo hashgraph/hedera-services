@@ -19,6 +19,7 @@ package com.swirlds.platform.system.transaction;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,6 +39,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     private Object metadata;
     /** The protobuf data stored */
     private final EventTransaction payload;
+    /** The hash of the transaction */
+    private Bytes hash;
 
     /**
      * Constructs a new transaction wrapper
@@ -140,5 +143,23 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public <T> void setMetadata(@Nullable final T metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Set the hash of the transaction
+     * @param hash the hash of the transaction
+     */
+    public void setHash(@NonNull final Bytes hash) {
+        this.hash = Objects.requireNonNull(hash, "hash should not be null");
+    }
+
+    /**
+     * Get the hash of the transaction
+     * @return the hash of the transaction
+     * @throws NullPointerException may be thrown if the transaction is not yet hashed
+     */
+    @NonNull
+    public Bytes getHash() {
+        return Objects.requireNonNull(hash, "hash should not be null");
     }
 }
