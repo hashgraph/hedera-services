@@ -140,7 +140,7 @@ public class AsyncOutputStream {
                 }
             }
             // Handle remaining queued messages
-            boolean wasNotEmpty = handleQueuedMessages();
+            boolean wasNotEmpty = true;
             while (wasNotEmpty) {
                 wasNotEmpty = handleQueuedMessages();
             }
@@ -213,6 +213,11 @@ public class AsyncOutputStream {
                     dataOut.writeInt(messageBytes.length);
                     dataOut.write(messageBytes);
                     bufferedMessageCount += 1;
+                    // Don't let the buffer grow too much
+                    if (bufferedOut.size() >= 256 * 1024) {
+                        bufferedOut.writeTo(outputStream);
+                        bufferedOut.reset();
+                    }
                 }
                 item = streamQueue.poll();
             }
