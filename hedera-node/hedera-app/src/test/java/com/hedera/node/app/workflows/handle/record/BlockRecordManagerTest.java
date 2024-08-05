@@ -35,6 +35,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -71,6 +72,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,6 +93,9 @@ final class BlockRecordManagerTest extends AppTestBase {
 
     private BlockRecordFormat blockRecordFormat;
     private BlockRecordWriterFactory blockRecordWriterFactory;
+
+    @Mock
+    private BlockStreamManager blockStreamManager;
 
     @BeforeEach
     void setUpEach() throws Exception {
@@ -178,7 +183,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -266,7 +271,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -416,8 +421,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject =
-                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+        final var subject = new BlockRecordManagerImpl(
+                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
@@ -427,8 +432,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsNotSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject =
-                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+        final var subject = new BlockRecordManagerImpl(
+                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));

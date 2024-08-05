@@ -70,8 +70,8 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -102,7 +102,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
-    private TokenAccountWipeRecordBuilder recordBuilder;
+    private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -111,7 +111,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        recordBuilder = new TokenAccountWipeRecordBuilder() {
+        recordBuilder = new TokenAccountWipeStreamBuilder() {
             private long newTotalSupply;
 
             @Override
@@ -230,14 +230,14 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             @NonNull
             @Override
-            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
+            public TokenAccountWipeStreamBuilder newTotalSupply(final long supply) {
                 newTotalSupply = supply;
                 return this;
             }
 
             @NonNull
             @Override
-            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
+            public TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType) {
                 return this;
             }
 
@@ -1015,7 +1015,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             lenient().when(context.savepointStack()).thenReturn(stack);
             lenient()
-                    .when(stack.getBaseBuilder(TokenAccountWipeRecordBuilder.class))
+                    .when(stack.getBaseBuilder(TokenAccountWipeStreamBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

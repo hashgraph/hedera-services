@@ -73,6 +73,8 @@ import "state/token/staking_node_info.proto";
 import "state/token/token.proto";
 import "state/token/token_relation.proto";
 import "timestamp.proto";
+import "state/blockstream/block_stream_info.proto";
+import "state/addressbook/node.proto";
 
 /**
  * The "cause" of a state change.
@@ -351,6 +353,8 @@ message SingletonUpdateChange {
          * the time for the next scheduled freeze.
          */
         proto.Timestamp timestamp_value = 10;
+
+        proto.BlockStreamInfo block_stream_info_value = 11;
     }
 }
 
@@ -576,6 +580,11 @@ message MapChangeValue {
          * An HCS topic value.
          */
         proto.Topic topic_value = 13;
+
+        /**
+         * An network node value.
+         */
+        com.hedera.hapi.node.state.addressbook.Node node_value = 14;
     }
 }
 

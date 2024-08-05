@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -57,6 +58,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
@@ -161,6 +163,9 @@ public class NetworkAdminHandlerTestBase {
     private DeduplicationCache dedupeCache;
 
     @Mock
+    protected SavepointStackImpl stack;
+
+    @Mock
     private WorkingStateAccessor wsa;
 
     @Mock
@@ -219,6 +224,7 @@ public class NetworkAdminHandlerTestBase {
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getState()).thenReturn(state);
+        lenient().when(stack.getWritableStates(NAME)).thenReturn(state.getWritableStates(NAME));
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
@@ -293,13 +299,13 @@ public class NetworkAdminHandlerTestBase {
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)));
-        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)));
-        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)));
-        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)), stack);
+        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)), stack);
+        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)), stack);
+        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)), stack);
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)), stack);
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {

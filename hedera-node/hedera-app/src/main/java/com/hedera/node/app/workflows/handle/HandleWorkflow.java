@@ -35,6 +35,8 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -59,7 +61,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
@@ -194,7 +196,9 @@ public class HandleWorkflow {
             blockStreamManager.startRound(round, state);
         }
         for (final var event : round) {
-            // TODO - stream input event metadata if mode != RECORDS
+            if (STREAM_MODE != RECORDS) {
+                streamMetadata(event);
+            }
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
@@ -224,8 +228,7 @@ public class HandleWorkflow {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
                     } else {
-                        // TODO - handle block signature transaction
-                        // TODO - stream state signature transaction
+                        // TODO - handle block and signature transactions here?
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -247,6 +250,13 @@ public class HandleWorkflow {
         if (STREAM_MODE != RECORDS) {
             blockStreamManager.endRound(state);
         }
+    }
+
+    private void streamMetadata(@NonNull final ConsensusEvent event) {
+        final var metadataItem = BlockItem.newBuilder()
+                .startEvent(new EventMetadata(event.getEventCore(), event.getSignature()))
+                .build();
+        blockStreamManager.writeItem(metadataItem);
     }
 
     /**
@@ -371,7 +381,10 @@ public class HandleWorkflow {
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
             recordCache.add(
-                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+                    userTxn.creatorInfo().nodeId(),
+                    userTxn.txnInfo().payerID(),
+                    handleOutput.recordStreamItems(),
+                    userTxn.stack());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -389,7 +402,7 @@ public class HandleWorkflow {
      */
     private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
-        final var failInvalidBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
@@ -397,7 +410,8 @@ public class HandleWorkflow {
         recordCache.add(
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidRecord));
+                List.of(failInvalidRecord),
+                userTxn.stack());
         // TODO: Add block items
         return new HandleOutput(List.of(), List.of(failInvalidRecord));
     }

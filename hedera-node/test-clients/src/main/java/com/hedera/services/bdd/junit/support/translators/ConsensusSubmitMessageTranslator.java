@@ -16,51 +16,41 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.services.bdd.junit.support.translators.BlockStreamTransactionTranslator.BlockTransaction;
-
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<BlockTransaction> {
+public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     @Override
-    public TransactionRecord translate(@NotNull BlockTransaction transaction) {
+    public SingleTransactionRecord translate(
+            @NotNull SingleTransactionBlockItems transaction, @NonNull StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
 
-        final var txnOutputItem = transaction.transactionOutput();
-        if (txnOutputItem != null && txnOutputItem.hasTransactionOutput()) {
-            if (txnOutputItem.transactionOutput().hasSubmitMessage()) {
-                final var submitMessageOutput =
-                        txnOutputItem.transactionOutput().submitMessage();
-
-                // TODO: looks like the protoOrdinal() has values in reverse order i.e. 0 is the most recent version,
-                // while services handler uses RUNNING_HASH_VERSION = 3L, is that correct?
-                final var version =
-                        submitMessageOutput.topicRunningHashVersion().protoOrdinal();
-                receiptBuilder.topicRunningHashVersion(version);
-            }
+        final var txnOutputItem = transaction.output();
+        if (txnOutputItem != null && txnOutputItem.hasSubmitMessage()) {
+            final var submitMessageOutput = txnOutputItem.submitMessage();
+            final var version = submitMessageOutput.topicRunningHashVersion().protoOrdinal();
+            receiptBuilder.topicRunningHashVersion(version);
         }
 
-        final var stateChangesItem = transaction.stateChanges();
-        if (stateChangesItem.hasStateChanges()) {
-            final var submitMessageStateChanges = stateChangesItem.stateChanges();
-            submitMessageStateChanges.stateChanges().stream()
-                    .filter(StateChange::hasMapUpdate)
-                    .findFirst()
-                    .ifPresent(stateChange -> {
-                        final var topic = stateChange.mapUpdate().value().topicValue();
-                        receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                        receiptBuilder.topicRunningHash(topic.runningHash());
-                    });
-        }
+        stateChanges.stateChanges().stream()
+                .filter(StateChange::hasMapUpdate)
+                .findFirst()
+                .ifPresent(stateChange -> {
+                    final var topic = stateChange.mapUpdate().value().topicValue();
+                    receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
+                    receiptBuilder.topicRunningHash(topic.runningHash());
+                });
 
-        return TransactionRecord.newBuilder().receipt(receiptBuilder.build()).build();
-    }
-
-    @Override
-    public List<TransactionRecord> translateAll(List<BlockTransaction> transactions) {
-        return transactions.stream().map(this::translate).toList();
+        return new SingleTransactionRecord(
+                transaction.txn(),
+                TransactionRecord.newBuilder().receipt(receiptBuilder.build()).build(),
+                List.of(),
+                new SingleTransactionRecord.TransactionOutputs(null));
     }
 }

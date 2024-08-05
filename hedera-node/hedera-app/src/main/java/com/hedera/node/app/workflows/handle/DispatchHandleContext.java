@@ -65,7 +65,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -477,7 +477,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayer,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
-            @NonNull final RecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,

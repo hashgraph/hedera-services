@@ -36,7 +36,7 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
-import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
+import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import java.time.Instant;
@@ -82,7 +82,7 @@ class SystemSetupTest {
     private FileServiceImpl fileService;
 
     @Mock
-    private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
+    private GenesisAccountStreamBuilder genesisAccountRecordBuilder;
 
     private SystemSetup subject;
 
@@ -90,7 +90,7 @@ class SystemSetupTest {
     void setup() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
-        given(context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 

@@ -34,10 +34,10 @@ import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableStates;
@@ -91,8 +91,6 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private static final History EMPTY_HISTORY = new History();
 
-    /** Gives access to the current working state. */
-    private final WorkingStateAccessor workingStateAccessor;
     /** Used for looking up the max valid duration window for a transaction. This must be looked up dynamically. */
     private final ConfigProvider configProvider;
     /**
@@ -124,10 +122,8 @@ public class RecordCacheImpl implements HederaRecordCache {
      * data structure is not dependent on the size of state, but rather, the number of transactions that had occurred
      * within a 3-minute window prior to the node stopping.
      *
-     * @param deduplicationCache   A cache containing known {@link TransactionID}s, used for deduplication
-     * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
-     *                             records must be saved in state or read from state.
-     * @param configProvider       Used for looking up the max valid duration window for a transaction dynamically
+     * @param deduplicationCache A cache containing known {@link TransactionID}s, used for deduplication
+     * @param configProvider     Used for looking up the max valid duration window for a transaction dynamically
      */
     @Inject
     public RecordCacheImpl(
@@ -135,11 +131,10 @@ public class RecordCacheImpl implements HederaRecordCache {
             @NonNull final WorkingStateAccessor workingStateAccessor,
             @NonNull final ConfigProvider configProvider) {
         this.deduplicationCache = requireNonNull(deduplicationCache);
-        this.workingStateAccessor = requireNonNull(workingStateAccessor);
         this.configProvider = requireNonNull(configProvider);
         this.histories = new ConcurrentHashMap<>();
 
-        rebuild();
+        rebuild(workingStateAccessor);
     }
 
     /**
@@ -147,14 +142,14 @@ public class RecordCacheImpl implements HederaRecordCache {
      * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
      * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
      */
-    public void rebuild() {
+    public void rebuild(final WorkingStateAccessor workingStateAccessor) {
         histories.clear();
         payerToTransactionIndex.clear();
         // FUTURE: It doesn't hurt to clear the dedupe cache here, but is also probably not the best place to do it. The
         // system should clear the dedupe cache directly and not indirectly through this call.
         deduplicationCache.clear();
 
-        final var queue = getReadableQueue();
+        final var queue = getReadableQueue(workingStateAccessor);
         final var itr = queue.iterator();
         while (itr.hasNext()) {
             final var entry = itr.next();
@@ -172,7 +167,9 @@ public class RecordCacheImpl implements HederaRecordCache {
     public void add(
             final long nodeId,
             @NonNull final AccountID payerAccountId,
-            @NonNull final List<SingleTransactionRecord> transactionRecords) {
+            @NonNull final List<SingleTransactionRecord> transactionRecords,
+            @NonNull final SavepointStackImpl stack) {
+        requireNonNull(stack);
         requireNonNull(payerAccountId);
         requireNonNull(transactionRecords);
 
@@ -184,7 +181,7 @@ public class RecordCacheImpl implements HederaRecordCache {
 
         // To avoid having a background thread cleaning out this queue, we spend a little time when adding to the queue
         // to also remove from the queue any transactions that have expired.
-        final WritableStates states = getWritableState();
+        final WritableStates states = stack.getWritableStates(NAME);
         final WritableQueueState<TransactionRecordEntry> queue = states.getQueue(TXN_RECORD_QUEUE);
         final SingleTransactionRecord firstRecord = transactionRecords.getFirst();
         removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
@@ -194,10 +191,6 @@ public class RecordCacheImpl implements HederaRecordCache {
             final var rec = singleTransactionRecord.transactionRecord();
             addToInMemoryCache(nodeId, payerAccountId, rec);
             queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
-        }
-
-        if (states instanceof CommittableWritableStates committable) {
-            committable.commit();
         }
     }
 
@@ -214,7 +207,7 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     /**
-     * Called during {@link #rebuild()} or {@link #add(long, AccountID, List)}, this method adds the given
+     * Called during {@link #rebuild(WorkingStateAccessor)} or {@link HederaRecordCache#add(long, AccountID, List, SavepointStackImpl)}, this method adds the given
      * {@link TransactionRecord} to the internal lookup data structures.
      *
      * @param nodeId The ID of the node that submitted the transaction.
@@ -349,17 +342,9 @@ public class RecordCacheImpl implements HederaRecordCache {
         return records;
     }
 
-    /** Utility method that get the writable queue from the working state */
-    private WritableStates getWritableState() {
-        final var state = workingStateAccessor.getState();
-        if (state == null) {
-            throw new RuntimeException("State is null. This can only happen very early during bootstrapping");
-        }
-        return state.getWritableStates(NAME);
-    }
-
     /** Utility method that get the readable queue from the working state */
-    private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
+    private ReadableQueueState<TransactionRecordEntry> getReadableQueue(
+            final WorkingStateAccessor workingStateAccessor) {
         final var states = requireNonNull(workingStateAccessor.getState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }

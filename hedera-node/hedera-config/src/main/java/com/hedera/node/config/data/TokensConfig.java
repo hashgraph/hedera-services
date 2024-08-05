@@ -39,7 +39,7 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeBurn,
         @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeWipe,
         @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeMint,
-        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "40000000") @NetworkProperty
+        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "20000000") @NetworkProperty
                 long nftsMaxAllowedMints,
         @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") @NetworkProperty long nftsMaxQueryRange,
         @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") @NetworkProperty
@@ -56,5 +56,9 @@ public record TokensConfig(
         @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
                 boolean balancesInQueriesEnabled,
         @ConfigProperty(value = "airdrops.enabled", defaultValue = "false") @NetworkProperty boolean airdropsEnabled,
+        @ConfigProperty(value = "airdrops.cancel.enabled", defaultValue = "false") @NetworkProperty
+                boolean cancelTokenAirdropEnabled,
+        @ConfigProperty(value = "airdrops.claim.enabled", defaultValue = "false") @NetworkProperty
+                boolean airdropsClaimEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
                 int nftsMaxBatchSizeUpdate) {}

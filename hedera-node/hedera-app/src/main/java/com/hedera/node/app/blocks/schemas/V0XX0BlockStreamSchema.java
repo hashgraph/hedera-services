@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,5 +65,13 @@ public class V0XX0BlockStreamSchema extends Schema {
     @Override
     public @NonNull Set<StateDefinition> statesToCreate(@NonNull final Configuration config) {
         return Set.of(StateDefinition.singleton(BLOCK_STREAM_INFO_KEY, BlockStreamInfo.PROTOBUF));
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        if (ctx.previousVersion() == null) {
+            final var blockStreamInfo = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfo.put(BlockStreamInfo.DEFAULT);
+        }
     }
 }

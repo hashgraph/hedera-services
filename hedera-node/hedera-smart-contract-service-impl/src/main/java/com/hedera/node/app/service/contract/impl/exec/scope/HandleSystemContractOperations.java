@@ -32,7 +32,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -86,13 +86,13 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     }
 
     @Override
-    public ContractCallRecordBuilder externalizePreemptedDispatch(
+    public ContractCallStreamBuilder externalizePreemptedDispatch(
             @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
         requireNonNull(syntheticBody);
         requireNonNull(preemptingStatus);
 
         return context.savepointStack()
-                .addChildRecordBuilder(ContractCallRecordBuilder.class)
+                .addChildRecordBuilder(ContractCallStreamBuilder.class)
                 .transaction(transactionWith(syntheticBody))
                 .status(preemptingStatus);
     }
@@ -103,7 +103,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
-        final var childRecordBuilder = context.savepointStack().addChildRecordBuilder(ContractCallRecordBuilder.class);
+        final var childRecordBuilder = context.savepointStack().addChildRecordBuilder(ContractCallStreamBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
@@ -118,7 +118,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull Transaction transaction) {
         requireNonNull(transaction);
         context.savepointStack()
-                .addChildRecordBuilder(ContractCallRecordBuilder.class)
+                .addChildRecordBuilder(ContractCallStreamBuilder.class)
                 .transaction(transaction)
                 .status(responseStatus)
                 .contractCallResult(result);

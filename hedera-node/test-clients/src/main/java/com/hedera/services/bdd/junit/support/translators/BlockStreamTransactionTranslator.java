@@ -18,181 +18,125 @@ package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
-import static com.hedera.services.bdd.junit.support.translators.BlockStreamTransactionTranslator.*;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
+import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.swirlds.common.exceptions.NotImplementedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Converts a block stream transaction into a {@link TransactionRecord}. We can then use the converted
  * records to compare block stream outputs with the current/expected outputs.
  */
-public class BlockStreamTransactionTranslator implements TransactionRecordTranslator<BlockTransaction> {
+public class BlockStreamTransactionTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     /**
-     * A logical transaction wrapper for the block items produced for/by processing a single transaction.
-     * @param txnInput the submitted user transaction
-     * @param transactionResult the result of processing the user transaction
-     * @param transactionOutput the output (if any) of processing the user transaction
-     * @param stateChanges the state changes produced by processing the user transaction
-     */
-    public record BlockTransaction(
-            @NonNull BlockItem txnInput,
-            @NonNull BlockItem transactionResult,
-            @Nullable BlockItem transactionOutput,
-            @NonNull BlockItem stateChanges) {
-        public List<BlockItem> asItems() {
-            final var blockItems = new ArrayList<BlockItem>();
-            blockItems.add(txnInput);
-            blockItems.add(transactionResult);
-            if (transactionOutput != null) {
-                blockItems.add(transactionOutput);
-            }
-            blockItems.add(stateChanges);
-
-            return blockItems;
-        }
-
-        /**
-         * The input block items should be exactly the block items produced for/by processing a
-         * single transaction, with the following expected order:
-         * <ol>
-         *     <li>Index 0: BlockItem.Transaction</li>
-         *     <li>Index 1: BlockItem.TransactionResult</li>
-         *     <li>Index 2: BlockItem.TransactionOutput (if applicable)</li>
-         *     <li>Index 2 or 3: BlockItem.StateChanges (dependent on the presence of TransactionOutput)</li>
-         * </ol>
-         *
-         * @param items The block items representing a single transaction
-         * @return A logical transaction wrapper for the block items
-         */
-        public static BlockTransaction asBlockTransaction(@NonNull List<BlockItem> items) {
-            final var txn = items.get(0);
-            final var result = items.get(1);
-            final var maybeOutput = items.get(2);
-
-            if (items.size() > 3) {
-                return new BlockTransaction(txn, result, maybeOutput, items.get(3));
-            } else {
-                return new BlockTransaction(txn, result, null, maybeOutput);
-            }
-        }
-    }
-
-    /**
-     * Translates a {@link BlockTransaction} into a {@link TransactionRecord}.
+     * Translates a {@link SingleTransactionBlockItems} into a {@link SingleTransactionRecord}.
      *
-     * @param transaction A wrapper for block items representing a single txnInput
+     * @param transaction A wrapper for block items representing a single transaction input
      * @return the translated txnInput record
      */
     @Override
-    public TransactionRecord translate(@NonNull final BlockTransaction transaction) {
-        validateBlockItems(transaction.asItems());
+    public SingleTransactionRecord translate(
+            @NonNull final SingleTransactionBlockItems transaction, @NonNull final StateChanges stateChanges) {
+        Objects.requireNonNull(transaction, "transaction must not be null");
+        Objects.requireNonNull(stateChanges, "stateChanges must not be null");
 
-        final var txnType =
-                transaction.txnInput().transaction().bodyOrThrow().data().kind();
-        final var txnRecord =
+        final var txnType = transaction.txn().bodyOrThrow().data().kind();
+        final var singleTxnRecord =
                 switch (txnType) {
-                    case CONSENSUS_SUBMIT_MESSAGE -> new ConsensusSubmitMessageTranslator().translate(transaction);
+                    case CONSENSUS_SUBMIT_MESSAGE -> new ConsensusSubmitMessageTranslator()
+                            .translate(transaction, stateChanges);
                     case UNSET -> throw new IllegalArgumentException("Transaction type not set");
-                    default -> TransactionRecord.newBuilder().build();
+                    default -> new SingleTransactionRecord(
+                            transaction.txn(),
+                            TransactionRecord.newBuilder().build(),
+                            List.of(),
+                            new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
+        final var txnRecord = singleTxnRecord.transactionRecord();
         final var recordBuilder = txnRecord.copyBuilder();
         final var receiptBuilder =
                 txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
 
-        BlockItem txnBlockItem = transaction.txnInput();
-        if (txnBlockItem.hasTransaction()) {
-            parseTransaction(txnBlockItem, recordBuilder);
+        parseTransaction(transaction.txn(), recordBuilder);
+
+        parseTransactionResult(transaction.result(), recordBuilder, receiptBuilder);
+
+        if (transaction.output() != null) {
+            parseTransactionOutput(transaction.output(), recordBuilder, receiptBuilder);
         }
 
-        txnBlockItem = transaction.transactionResult();
-        if (txnBlockItem.hasTransactionResult()) {
-            parseTransactionResult(txnBlockItem, recordBuilder, receiptBuilder);
-        }
+        // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
 
-        txnBlockItem = transaction.transactionOutput();
-        if (txnBlockItem != null && txnBlockItem.hasTransactionOutput()) {
-            parseTransactionOutput(txnBlockItem, recordBuilder, receiptBuilder);
-        }
-
-        txnBlockItem = transaction.stateChanges();
-        // TODO: how do we generically extract state changes for the txnInput record?
-        if (txnBlockItem.hasStateChanges()) {}
-
-        return recordBuilder.build();
+        return new SingleTransactionRecord(
+                transaction.txn(),
+                recordBuilder.build(),
+                // TODO: how do we construct the sidecar records?
+                List.of(),
+                // TODO: construct TransactionOutputs correctly when we have access to token-related transaction types
+                new SingleTransactionRecord.TransactionOutputs(null));
     }
 
     /**
-     * {@inheritDoc}
+     * Computes the {@link SingleTransactionRecord}(s) for an ordered collection of transactions,
+     * represented as groups of {@link BlockItem}s and summary {@link StateChanges}. Note that
+     * {@link Transaction}s in the input collection will be associated based on having the same
+     * {@code accountID} and {@code transactionValidStart} (from their {@link TransactionID}s). In
+     * other words, this code will assume that transactions with the same payer account and valid
+     * start time are part of the same user transaction, sharing some sort of parent-children
+     * relationship.
+     *
+     * @param transactions a collection of transactions to translate
+     * @param stateChanges any state changes that occurred during transaction processing
+     * @return the equivalent transaction record outputs
      */
     @Override
-    public List<TransactionRecord> translateAll(final List<BlockTransaction> transactions) {
+    public List<SingleTransactionRecord> translateAll(
+            @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
         throw new NotImplementedException();
     }
 
-    private void validateBlockItems(final List<BlockItem> blockItems) {
-        if (blockItems.size() < 2) {
-            throw new IllegalArgumentException("Expected at least two block items");
-        }
-
-        final var txnItem = blockItems.get(0);
-        if (!txnItem.hasTransaction()) {
-            throw new IllegalArgumentException("Expected first block item to be a txnInput");
-        }
-
-        final var txnResultItem = blockItems.get(1);
-        if (!txnResultItem.hasTransactionResult()) {
-            throw new IllegalArgumentException("Expected second block item to be a txnInput result");
-        }
-
-        final var stateChangesItem = blockItems.getLast();
-        if (!stateChangesItem.hasStateChanges()) {
-            throw new IllegalArgumentException("Expected last block item to be state changes");
-        }
-    }
-
     private TransactionRecord.Builder parseTransaction(
-            final BlockItem txnBlockItem, final TransactionRecord.Builder recordBuilder) {
-        final var txnItem = txnBlockItem.transaction();
-        recordBuilder.transactionID(txnItem.body().transactionID());
-        recordBuilder.memo(txnItem.body().memo());
-        return recordBuilder;
+            final Transaction txn, final TransactionRecord.Builder recordBuilder) {
+        return recordBuilder
+                .transactionID(txn.body().transactionID())
+                .memo(txn.body().memo());
     }
 
     private TransactionRecord.Builder parseTransactionResult(
-            final BlockItem txnBlockItem,
+            final TransactionResult txnResult,
             final TransactionRecord.Builder recordBuilder,
             final TransactionReceipt.Builder receiptBuilder) {
-        final var txnResult = txnBlockItem.transactionResult();
+        recordBuilder
+                .automaticTokenAssociations(txnResult.automaticTokenAssociations())
+                .parentConsensusTimestamp(txnResult.parentConsensusTimestamp())
+                .consensusTimestamp(txnResult.consensusTimestamp())
+                .scheduleRef(txnResult.scheduleRef())
+                .paidStakingRewards(txnResult.paidStakingRewards())
+                .transactionFee(txnResult.transactionFeeCharged())
+                .transferList(txnResult.transferList())
+                .tokenTransferLists(txnResult.tokenTransferLists());
 
-        recordBuilder.automaticTokenAssociations(txnResult.automaticTokenAssociations());
-        recordBuilder.parentConsensusTimestamp(txnResult.parentConsensusTimestamp());
-        recordBuilder.consensusTimestamp(txnResult.consensusTimestamp());
-        recordBuilder.scheduleRef(txnResult.scheduleRef());
-        recordBuilder.paidStakingRewards(txnResult.paidStakingRewards());
-        recordBuilder.transactionFee(txnResult.transactionFeeCharged());
-        recordBuilder.transferList(txnResult.transferList());
-        recordBuilder.tokenTransferLists(txnResult.tokenTransferLists());
-
-        receiptBuilder.exchangeRate(txnResult.exchangeRate());
-        receiptBuilder.status(txnResult.status());
+        receiptBuilder.exchangeRate(txnResult.exchangeRate()).status(txnResult.status());
 
         return recordBuilder;
     }
 
     private TransactionRecord.Builder parseTransactionOutput(
-            final BlockItem transactionBlockItem, final TransactionRecord.Builder trb, TransactionReceipt.Builder rb) {
-        final var txnOutput = transactionBlockItem.transactionOutput();
-
+            final TransactionOutput txnOutput,
+            final TransactionRecord.Builder trb,
+            final TransactionReceipt.Builder rb) {
         // TODO: why are so many of these methods missing?
         //            if (txnOutput.hasCryptoCreate()) {
         //                rb.accountID(txnOutput.cryptoCreate().accountID());
@@ -273,7 +217,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             }
         }
 
-        maybeAssignEvmAddress(trb, txnOutput);
+        maybeAssignEvmAddressAlias(txnOutput, trb);
 
         // TODO: assign `newPendingAirdrops` (if applicable)
 
@@ -282,13 +226,19 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         return trb;
     }
 
-    private void maybeAssignEvmAddress(TransactionRecord.Builder trb, TransactionOutput txnOutput) {
-        // Are these the only two places where default EVM addresses are assigned?
+    private void maybeAssignEvmAddressAlias(TransactionOutput txnOutput, TransactionRecord.Builder trb) {
+        // Are these the only places where default EVM address aliases are assigned?
         if (txnOutput.hasContractCreate()) {
             trb.evmAddress(txnOutput.contractCreate().contractCreateResult().evmAddress());
         }
         if (txnOutput.hasContractCall()) {
             trb.evmAddress(txnOutput.contractCall().contractCallResult().evmAddress());
+        }
+        if (txnOutput.hasCryptoTransfer()) {
+            //            trb.evmAddress(txnOutput.cryptoTransfer().evmAddress());
+        }
+        if (txnOutput.hasEthereumCall()) {
+            //            trb.evmAddress(txnOutput.ethereumCall().evmAddress());
         }
     }
 }

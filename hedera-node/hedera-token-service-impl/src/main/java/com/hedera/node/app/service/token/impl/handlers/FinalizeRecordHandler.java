@@ -37,8 +37,8 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
-import com.hedera.node.app.service.token.records.ChildRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.ChildStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -97,7 +97,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             @NonNull final HederaFunctionality functionality,
             @Nullable final Set<AccountID> explicitRewardReceivers,
             @Nullable final Map<AccountID, Long> prePaidRewards) {
-        final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferStreamBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
         // token transfers based on the original value from writable state, and based on changes made during this
@@ -192,7 +192,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
             @NonNull final Map<AccountID, Long> hbarChanges) {
         final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
-        context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
+        context.forEachChildRecord(ChildStreamBuilder.class, childRecord -> {
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
                     : childRecord.transferList().accountAmounts();

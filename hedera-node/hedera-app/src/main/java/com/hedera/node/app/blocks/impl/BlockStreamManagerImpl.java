@@ -17,8 +17,8 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
+import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
-import static com.hedera.node.app.blocks.impl.HashUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -29,6 +29,11 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.hapi.block.stream.BlockHeader;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChangesCause;
+import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -90,7 +95,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private StreamingTreeHasher outputTreeHasher;
     private RoundStateChangeListener roundStateChangeListener;
     /**
-     * A future that completes after all items not in the pending list have been fully serialized
+     * A future that completes after all items not in the pendingItems list have been serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
      * hashes if applicable; <b>and</b> written to the block item writer.
      */
@@ -114,9 +119,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        roundStateChangeListener = new RoundStateChangeListener();
-        pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
+        // If there are no other changes to state, we can just use the round's consensus timestamp as the
+        // last-assigned consensus time for externalizing the PUT to the block stream info singleton
+        roundStateChangeListener = new RoundStateChangeListener(blockTimestamp);
+        pendingItems = new ArrayList<>();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
                 .get();
@@ -142,32 +149,44 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void endRound(@NonNull final State state) {
-        log.info(
-                "Capturing end of round state changes for block {} with {}",
-                blockNumber,
-                roundStateChangeListener.stateChanges());
-        pendingItems.add(roundStateChangeListener.stateChanges());
+        //        log.info(
+        //                "Capturing end of round state changes for block {} with {}",
+        //                blockNumber,
+        //                roundStateChangeListener.stateChanges());
+        writeFuture.join();
 
-        if (!pendingItems.isEmpty()) {
-            schedulePendingWork();
-        }
+        final var writableState = state.getWritableStates(BlockStreamService.NAME);
+        final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+        final var blockStreamInfo = new BlockStreamInfo(
+                blockNumber,
+                Bytes.EMPTY,
+                blockTimestamp(),
+                runningHashManager.latestHashes(),
+                blockHashManager.hashesAfterLatest(Bytes.wrap(new byte[48])));
+        blockStreamInfoState.put(blockStreamInfo);
+        ((CommittableWritableStates) writableState).commit();
+
+        pendingItems.add(roundStateChangeListener.stateChanges());
+        final var blockItem = BlockItem.newBuilder()
+                .stateChanges(StateChanges.newBuilder()
+                        .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
+                        .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
+                        .stateChanges(StateChange.newBuilder()
+                                .stateName(BlockStreamService.NAME + "." + BLOCK_STREAM_INFO_KEY)
+                                .singletonUpdate(
+                                        new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
+                                .build())
+                        .build())
+                .build();
+        pendingItems.add(blockItem);
+
+        schedulePendingWork();
+
         writeFuture.join();
         final var inputRootHash = inputTreeHasher.rootHash().join();
         final var outputRootHash = outputTreeHasher.rootHash().join();
         final var stateRootHash = MOCK_STATE_ROOT_HASH_FUTURE.join();
-        runningHashManager.hashFuture.join();
-        final var blockHash = Bytes.wrap(combine(
-                combine(previousBlockHash.toByteArray(), inputRootHash.toByteArray()),
-                combine(outputRootHash.toByteArray(), stateRootHash.toByteArray())));
-        final var writableState = state.getWritableStates(BlockStreamService.NAME);
-        final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-        blockStreamInfoState.put(new BlockStreamInfo(
-                blockNumber,
-                blockHash,
-                blockTimestamp(),
-                runningHashManager.latestHashes(),
-                blockHashManager.hashesAfterLatest(blockHash)));
-        ((CommittableWritableStates) writableState).commit();
+
         writer.closeBlock();
     }
 
@@ -210,18 +229,60 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return blockHashManager.hashOfBlock(blockNo);
     }
 
+    public Timestamp endOfBlockTimestamp() {
+        return roundStateChangeListener.endOfBlockTimestamp();
+    }
+
     private void schedulePendingWork() {
-        final var scheduledWork = pendingItems;
-        final var pendingSerialization = CompletableFuture.supplyAsync(
-                () -> {
-                    final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
-                    for (final var item : scheduledWork) {
-                        serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-                    }
-                    return serializedItems;
-                },
-                executor);
-        writeFuture = writeFuture.thenCombine(pendingSerialization, (ignore, serializedItems) -> {
+        final var scheduledWork = new ScheduledWork(pendingItems);
+        final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
+        writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
+        pendingItems = new ArrayList<>();
+    }
+
+    /**
+     * Encapsulates the work to be done for a batch of pending {@link BlockItem}s. This work includes,
+     * <ol>
+     *     <li>Serializing the items to bytes using the {@link BlockItem#PROTOBUF} codec.</li>
+     *     <li>Given the serialized items,
+     *          <ul>
+     *              <Li>For each input item, scheduling its hash to be incorporated in the input item Merkle tree.</Li>
+     *              <li>For each output item, scheduling its hash to be incorporated in the input item Merkle tree.</li>
+     *              <li>For each {@link TransactionResult}, scheduling its hash to be incorporated in the running hash.</li>
+     *              <li>For each item, writing its serialized bytes to the {@link BlockItemWriter}.</li>
+     *          </ul>
+     *     </li>
+     * </ol>
+     */
+    private class ScheduledWork {
+        private final List<BlockItem> scheduledWork;
+
+        public ScheduledWork(@NonNull final List<BlockItem> scheduledWork) {
+            this.scheduledWork = requireNonNull(scheduledWork);
+        }
+
+        /**
+         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec.
+         * @return the serialized items
+         */
+        public List<Bytes> serializeItems() {
+            final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
+            for (final var item : scheduledWork) {
+                serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
+            }
+            return serializedItems;
+        }
+
+        /**
+         * Given the serialized items, schedules the hashes of the input/output items and running hash
+         * for the {@link TransactionResult}s to be incorporated in the input/output trees and running hash
+         * respectively; and writes the serialized bytes to the {@link BlockItemWriter}.
+         *
+         * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
+         * @param serializedItems the serialized items to be processed
+         * @return {@code null}
+         */
+        public Void combineSerializedItems(@Nullable Void ignore, @NonNull final List<Bytes> serializedItems) {
             for (int i = 0, n = scheduledWork.size(); i < n; i++) {
                 final var item = scheduledWork.get(i);
                 final var serializedItem = serializedItems.get(i);
@@ -240,8 +301,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 writer.writeItem(serializedItem);
             }
             return null;
-        });
-        pendingItems = new ArrayList<>();
+        }
     }
 
     private SemanticVersion nodeVersionFrom(@NonNull final Configuration config) {

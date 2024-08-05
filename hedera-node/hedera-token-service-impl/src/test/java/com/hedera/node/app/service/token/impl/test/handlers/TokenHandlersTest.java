@@ -35,6 +35,8 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
@@ -93,6 +95,8 @@ public class TokenHandlersTest {
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private TokenUpdateNftsHandler tokenUpdateNftsHandler;
     private TokenRejectHandler tokenRejectHandler;
+    private TokenCancelAirdropHandler tokenCancelAirdropHandler;
+    private TokenClaimAirdropHandler tokenClaimAirdropHandler;
 
     private TokenHandlers tokenHandlers;
 
@@ -132,6 +136,8 @@ public class TokenHandlersTest {
         tokenGetNftInfosHandler = mock(TokenGetNftInfosHandler.class);
         tokenUpdateNftsHandler = mock(TokenUpdateNftsHandler.class);
         tokenRejectHandler = mock(TokenRejectHandler.class);
+        tokenCancelAirdropHandler = mock(TokenCancelAirdropHandler.class);
+        tokenClaimAirdropHandler = mock(TokenClaimAirdropHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -167,7 +173,9 @@ public class TokenHandlersTest {
                 tokenGetNftInfoHandler,
                 tokenGetNftInfosHandler,
                 tokenRejectHandler,
-                tokenUpdateNftsHandler);
+                tokenUpdateNftsHandler,
+                tokenCancelAirdropHandler,
+                tokenClaimAirdropHandler);
     }
 
     @Test

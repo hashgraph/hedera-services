@@ -27,7 +27,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,7 +68,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     }
 
     @Override
-    public ContractCallRecordBuilder externalizePreemptedDispatch(
+    public ContractCallStreamBuilder externalizePreemptedDispatch(
             @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
         throw new UnsupportedOperationException("Cannot externalize preempted dispatch");
     }
