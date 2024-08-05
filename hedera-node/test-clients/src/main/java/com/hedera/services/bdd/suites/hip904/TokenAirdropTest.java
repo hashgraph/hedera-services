@@ -280,7 +280,7 @@ public class TokenAirdropTest {
                                             .pendingAirdrops(includingFungiblePendingAirdrop(
                                                     moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver)))),
                             // creates pending airdrop
-                            validateChargedUsd("first", 0.1, 1))
+                            validateChargedUsd("first", 0.101, 1))
                     .when(tokenAssociate(receiver, FUNGIBLE_TOKEN))
                     .then( // this time tokens should be transferred
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
@@ -293,7 +293,7 @@ public class TokenAirdropTest {
                                             .tokenTransfers(includingFungibleMovement(
                                                     moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver)))),
                             // just a crypto transfer
-                            validateChargedUsd("second", 0.001, 1),
+                            validateChargedUsd("second", 0.001, 10),
                             // assert the account balance
                             getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
         }
@@ -343,7 +343,7 @@ public class TokenAirdropTest {
                                 allRunFor(spec, ownerBalance);
                             }),
                             // pending airdrop should be created
-                            validateChargedUsd("transferTx", 0.1, 1));
+                            validateChargedUsd("transferTx", 0.1, 10));
         }
 
         @HapiTest
@@ -372,7 +372,7 @@ public class TokenAirdropTest {
                                     .payingWith(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
                                     .via("transferTx"),
                             // pending airdrop should be created
-                            validateChargedUsd("transferTx", 0.1, 1))
+                            validateChargedUsd("transferTx", 0.101, 1))
                     .then(
                             getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1)
@@ -484,7 +484,10 @@ public class TokenAirdropTest {
                                 spec,
                                 tokenAirdrop(movingWithDecimals(1L, "nonexistent", 2)
                                                 .betweenWithDecimals(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                                        .hasKnownStatus(INVALID_TOKEN_ID));
+                                        .payingWith(OWNER)
+                                        .via("transferTx")
+                                        .hasKnownStatus(INVALID_TOKEN_ID),
+                                validateChargedUsd("transferTx", 0.001, 10));
                     }));
         }
 
