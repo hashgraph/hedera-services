@@ -299,95 +299,65 @@ public class TokenAirdropTest {
             @Nested
             @DisplayName("and is account alias")
             class AirdropToAliasPending {
-                private final String RECEIVER_FOR_ALIAS_TESTING = "receiverForAliasTesting";
-                private final AtomicReference<ByteString> alias = new AtomicReference<>();
-                private final AtomicReference<ByteString> ownerAlias = new AtomicReference<>();
-                private final AtomicReference<TokenID> tokenId = new AtomicReference<>();
+                private static final String RECEIVER_FOR_ALIAS_TESTING = "Receiver_for_alias_testing";
+
+                @BeforeAll
+                static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+                    lifecycle.doAdhoc(cryptoCreate(RECEIVER_FOR_ALIAS_TESTING).maxAutomaticTokenAssociations(0));
+                }
+
+                final AtomicReference<ByteString> receiverAccountAlias = new AtomicReference<>();
 
                 @HapiTest
                 final Stream<DynamicTest> tokenAirdropToExistingAccountsPending() {
+
                     return hapiTest(
-                            newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                             withOpContext((spec, opLog) -> {
-                                final var registry = spec.registry();
-                                final var treasuryAccountId = registry.getAccountID(OWNER);
-                                ownerAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
-
-                                // Save the alias for the hollow account
-                                final var ecdsaKey = spec.registry()
-                                        .getKey(SECP_256K1_SOURCE_KEY)
-                                        .getECDSASecp256K1()
-                                        .toByteArray();
-                                final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                alias.set(evmAddressBytes);
-                                tokenId.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
+                                var registry = spec.registry();
+                                var receiverAccountId = registry.getAccountID(RECEIVER_FOR_ALIAS_TESTING);
+                                var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
+                                receiverAccountAlias.set(receiverAlias);
                             }),
-                            // Create hollow account with tokenTransfer
-                            cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                            .setToken(tokenId.get())
-                                                    .addNftTransfers(ocWith(
-                                            accountId(ownerAlias.get()),
-                                            accountId(alias.get()),
-                                            7L))))
-                                    .payingWith(OWNER)
-                                    .via("hollowAccountTxn"),
-
-                            withOpContext((spec, opLog) -> {
-                                var accountInfo = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                        .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
-                                        .hasAlreadyUsedAutomaticAssociations(1)
-                                        .hasMaxAutomaticAssociations(-1)
-                                        .has(accountWith().hasEmptyKey())
-                                        .exposingIdTo(id -> spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, id));
-
-                                var cryptoUpdate = cryptoUpdate(SECP_256K1_SOURCE_KEY)
-                                        .payingWith(SECP_256K1_SOURCE_KEY)
-                                        .maxAutomaticAssociations(0)
-                                        .logged();
-
-                                var tokenAirdrop = tokenAirdrop(
-                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, alias.get()))
-                                        .payingWith(OWNER)
-                                        .via("txnAliasFungible");
-                                allRunFor(
-                                        spec,
-                                        accountInfo,
-                                        cryptoUpdate,
-                                        tokenAirdrop,
-                                        // assert transfers
-                                        getTxnRecord("txnAliasFungible")
-                                                .hasPriority(recordWith()
-                                                        .pendingAirdrops(includingFungiblePendingAirdrop(
-                                                                moving(10, FUNGIBLE_TOKEN)
-                                                                        .between(OWNER, alias.get())))),
-                                        // assert balances
-                                        getAliasedAccountBalance(alias.get()).hasTokenBalance(FUNGIBLE_TOKEN, 0));
-                            }));
+                            withOpContext((spec, opLog) -> allRunFor(
+                                    spec,
+                                    tokenAirdrop(moveFungibleTokensTo(RECEIVER_FOR_ALIAS_TESTING))
+                                            .payingWith(OWNER)
+                                            .via("txnAlias"),
+                                    // assert transfers
+                                    getTxnRecord("txnAlias")
+                                            .hasPriority(recordWith()
+                                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                            moveFungibleTokensTo(RECEIVER_FOR_ALIAS_TESTING)))),
+                                    // assert balances
+                                    getAliasedAccountBalance(receiverAccountAlias.get())
+                                            .hasTokenBalance(FUNGIBLE_TOKEN, 0))));
                 }
 
                 @HapiTest
                 final Stream<DynamicTest> tokenAirdropNftToExistingAccountsPending() {
+
                     return hapiTest(
                             withOpContext((spec, opLog) -> {
                                 var registry = spec.registry();
-                                var receiverAccountId = registry.getAccountID(RECEIVER_WITH_0_AUTO_ASSOCIATIONS);
+                                var receiverAccountId = registry.getAccountID(RECEIVER_FOR_ALIAS_TESTING);
                                 var receiverAlias = ByteString.copyFrom(asSolidityAddress(receiverAccountId));
-                                alias.set(receiverAlias);
+                                receiverAccountAlias.set(receiverAlias);
                             }),
                             withOpContext((spec, opLog) -> allRunFor(
                                     spec,
                                     tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-                                                    .between(OWNER, alias.get()))
+                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING))
                                             .payingWith(OWNER)
-                                            .via("txnAliasNft"),
+                                            .via("txn"),
                                     // assert transfers
-                                    getTxnRecord("txnAliasNft")
+                                    getTxnRecord("txn")
                                             .hasPriority(recordWith()
                                                     .pendingAirdrops(includingNftPendingAirdrop(
                                                             movingUnique(NON_FUNGIBLE_TOKEN, 7L)
-                                                                    .between(OWNER, alias.get())))),
+                                                                    .between(OWNER, RECEIVER_FOR_ALIAS_TESTING)))),
                                     // assert balances
-                                    getAliasedAccountBalance(alias.get()).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
+                                    getAliasedAccountBalance(receiverAccountAlias.get())
+                                            .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0))));
                 }
             }
 
