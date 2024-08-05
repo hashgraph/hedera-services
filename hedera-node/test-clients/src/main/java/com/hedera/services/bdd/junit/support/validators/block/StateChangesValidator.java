@@ -109,13 +109,6 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    public static void main(String[] args) {
-        final var swirldsLog =
-                "/Users/michaeltinker/YetYetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
-        final var hashes = getMaybeLastHashMnemonics(Path.of(swirldsLog));
-        System.out.println(hashes);
-    }
-
     /**
      * Constructs a validator that will assert the state changes in the block stream are consistent with the
      * root hash found in the latest saved state directory from a node targeted by the given spec.
@@ -202,13 +195,13 @@ public class StateChangesValidator implements BlockStreamValidator {
     public void validateBlocks(@NonNull final List<Block> blocks) {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
         for (final var block : blocks) {
-            servicesWritten.clear();
             for (final var item : block.items()) {
+                servicesWritten.clear();
                 if (item.hasStateChanges()) {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
+                servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
-            servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);

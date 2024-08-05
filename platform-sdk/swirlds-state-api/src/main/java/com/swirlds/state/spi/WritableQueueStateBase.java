@@ -53,10 +53,6 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     private Iterator<E> dsIterator = null;
     /** The cached most recent peeked element */
     private E peekedElement = null;
-    /**
-     * A list of listeners that will be notified when the queue changes.
-     */
-    private final List<OldQueueChangeListener> listeners = new ArrayList<>();
 
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {

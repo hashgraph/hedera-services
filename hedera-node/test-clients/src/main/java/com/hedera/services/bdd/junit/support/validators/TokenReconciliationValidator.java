@@ -111,7 +111,8 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
         if (parts.function() == TokenUpdate) {
             final var op = parts.body().getTokenUpdate();
             final var nftTreasury = nonFungibleTreasuries.get(op.getToken());
-            if (nftTreasury != null && op.hasTreasury()) {
+            // A synthetic TokenUpdate dispatched by a system contract will set 0.0.0 when not changing the treasury
+            if (nftTreasury != null && op.hasTreasury() && op.getTreasury().getAccountNum() > 0) {
                 final var tokenNum = op.getToken().getTokenNum();
                 final var treasuryNum = nftTreasury.getAccountNum();
                 final var curTreasuryKey = new AccountNumTokenNum(treasuryNum, tokenNum);
@@ -131,7 +132,10 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
         final var parts = TransactionParts.from(creation.getTransaction());
         final var op = parts.body().getTokenCreation();
         if (op.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-            nonFungibleTreasuries.put(creation.getRecord().getReceipt().getTokenID(), op.getTreasury());
+            final var tokenId = creation.getRecord().getReceipt().getTokenID();
+            nonFungibleTreasuries.put(tokenId, op.getTreasury());
+            expectedTokenBalances.put(
+                    new AccountNumTokenNum(op.getTreasury().getAccountNum(), tokenId.getTokenNum()), 0L);
         }
     }
 }

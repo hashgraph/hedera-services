@@ -110,7 +110,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final SchemaApplications schemaApplications;
 
-    private final SchemaStateChangeListener schemaStateChangeListener;
+    private final SchemaStateChangeListenerImpl schemaStateChangeListener;
 
     /**
      * Create a new instance with the default {@link SchemaApplications}.
@@ -129,7 +129,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.schemaApplications = requireNonNull(schemaApplications);
-        this.schemaStateChangeListener = new SchemaStateChangeListener();
+        this.schemaStateChangeListener = new SchemaStateChangeListenerImpl();
     }
 
     /**

@@ -45,15 +45,6 @@ public class WrappedState implements State {
     }
 
     /**
-     * Registers the given {@link StateChangesListener} to be notified of changes to this {@link WrappedState}.
-     * @param listener the listener to register
-     */
-    public void register(@NonNull final StateChangesListener listener) {
-        requireNonNull(listener);
-        writableStatesMap.forEach((serviceName, writableStates) -> writableStates.register(serviceName, listener));
-    }
-
-    /**
      * Returns {@code true} if the state of this {@link WrappedState} has been modified.
      *
      * @return {@code true}, if the state has been modified; otherwise {@code false}

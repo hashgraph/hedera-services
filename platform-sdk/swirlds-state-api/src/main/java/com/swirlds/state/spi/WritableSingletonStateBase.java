@@ -90,15 +90,6 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     }
 
     /**
-     * Registers a listener to be notified when the singleton changes.
-     * @param listener The listener to register
-     */
-    public void registerSingletonListener(@NonNull final OldSingletonChangeListener listener) {
-        requireNonNull(listener);
-        listeners.add(listener);
-    }
-
-    /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
      * be called by the code that created the {@link WritableSingletonStateBase} instance or owns
      * it. Don't cast and commit unless you own the instance!

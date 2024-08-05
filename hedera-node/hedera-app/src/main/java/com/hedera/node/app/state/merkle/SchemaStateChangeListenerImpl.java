@@ -20,23 +20,14 @@ import com.hedera.hapi.block.stream.output.NewStateChange;
 import com.hedera.hapi.block.stream.output.NewStateType;
 import com.hedera.hapi.block.stream.output.RemovedStateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.node.app.state.StateChangesListener;
+import com.hedera.node.app.state.SchemaStateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-public class SchemaStateChangeListener implements StateChangesListener {
-    private static final Set<DataType> TARGET_DATA_TYPES = EnumSet.of(DataType.SCHEMA);
-
+public class SchemaStateChangeListenerImpl implements SchemaStateChangeListener {
     private List<StateChange> stateChanges = new ArrayList<>();
-
-    @Override
-    public Set<DataType> targetDataTypes() {
-        return TARGET_DATA_TYPES;
-    }
 
     @Override
     public <K, V> void schemaAddStateChange(@NonNull final String stateName, @NonNull final NewStateType type) {

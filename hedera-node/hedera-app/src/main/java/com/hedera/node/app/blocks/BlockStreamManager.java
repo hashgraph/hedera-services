@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
@@ -61,5 +62,15 @@ public interface BlockStreamManager extends BlockRecordInfo {
      */
     void closeStream();
 
-    RoundStateChangeListener getRoundStateChangeListener();
+    /**
+     * Returns the listener being used for key-value state changes.
+     * @return the listener
+     */
+    KVStateChangeListener kvStateChangeListener();
+
+    /**
+     * Returns the listener being used for round state changes.
+     * @return the listener
+     */
+    RoundStateChangeListener roundStateChangeListener();
 }

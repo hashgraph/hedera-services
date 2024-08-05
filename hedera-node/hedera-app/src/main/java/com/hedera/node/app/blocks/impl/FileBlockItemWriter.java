@@ -118,10 +118,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
         // Create the chain of streams.
         this.blockFilePath = getBlockFilePath(blockNumber);
-        logger.info(
-                "Writing block {} to {}",
-                blockNumber,
-                blockFilePath.toAbsolutePath().toString());
+        //        logger.info(
+        //                "Writing block {} to {}",
+        //                blockNumber,
+        //                blockFilePath.toAbsolutePath().toString());
 
         OutputStream out = null;
         try {
