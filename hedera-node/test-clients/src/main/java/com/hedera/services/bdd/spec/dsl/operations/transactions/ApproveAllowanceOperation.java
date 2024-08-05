@@ -44,12 +44,30 @@ public class ApproveAllowanceOperation
     private final String spenderName;
 
     @Nullable
-    private final SpecToken token;
+    private final String tokenName;
 
+    private final AllowanceType allowanceType;
     private final long allowance;
     private final List<Long> serialNumbers = new ArrayList<>();
     private boolean isApproveForAll;
 
+    /**
+     * This constructor is used for approving allowance for hBars.
+     */
+    public ApproveAllowanceOperation(
+            @NonNull final SpecAccount owner, @NonNull final SpecContract spender, final long amount) {
+        super(List.of(owner, spender));
+
+        this.allowance = amount;
+        this.ownerName = requireNonNull(owner.name());
+        this.spenderName = requireNonNull(spender.name());
+        this.tokenName = null;
+        this.allowanceType = AllowanceType.HBAR;
+    }
+
+    /**
+     * This constructor is used for approving allowance for fungible tokens.
+     */
     public ApproveAllowanceOperation(
             @NonNull final SpecToken token,
             @NonNull final SpecAccount owner,
@@ -60,19 +78,13 @@ public class ApproveAllowanceOperation
         this.allowance = amount;
         this.ownerName = requireNonNull(owner.name());
         this.spenderName = spender.name();
-        this.token = requireNonNull(token);
+        this.tokenName = requireNonNull(token.name());
+        this.allowanceType = AllowanceType.FUNGIBLE_TOKEN;
     }
 
-    public ApproveAllowanceOperation(
-            @NonNull final SpecAccount owner, @NonNull final SpecContract spender, final long amount) {
-        super(List.of(owner, spender));
-
-        this.allowance = amount;
-        this.ownerName = requireNonNull(owner.name());
-        this.spenderName = requireNonNull(spender.name());
-        this.token = null;
-    }
-
+    /**
+     * This constructor is used for approving allowance for non-fungible tokens.
+     */
     public ApproveAllowanceOperation(
             @NonNull final SpecToken token,
             @NonNull final SpecAccount owner,
@@ -84,9 +96,10 @@ public class ApproveAllowanceOperation
         this.allowance = 0;
         this.ownerName = requireNonNull(owner.name());
         this.spenderName = requireNonNull(spender.name());
-        this.token = requireNonNull(token);
+        this.tokenName = requireNonNull(token.name());
         this.serialNumbers.addAll(serialNumbers);
         this.isApproveForAll = isApproveForAll;
+        this.allowanceType = AllowanceType.NFT;
     }
 
     @Override
@@ -97,21 +110,22 @@ public class ApproveAllowanceOperation
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
-        /* Approve allowance for hBar */
-        if (token == null) {
-            return cryptoApproveAllowance()
+        return switch (allowanceType) {
+            case HBAR -> cryptoApproveAllowance()
                     .signedByPayerAnd(ownerName)
                     .addCryptoAllowance(ownerName, spenderName, allowance);
-        }
-        /* Approve allowance for NFT token */
-        if (isApproveForAll || !serialNumbers.isEmpty()) {
-            return cryptoApproveAllowance()
+            case NFT -> cryptoApproveAllowance()
                     .signedByPayerAnd(ownerName)
-                    .addNftAllowance(ownerName, token.name(), spenderName, isApproveForAll, serialNumbers);
-        }
-        /* Approve allowance for fungible token */
-        return cryptoApproveAllowance()
-                .signedByPayerAnd(ownerName)
-                .addTokenAllowance(ownerName, token.name(), spenderName, allowance);
+                    .addNftAllowance(ownerName, tokenName, spenderName, isApproveForAll, serialNumbers);
+            case FUNGIBLE_TOKEN -> cryptoApproveAllowance()
+                    .signedByPayerAnd(ownerName)
+                    .addTokenAllowance(ownerName, tokenName, spenderName, allowance);
+        };
+    }
+
+    public enum AllowanceType {
+        HBAR,
+        NFT,
+        FUNGIBLE_TOKEN
     }
 }
