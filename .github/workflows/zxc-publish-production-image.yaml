@@ -177,12 +177,6 @@ jobs:
           HOME: /x
         with:
           version: v25.0.5
-          daemon-config: |
-            {
-              "registry-mirrors": [
-                "https://artifacts.swirldslabs.io/central-docker-external/"
-              ]
-            }
 
       - name: Configure Default Docker Context
         run: |
