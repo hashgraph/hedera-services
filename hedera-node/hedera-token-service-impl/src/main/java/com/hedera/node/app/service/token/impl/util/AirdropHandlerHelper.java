@@ -78,7 +78,6 @@ public class AirdropHandlerHelper {
 
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
-        var numUnlimitedAssociationTransfers = 0;
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
             // if not existing account, create transfer
