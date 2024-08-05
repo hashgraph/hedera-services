@@ -1026,7 +1026,7 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("transfer fungible token to from account")
+        @DisplayName("transfer fungible token from invalid account")
         final Stream<DynamicTest> transferFungibleTokenFromIncorrectAccount() {
             final String ALICE = "alice";
             final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
@@ -1055,7 +1055,7 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("transfer NFT to from account")
+        @DisplayName("transfer NFT to from invalid account")
         final Stream<DynamicTest> transferNFTTokenFromIncorrectAccount() {
             final String ALICE = "alice";
             return hapiTest(
@@ -1124,7 +1124,7 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("transfer fungible token to incorrect alias")
+        @DisplayName("transfer invalid NFT token")
         final Stream<DynamicTest> transferInvalidNFT() {
             final String ALICE = "alice";
             final String BOB = "bob";
