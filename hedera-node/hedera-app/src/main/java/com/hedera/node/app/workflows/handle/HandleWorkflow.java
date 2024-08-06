@@ -41,6 +41,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -290,7 +291,9 @@ public class HandleWorkflow {
             blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
         }
         if (STREAM_MODE != RECORDS) {
-            handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
+            handleOutput.blockStreamRecordOrThrow().forEach(blockStreamRecord -> blockStreamRecord
+                    .blockItems()
+                    .forEach(blockStreamManager::writeItem));
         }
 
         handleWorkflowMetrics.updateTransactionDuration(
@@ -379,16 +382,25 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
+
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
-            recordCache.add(
-                    userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().payerID(),
-                    handleOutput.recordStreamItems(),
-                    userTxn.stack());
+
+            if (HandleWorkflow.STREAM_MODE == RECORDS) {
+                recordCache.add(
+                        userTxn.creatorInfo().nodeId(),
+                        userTxn.txnInfo().payerID(),
+                        handleOutput.recordStreamItems(),
+                        userTxn.stack());
+            } else {
+                recordCache.addBlockStreamRecords(
+                        userTxn.creatorInfo().nodeId(),
+                        userTxn.txnInfo().payerID(),
+                        handleOutput.blockStreamRecords(),
+                        userTxn.stack());
+            }
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            // TODO - build and stream any committed builders and state changes from the stack, with a
             // FAIL_INVALID for the user transaction record/result
             return failInvalidStreamItems(userTxn);
         }
@@ -402,18 +414,49 @@ public class HandleWorkflow {
      */
     private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
-        final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
-                .status(FAIL_INVALID)
-                .consensusTimestamp(userTxn.consensusNow());
-        final var failInvalidRecord = failInvalidBuilder.build();
-        recordCache.add(
-                userTxn.creatorInfo().nodeId(),
-                requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidRecord),
-                userTxn.stack());
-        // TODO: Add block items
-        return new HandleOutput(List.of(), List.of(failInvalidRecord));
+        if (HandleWorkflow.STREAM_MODE == BLOCKS) {
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            final var failInvalidRecord = failInvalidBuilder.build();
+            recordCache.addBlockStreamRecords(
+                    userTxn.creatorInfo().nodeId(),
+                    requireNonNull(userTxn.txnInfo().payerID()),
+                    List.of(failInvalidRecord),
+                    userTxn.stack());
+            return new HandleOutput(List.of(failInvalidRecord), null);
+        } else if (HandleWorkflow.STREAM_MODE == RECORDS) {
+            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            final var failInvalidRecord = failInvalidBuilder.build();
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(),
+                    requireNonNull(userTxn.txnInfo().payerID()),
+                    List.of(failInvalidRecord),
+                    userTxn.stack());
+            return new HandleOutput(null, List.of(failInvalidRecord));
+        } else {
+            // Blocks and Records
+            final var failInvalidBlockStreamBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var failInvalidRecordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBlockStreamBuilder, userTxn.txnInfo())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            initializeBuilderInfo(failInvalidRecordBuilder, userTxn.txnInfo())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            final var failInvalidBlockStreamRecord = failInvalidBlockStreamBuilder.build();
+            final var failInvalidRecord = failInvalidRecordBuilder.build();
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(),
+                    requireNonNull(userTxn.txnInfo().payerID()),
+                    List.of(failInvalidRecord),
+                    userTxn.stack());
+            return new HandleOutput(List.of(failInvalidBlockStreamRecord), List.of(failInvalidRecord));
+        }
     }
 
     /**

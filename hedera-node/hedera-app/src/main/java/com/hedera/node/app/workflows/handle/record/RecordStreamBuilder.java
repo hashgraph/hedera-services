@@ -138,7 +138,7 @@ public class RecordStreamBuilder
                 TokenAccountWipeStreamBuilder,
                 CryptoUpdateStreamBuilder,
                 NodeCreateStreamBuilder {
-    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+    public static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data

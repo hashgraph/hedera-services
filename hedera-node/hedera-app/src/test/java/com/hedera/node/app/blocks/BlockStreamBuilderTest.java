@@ -49,6 +49,7 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
+import com.hedera.node.app.state.BlockStreamRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -106,7 +107,8 @@ public class BlockStreamBuilderTest {
     void testBlockItemsWithSubmitMessageOutput() {
         final var itemsBuilder = createBaseBuilder().topicRunningHashVersion(TOPIC_RUNNING_HASH_VERSION);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        BlockStreamRecord blockStreamRecords = itemsBuilder.build();
+        List<BlockItem> blockItems = blockStreamRecords.blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 
@@ -121,7 +123,8 @@ public class BlockStreamBuilderTest {
     void testBlockItemsWithCryptoTransferOutput() {
         final var itemsBuilder = createBaseBuilder().assessedCustomFees(List.of(assessedCustomFee));
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        BlockStreamRecord blockStreamRecords = itemsBuilder.build();
+        List<BlockItem> blockItems = blockStreamRecords.blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 
@@ -140,7 +143,8 @@ public class BlockStreamBuilderTest {
         }
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             final var itemsBuilder = createBaseBuilder().entropyBytes(prngBytes);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            BlockStreamRecord blockStreamRecords = itemsBuilder.build();
+            List<BlockItem> blockItems = blockStreamRecords.blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -151,7 +155,8 @@ public class BlockStreamBuilderTest {
             assertEquals(prngBytes, output.utilPrng().prngBytes());
         } else {
             final var itemsBuilder = createBaseBuilder().entropyNumber(ENTROPY_NUMBER);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            BlockStreamRecord blockStreamRecords = itemsBuilder.build();
+            List<BlockItem> blockItems = blockStreamRecords.blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -169,7 +174,8 @@ public class BlockStreamBuilderTest {
                 .contractCallResult(contractCallResult)
                 .addContractStateChanges(contractStateChanges, false);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        BlockStreamRecord blockStreamRecords = itemsBuilder.build();
+        List<BlockItem> blockItems = blockStreamRecords.blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 

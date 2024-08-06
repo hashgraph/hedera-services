@@ -63,6 +63,24 @@ public interface HederaRecordCache extends RecordCache {
             @NonNull SavepointStackImpl stack);
 
     /**
+     * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
+     * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
+     *
+     * @param nodeId The node ID of the node that submitted this transaction to consensus, as known in the address book
+     * @param payerAccountId The {@link AccountID} of the "payer" of the transaction
+     * @param blockStreamRecords The list of all related transaction records. This may be a stream of 1, if the list
+     *                           only contains the user transaction. Or it may be a list including preceding
+     *                           transactions, user transactions, and child transactions. There is no requirement as to
+     *                           the order of items in this list.
+     */
+    /*HANDLE THREAD ONLY*/
+    void addBlockStreamRecords(
+            long nodeId,
+            @NonNull AccountID payerAccountId,
+            @NonNull List<BlockStreamRecord> blockStreamRecords,
+            @NonNull final SavepointStackImpl stack);
+
+    /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is
      * {@link DuplicateCheckResult#NO_DUPLICATE}. If it has, then the result is {@link DuplicateCheckResult#SAME_NODE} if the
      * transaction was submitted by the given node before, or {@link DuplicateCheckResult#OTHER_NODE} if the transaction was

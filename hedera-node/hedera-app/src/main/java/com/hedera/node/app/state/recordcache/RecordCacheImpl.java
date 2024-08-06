@@ -30,10 +30,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.validation.TruePredicate;
-import com.hedera.node.app.state.DeduplicationCache;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.state.*;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
@@ -190,6 +187,39 @@ public class RecordCacheImpl implements HederaRecordCache {
         // For each transaction, in order, add to the queue and to the in-memory data structures.
         for (final var singleTransactionRecord : transactionRecords) {
             final var rec = singleTransactionRecord.transactionRecord();
+            addToInMemoryCache(nodeId, payerAccountId, rec);
+            queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
+        }
+
+        stack.commitFullStack();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void addBlockStreamRecords(
+            final long nodeId,
+            @NonNull final AccountID payerAccountId,
+            @NonNull final List<BlockStreamRecord> blockStreamRecords,
+            @NonNull final SavepointStackImpl stack) {
+        requireNonNull(payerAccountId);
+        requireNonNull(blockStreamRecords);
+
+        // This really shouldn't ever happen. If it does, we'll log a warning and bail.
+        if (blockStreamRecords.isEmpty()) {
+            logger.warn("Received an empty list of blockStreamRecords. This should never happen");
+            return;
+        }
+
+        // To avoid having a background thread cleaning out this queue, we spend a little time when adding to the queue
+        // to also remove from the queue any transactions that have expired.
+        final WritableStates states = stack.getWritableStates(NAME);
+        final WritableQueueState<TransactionRecordEntry> queue = states.getQueue(TXN_RECORD_QUEUE);
+        final BlockStreamRecord firstRecord = blockStreamRecords.getFirst();
+        removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
+
+        // For each transaction, in order, add to the queue and to the in-memory data structures.
+        for (final var blockStreamRecord : blockStreamRecords) {
+            final var rec = blockStreamRecord.transactionRecord();
             addToInMemoryCache(nodeId, payerAccountId, rec);
             queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
         }

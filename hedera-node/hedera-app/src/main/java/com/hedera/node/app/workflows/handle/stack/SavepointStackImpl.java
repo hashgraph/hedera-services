@@ -27,7 +27,6 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
@@ -36,6 +35,7 @@ import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.BlockStreamRecord;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
@@ -56,7 +56,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -463,14 +462,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the stream of records
      */
     public HandleOutput buildHandleOutput(@NonNull final Instant consensusTime) {
-        final List<BlockItem> blockItems;
         Instant lastAssignedConsenusTime = consensusTime;
-        if (HandleWorkflow.STREAM_MODE == RECORDS) {
-            blockItems = null;
-        } else {
-            blockItems = new LinkedList<>();
-        }
         final List<SingleTransactionRecord> records = new ArrayList<>();
+        final List<BlockStreamRecord> blockStreamRecords = new ArrayList<>();
         final var builders = requireNonNull(builderSink).allBuilders();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
@@ -502,19 +496,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             }
             switch (HandleWorkflow.STREAM_MODE) {
                 case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
-                case BLOCKS -> requireNonNull(blockItems).addAll(((BlockStreamBuilder) builder).build());
+                case BLOCKS -> blockStreamRecords.add(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
                     records.add(pairedBuilder.recordBuilder().build());
-                    requireNonNull(blockItems)
-                            .addAll(pairedBuilder.ioBlockItemsBuilder().build());
+                    blockStreamRecords.add(pairedBuilder.ioBlockItemsBuilder().build());
                 }
             }
         }
-        if (HandleWorkflow.STREAM_MODE != RECORDS) {
-            requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
-        }
-        return new HandleOutput(blockItems, records);
+        requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
+        return new HandleOutput(blockStreamRecords, records);
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

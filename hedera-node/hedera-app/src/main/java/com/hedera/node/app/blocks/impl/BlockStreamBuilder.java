@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.record.RecordStreamBuilder.TOKEN_ASSOCIATION_COMPARATOR;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -54,14 +55,12 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.*;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
@@ -90,10 +89,14 @@ import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.BlockStreamRecord;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -148,6 +151,7 @@ public class BlockStreamBuilder
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+    private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
@@ -163,6 +167,7 @@ public class BlockStreamBuilder
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
+    private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
 
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
@@ -216,7 +221,32 @@ public class BlockStreamBuilder
      * Builds the list of block items.
      * @return the list of block items
      */
-    public List<BlockItem> build() {
+    public BlockStreamRecord build() {
+        final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
+        // FUTURE : In mono-service exchange rate is not set in preceding child records.
+        // This should be changed after differential testing
+        if (exchangeRate != null && exchangeRate.hasCurrentRate() && exchangeRate.hasNextRate()) {
+            builder.exchangeRate(exchangeRate);
+        }
+        final var transactionReceipt = builder.build();
+        final Bytes transactionHash;
+        try {
+            final MessageDigest digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+            transactionHash = Bytes.wrap(digest.digest(transactionBytes.toByteArray()));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
+        final Timestamp parentConsensusTimestamp =
+                parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
+
+        // sort the automatic associations to match the order of mono-service records
+        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+
         final var blockItems = new ArrayList<BlockItem>();
 
         final var transactionBlockItem =
@@ -241,7 +271,22 @@ public class BlockStreamBuilder
                     .build();
             blockItems.add(stateChangesBlockItem);
         }
-        return blockItems;
+
+        final var transactionRecord = transactionRecordBuilder
+                .transactionID(transactionID)
+                .receipt(transactionReceipt)
+                .transactionHash(transactionHash)
+                .consensusTimestamp(consensusTimestamp)
+                .parentConsensusTimestamp(parentConsensusTimestamp)
+                .transferList(transferList)
+                .tokenTransferLists(tokenTransferLists)
+                .assessedCustomFees(assessedCustomFees)
+                .automaticTokenAssociations(newAutomaticTokenAssociations)
+                .paidStakingRewards(paidStakingRewards)
+                .build();
+
+        BlockStreamRecord record = new BlockStreamRecord(blockItems, transactionRecord);
+        return record;
     }
 
     @NonNull
@@ -408,7 +453,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder memo(@NonNull final String memo) {
-        // No-op
+        transactionRecordBuilder.memo(memo);
         return this;
     }
 
@@ -569,6 +614,7 @@ public class BlockStreamBuilder
     public BlockStreamBuilder entropyNumber(final int num) {
         transactionOutputBuilder.utilPrng(
                 UtilPrngOutput.newBuilder().prngNumber(num).build());
+        transactionRecordBuilder.prngNumber(num);
         return this;
     }
 
@@ -579,6 +625,7 @@ public class BlockStreamBuilder
         requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
         transactionOutputBuilder.utilPrng(
                 UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
+        transactionRecordBuilder.prngBytes(prngBytes);
         return this;
     }
 
@@ -586,7 +633,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
-        // No-op
+        transactionRecordBuilder.evmAddress(evmAddress);
         return this;
     }
 
@@ -605,6 +652,7 @@ public class BlockStreamBuilder
     public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
         transactionResultBuilder.status(status);
+        transactionReceiptBuilder.status(status);
         return this;
     }
 
@@ -631,7 +679,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
-        // No-op
+        transactionReceiptBuilder.accountID(accountID);
         return this;
     }
 
@@ -639,7 +687,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
-        // No-op
+        transactionReceiptBuilder.fileID(fileID);
         return this;
     }
 
@@ -647,7 +695,9 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
-        // No-op
+        // Ensure we don't externalize as an account creation too
+        transactionReceiptBuilder.accountID((AccountID) null);
+        transactionReceiptBuilder.contractID(contractID);
         return this;
     }
 
@@ -675,7 +725,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
-        // No-op
+        transactionReceiptBuilder.topicID(topicID);
         return this;
     }
 
@@ -683,7 +733,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
-        // No-op
+        transactionReceiptBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
     }
 
@@ -691,7 +741,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
-        // No-op
+        transactionReceiptBuilder.topicRunningHash(topicRunningHash);
         return this;
     }
 
@@ -702,6 +752,7 @@ public class BlockStreamBuilder
         // TOD0: Need to confirm what the value should be
         transactionOutputBuilder.submitMessage(
                 new SubmitMessageOutput(RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER));
+        transactionReceiptBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
     }
 
@@ -711,6 +762,7 @@ public class BlockStreamBuilder
     public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
         this.tokenID = tokenID;
+        transactionReceiptBuilder.tokenID(tokenID);
         return this;
     }
 
@@ -724,7 +776,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder nodeID(long nodeId) {
-        // No-op
+        transactionReceiptBuilder.nodeId(nodeId);
         return this;
     }
 
@@ -732,6 +784,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
+        transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
     }
 
@@ -745,7 +798,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
-        // No-op
+        transactionReceiptBuilder.scheduleID(scheduleID);
         return this;
     }
 
@@ -754,6 +807,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
         this.scheduledTransactionID = scheduledTransactionID;
+        transactionReceiptBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
     }
 
