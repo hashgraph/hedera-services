@@ -318,8 +318,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     @Override
     public void close() throws IOException {
-        bucketIndexToBucketLocation.close();
         fileCollection.close();
+        bucketIndexToBucketLocation.close();
     }
 
     // =================================================================================================================
