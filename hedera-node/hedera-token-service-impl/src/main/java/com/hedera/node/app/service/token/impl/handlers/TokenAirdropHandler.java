@@ -16,13 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
@@ -35,8 +28,8 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropRecord;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
-import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.validateIfSystemAccount;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -51,8 +44,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -61,7 +52,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
@@ -151,18 +141,6 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             // process fungible token transfers if any. pureChecks validates there is only one debit, so findFirst
             // should return one item
             if (!xfers.transfers().isEmpty()) {
-                for (var transfer : xfers.transfers()) {
-                    // We want to validate only the receivers. If it's a sender we skip the check.
-                    boolean isSender = transfer.amount() < 0;
-                    if (isSender) {
-                        continue;
-                    }
-                    final var receiver = transfer.accountID();
-                    if (!isExemptFromCustomFees(token, receiver)) {
-                        validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
-                    }
-                }
-                
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
@@ -197,13 +175,6 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
 
             // process non-fungible tokens transfers if any
             if (!xfers.nftTransfers().isEmpty()) {
-                for (var transfer : xfers.nftTransfers()) {
-                    final var receiver = transfer.receiverAccountID();
-                    if (!isExemptFromCustomFees(token, receiver)) {
-                        validateTrue(tokenHasNoCustomFeesPaidByReceiver(token), INVALID_TRANSACTION);
-                    }
-                }
-                
                 final var nftTransfer = xfers.nftTransfers().stream().findFirst();
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
                 // 2. separate NFT transfers in to two lists
@@ -234,19 +205,6 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         }
     }
 
-    /**
-     * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver.
-     * If there are, an error is returned from the HAPI call.
-     * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account
-     * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
-     * This method returns if the receiver is the fee collector or the treasury account.
-     */
-    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
-        return token.customFees().stream()
-            .anyMatch(customFee ->
-                CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
-    }
-    
     /**
      * Charges the airdrop fee for the pending airdrops.The fee will be charged from the payer account and will vary
      * based on the number of pending airdrops created. This will be charged in handle method once we assess

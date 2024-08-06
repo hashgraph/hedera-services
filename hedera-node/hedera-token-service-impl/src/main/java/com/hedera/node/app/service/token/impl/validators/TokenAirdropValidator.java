@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -41,11 +41,13 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,10 +98,24 @@ public class TokenAirdropValidator {
             @NonNull final ReadableNftStore nftStore) {
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+            final var token = getIfUsable(tokenId, tokenStore);
+
             // process fungible token transfers if any.
             // PureChecks validates there is only one debit, so findFirst should return one item
             if (!xfers.transfers().isEmpty()) {
+                for (var transfer : xfers.transfers()) {
+                    // We want to validate only the receivers. If it's a sender we skip the check.
+                    boolean isSender = transfer.amount() < 0;
+                    if (isSender) {
+                        continue;
+                    }
+                    final var receiver = transfer.accountID();
+                    if (!isExemptFromCustomFees(token, receiver)) {
+                        validateTrue(
+                                tokenHasNoCustomFeesPaidByReceiver(token.tokenId(), tokenStore), INVALID_TRANSACTION);
+                    }
+                }
+
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
@@ -113,6 +129,14 @@ public class TokenAirdropValidator {
 
             // process non-fungible tokens transfers if any
             if (!xfers.nftTransfers().isEmpty()) {
+                for (var transfer : xfers.nftTransfers()) {
+                    final var receiver = transfer.receiverAccountID();
+                    if (!isExemptFromCustomFees(token, receiver)) {
+                        validateTrue(
+                                tokenHasNoCustomFeesPaidByReceiver(token.tokenId(), tokenStore), INVALID_TRANSACTION);
+                    }
+                }
+
                 // 1. validate NFT transfers
                 final var nftTransfer = xfers.nftTransfers().stream().findFirst();
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
@@ -130,7 +154,20 @@ public class TokenAirdropValidator {
         }
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+    /**
+     * When we do an airdrop we need to check if there are custom fees that needs to be paid by the receiver.
+     * If there are, an error is returned from the HAPI call.
+     * However, there is an exception to this rule - if the receiver is the fee collector or the treasury account
+     * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
+     * This method returns if the receiver is the fee collector or the treasury account.
+     */
+    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
+        return token.customFees().stream()
+                .anyMatch(customFee ->
+                        CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
+    }
+
+    public boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
@@ -171,7 +208,7 @@ public class TokenAirdropValidator {
             }
             validateTrue(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
         } else {
-            validateTrue(tokenRel.balance() >= Math.abs(senderAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
+            validateTrue(tokenRel.balance() >= Math.abs(senderAmount.amount()), INSUFFICIENT_TOKEN_BALANCE);
         }
     }
 

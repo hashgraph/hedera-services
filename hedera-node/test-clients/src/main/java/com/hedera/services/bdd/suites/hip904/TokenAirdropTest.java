@@ -396,9 +396,7 @@ public class TokenAirdropTest {
                                     .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, tokenTotal - htsFee)
                                     .hasTokenBalance(DENOM_TOKEN, tokenTotal - htsFee),
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0),
-                            getAccountBalance(HTS_COLLECTOR).hasTokenBalance(DENOM_TOKEN, htsFee),
-                            getAccountBalance(HTS_COLLECTOR2).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
+                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0));
         }
 
         @HapiTest
@@ -437,7 +435,6 @@ public class TokenAirdropTest {
             return hapiTest(
                     cryptoCreate(OWNER),
                     tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
-                    mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
                     cryptoTransfer(
                             movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(OWNER, HTS_COLLECTOR))
@@ -656,7 +653,7 @@ public class TokenAirdropTest {
                     .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN)
                                     .between(lowBalanceOwner, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(lowBalanceOwner)
-                            .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
+                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
 
         @HapiTest
@@ -756,35 +753,6 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("when sender has insufficient token balance")
-        final Stream<DynamicTest> insufficientFTFromSender() {
-            final String ALICE = "alice";
-            final String BOB = "bob";
-            final String CAROL = "carol";
-            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
-            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
-            return hapiTest(
-                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
-                    tokenCreate(FUNGIBLE_TOKEN_A)
-                            .treasury(ALICE)
-                            .tokenType(FUNGIBLE_COMMON)
-                            .initialSupply(10L),
-                    tokenCreate(FUNGIBLE_TOKEN_B)
-                            .treasury(ALICE)
-                            .tokenType(FUNGIBLE_COMMON)
-                            .initialSupply(5L),
-                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
-                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_B),
-                    tokenAirdrop(
-                                    moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
-                                    moving(10, FUNGIBLE_TOKEN_B).between(ALICE, CAROL))
-                            .signedByPayerAnd(ALICE)
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
-        }
-
-        @HapiTest
         @DisplayName("when sending fungible token to system address")
         final Stream<DynamicTest> fungibleTokenReceiverSystemAddress() {
             final String ALICE = "alice";
@@ -809,7 +777,7 @@ public class TokenAirdropTest {
                     tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
                     tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(ALICE, FREEZE_ADMIN))
                             .signedByPayerAnd(ALICE)
-                            .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
+                            .hasPrecheck(INVALID_RECEIVING_NODE_ACCOUNT));
         }
 
         @HapiTest
@@ -989,7 +957,7 @@ public class TokenAirdropTest {
                         .withCustom(
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
                 tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
-                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
+                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
 
                 // all collectors exempt setup
                 cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),

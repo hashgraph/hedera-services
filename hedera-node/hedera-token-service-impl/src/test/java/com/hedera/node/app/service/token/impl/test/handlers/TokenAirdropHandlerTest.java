@@ -420,7 +420,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         // mock record builder
-        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
         var nftWithNoCustomFees = nonFungibleToken
