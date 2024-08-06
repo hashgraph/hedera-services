@@ -19,12 +19,16 @@ package com.hedera.node.app.service.addressbook.impl.test;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
+import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +55,7 @@ class CertificatePemTest {
         assertEquals("X.509", cert.getType());
         assertArrayEquals(cert.getEncoded(), genCert.getEncoded());
         assertEquals(cert, genCert);
+        assertDoesNotThrow(() -> validateX509Certificate(Bytes.wrap(genCert.getEncoded())));
     }
 
     @Test
@@ -78,5 +83,7 @@ class CertificatePemTest {
         writeCertificatePemFile(genPemPath, Bytes.wrap("anyString").toByteArray());
         final var exception = assertThrows(IOException.class, () -> readCertificatePemFile(genPemPath));
         assertThat(exception.getMessage()).contains("problem parsing cert: java.io.IOException:");
+        final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap("anyString")));
+        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
     }
 }
