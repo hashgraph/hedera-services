@@ -84,18 +84,17 @@ The protobuf definition for the Roster will look as follows:
 /**
  * A single roster in the network state.
  * <p>
- * The roster SHALL be a map of key `NodeId`, value `RosterEntry`.
+ * The roster SHALL be a list of `RosterEntry` objects.
  */
 message Roster {
 
     /**
-     * Map of roster entries, one per consensus node.
+     * List of roster entries, one per consensus node.
      * <p>
-     * This map SHALL contain roster entries.
-     * The node Id key SHALL match the node Id in the value.
-     * This map SHALL NOT be empty.<br/>
+     * This list SHALL contain roster entries specified in order of ascending node id.
+     * This list SHALL NOT be empty.<br/>
      */
-    map<uint64, RosterEntry> rosterEntries = 1;
+    repeated RosterEntry rosterEntries = 1;
 }
 ```
 
@@ -141,11 +140,13 @@ message RosterEntry {
     bytes gossip_ca_certificate = 3;
 
     /**
-     * An elliptic curve public signing key.<br/>
-     * This contains the _long term_ public key for this node.
+     * An ALT_BN128 elliptic curve public signing key.<br/>
      * <p>
-     * This value SHALL be the DER encoding of the presented elliptic curve
-     * public key.<br/>
+     * The elliptic curve type may change in the future. For example <br/>
+     * If the Ethereum ecosystem creates precompiles for BLS12_381,
+     * which is more secure, we may switch to that curve.
+     * <p>
+     * This value SHALL be the DER encoding of the presented elliptic curve public key.<br/>
      * This field is OPTIONAL (that is, it can initially be null)
      * but once set, it can no longer be null.
      */
@@ -270,9 +271,8 @@ A Roster is considered valid if it satisfies the following conditions:
 3. All RosterEntry/ies must have a valid gossip_ca_certificate which is a DER encoded X509Certificate.
 4. All RosterEntry/ies must have a valid tss_encryption_key which is a DER encoded X509Certificate.
 5. All RosterEntry/ies must have at least one gossip Endpoint.
-6. The RosterEntry/ies must be specified in order of ascending node id.
-7. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
-8. The roster must have a unique NodeId for each RosterEntry, and the NodeId key must match the NodeId value in the
+6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
+7. The roster must have a unique NodeId for each RosterEntry, and the NodeId key must match the NodeId value in the
    corresponding RosterEntry.
 
 On the submission of a new Candidate Roster, the platform will validate the roster against these conditions. Note
