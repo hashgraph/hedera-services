@@ -57,7 +57,7 @@ class MerkleDbCompactionCoordinator {
     private static final Logger logger = LogManager.getLogger(MerkleDbCompactionCoordinator.class);
 
     // Timeout to wait for all currently running compaction tasks to stop during compactor shutdown
-    private static final long SHUTDOWN_TIMEOUT = 60_000;
+    private static final long SHUTDOWN_TIMEOUT_MILLIS = 60_000;
 
     /**
      * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor()}.
@@ -215,11 +215,15 @@ class MerkleDbCompactionCoordinator {
         // Wait till all the tasks are stopped
         final long now = System.currentTimeMillis();
         try {
-            while ((tasksRunning.get() != 0) && (System.currentTimeMillis() - now < SHUTDOWN_TIMEOUT)) {
+            while ((tasksRunning.get() != 0) && (System.currentTimeMillis() - now < SHUTDOWN_TIMEOUT_MILLIS)) {
                 Thread.sleep(1);
             }
         } catch (final InterruptedException e) {
             logger.warn(MERKLE_DB.getMarker(), "Interrupted while waiting for compaction tasks to complete", e);
+        }
+        // If some tasks are still running, there is nothing else to than to log it
+        if (tasksRunning.get() != 0) {
+            logger.error(MERKLE_DB.getMarker(), "Failed to stop all compactions tasks");
         }
     }
 
