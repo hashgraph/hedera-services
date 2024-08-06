@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
-
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -36,6 +35,9 @@ import java.util.function.Predicate;
 
 /** Provides helpers to compare and analyze record streams. */
 public class OrderedComparison {
+    private static final Predicate<RecordStreamEntry> DEFAULT_ENTRY_INCLUSION_TEST = e -> true;
+    private static final Predicate<String> DEFAULT_FILENAME_INCLUSION_TEST = filename -> true;
+
     private OrderedComparison() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -62,7 +64,8 @@ public class OrderedComparison {
             @Nullable final Predicate<String> maybeInclusionTest,
             @Nullable final String maybeInclusionDescription)
             throws IOException {
-        final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
+        final Predicate<String> inclusionTest =
+                maybeInclusionTest == null ? DEFAULT_FILENAME_INCLUSION_TEST : maybeInclusionTest;
         final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
         System.out.println("Parsing stream @ " + firstStreamDir + " (including " + inclusionDescription + ")");
         final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
@@ -70,26 +73,30 @@ public class OrderedComparison {
         System.out.println("Parsing stream @ " + secondStreamDir + " (including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
+        // No inclusion test is needed here because the inclusion test has already been applied (during parsing)
         return findDifferencesBetweenV6(firstEntries, secondEntries, recordDiffSummarizer, null);
     }
 
     /**
      * todo
      *
-     * @param firstStreamDir the first record stream
-     * @param secondStreamDir the second record stream
+     * @param firstEntries the first record stream
+     * @param secondEntries the second record stream
      * @param recordDiffSummarizer if present, a summarizer for record diffs
      * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
-     * @throws IllegalArgumentException if the directories contain misaligned record streams
+     * @throws IllegalArgumentException if the record streams are misaligned
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
             @NonNull final List<RecordStreamEntry> firstEntries,
             @NonNull final List<RecordStreamEntry> secondEntries,
             @Nullable final RecordDiffSummarizer recordDiffSummarizer,
-            //todo pass inclusionTest
             @Nullable final Predicate<RecordStreamEntry> maybeInclusionTest) {
-        final var compareList = getCompareList(firstEntries, secondEntries);
+        final var inclusionTest = maybeInclusionTest == null ? DEFAULT_ENTRY_INCLUSION_TEST : maybeInclusionTest;
+        final var filteredFirst = firstEntries.stream().filter(inclusionTest).toList();
+        final var filteredSecond = secondEntries.stream().filter(inclusionTest).toList();
+
+        final var compareList = getCompareList(filteredFirst, filteredSecond);
         return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 

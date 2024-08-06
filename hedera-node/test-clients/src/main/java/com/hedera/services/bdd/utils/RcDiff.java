@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.utils;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
@@ -12,7 +28,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactM
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -26,14 +43,11 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 public class RcDiff implements Callable<Integer> {
     private static final OrderedComparison.RecordDiffSummarizer DEFAULT_SUMMARIZER = (a, b) -> {
         try {
             exactMatch(a, b, () -> "");
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             return t.getMessage();
         }
         throw new AssertionError("No difference to summarize");
@@ -53,25 +67,60 @@ public class RcDiff implements Callable<Integer> {
 
     private PrintStream out = System.out;
 
-    public RcDiff(final long maxDiffsToExport, final long lenOfDiffSecs, @NonNull final List<RecordStreamEntry> expectedStreams, @NonNull final List<RecordStreamEntry> actualStreams, @Nullable final String diffsLoc, @Nullable final PrintStream out) {
-        this(maxDiffsToExport, lenOfDiffSecs, expectedStreams, actualStreams, diffsLoc, boundaryTimesFor(expectedStreams), boundaryTimesFor(actualStreams), out);
+    public RcDiff(
+            final long maxDiffsToExport,
+            final long lenOfDiffSecs,
+            @NonNull final List<RecordStreamEntry> expectedStreams,
+            @NonNull final List<RecordStreamEntry> actualStreams,
+            @Nullable final String diffsLoc,
+            @Nullable final PrintStream out) {
+        this(
+                maxDiffsToExport,
+                lenOfDiffSecs,
+                expectedStreams,
+                actualStreams,
+                diffsLoc,
+                boundaryTimesFor(expectedStreams),
+                boundaryTimesFor(actualStreams),
+                out);
     }
 
-    public RcDiff(final long maxDiffsToExport, final long lenOfDiffSecs,
-            @NonNull final String expectedStreamsLoc, @NonNull final String actualStreamsLoc,
-            @Nullable final String diffsLoc, @Nullable final PrintStream out) throws IOException {
-        this(maxDiffsToExport, lenOfDiffSecs, parseV6RecordStreamEntriesIn(expectedStreamsLoc), parseV6RecordStreamEntriesIn(actualStreamsLoc), diffsLoc, boundaryTimesFor(expectedStreamsLoc), boundaryTimesFor(actualStreamsLoc), out);
-    }
-
-    public RcDiff(final long maxDiffsToExport, final long lenOfDiffSecs,
-            @NonNull final String expectedStreamsLoc, @NonNull final String actualStreamsLoc,
+    /**
+     * todo
+     * @param maxDiffsToExport
+     * @param lenOfDiffSecs
+     * @param expectedStreamsLoc
+     * @param actualStreamsLoc
+     * @param diffsLoc
+     * @return
+     * @throws IOException
+     */
+    public static RcDiff fromDirs(
+            final long maxDiffsToExport,
+            final long lenOfDiffSecs,
+            @NonNull final String expectedStreamsLoc,
+            @NonNull final String actualStreamsLoc,
             @NonNull final String diffsLoc) throws IOException {
-        this(maxDiffsToExport, lenOfDiffSecs, expectedStreamsLoc, actualStreamsLoc, diffsLoc, null);
+        return new RcDiff(
+                maxDiffsToExport,
+                lenOfDiffSecs,
+                parseV6RecordStreamEntriesIn(expectedStreamsLoc),
+                parseV6RecordStreamEntriesIn(actualStreamsLoc),
+                diffsLoc,
+                boundaryTimesFor(expectedStreamsLoc),
+                boundaryTimesFor(actualStreamsLoc),
+                null);
     }
 
-    private RcDiff(final long maxDiffsToExport, final long lenOfDiffSecs,
-            @NonNull final List<RecordStreamEntry> expectedStreams, @NonNull final List<RecordStreamEntry> actualStreams,
-            @Nullable final String diffsLoc, @NonNull final BoundaryTimes expectedBoundaries, @NonNull final BoundaryTimes actualBoundaries, @Nullable final PrintStream out) {
+    private RcDiff(
+            final long maxDiffsToExport,
+            final long lenOfDiffSecs,
+            @NonNull final List<RecordStreamEntry> expectedStreams,
+            @NonNull final List<RecordStreamEntry> actualStreams,
+            @Nullable final String diffsLoc,
+            @NonNull final BoundaryTimes expectedBoundaries,
+            @NonNull final BoundaryTimes actualBoundaries,
+            @Nullable final PrintStream out) {
         this.maxDiffsToExport = maxDiffsToExport;
         this.lenOfDiffSecs = lenOfDiffSecs;
         this.expectedStreams = expectedStreams;
@@ -100,14 +149,11 @@ public class RcDiff implements Callable<Integer> {
      * @return
      */
     public List<String> buildDiffOutput(@NonNull final List<DifferingEntries> diffs) {
-        return diffs.stream()
-                .map(this::readableDiff)
-                .limit(maxDiffsToExport)
-                .toList();
+        return diffs.stream().map(this::readableDiff).limit(maxDiffsToExport).toList();
     }
 
     /**
-     * todo
+     *
      * @return
      * @throws Exception
      */
@@ -137,11 +183,8 @@ public class RcDiff implements Callable<Integer> {
                 final var consensusTime = e.consensusTime();
                 return !consensusTime.isBefore(start) && consensusTime.isBefore(end);
             };
-            final var diffsHere = findDifferencesBetweenV6(
-                    expectedStreams,
-                    actualStreams,
-                    recordDiffSummarizer,
-                    inclusionTest);
+            final var diffsHere =
+                    findDifferencesBetweenV6(expectedStreams, actualStreams, recordDiffSummarizer, inclusionTest);
 
             out.println(" ➡️ Found " + diffsHere.size() + " diffs from " + start + " to " + end);
             diffs.addAll(diffsHere);
@@ -156,8 +199,7 @@ public class RcDiff implements Callable<Integer> {
             return new BoundaryTimes(Instant.MAX, Instant.EPOCH);
         }
         return new BoundaryTimes(
-                entries.getFirst().consensusTime(),
-                entries.getLast().consensusTime());
+                entries.getFirst().consensusTime(), entries.getLast().consensusTime());
     }
 
     private static BoundaryTimes boundaryTimesFor(@NonNull final String loc) {
@@ -176,22 +218,19 @@ public class RcDiff implements Callable<Integer> {
 
     private void throwOnInvalidInput() {
         if (actualStreams == null) {
-            throw new IllegalArgumentException("Please specify a non-empty actual stream");
+            throw new IllegalArgumentException("Please specify a non-empty test/'actual' stream");
         }
         if (expectedStreams == null) {
-            throw new IllegalArgumentException("Please specify a non-empty expected stream");
+            throw new IllegalArgumentException("Please specify a non-empty 'expected' stream");
         }
         if (lenOfDiffSecs <= 0) {
-            throw new IllegalArgumentException(
-                    "Please specify a positive length of diff in seconds");
+            throw new IllegalArgumentException("Please specify a positive length of diff in seconds");
         }
     }
 
     private void dumpToFile(@NonNull final List<DifferingEntries> diffs) {
         try {
-            Files.write(
-                    Paths.get(diffsLoc),
-                    buildDiffOutput(diffs));
+            Files.write(Paths.get(diffsLoc), buildDiffOutput(diffs));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

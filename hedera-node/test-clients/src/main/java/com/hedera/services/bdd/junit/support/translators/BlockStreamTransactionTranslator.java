@@ -82,8 +82,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         return new SingleTransactionRecord(
                 transaction.txn(),
-                protoToPbj(recordBuilder.build(),
-                        com.hedera.hapi.node.transaction.TransactionRecord.class),
+                protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
                 // TODO: how do we construct the sidecar records?
                 List.of(),
                 // TODO: construct TransactionOutputs correctly when we have access to token-related transaction types
@@ -106,52 +105,59 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     @Override
     public List<SingleTransactionRecord> translateAll(
             @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
-        //todo: implement
+        // todo: implement
         throw new NotImplementedException();
     }
 
     private TransactionRecord.Builder parseTransaction(
             final Transaction txn, final TransactionRecord.Builder recordBuilder) {
         return recordBuilder
-                .setTransactionID(pbjToProto(txn.body().transactionID(),
-                        com.hedera.hapi.node.base.TransactionID.class, TransactionID.class)).
-                setMemo(txn.body().memo());
+                .setTransactionID(pbjToProto(
+                        txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class))
+                .setMemo(txn.body().memo());
     }
 
     private TransactionRecord.Builder parseTransactionResult(
             final TransactionResult txnResult,
             final TransactionRecord.Builder recordBuilder,
-            final TransactionReceipt.Builder receiptBuilder) throws InvalidProtocolBufferException {
+            final TransactionReceipt.Builder receiptBuilder)
+            throws InvalidProtocolBufferException {
         final var autoTokenAssocs = txnResult.automaticTokenAssociations();
         autoTokenAssocs.forEach(tokenAssociation -> {
-            var b = pbjToProto(tokenAssociation, com.hedera.hapi.node.base.TokenAssociation.class, TokenAssociation.class);
-            recordBuilder.addAutomaticTokenAssociations(b);
+            final var autoAssocs = pbjToProto(
+                    tokenAssociation, com.hedera.hapi.node.base.TokenAssociation.class, TokenAssociation.class);
+            recordBuilder.addAutomaticTokenAssociations(autoAssocs);
         });
 
         final var paidStakingRewards = txnResult.paidStakingRewards();
         for (com.hedera.hapi.node.base.AccountAmount paidStakingReward : paidStakingRewards) {
-            final var proto = pbjToProto(paidStakingReward,
-                    com.hedera.hapi.node.base.AccountAmount.class, AccountAmount.class);
+            final var proto =
+                    pbjToProto(paidStakingReward, com.hedera.hapi.node.base.AccountAmount.class, AccountAmount.class);
             recordBuilder.addPaidStakingRewards(proto);
         }
 
-        final var transferList = TransferList.parseFrom(com.hedera.hapi.node.base.TransferList.PROTOBUF.toBytes(txnResult.transferList()).toByteArray());
+        final var transferList = TransferList.parseFrom(com.hedera.hapi.node.base.TransferList.PROTOBUF
+                .toBytes(txnResult.transferList())
+                .toByteArray());
 
         final var tokenTransferLists = txnResult.tokenTransferLists();
         tokenTransferLists.forEach(tokenTransferList -> {
-            final var proto = pbjToProto(tokenTransferList, com.hedera.hapi.node.base.TokenTransferList.class, TokenTransferList.class);
+            final var proto = pbjToProto(
+                    tokenTransferList, com.hedera.hapi.node.base.TokenTransferList.class, TokenTransferList.class);
             recordBuilder.addTokenTransferLists(proto);
         });
 
         recordBuilder
                 .setParentConsensusTimestamp(fromPbj(txnResult.parentConsensusTimestamp()))
                 .setConsensusTimestamp(fromPbj(txnResult.consensusTimestamp()))
-                .setScheduleRef(pbjToProto(txnResult.scheduleRef(), com.hedera.hapi.node.base.ScheduleID.class, ScheduleID.class))
+                .setScheduleRef(pbjToProto(
+                        txnResult.scheduleRef(), com.hedera.hapi.node.base.ScheduleID.class, ScheduleID.class))
                 .setTransactionFee(txnResult.transactionFeeCharged())
                 .setTransferList(transferList);
 
-        final var exchangeRateSet = ExchangeRateSet.parseFrom(
-                com.hedera.hapi.node.transaction.ExchangeRateSet.PROTOBUF.toBytes(txnResult.exchangeRate()).toByteArray());
+        final var exchangeRateSet = ExchangeRateSet.parseFrom(com.hedera.hapi.node.transaction.ExchangeRateSet.PROTOBUF
+                .toBytes(txnResult.exchangeRate())
+                .toByteArray());
         final var responseCode = ResponseCodeEnum.valueOf(txnResult.status().name());
         receiptBuilder.setExchangeRate(exchangeRateSet).setStatus(responseCode);
 
@@ -159,9 +165,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     }
 
     private TransactionRecord.Builder parseTransactionOutput(
-            final TransactionOutput txnOutput,
-            final TransactionRecord.Builder trb,
-            final TransactionReceipt.Builder rb)
+            final TransactionOutput txnOutput, final TransactionRecord.Builder trb, final TransactionReceipt.Builder rb)
             throws InvalidProtocolBufferException {
         // TODO: why are so many of these methods missing?
         //            if (txnOutput.hasCryptoCreate()) {
@@ -172,8 +176,10 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         if (txnOutput.hasCryptoTransfer()) {
             final var assessedCustomFees = txnOutput.cryptoTransfer().assessedCustomFees();
             for (int i = 0; i < assessedCustomFees.size(); i++) {
-                final var assessedCustomFee = AssessedCustomFee.parseFrom(
-                        com.hedera.hapi.node.transaction.AssessedCustomFee.PROTOBUF.toBytes(assessedCustomFees.get(i)).toByteArray());
+                final var assessedCustomFee =
+                        AssessedCustomFee.parseFrom(com.hedera.hapi.node.transaction.AssessedCustomFee.PROTOBUF
+                                .toBytes(assessedCustomFees.get(i))
+                                .toByteArray());
                 trb.addAssessedCustomFees(i, assessedCustomFee);
             }
         }
@@ -188,18 +194,22 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         }
 
         if (txnOutput.hasContractCreate()) {
-            final var createResult = ContractFunctionResult.parseFrom(
-                    com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF.toBytes(txnOutput.contractCreate().contractCreateResult()).toByteArray());
+            final var createResult =
+                    ContractFunctionResult.parseFrom(com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
+                            .toBytes(txnOutput.contractCreate().contractCreateResult())
+                            .toByteArray());
             trb.setContractCreateResult(createResult);
         }
         if (txnOutput.hasContractCall()) {
-            final var callResult = ContractFunctionResult.parseFrom(
-                    com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF.toBytes(txnOutput.contractCall().contractCallResult()).toByteArray());
+            final var callResult =
+                    ContractFunctionResult.parseFrom(com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
+                            .toBytes(txnOutput.contractCall().contractCallResult())
+                            .toByteArray());
             trb.setContractCallResult(callResult);
         }
 
         if (txnOutput.hasEthereumCall()) {
-            trb.setEthereumHash(ByteString.copyFrom(txnOutput.ethereumCall().ethereumHash().toByteArray()));
+            trb.setEthereumHash(toByteString(txnOutput.ethereumCall().ethereumHash()));
         }
 
         //            if (txnOutput.hasTopicCreate()) {
@@ -231,12 +241,16 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         }
 
         if (txnOutput.hasCreateSchedule()) {
-            rb.setScheduledTransactionID(
-                    pbjToProto(txnOutput.createSchedule().scheduledTransactionId(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class));
+            rb.setScheduledTransactionID(pbjToProto(
+                    txnOutput.createSchedule().scheduledTransactionId(),
+                    com.hedera.hapi.node.base.TransactionID.class,
+                    TransactionID.class));
         }
         if (txnOutput.hasSignSchedule()) {
-            rb.setScheduledTransactionID(
-                    pbjToProto(txnOutput.signSchedule().scheduledTransactionId(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class));
+            rb.setScheduledTransactionID(pbjToProto(
+                    txnOutput.signSchedule().scheduledTransactionId(),
+                    com.hedera.hapi.node.base.TransactionID.class,
+                    TransactionID.class));
         }
 
         //            if (txnOutput.hasMintToken()) {
@@ -274,10 +288,12 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     private void maybeAssignEvmAddressAlias(final TransactionOutput txnOutput, final TransactionRecord.Builder trb) {
         // Are these the only places where default EVM address aliases are assigned?
         if (txnOutput.hasContractCreate()) {
-            trb.setEvmAddress(toByteString(txnOutput.contractCreate().contractCreateResult().evmAddress()));
+            trb.setEvmAddress(toByteString(
+                    txnOutput.contractCreate().contractCreateResult().evmAddress()));
         }
         if (txnOutput.hasContractCall()) {
-            trb.setEvmAddress(toByteString(txnOutput.contractCall().contractCallResult().evmAddress()));
+            trb.setEvmAddress(
+                    toByteString(txnOutput.contractCall().contractCallResult().evmAddress()));
         }
         if (txnOutput.hasCryptoTransfer()) {
             //            trb.evmAddress(txnOutput.cryptoTransfer().evmAddress());

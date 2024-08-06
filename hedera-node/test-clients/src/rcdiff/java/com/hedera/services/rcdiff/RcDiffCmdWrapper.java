@@ -23,9 +23,7 @@ import static picocli.CommandLine.ParameterException;
 import static picocli.CommandLine.Spec;
 
 import com.hedera.services.bdd.utils.RcDiff;
-
 import java.util.concurrent.Callable;
-
 import picocli.CommandLine;
 
 @Command(name = "rcdiff", description = "Diffs two record streams")
@@ -69,10 +67,9 @@ public class RcDiffCmdWrapper implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         try {
-            return new RcDiff(maxDiffsToExport, lenOfDiffSecs, expectedStreamsLoc,
-                    actualStreamsLoc, diffsLoc).call();
+            return RcDiff.fromDirs(maxDiffsToExport, lenOfDiffSecs, expectedStreamsLoc, actualStreamsLoc, diffsLoc).call();
         } catch (IllegalArgumentException e) {
-          throw new ParameterException(spec.commandLine(), e.getMessage(), e);
+            throw new ParameterException(spec.commandLine(), e.getMessage(), e);
         }
     }
 }
