@@ -29,7 +29,6 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -134,7 +133,6 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            final var token = getIfUsable(tokenId, tokenStore);
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
 
