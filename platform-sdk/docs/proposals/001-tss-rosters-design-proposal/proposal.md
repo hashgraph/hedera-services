@@ -116,9 +116,8 @@ message RosterEntry {
     /**
      * A consensus node identifier.
      * <p>
-     * Node identifiers SHALL be unique _within_ a shard and realm,
-     * but a node SHALL NOT, ever, serve multiple shards or realms,
-     * therefore the node identifier MAY be repeated _between_ shards and realms.
+     * Node identifiers SHALL be unique _within_ a ledger,
+     * and MAY NOT be repeated _between_ shards and realms.
      */
     uint64 node_id = 1;
 
