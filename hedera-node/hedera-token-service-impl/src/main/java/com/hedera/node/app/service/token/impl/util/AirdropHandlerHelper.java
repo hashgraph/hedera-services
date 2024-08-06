@@ -275,7 +275,7 @@ public class AirdropHandlerHelper {
         requireNonNull(accountID);
 
         // TODO: check for aliased system accounts
-        if(isAlias(accountID)) {
+        if (isAlias(accountID)) {
             return false;
         }
         return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
