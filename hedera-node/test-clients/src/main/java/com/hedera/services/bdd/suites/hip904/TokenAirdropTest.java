@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -170,7 +171,11 @@ public class TokenAirdropTest {
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(FUNGIBLE_TOKEN, 10),
                                 getAccountBalance(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                                        .hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                                // associate receiver - will be simple transfer
+                                // unlimited associations receiver - 0.1 (because not associated yet)
+                                // free auto associations receiver - 0.1 (because not associated yet)
+                                validateChargedUsd("fungible airdrop", 0.2, 1));
             }
 
             @HapiTest
@@ -201,7 +206,11 @@ public class TokenAirdropTest {
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                                 getAccountBalance(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
+                                        .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                                // associate receiver - will be simple transfer
+                                // unlimited associations receiver - 0.1 (because not associated yet)
+                                // free auto associations receiver - 0.1 (because not associated yet)
+                                validateChargedUsd("non fungible airdrop", 0.2, 1));
             }
         }
 
@@ -227,7 +236,10 @@ public class TokenAirdropTest {
                                 getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(FUNGIBLE_TOKEN, 0),
                                 getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                                        .hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                // zero auto associations receiver - 0.1 (creates pending airdrop)
+                                // without free auto associations receiver - 0.1 (creates pending airdrop)
+                                validateChargedUsd("fungible airdrop", 0.2, 1));
             }
 
             @HapiTest
@@ -257,7 +269,10 @@ public class TokenAirdropTest {
                                 getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                                 getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
+                                        .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+                                // zero auto associations receiver - 0.1 (creates pending airdrop)
+                                // without free auto associations receiver - 0.1 (creates pending airdrop)
+                                validateChargedUsd("non fungible airdrop", 0.2, 1));
             }
         }
 
@@ -280,7 +295,9 @@ public class TokenAirdropTest {
                                     // assert pending airdrops
                                     .hasPriority(recordWith()
                                             .pendingAirdrops(includingFungiblePendingAirdrop(
-                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver)))))
+                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver)))),
+                            // creates pending airdrop
+                            validateChargedUsd("first", 0.1, 10))
                     .when(tokenAssociate(receiver, FUNGIBLE_TOKEN))
                     .then( // this time tokens should be transferred
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
@@ -292,6 +309,8 @@ public class TokenAirdropTest {
                                     .hasPriority(recordWith()
                                             .tokenTransfers(includingFungibleMovement(
                                                     moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver)))),
+                            // just a crypto transfer
+                            validateChargedUsd("second", 0.001, 10),
                             // assert the account balance
                             getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
         }
@@ -339,7 +358,9 @@ public class TokenAirdropTest {
                                         .hasTinyBars(ONE_MILLION_HBARS - (txFee + hbarFee))
                                         .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 1000);
                                 allRunFor(spec, ownerBalance);
-                            }));
+                            }),
+                            // pending airdrop should be created
+                            validateChargedUsd("transferTx", 0.1, 10));
         }
 
         @HapiTest
@@ -359,17 +380,25 @@ public class TokenAirdropTest {
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES),
                                     moving(tokenTotal, DENOM_TOKEN)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
-                    .when(tokenAirdrop(movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
-                                    .between(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                            .fee(ONE_HUNDRED_HBARS)
-                            .payingWith(OWNER_OF_TOKENS_WITH_CUSTOM_FEES))
+                    .when(
+                            tokenAirdrop(movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
+                                            .between(
+                                                    OWNER_OF_TOKENS_WITH_CUSTOM_FEES,
+                                                    RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .fee(ONE_HUNDRED_HBARS)
+                                    .payingWith(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
+                                    .via("transferTx"),
+                            // pending airdrop should be created
+                            validateChargedUsd("transferTx", 0.1, 10))
                     .then(
                             getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1)
                                     .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, tokenTotal - htsFee)
                                     .hasTokenBalance(DENOM_TOKEN, tokenTotal - htsFee),
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0));
+                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0),
+                            getAccountBalance(HTS_COLLECTOR).hasTokenBalance(DENOM_TOKEN, htsFee),
+                            getAccountBalance(HTS_COLLECTOR2).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
         }
 
         @HapiTest
@@ -494,7 +523,10 @@ public class TokenAirdropTest {
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, ed25519key))
                             .payingWith(OWNER)
                             .via("ed25519Receiver"))
-                    .then(getAutoCreatedAccountBalance(ed25519key).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                    .then(
+                            getAutoCreatedAccountBalance(ed25519key).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                            // Any new auto-creation needs to explicitly associate token. So it will be $0.1
+                            validateChargedUsd("ed25519Receiver", 0.1, 1));
         }
 
         @HapiTest
@@ -506,7 +538,10 @@ public class TokenAirdropTest {
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, secp256K1))
                             .payingWith(OWNER)
                             .via("secp256k1Receiver"))
-                    .then(getAutoCreatedAccountBalance(secp256K1).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                    .then(
+                            getAutoCreatedAccountBalance(secp256K1).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                            // Any new auto-creation needs to explicitly associate token. So it will be $0.1
+                            validateChargedUsd("secp256k1Receiver", 0.1, 1));
         }
 
         @HapiTest
@@ -522,7 +557,10 @@ public class TokenAirdropTest {
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
                             .payingWith(OWNER)
                             .via("evmAddressReceiver"))
-                    .then(getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+                    .then(
+                            getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                            // Any new auto-creation needs to explicitly associate token. So it will be $0.1
+                            validateChargedUsd("evmAddressReceiver", 0.1, 1));
         }
     }
 
@@ -542,7 +580,10 @@ public class TokenAirdropTest {
                                 spec,
                                 tokenAirdrop(movingWithDecimals(1L, "nonexistent", 2)
                                                 .betweenWithDecimals(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                                        .hasKnownStatus(INVALID_TOKEN_ID));
+                                        .payingWith(OWNER)
+                                        .via("transferTx")
+                                        .hasKnownStatus(INVALID_TOKEN_ID),
+                                validateChargedUsd("transferTx", 0.001, 10));
                     }));
         }
 
@@ -948,6 +989,7 @@ public class TokenAirdropTest {
                         .withCustom(
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
                 tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
+                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
 
                 // all collectors exempt setup
                 cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),

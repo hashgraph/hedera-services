@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
@@ -75,7 +75,7 @@ public abstract class AbstractCall implements Call {
 
     protected PricedResult completionWith(
             final long gasRequirement,
-            @NonNull final ContractCallRecordBuilder recordBuilder,
+            @NonNull final ContractCallStreamBuilder recordBuilder,
             @NonNull final ByteBuffer output) {
         requireNonNull(output);
         requireNonNull(recordBuilder);
@@ -87,11 +87,11 @@ public abstract class AbstractCall implements Call {
     }
 
     protected PricedResult reversionWith(
-            final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+            final long gasRequirement, @NonNull final ContractCallStreamBuilder recordBuilder) {
         return gasOnly(revertResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 
-    protected PricedResult haltWith(final long gasRequirement, @NonNull final ContractCallRecordBuilder recordBuilder) {
+    protected PricedResult haltWith(final long gasRequirement, @NonNull final ContractCallStreamBuilder recordBuilder) {
         return gasOnly(haltResult(recordBuilder, gasRequirement), recordBuilder.status(), isViewCall);
     }
 }

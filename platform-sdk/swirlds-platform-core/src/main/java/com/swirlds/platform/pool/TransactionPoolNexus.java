@@ -21,7 +21,7 @@ import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfTy
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -55,13 +55,13 @@ public class TransactionPoolNexus implements TransactionSupplier {
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
      */
-    private final Queue<OneOf<TransactionOneOfType>> bufferedTransactions = new LinkedList<>();
+    private final Queue<EventTransaction> bufferedTransactions = new LinkedList<>();
 
     /**
      * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
      * this queue are always inserted into an event before transactions waiting in {@link #bufferedTransactions}.
      */
-    private final Queue<OneOf<TransactionOneOfType>> priorityBufferedTransactions = new LinkedList<>();
+    private final Queue<EventTransaction> priorityBufferedTransactions = new LinkedList<>();
 
     /**
      * The number of buffered signature transactions waiting to be put into events.
@@ -150,7 +150,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             illegalTransactionLogger.error(EXCEPTION.getMarker(), "transaction is null");
             return false;
         }
-        final OneOf<TransactionOneOfType> transaction = new OneOf<>(APPLICATION_TRANSACTION, appTransaction);
+        final EventTransaction transaction = new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, appTransaction));
         if (TransactionUtils.getLegacyTransactionSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
@@ -174,8 +174,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
      *                    functionalities.
      * @return true if successful
      */
-    public synchronized boolean submitTransaction(
-            @NonNull final OneOf<TransactionOneOfType> transaction, final boolean priority) {
+    public synchronized boolean submitTransaction(@NonNull final EventTransaction transaction, final boolean priority) {
 
         Objects.requireNonNull(transaction);
         final boolean isSystem = TransactionUtils.isSystemTransaction(transaction);
@@ -230,7 +229,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * @return the next transaction, or null if no transaction is available
      */
     @Nullable
-    private OneOf<TransactionOneOfType> getNextTransaction(final int currentEventSize) {
+    private EventTransaction getNextTransaction(final int currentEventSize) {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
@@ -253,17 +252,17 @@ public class TransactionPoolNexus implements TransactionSupplier {
      */
     @NonNull
     @Override
-    public synchronized List<OneOf<TransactionOneOfType>> getTransactions() {
+    public synchronized List<EventTransaction> getTransactions() {
         // Early return due to no transactions waiting
         if (bufferedTransactions.isEmpty() && priorityBufferedTransactions.isEmpty()) {
             return Collections.emptyList();
         }
 
-        final List<OneOf<TransactionOneOfType>> selectedTrans = new LinkedList<>();
+        final List<EventTransaction> selectedTrans = new LinkedList<>();
         int currEventSize = 0;
 
         while (true) {
-            final OneOf<TransactionOneOfType> transaction = getNextTransaction(currEventSize);
+            final EventTransaction transaction = getNextTransaction(currEventSize);
 
             if (transaction == null) {
                 // No transaction of suitable size is available
@@ -273,7 +272,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             currEventSize += TransactionUtils.getLegacyTransactionSize(transaction);
             selectedTrans.add(transaction);
 
-            if (STATE_SIGNATURE_TRANSACTION.equals(transaction.kind())) {
+            if (STATE_SIGNATURE_TRANSACTION.equals(transaction.transaction().kind())) {
                 bufferedSignatureTransactionCount--;
             }
         }

@@ -23,6 +23,7 @@ import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CR
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
@@ -101,7 +102,7 @@ public class TestingEventBuilder {
      * <p>
      * If not set, transactions will be auto generated, based on configured settings.
      */
-    private List<OneOf<TransactionOneOfType>> transactions;
+    private List<EventTransaction> transactions;
 
     /**
      * The self parent of the event.
@@ -283,8 +284,7 @@ public class TestingEventBuilder {
      * @param transactions the transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setTransactions(
-            @Nullable final List<OneOf<TransactionOneOfType>> transactions) {
+    public @NonNull TestingEventBuilder setTransactions(@Nullable final List<EventTransaction> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(
                     "Cannot set transactions when app transaction count, system transaction count, or transaction "
@@ -293,6 +293,20 @@ public class TestingEventBuilder {
 
         this.transactions = transactions;
         return this;
+    }
+
+    /**
+     * Convenience method to set the transactions of an event to wrap to a list of {@link EventTransaction}s
+     *
+     * @param transactions {@link OneOf<TransactionOneOfType>} transactions
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setOneOfTransactions(
+            @Nullable final List<OneOf<TransactionOneOfType>> transactions) {
+        Objects.requireNonNull(transactions, "transactions must not be null");
+        final List<EventTransaction> eventTransactions =
+                transactions.stream().map(EventTransaction::new).toList();
+        return setTransactions(eventTransactions);
     }
 
     /**
@@ -438,7 +452,7 @@ public class TestingEventBuilder {
      * @return the generated transactions
      */
     @NonNull
-    private List<OneOf<TransactionOneOfType>> generateTransactions() {
+    private List<EventTransaction> generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
         }
@@ -469,7 +483,7 @@ public class TestingEventBuilder {
                             .build()));
         }
 
-        return generatedTransactions;
+        return generatedTransactions.stream().map(EventTransaction::new).toList();
     }
 
     /**

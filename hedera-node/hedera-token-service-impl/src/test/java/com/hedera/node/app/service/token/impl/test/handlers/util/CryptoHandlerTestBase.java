@@ -342,7 +342,8 @@ public class CryptoHandlerTestBase {
                 2,
                 false,
                 null,
-                null);
+                null,
+                0);
     }
 
     protected void givenValidContract() {
@@ -379,7 +380,8 @@ public class CryptoHandlerTestBase {
                 2,
                 false,
                 null,
-                null);
+                null,
+                0);
     }
 
     protected AccountID accountID(final long num) {

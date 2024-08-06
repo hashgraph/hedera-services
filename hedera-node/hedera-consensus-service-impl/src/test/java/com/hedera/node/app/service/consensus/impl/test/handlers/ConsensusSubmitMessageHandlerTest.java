@@ -49,7 +49,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
@@ -80,7 +80,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private ReadableAccountStore accountStore;
 
     @Mock(answer = RETURNS_SELF)
-    private ConsensusSubmitMessageRecordBuilder recordBuilder;
+    private ConsensusSubmitMessageStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
@@ -107,7 +107,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(ConsensusSubmitMessageRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class)).willReturn(recordBuilder);
     }
 
     @Test
