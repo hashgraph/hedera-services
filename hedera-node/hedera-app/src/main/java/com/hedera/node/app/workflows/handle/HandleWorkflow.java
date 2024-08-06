@@ -177,6 +177,7 @@ public class HandleWorkflow {
         final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        recordCache.resetRoundReceipts();
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {

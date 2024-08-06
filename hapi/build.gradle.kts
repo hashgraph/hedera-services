@@ -34,7 +34,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     // tag = "v0.53.0"
     // uncomment below to use a specific branch
-    branch = "add-num-airdrops"
+    branch = "add-receipt-cache"
 }
 
 sourceSets {
