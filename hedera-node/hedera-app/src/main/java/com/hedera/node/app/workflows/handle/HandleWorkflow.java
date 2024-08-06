@@ -194,7 +194,7 @@ public class HandleWorkflow {
                             com.hedera.hapi.util.HapiUtils.toString(version),
                             event.getCreatorId());
                 }
-                return;
+                continue;
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
