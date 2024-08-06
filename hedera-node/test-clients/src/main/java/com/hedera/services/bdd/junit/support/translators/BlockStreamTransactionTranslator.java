@@ -51,8 +51,23 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         Objects.requireNonNull(transaction, "transaction must not be null");
         Objects.requireNonNull(stateChanges, "stateChanges must not be null");
 
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var receiptBuilder = TransactionReceipt.newBuilder();
+        final var txnType = transaction.txn().bodyOrThrow().data().kind();
+        final var singleTxnRecord =
+                switch (txnType) {
+                    case CONTRACT_CREATE_INSTANCE -> new ContractCreateTranslator()
+                            .translate(transaction, stateChanges);
+                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
+                    default -> new SingleTransactionRecord(
+                            transaction.txn(),
+                            TransactionRecord.newBuilder().build(),
+                            List.of(),
+                            new SingleTransactionRecord.TransactionOutputs(null));
+                };
+
+        final var txnRecord = singleTxnRecord.transactionRecord();
+        final var recordBuilder = txnRecord.copyBuilder();
+        final var receiptBuilder =
+                txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
 
         parseTransaction(transaction.txn(), recordBuilder);
 
@@ -135,13 +150,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //                rb.fileID(txnOutput.fileCreate().fileID());
         //            }
 
-        if (txnOutput.hasContractCreate()) {
-            rb.contractID(txnOutput.contractCreate().contractCreateResult().contractID());
-        }
-
-        if (txnOutput.hasContractCreate()) {
-            trb.contractCreateResult(txnOutput.contractCreate().contractCreateResult());
-        }
         if (txnOutput.hasContractCall()) {
             trb.contractCallResult(txnOutput.contractCall().contractCallResult());
         }
@@ -219,9 +227,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
     private void maybeAssignEvmAddressAlias(TransactionOutput txnOutput, TransactionRecord.Builder trb) {
         // Are these the only places where default EVM address aliases are assigned?
-        if (txnOutput.hasContractCreate()) {
-            trb.evmAddress(txnOutput.contractCreate().contractCreateResult().evmAddress());
-        }
         if (txnOutput.hasContractCall()) {
             trb.evmAddress(txnOutput.contractCall().contractCallResult().evmAddress());
         }
