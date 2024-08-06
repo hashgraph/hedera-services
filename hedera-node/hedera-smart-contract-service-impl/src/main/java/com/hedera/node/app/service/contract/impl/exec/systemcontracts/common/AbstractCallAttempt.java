@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -32,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -239,6 +241,15 @@ public class AbstractCallAttempt {
 
     public boolean isRedirect() {
         return redirectAddress != null;
+    }
+
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param functions selectors to match against
+     * @return boolean result
+     */
+    public boolean isSelector(@NonNull final Function... functions) {
+        return Stream.of(functions).map(Function::selector).anyMatch(s -> Arrays.equals(s, this.selector));
     }
 
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {
