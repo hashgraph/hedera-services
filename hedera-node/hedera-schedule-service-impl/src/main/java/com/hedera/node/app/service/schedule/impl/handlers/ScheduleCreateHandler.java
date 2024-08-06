@@ -34,7 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -190,8 +190,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
-                final ScheduleRecordBuilder scheduleRecords =
-                        context.savepointStack().getBaseBuilder(ScheduleRecordBuilder.class);
+                final ScheduleStreamBuilder scheduleRecords =
+                        context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
                 scheduleRecords
                         .scheduleID(finalSchedule.scheduleId())
                         .scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
@@ -218,7 +218,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                             .scheduled(true)
                             .build();
                     context.savepointStack()
-                            .getBaseBuilder(ScheduleRecordBuilder.class)
+                            .getBaseBuilder(ScheduleStreamBuilder.class)
                             .scheduleID(candidate.scheduleId())
                             .scheduledTransactionID(scheduledTransactionID);
                     return true;

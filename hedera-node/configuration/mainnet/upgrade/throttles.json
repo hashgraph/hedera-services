@@ -12,7 +12,6 @@
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
-            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",
@@ -95,7 +94,9 @@
             "TokenPause",
             "TokenUnpause",
             "TokenUpdateNfts",
-            "TokenReject"
+            "TokenReject",
+            "TokenAirdrop",
+            "TokenClaimAirdrop"
           ]
         }
       ]

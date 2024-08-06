@@ -133,6 +133,7 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeCreateHandler(),
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
+                tokenHandlers.tokenClaimAirdropHandler(),
                 utilHandlers.prngHandler());
     }
 }

@@ -75,7 +75,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
@@ -146,7 +146,7 @@ class TransactionProcessorTest {
     private FeatureFlags featureFlags;
 
     @Mock
-    private ContractOperationRecordBuilder recordBuilder;
+    private ContractOperationStreamBuilder recordBuilder;
 
     private TransactionProcessor subject;
 

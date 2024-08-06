@@ -35,7 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -84,7 +84,7 @@ public class SetApprovalForAllCall extends AbstractCall {
     @Override
     public PricedResult execute() {
         final var recordBuilder = systemContractOperations()
-                .dispatch(transactionBody, verificationStrategy, sender, ContractCallRecordBuilder.class);
+                .dispatch(transactionBody, verificationStrategy, sender, ContractCallStreamBuilder.class);
 
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(transactionBody, gasCalculator, enhancement, sender);

@@ -9,7 +9,6 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
-            "TokenAirdrop",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",
@@ -72,7 +71,9 @@
 			"TokenGrantKycToAccount",
 			"TokenRevokeKycFromAccount",
 			"TokenUpdateNfts",
-			"TokenReject"
+			"TokenReject",
+			"TokenAirdrop",
+			"TokenClaimAirdrop"
 		  ]
 		}
 	  ]
