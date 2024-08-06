@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -74,8 +73,6 @@ public class AirdropHandlerHelper {
 
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
-            var bool = isAlias(accountId);
-            //            final var accountProbe = accountStore.getAccountById(accountId);
 
             // if not existing account, create transfer
             if (!accountStore.contains(accountId)) {
