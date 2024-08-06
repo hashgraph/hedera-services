@@ -159,7 +159,8 @@ public class FutureSchedulableOpsTest {
                         validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
                         validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0),
                         sourcing(() -> updateLargeFile(
-                                GENESIS, FEE_SCHEDULE, ByteString.copyFrom(originalFeeSchedules.get()))));
+                                GENESIS, FEE_SCHEDULE, ByteString.copyFrom(originalFeeSchedules.get()))),
+                        uploadDefaultFeeSchedules(GENESIS));
     }
 
     @HapiTest
