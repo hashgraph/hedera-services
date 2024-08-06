@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.forensics;
 
+import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -44,6 +46,35 @@ public class OrderedComparison {
      * that captures a single record divergence---that is, two records that had the same consensus
      * time and same source transaction in both streams, but differed in some way (e.g., their
      * receipt status).
+     *
+     * @param firstStreamDir the first record stream
+     * @param secondStreamDir the second record stream
+     * @param recordDiffSummarizer if present, a summarizer for record diffs
+     * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
+     * @return the stream diff
+     * @throws IOException if any of the record stream files cannot be read or parsed
+     * @throws IllegalArgumentException if the directories contain misaligned record streams
+     */
+    public static List<DifferingEntries> findDifferencesBetweenV6(
+            @NonNull final String firstStreamDir,
+            @NonNull final String secondStreamDir,
+            @Nullable final RecordDiffSummarizer recordDiffSummarizer,
+            @Nullable final Predicate<String> maybeInclusionTest,
+            @Nullable final String maybeInclusionDescription)
+            throws IOException {
+        final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
+        final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
+        System.out.println("Parsing stream @ " + firstStreamDir + " (including " + inclusionDescription + ")");
+        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
+        System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
+        System.out.println("Parsing stream @ " + secondStreamDir + " (including " + inclusionDescription + ")");
+        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
+        System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
+        return findDifferencesBetweenV6(firstEntries, secondEntries, recordDiffSummarizer, null);
+    }
+
+    /**
+     * todo
      *
      * @param firstStreamDir the first record stream
      * @param secondStreamDir the second record stream
