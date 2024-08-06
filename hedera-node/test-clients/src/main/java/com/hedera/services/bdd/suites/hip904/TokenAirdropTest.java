@@ -1160,9 +1160,9 @@ public class TokenAirdropTest {
         @DisplayName("duplicate nft airdrop during handle")
         final Stream<DynamicTest> duplicateNFTHandleTokenAirdrop() {
             return hapiTest(
-                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER),
-                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER)
                             .hasKnownStatus(PENDING_NFT_AIRDROP_ALREADY_EXISTS));
         }
@@ -1171,8 +1171,8 @@ public class TokenAirdropTest {
         @DisplayName("duplicate nft airdrop during pure checks")
         final Stream<DynamicTest> duplicateNFTPreHAndleTokenAirdrop() {
             return hapiTest(tokenAirdrop(
-                            movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-                            movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                            movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                     .payingWith(OWNER)
                     .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
         }
@@ -1256,7 +1256,8 @@ public class TokenAirdropTest {
                                 ByteString.copyFromUtf8("e"),
                                 ByteString.copyFromUtf8("f"),
                                 ByteString.copyFromUtf8("g"),
-                                ByteString.copyFromUtf8("h"))),
+                                ByteString.copyFromUtf8("h"),
+                                ByteString.copyFromUtf8("duplicateNFTHandleTokenAirdrop"))),
 
                 // all kind of receivers
                 cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
