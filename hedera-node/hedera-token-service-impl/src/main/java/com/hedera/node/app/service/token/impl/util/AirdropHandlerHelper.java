@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -272,6 +273,11 @@ public class AirdropHandlerHelper {
      */
     public static boolean validateIfSystemAccount(@NonNull AccountID accountID) {
         requireNonNull(accountID);
+
+        // TODO: check for aliased system accounts
+        if(isAlias(accountID)) {
+            return false;
+        }
         return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
     }
 }
