@@ -52,11 +52,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -70,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -815,9 +818,9 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("has transfer list size above the max")
+        @DisplayName("has transfer list size above the max to one account")
         final Stream<DynamicTest> aboveMaxTransfersFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION_BODY")
+            return defaultHapiSpec("should fail - TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED")
                     .given(
                             createTokenWithName("FUNGIBLE1"),
                             createTokenWithName("FUNGIBLE2"),
@@ -844,7 +847,7 @@ public class TokenAirdropTest {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasPrecheck(INVALID_TRANSACTION_BODY));
+                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -1176,6 +1179,127 @@ public class TokenAirdropTest {
                     .payingWith(OWNER)
                     .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
         }
+
+
+        @HapiTest
+        @DisplayName("not enough hbar to pay for the trx fee")
+        final Stream<DynamicTest> notEnoughHbarToPayForTheTrx() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(0L),
+                    cryptoCreate(BOB).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(
+                            moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+        }
+
+        @HapiTest
+        @DisplayName("more than 10 tokens to multiple accounts")
+        final Stream<DynamicTest> moreThanTenTokensToMultipleAccounts() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String CAROL = "carol";
+            final String STEVE = "steve";
+            final String TOM = "tom";
+            final String YULIA = "yulia";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
+            final String FUNGIBLE_TOKEN_C = "fungibleTokenC";
+            final String FUNGIBLE_TOKEN_D = "fungibleTokenD";
+            final String FUNGIBLE_TOKEN_E = "fungibleTokenE";
+            final String FUNGIBLE_TOKEN_F = "fungibleTokenF";
+            final String FUNGIBLE_TOKEN_G = "fungibleTokenG";
+            final String FUNGIBLE_TOKEN_H = "fungibleTokenH";
+            final String FUNGIBLE_TOKEN_I = "fungibleTokenI";
+            final String FUNGIBLE_TOKEN_J = "fungibleTokenJ";
+            final String FUNGIBLE_TOKEN_K = "fungibleTokenK";
+
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(STEVE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(YULIA).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_B)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_C)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_D)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_E)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_F)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_G)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_H)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_I)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_J)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_K)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_B),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_C),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(TOM, FUNGIBLE_TOKEN_E),
+                    tokenAssociate(TOM, FUNGIBLE_TOKEN_F),
+                    tokenAssociate(YULIA, FUNGIBLE_TOKEN_G),
+                    tokenAssociate(YULIA, FUNGIBLE_TOKEN_H),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_I),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_J),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_K),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
+                            moving(10L, FUNGIBLE_TOKEN_B).between(ALICE, CAROL),
+                            moving(10L, FUNGIBLE_TOKEN_C).between(ALICE, CAROL),
+                            moving(10L, FUNGIBLE_TOKEN_D).between(ALICE, CAROL),
+                            moving(10L, FUNGIBLE_TOKEN_E).between(ALICE, TOM),
+                            moving(10L, FUNGIBLE_TOKEN_F).between(ALICE, TOM),
+                            moving(10L, FUNGIBLE_TOKEN_G).between(ALICE, YULIA),
+                            moving(10L, FUNGIBLE_TOKEN_H).between(ALICE, YULIA),
+                            moving(10L, FUNGIBLE_TOKEN_I).between(ALICE, STEVE),
+                            moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
+                            moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
+                            .signedByPayerAnd(ALICE)
+                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+        }
+
     }
 
     @Nested
