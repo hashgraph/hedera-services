@@ -158,6 +158,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -178,7 +179,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
-public class CryptoTransferSuite {
+public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
@@ -2334,5 +2335,15 @@ public class CryptoTransferSuite {
                                 .signedBy(hollowAccountKey, TREASURY)
                                 .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)))))
                 .then(getAliasedAccountInfo(hollowAccountKey).has(accountWith().key(hollowAccountKey)));
+    }
+
+    @Override
+    protected Logger getResultsLogger() {
+        return null;
+    }
+
+    @Override
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(createHollowAccountWithNftTransferAndCompleteIt(), netAdjustmentsMustBeZero());
     }
 }

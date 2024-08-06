@@ -331,6 +331,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var writableStates = stateRoot.getWritableStates(serviceName);
         final var remainingStates = new HashSet<>(writableStates.stateKeys());
         remainingStates.removeAll(statesToRemove);
+        logger.info("Removing states {} from service {}", statesToRemove, serviceName);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
     }

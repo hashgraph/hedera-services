@@ -31,6 +31,8 @@ import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class V0540RecordCacheSchema extends Schema {
     public static final String TXN_RECEIPT_QUEUE = "TransactionReceiptQueue";
@@ -39,6 +41,8 @@ public class V0540RecordCacheSchema extends Schema {
      */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
+
+    private static final Logger log = LoggerFactory.getLogger(V0540RecordCacheSchema.class);
 
     public V0540RecordCacheSchema() {
         super(VERSION);
@@ -54,6 +58,7 @@ public class V0540RecordCacheSchema extends Schema {
     @NonNull
     @Override
     public Set<String> statesToRemove() {
+        log.info("Removing state {}", TXN_RECORD_QUEUE);
         return Set.of(TXN_RECORD_QUEUE);
     }
 
@@ -79,5 +84,7 @@ public class V0540RecordCacheSchema extends Schema {
         final var entries =
                 TransactionReceiptEntries.newBuilder().entries(receipts).build();
         receiptQueue.add(entries);
+        log.info("Migrated {} records from {} to {}", receipts.size(), TXN_RECORD_QUEUE, TXN_RECEIPT_QUEUE);
+        log.info("Migrated receipts {}", entries);
     }
 }

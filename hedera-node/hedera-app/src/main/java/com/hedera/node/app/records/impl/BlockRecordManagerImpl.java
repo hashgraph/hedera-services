@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
@@ -271,7 +270,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState =
                 states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY);
-        final var blockRecordInfoState = states.<BlockRecordInfo>getSingleton(BLOCK_INFO_STATE_KEY);
+        final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         runningHashesState.put(new RunningHashes(
@@ -281,7 +280,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-        recordCache.commitAndPurgeIfAny(state, blockRecordInfoState.get().currentBlockTimestamp());
+        recordCache.commitAndPurgeIfAny(state, blockRecordInfoState.get().consTimeOfLastHandledTxn());
     }
 
     // ========================================================================================================

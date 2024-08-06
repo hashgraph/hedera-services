@@ -170,6 +170,7 @@ public class RecordCacheImpl implements HederaRecordCache {
             final var entry = itr.next();
             for (final var e : entry.entries()) {
                 final var rec = asTxnRecord(e);
+                logger.debug("Rebuilding record cache with {}", rec);
                 addToInMemoryCache(e.nodeId(), e.transactionIdOrThrow().accountIDOrThrow(), rec);
                 deduplicationCache.add(e.transactionIdOrThrow());
             }
@@ -227,7 +228,7 @@ public class RecordCacheImpl implements HederaRecordCache {
         final var queue = states.<TransactionReceiptEntries>getQueue(TXN_RECEIPT_QUEUE);
         removeExpiredReceipts(queue, blockTimestamp);
 
-        queue.add(new TransactionReceiptEntries(transactionReceipts));
+        queue.add(new TransactionReceiptEntries(new ArrayList<>(transactionReceipts)));
 
         if (states instanceof CommittableWritableStates committable) {
             committable.commit();
@@ -309,6 +310,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                         .filter(TransactionReceiptEntry::hasTransactionId)
                         .max(TRANSACTION_VALID_START_COMPARATOR)
                         .get();
+                logger.info("Checking if the youngest entry {} is expired", youngestEntryStart);
                 final var txId = youngestEntryStart.transactionId();
                 // If the valid start time is before the earliest valid start, then it has expired
                 if (isBefore(txId.transactionValidStart(), earliestValidStart)) {
@@ -316,6 +318,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                     // keyed to the "user transaction" ID, so removing the entry here removes both
                     // "parent" and "child" transaction records associated with that ID.
                     histories.remove(txId);
+                    logger.info("Removing expired transaction {}", txId);
                     // remove from queue as well.  The queue only permits removing the current "HEAD",
                     // but that should always be correct here.
                     queue.removeIf(TruePredicate.INSTANCE);
