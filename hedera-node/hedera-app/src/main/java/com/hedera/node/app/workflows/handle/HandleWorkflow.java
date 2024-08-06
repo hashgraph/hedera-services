@@ -23,6 +23,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -174,13 +175,21 @@ public class HandleWorkflow {
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
-                // We were given an event for a node that *does not exist in the address book*. This will be logged as
-                // a warning, as this should never happen, and we will skip the event. The platform should guarantee
-                // that we never receive an event that isn't associated with the address book, and every node in the
-                // address book must have an account ID, since you cannot delete an account belonging to a node, and
-                // you cannot change the address book non-deterministically.
-                logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
-                return;
+                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
+                    // We were given an event for a node that *does not exist in the address book* and was not from a
+                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
+                    // and we will skip the event. The platform should guarantee that we never receive an event that
+                    // isn't associated with the address book, and every node in the address book must have an account
+                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
+                    // book
+                    // non-deterministically.
+                    logger.warn(
+                            "Received event (version {} vs current {}) from node {} which is not in the address book",
+                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                            com.hedera.hapi.util.HapiUtils.toString(version),
+                            event.getCreatorId());
+                }
+                continue;
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
