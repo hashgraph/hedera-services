@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -68,7 +69,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -1180,7 +1180,6 @@ public class TokenAirdropTest {
                     .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
         }
 
-
         @HapiTest
         @DisplayName("not enough hbar to pay for the trx fee")
         final Stream<DynamicTest> notEnoughHbarToPayForTheTrx() {
@@ -1194,10 +1193,8 @@ public class TokenAirdropTest {
                             .treasury(ALICE)
                             .tokenType(FUNGIBLE_COMMON)
                             .initialSupply(15L),
-
                     tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
-                    tokenAirdrop(
-                            moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
                             .payingWith(ALICE)
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
         }
@@ -1285,21 +1282,47 @@ public class TokenAirdropTest {
                     tokenAssociate(STEVE, FUNGIBLE_TOKEN_I),
                     tokenAssociate(STEVE, FUNGIBLE_TOKEN_J),
                     tokenAssociate(STEVE, FUNGIBLE_TOKEN_K),
-                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
-                            moving(10L, FUNGIBLE_TOKEN_B).between(ALICE, CAROL),
-                            moving(10L, FUNGIBLE_TOKEN_C).between(ALICE, CAROL),
-                            moving(10L, FUNGIBLE_TOKEN_D).between(ALICE, CAROL),
-                            moving(10L, FUNGIBLE_TOKEN_E).between(ALICE, TOM),
-                            moving(10L, FUNGIBLE_TOKEN_F).between(ALICE, TOM),
-                            moving(10L, FUNGIBLE_TOKEN_G).between(ALICE, YULIA),
-                            moving(10L, FUNGIBLE_TOKEN_H).between(ALICE, YULIA),
-                            moving(10L, FUNGIBLE_TOKEN_I).between(ALICE, STEVE),
-                            moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
-                            moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
+                    tokenAirdrop(
+                                    moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
+                                    moving(10L, FUNGIBLE_TOKEN_B).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_C).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_D).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_E).between(ALICE, TOM),
+                                    moving(10L, FUNGIBLE_TOKEN_F).between(ALICE, TOM),
+                                    moving(10L, FUNGIBLE_TOKEN_G).between(ALICE, YULIA),
+                                    moving(10L, FUNGIBLE_TOKEN_H).between(ALICE, YULIA),
+                                    moving(10L, FUNGIBLE_TOKEN_I).between(ALICE, STEVE),
+                                    moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
+                                    moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
                             .signedByPayerAnd(ALICE)
                             .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
+        @HapiTest
+        @DisplayName("account that supposed to pay has no enough tokens to pay custom fees")
+        final Stream<DynamicTest> accountThatSupposedToPayHasNoEnoughTokensForCustomFees() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String TOM = "tom";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(HBAR_COLLECTOR).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L)
+                            .withCustom(fixedHbarFee(ONE_HUNDRED_HBARS, HBAR_COLLECTOR)),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoTransfer(moving(10, FUNGIBLE_TOKEN_A).between(TOM, ALICE)),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+        }
     }
 
     @Nested
