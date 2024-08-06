@@ -14,32 +14,38 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.swirlds.state;
 
-import com.hedera.hapi.block.stream.output.NewStateType;
+import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * An interface responsible for observing any state changes occurred on state
- * and some additional helper methods
+ * Defines a listener to be notified of changes made to the {@link com.swirlds.state.spi.WritableStates} returned by
+ * a {@link State}. In general, the only {@link State} implementations that will support registering listeners are those
+ * that return {@link com.swirlds.state.spi.WritableStates} marked as {@link CommittableWritableStates}.
+ * <p>
+ * A listener is registered with a {@link State} instead of a single {@link com.swirlds.state.spi.WritableStates}
+ * because a listening client will want to be notified of changes to all {@link com.swirlds.state.spi.WritableStates}
+ * returned by the {@link State}.
+ * <p>
+ * All callbacks have default no-op implementations.
  */
-public interface StateChangesListener {
+public interface StateChangeListener {
     /**
-     * The types of data structures whose changes can be listened to.
+     * The types of state that can change.
      */
-    enum DataType {
+    enum StateType {
         MAP,
         QUEUE,
         SINGLETON,
-        SCHEMA
     }
 
     /**
-     * The target data types that the listener is interested in.
-     * @return the target data types
+     * The target state types that the listener is interested in.
+     * @return the target state types
      */
-    Set<DataType> targetDataTypes();
+    Set<StateType> stateTypes();
 
     /**
      * Save the state change when an entry is added in to a map.
@@ -50,7 +56,7 @@ public interface StateChangesListener {
      * @param <K> The type of the key
      * @param <V> The type of the value
      */
-    default <K, V> void mapUpdateChange(@NonNull final String label, @NonNull final K key, @NonNull final V value) {}
+    default <K, V> void mapUpdateChange(@NonNull String label, @NonNull K key, @NonNull V value) {}
 
     /**
      * Save the state change when an entry is removed from a map.
@@ -59,7 +65,7 @@ public interface StateChangesListener {
      * @param key The key removed from the map
      * @param <K> The type of the key
      */
-    default <K> void mapDeleteChange(@NonNull final String label, @NonNull final K key) {}
+    default <K> void mapDeleteChange(@NonNull String label, @NonNull K key) {}
 
     /**
      * Save the state change when a value is added to a queue
@@ -68,14 +74,14 @@ public interface StateChangesListener {
      * @param value The value added to the queue
      * @param <V> The type of the value
      */
-    default <V> void queuePushChange(@NonNull final String label, @NonNull final V value) {}
+    default <V> void queuePushChange(@NonNull String label, @NonNull V value) {}
 
     /**
      * Save the state change when a value is removed from a queue
      *
      * @param label The label of the queue
      */
-    default void queuePopChange(@NonNull final String label) {}
+    default void queuePopChange(@NonNull String label) {}
 
     /**
      * Save the state change when the value of a singleton is written.
@@ -84,23 +90,5 @@ public interface StateChangesListener {
      * @param value The value of the singleton
      * @param <V> The type of the value
      */
-    default <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value) {}
-
-    /**
-     * Addition of a new state.
-     * This may be a singleton, virtual map, or queue state.
-     *
-     * @param stateName The name of the new state
-     * @param type The type of the new state
-     */
-    default <K, V> void schemaAddStateChange(@NonNull final String stateName, @NonNull final NewStateType type) {}
-
-    /**
-     *  Removal of an existing state.
-     *  The entire singleton, virtual map, or queue state is removed,
-     *  and not just the contents.
-     *
-     * @param stateName The name of the state to be removed
-     */
-    default <V> void schemaRemoveStateChange(@NonNull final String stateName) {}
+    default <V> void singletonUpdateChange(@NonNull String label, @NonNull V value) {}
 }

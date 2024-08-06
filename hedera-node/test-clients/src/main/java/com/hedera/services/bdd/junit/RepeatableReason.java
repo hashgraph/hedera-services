@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.hedera.services.bdd.junit;
 
 /**
- * A listener that is notified when a value is written to a singleton.
- * @param <V> The type of the value
+ * Enumerates reasons a {@link RepeatableHapiTest} is marked as such.
  */
-public interface SingletonChangeListener<V> {
+public enum RepeatableReason {
     /**
-     * Called when the value of a singleton is written.
-     *
-     * @param value The value of the singleton
+     * The test takes excessively long to run without virtual time.
      */
-    void singletonUpdateChange(@NonNull V value);
+    NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION,
+    /**
+     * The test needs time to "stop" after each transaction is handled because it wants to assert
+     * something about how the last-assigned consensus time is used.
+     */
+    NEEDS_LAST_ASSIGNED_CONSENSUS_TIME,
+    /**
+     * The test needs the handle workflow to be synchronous.
+     */
+    NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW,
 }

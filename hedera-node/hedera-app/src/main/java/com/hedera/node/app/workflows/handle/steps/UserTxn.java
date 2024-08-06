@@ -123,7 +123,8 @@ public record UserTxn(
                 state,
                 isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
                 consensusConfig.handleMaxFollowingRecords(),
-                blockStreamManager.getRoundStateChangeListener());
+                blockStreamManager.roundStateChangeListener(),
+                blockStreamManager.kvStateChangeListener());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);

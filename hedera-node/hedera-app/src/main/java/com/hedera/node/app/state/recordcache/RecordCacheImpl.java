@@ -142,7 +142,8 @@ public class RecordCacheImpl implements HederaRecordCache {
      * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
      * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
      */
-    public void rebuild(final WorkingStateAccessor workingStateAccessor) {
+    public void rebuild(@NonNull final WorkingStateAccessor workingStateAccessor) {
+        requireNonNull(workingStateAccessor);
         histories.clear();
         payerToTransactionIndex.clear();
         // FUTURE: It doesn't hurt to clear the dedupe cache here, but is also probably not the best place to do it. The
@@ -192,6 +193,8 @@ public class RecordCacheImpl implements HederaRecordCache {
             addToInMemoryCache(nodeId, payerAccountId, rec);
             queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
         }
+
+        stack.commitFullStack();
     }
 
     @NonNull

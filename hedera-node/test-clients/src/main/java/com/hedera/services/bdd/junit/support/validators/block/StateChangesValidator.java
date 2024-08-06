@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -109,12 +110,19 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    public static void main(String[] args) {
-        final var swirldsLog =
-                "/Users/michaeltinker/YetYetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log";
-        final var hashes = getMaybeLastHashMnemonics(Path.of(swirldsLog));
-        System.out.println(hashes);
-    }
+    public static final BlockStreamValidator.Factory FACTORY = new BlockStreamValidator.Factory() {
+        @NonNull
+        @Override
+        public BlockStreamValidator create(@NonNull final HapiSpec spec) {
+            return newValidatorFor(spec);
+        }
+
+        @Override
+        public boolean appliesTo(@NonNull HapiSpec spec) {
+            // Embedded networks don't have saved states or a Merkle tree to validate hashes against
+            return spec.targetNetworkOrThrow().type() == SUBPROCESS_NETWORK;
+        }
+    };
 
     /**
      * Constructs a validator that will assert the state changes in the block stream are consistent with the
@@ -202,13 +210,13 @@ public class StateChangesValidator implements BlockStreamValidator {
     public void validateBlocks(@NonNull final List<Block> blocks) {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
         for (final var block : blocks) {
-            servicesWritten.clear();
             for (final var item : block.items()) {
+                servicesWritten.clear();
                 if (item.hasStateChanges()) {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
+                servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
-            servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);

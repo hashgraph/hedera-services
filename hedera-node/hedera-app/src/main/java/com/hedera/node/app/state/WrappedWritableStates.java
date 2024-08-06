@@ -16,18 +16,12 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.state.StateChangesListener.DataType.MAP;
-import static com.hedera.node.app.state.StateChangesListener.DataType.QUEUE;
-import static com.hedera.node.app.state.StateChangesListener.DataType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.KVChangeListener;
-import com.swirlds.state.spi.QueueChangeListener;
-import com.swirlds.state.spi.SingletonChangeListener;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -35,7 +29,6 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -57,27 +50,6 @@ public class WrappedWritableStates implements WritableStates {
      */
     public WrappedWritableStates(@NonNull final WritableStates delegate) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
-    }
-
-    /**
-     * Registers the given {@link StateChangesListener} with this {@link WrappedWritableStates} for the provided
-     * service name and its requested target data types.
-     * @param serviceName the name of the service
-     * @param listener the {@link StateChangesListener} to register
-     */
-    public void register(@NonNull final String serviceName, @NonNull final StateChangesListener listener) {
-        Objects.requireNonNull(listener);
-        if (listener.targetDataTypes().contains(MAP)) {
-            writableKVStateMap.values().forEach(state -> registerKvListener(serviceName, state, listener));
-        }
-        if (listener.targetDataTypes().contains(QUEUE)) {
-            writableQueueStateMap.values().forEach(state -> registerQueueListener(serviceName, state, listener));
-        }
-        if (listener.targetDataTypes().contains(SINGLETON)) {
-            writableSingletonStateMap
-                    .values()
-                    .forEach(state -> registerSingletonListener(serviceName, state, listener));
-        }
     }
 
     @Override
@@ -156,54 +128,5 @@ public class WrappedWritableStates implements WritableStates {
         if (delegate instanceof CommittableWritableStates terminalStates) {
             terminalStates.commit();
         }
-    }
-
-    private void registerSingletonListener(
-            @NonNull final String serviceName,
-            @NonNull final WrappedWritableSingletonState<?> singletonState,
-            @NonNull final StateChangesListener listener) {
-        final var stateName = serviceName + "." + singletonState.getStateKey();
-        singletonState.registerSingletonListener(new SingletonChangeListener() {
-            @Override
-            public <V> void singletonUpdateChange(@NonNull final V value) {
-                listener.singletonUpdateChange(stateName, value);
-            }
-        });
-    }
-
-    private void registerQueueListener(
-            @NonNull final String serviceName,
-            @NonNull final WrappedWritableQueueState<?> queueState,
-            @NonNull final StateChangesListener listener) {
-        final var stateName = serviceName + "." + queueState.getStateKey();
-        queueState.registerQueueListener(new QueueChangeListener() {
-            @Override
-            public <V> void queuePushChange(@NonNull V value) {
-                listener.queuePushChange(stateName, value);
-            }
-
-            @Override
-            public void queuePopChange() {
-                listener.queuePopChange(stateName);
-            }
-        });
-    }
-
-    private void registerKvListener(
-            @NonNull final String serviceName,
-            @NonNull final WrappedWritableKVState<?, ?> kvState,
-            @NonNull final StateChangesListener listener) {
-        final var stateName = serviceName + "." + kvState.getStateKey();
-        kvState.registerKvListener(new KVChangeListener() {
-            @Override
-            public <K, V> void mapUpdateChange(@NonNull final K key, @NonNull V value) {
-                listener.mapUpdateChange(stateName, key, value);
-            }
-
-            @Override
-            public <K> void mapDeleteChange(@NonNull final K key) {
-                listener.mapDeleteChange(stateName, key);
-            }
-        });
     }
 }

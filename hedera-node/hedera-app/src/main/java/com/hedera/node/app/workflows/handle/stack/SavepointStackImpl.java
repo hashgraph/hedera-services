@@ -83,6 +83,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     private final BuilderSink builderSink;
 
     @Nullable
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Nullable
     private RoundStateChangeListener roundStateChangeListener;
 
     /**
@@ -91,15 +94,18 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
      * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
-     * @param roundStateChangeListener
+     * @param roundStateChangeListener the listener for the round state changes
+     *
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
             @NonNull final State state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
-            final RoundStateChangeListener roundStateChangeListener) {
-        return new SavepointStackImpl(state, maxBuildersBeforeUser, maxBuildersAfterUser, roundStateChangeListener);
+            @NonNull final RoundStateChangeListener roundStateChangeListener,
+            @NonNull final KVStateChangeListener kvStateChangeListener) {
+        return new SavepointStackImpl(
+                state, maxBuildersBeforeUser, maxBuildersAfterUser, roundStateChangeListener, kvStateChangeListener);
     }
 
     /**
@@ -126,17 +132,21 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders to create
      * @param maxBuildersAfterUser the maximum number of following builders to create
+     * @param roundStateChangeListener the listener for the round state changes
+     * @param kvStateChangeListener the listener for the key-value state changes
      */
     private SavepointStackImpl(
             @NonNull final State state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
-            @NonNull RoundStateChangeListener roundStateChangeListener) {
+            @NonNull final RoundStateChangeListener roundStateChangeListener,
+            @NonNull final KVStateChangeListener kvStateChangeListener) {
         this.state = requireNonNull(state);
+        this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
+        this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
-        this.roundStateChangeListener = roundStateChangeListener;
     }
 
     /**
@@ -158,6 +168,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         requireNonNull(category);
         this.state = requireNonNull(parent);
         this.builderSink = null;
+        this.kvStateChangeListener = null;
         this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
@@ -199,18 +210,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         commitFullStack(baseBuilder);
     }
 
-    private enum SystemStateChangeOrder {
-        PRE_TXNS,
-        POST_TXNS
-    }
-
     /**
      * Commits all state changes captured in this stack; and captures the details for
      * the block stream, correlated to the given builder.
      *
      * @param builder the builder to correlate the state changes to
      */
-    public void commitTransaction(@Nullable final StreamBuilder builder) {
+    public void commitTransaction(@NonNull final StreamBuilder builder) {
+        requireNonNull(builder);
         commitFullStack(builder);
     }
 
@@ -224,24 +231,17 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     /**
      * Commits all state changes captured in this stack; if this is the root stack, also
-     * captures those changes as builders with the given cause.
+     * captures the key/value changes in the given stream builder.
      */
-    private void commitFullStack(@NonNull final StreamBuilder causeBuilder) {
-        final var isRootStack = builderSink != null && roundStateChangeListener != null;
+    private void commitFullStack(@NonNull final StreamBuilder builder) {
+        if (HandleWorkflow.STREAM_MODE != RECORDS && kvStateChangeListener != null) {
+            kvStateChangeListener.resetStateChanges();
+        }
         while (!stack.isEmpty()) {
-            // The root stack must capture its state changes before committing the first savepoint
-            if (isRootStack && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
-                final var wrappedState = (WrappedState) stack.peek().state();
-                final var kvStateChangeListener = new KVStateChangeListener();
-                wrappedState.register(kvStateChangeListener);
-                wrappedState.register(roundStateChangeListener);
-                stack.pop().commit();
-                final var stateChanges = kvStateChangeListener.getStateChanges();
-                //                log.info("Capturing state changes {}", stateChanges);
-                causeBuilder.stateChanges(stateChanges);
-            } else {
-                stack.pop().commit();
-            }
+            stack.pop().commit();
+        }
+        if (HandleWorkflow.STREAM_MODE != RECORDS && kvStateChangeListener != null) {
+            builder.stateChanges(kvStateChangeListener.getStateChanges());
         }
         setupFirstSavepoint(baseBuilder.category());
     }
@@ -329,6 +329,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * May only be called on the root stack to get the entire list of stream builders created in the course
      * of handling a user transaction.
+     *
      * @return all stream builders created when handling the user transaction
      * @throws NullPointerException if called on a non-root stack
      */

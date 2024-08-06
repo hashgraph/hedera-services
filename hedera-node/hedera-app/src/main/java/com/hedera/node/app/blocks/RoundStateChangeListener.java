@@ -18,6 +18,8 @@ package com.hedera.node.app.blocks;
 
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -37,9 +39,9 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.state.StateChangesListener;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -50,11 +52,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.jetbrains.annotations.NotNull;
 
-public class RoundStateChangeListener implements StateChangesListener {
-    private static final Set<DataType> TARGET_DATA_TYPES = EnumSet.of(DataType.SINGLETON, DataType.QUEUE);
+public class RoundStateChangeListener implements StateChangeListener {
+    private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 
-    private SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
-    private SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
+    private final SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
+    private final SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
     private Instant lastUsedConsensusTime;
 
     public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
@@ -62,7 +64,7 @@ public class RoundStateChangeListener implements StateChangesListener {
     }
 
     @Override
-    public Set<DataType> targetDataTypes() {
+    public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;
     }
 
