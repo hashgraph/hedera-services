@@ -119,7 +119,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     private final AtomicInteger viewIdGen = new AtomicInteger(0);
 
-    // Not volatile/atomic, because only used in scheduleNextSubtree(), which is synchronized
+    // Not volatile/atomic, because only used in receiveNextSubtree(), which is synchronized
     private int nextViewId = 0;
 
     /**

@@ -209,7 +209,6 @@ public class AsyncInputStream {
         return message;
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> T readAnticipatedMessage(final Function<Integer, T> messageFactory)
             throws IOException {
         final SharedQueueItem item = sharedQueue.poll();
@@ -226,7 +225,6 @@ public class AsyncInputStream {
      * Get an anticipated message. Blocks until the message is ready. Object returned will be the same object passed
      * into addAnticipatedMessage, but deserialized from the stream.
      */
-    @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId, final Supplier<T> messageFactory)
             throws IOException, InterruptedException {
         final Queue<byte[]> viewQueue = viewQueues.computeIfAbsent(viewId, t -> new ConcurrentLinkedQueue<>());
