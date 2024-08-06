@@ -188,6 +188,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final TokenID nonFungibleTokenId = asToken(2L);
     protected final TokenID fungibleTokenIDB = asToken(6L);
     protected final TokenID fungibleTokenIDC = asToken(7L);
+    protected final TokenID fungibleTokenIDD = asToken(8L);
     protected final int hbarReceiver = 10000000;
     protected final AccountID hbarReceiverId =
             AccountID.newBuilder().accountNum(hbarReceiver).build();
@@ -359,6 +360,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Token fungibleToken;
     protected Token fungibleTokenB;
     protected Token fungibleTokenC;
+    protected Token fungibleTokenD;
     protected Token nonFungibleToken;
     protected Nft nftSl1;
     protected Nft nftSl2;
@@ -454,6 +456,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokensMap.put(nonFungibleTokenId, nonFungibleToken);
         tokensMap.put(fungibleTokenIDB, fungibleTokenB);
         tokensMap.put(fungibleTokenIDC, fungibleTokenC);
+        tokensMap.put(fungibleTokenIDD, fungibleTokenD);
 
         aliasesMap = new HashMap<>();
         aliasesMap.put(new ProtoBytes(alias.alias()), payerId);
@@ -504,6 +507,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         PendingAirdropValue value =
                 PendingAirdropValue.newBuilder().amount(amount).build();
         var senderAccount = accountsMap.get(senderID);
+        var sendersAirdropCount = senderAccount.numberPendingAirdrops();
         if (senderAccount.hasHeadPendingAirdropId()) {
             var headId = senderAccount.headPendingAirdropIdOrThrow();
             var headPending = pendingAirdropMap.get(headId);
@@ -516,12 +520,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     .build();
             pendingAirdropMap.put(id, airdrop);
             // update sender account
-            var updatedSenderAccount =
-                    senderAccount.copyBuilder().headPendingAirdropId(id).build();
+            var updatedSenderAccount = senderAccount
+                    .copyBuilder()
+                    .numberPendingAirdrops(sendersAirdropCount + 1)
+                    .headPendingAirdropId(id)
+                    .build();
             accountsMap.put(senderID, updatedSenderAccount);
         } else {
-            var updatedSenderAccount =
-                    senderAccount.copyBuilder().headPendingAirdropId(id).build();
+            var updatedSenderAccount = senderAccount
+                    .copyBuilder()
+                    .numberPendingAirdrops(sendersAirdropCount + 1)
+                    .headPendingAirdropId(id)
+                    .build();
             accountsMap.put(senderID, updatedSenderAccount);
             var airdrop = AccountPendingAirdrop.newBuilder()
                     .pendingAirdropValue(value)
@@ -868,6 +878,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                                 .build(),
                         feeCollectorId,
                         false))
+                .build();
+        fungibleTokenD = givenValidFungibleToken()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDD)
+                .customFees(Collections.emptyList())
+                .kycKey((Key) null)
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
         nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();

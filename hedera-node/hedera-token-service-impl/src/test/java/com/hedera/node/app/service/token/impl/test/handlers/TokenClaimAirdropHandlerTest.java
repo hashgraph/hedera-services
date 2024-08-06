@@ -23,7 +23,9 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
@@ -71,24 +73,9 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
         givenStoresAndConfig(handleContext);
 
         // associate spender with the tokens
-        writableTokenRelStore.put(TokenRelation.newBuilder()
-                .tokenId(fungibleTokenId)
-                .accountId(spenderId)
-                .balance(50)
-                .kycGranted(true)
-                .build());
-        writableTokenRelStore.put(TokenRelation.newBuilder()
-                .tokenId(fungibleTokenIDB)
-                .accountId(spenderId)
-                .balance(50)
-                .kycGranted(true)
-                .build());
-        writableTokenRelStore.put(TokenRelation.newBuilder()
-                .tokenId(fungibleTokenIDC)
-                .accountId(spenderId)
-                .balance(50)
-                .kycGranted(true)
-                .build());
+        associateToken(spenderId, fungibleTokenId);
+        associateToken(spenderId, fungibleTokenIDB);
+        associateToken(spenderId, fungibleTokenIDC);
 
         // mock record builder
         given(handleContext.savepointStack()).willReturn(stack);
@@ -209,5 +196,144 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
         // check sender's pending airdrops head id and count
         assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(secondPendingAirdropId);
+    }
+
+    @Test
+    void claimMultipleAirdrops() {
+        // set up fourth additional pending airdrop
+        var fourthPendingAirdropId = setUpFourthPendingAirdrop();
+
+        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+
+        // assert initial state
+        assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
+        assertThat(writableAccountStore.get(spenderId).numberPendingAirdrops()).isEqualTo(4);
+
+        // claim second and third airdrop
+        var airdrops = new ArrayList<PendingAirdropId>();
+        airdrops.add(secondPendingAirdropId);
+        airdrops.add(thirdPendingAirdropId);
+        givenClaimAirdrop(airdrops);
+
+        tokenClaimAirdropHandler.handle(handleContext);
+
+        // check if we clear the pending state
+        assertThat(writableAirdropStore.sizeOfState()).isEqualTo(2);
+        assertThat(writableAirdropStore.get(secondPendingAirdropId)).isNull();
+        assertThat(writableAirdropStore.get(thirdPendingAirdropId)).isNull();
+
+        // check if we link properly the neighbour elements
+        assertThat(writableAirdropStore.get(firstPendingAirdropId).previousAirdrop())
+                .isEqualTo(fourthPendingAirdropId);
+        assertThat(writableAirdropStore.get(firstPendingAirdropId).nextAirdrop())
+                .isNull();
+        assertThat(writableAirdropStore.get(fourthPendingAirdropId).previousAirdrop())
+                .isNull();
+        assertThat(writableAirdropStore.get(fourthPendingAirdropId).nextAirdrop())
+                .isEqualTo(firstPendingAirdropId);
+
+        // check if we have new association
+        assertThat(writableTokenRelStore.get(tokenReceiverNoAssociationId, fungibleTokenIDB))
+                .isNotNull();
+        assertThat(writableTokenRelStore.get(tokenReceiverNoAssociationId, fungibleTokenIDC))
+                .isNotNull();
+
+        // check if we have the proper transfer
+        assertThat(writableTokenRelStore
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
+                        .balance())
+                .isEqualTo(10);
+        assertThat(writableTokenRelStore
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDC)
+                        .balance())
+                .isEqualTo(10);
+
+        // check sender's pending airdrops head id and count
+        assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
+        assertThat(writableAccountStore.get(spenderId).numberPendingAirdrops()).isEqualTo(2);
+    }
+
+    @Test
+    void claimMultipleAirdrops2() {
+        // set up fourth additional pending airdrop
+        var fourthPendingAirdropId = setUpFourthPendingAirdrop();
+
+        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+
+        // assert initial state
+        assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
+        assertThat(writableAccountStore.get(spenderId).numberPendingAirdrops()).isEqualTo(4);
+
+        // claim second and third airdrop
+        var airdrops = new ArrayList<PendingAirdropId>();
+        airdrops.add(secondPendingAirdropId);
+        airdrops.add(fourthPendingAirdropId);
+        givenClaimAirdrop(airdrops);
+
+        tokenClaimAirdropHandler.handle(handleContext);
+
+        // check if we clear the pending state
+        assertThat(writableAirdropStore.sizeOfState()).isEqualTo(2);
+        assertThat(writableAirdropStore.get(secondPendingAirdropId)).isNull();
+        assertThat(writableAirdropStore.get(fourthPendingAirdropId)).isNull();
+
+        // check if we link properly the neighbour elements
+        assertThat(writableAirdropStore.get(firstPendingAirdropId).previousAirdrop())
+                .isEqualTo(thirdPendingAirdropId);
+        assertThat(writableAirdropStore.get(firstPendingAirdropId).nextAirdrop())
+                .isNull();
+        assertThat(writableAirdropStore.get(thirdPendingAirdropId).previousAirdrop())
+                .isNull();
+        assertThat(writableAirdropStore.get(thirdPendingAirdropId).nextAirdrop())
+                .isEqualTo(firstPendingAirdropId);
+
+        // check if we have new association
+        assertThat(writableTokenRelStore.get(tokenReceiverNoAssociationId, fungibleTokenIDB))
+                .isNotNull();
+        assertThat(writableTokenRelStore.get(tokenReceiverNoAssociationId, fungibleTokenIDD))
+                .isNotNull();
+
+        // check if we have the proper transfer
+        assertThat(writableTokenRelStore
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
+                        .balance())
+                .isEqualTo(10);
+        assertThat(writableTokenRelStore
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDD)
+                        .balance())
+                .isEqualTo(10);
+
+        // check sender's pending airdrops head id and count
+        assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(thirdPendingAirdropId);
+        assertThat(writableAccountStore.get(spenderId).numberPendingAirdrops()).isEqualTo(2);
+    }
+
+    private PendingAirdropId setUpFourthPendingAirdrop() {
+        var fourthPendingAirdrop = thirdPendingAirdropId
+                .copyBuilder()
+                .fungibleTokenType(fungibleTokenIDD)
+                .build();
+        givenPendingFungibleTokenAirdrop(fungibleTokenIDD, spenderId, tokenReceiverNoAssociationId, 10L);
+        // rebuild stores with updated tokens changes
+        refreshReadableStores();
+        refreshWritableStores();
+        // mock stores
+        givenStoresAndConfig(handleContext);
+        // associate spender with the tokens
+        associateToken(spenderId, fungibleTokenId);
+        associateToken(spenderId, fungibleTokenIDB);
+        associateToken(spenderId, fungibleTokenIDC);
+        associateToken(spenderId, fungibleTokenIDD);
+
+        return fourthPendingAirdrop;
+    }
+
+    private void associateToken(AccountID accountId, TokenID tokenId) {
+        writableTokenRelStore.put(TokenRelation.newBuilder()
+                .tokenId(tokenId)
+                .accountId(accountId)
+                .balance(50)
+                .kycGranted(true)
+                .build());
     }
 }

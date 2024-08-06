@@ -39,7 +39,6 @@ public class PendingAirdropUpdater {
             @NonNull final WritableAccountStore accountStore) {
         final Map<AccountID, Account> updatedSenders = new HashMap<>();
         final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops = new HashMap<>();
-
         // calculate state changes
         for (PendingAirdropId id : airdropsToRemove) {
             removePendingAirdropAndUpdateStores(id, pendingAirdropStore, accountStore, updatedSenders, updatedAirdrops);
@@ -81,14 +80,18 @@ public class PendingAirdropUpdater {
         final var prevAirdropId = airdrop.previousAirdrop();
         final var nextAirdropId = airdrop.nextAirdrop();
         if (prevAirdropId != null) {
-            final var prevAccountAirdrop = pendingAirdropStore.getForModify(prevAirdropId);
+            final var prevAccountAirdrop = updatedAirdrops.containsKey(prevAirdropId)
+                    ? updatedAirdrops.get(prevAirdropId)
+                    : pendingAirdropStore.getForModify(prevAirdropId);
             validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
             final var prevAirdropToUpdate =
                     prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
             updatedAirdrops.put(prevAirdropId, prevAirdropToUpdate);
         }
         if (nextAirdropId != null) {
-            final var nextAccountAirdrop = pendingAirdropStore.getForModify(nextAirdropId);
+            final var nextAccountAirdrop = updatedAirdrops.containsKey(nextAirdropId)
+                    ? updatedAirdrops.get(nextAirdropId)
+                    : pendingAirdropStore.getForModify(nextAirdropId);
             validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
             final var nextAirdropToUpdate = nextAccountAirdrop
                     .copyBuilder()
