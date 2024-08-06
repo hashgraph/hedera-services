@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -73,11 +74,10 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     }
 
     @Test
-    void matchesUpdateFungibleTokenCustomFees() {
+    void matchesIsTrueWhenSelectorsAreCorrect() {
         // given:
         setConfiguration(true);
-        given(attempt.selector())
-                .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
+        given(attempt.isSelector(any(Function.class), any(Function.class))).willReturn(true);
         // expect:
         assertTrue(subject.matches(attempt));
     }
@@ -91,13 +91,12 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     }
 
     @Test
-    void matchesUpdateNonFungibleTokenCustomFees() {
+    void matchesIsFalseWhenSelectorsAreIncorrect() {
         // given:
         setConfiguration(true);
-        given(attempt.selector())
-                .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
+        given(attempt.isSelector(any(Function.class), any(Function.class))).willReturn(false);
         // expect:
-        assertTrue(subject.matches(attempt));
+        assertFalse(subject.matches(attempt));
     }
 
     @Test

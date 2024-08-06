@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.update;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateKeysTranslator;
@@ -44,8 +47,13 @@ class UpdateKeysTranslatorTest {
 
     @Test
     void matchesUpdateKeysTest() {
-        given(attempt.selector()).willReturn(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        given(attempt.isSelector(any(Function.class))).willReturn(true);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesIncorrectSelectorFailsTest() {
+        given(attempt.isSelector(any(Function.class))).willReturn(false);
+        assertFalse(subject.matches(attempt));
     }
 }

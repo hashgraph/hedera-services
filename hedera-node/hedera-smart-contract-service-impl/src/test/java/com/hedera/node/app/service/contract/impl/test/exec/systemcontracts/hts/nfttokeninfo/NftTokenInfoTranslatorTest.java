@@ -18,8 +18,12 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -57,9 +61,14 @@ class NftTokenInfoTranslatorTest {
 
     @Test
     void matchesTokenInfoTranslatorTest() {
-        given(attempt.selector()).willReturn(NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        given(attempt.isSelector(any(Function.class))).willReturn(true);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesFailsIfIncorrectSelectorTest() {
+        given(attempt.isSelector(any(Function.class))).willReturn(false);
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
