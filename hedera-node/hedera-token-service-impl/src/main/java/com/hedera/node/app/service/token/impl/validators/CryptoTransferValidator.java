@@ -214,11 +214,11 @@ public class CryptoTransferValidator {
             // The transfer list specifies the owner who granted allowance as sender
             // check if the allowances from the sender account has the payer account as spender
             // check if the receiver is a system account
-            validateTrue(
-                    !validateIfSystemAccount(nftTransfer.receiverAccountIDOrThrow()), INVALID_RECEIVING_NODE_ACCOUNT);
             validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            validateTrue(
+                    !validateIfSystemAccount(nftTransfer.receiverAccountIDOrThrow()), INVALID_RECEIVING_NODE_ACCOUNT);
             validateFalsePreCheck(
                     !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
             validateFalsePreCheck(
