@@ -84,7 +84,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     }
 
     @Test
-    void putsUpdatesExistingAirdrop() {
+    void updateUpdatesExistingAirdrop() {
         final var airdropId = getFungibleAirdrop();
         final var airdropValue = airdropWithValue(30);
         final var accountAirdrop = accountAirdropWith(airdropValue);
@@ -103,7 +103,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
 
         assertThat(writableAirdropState.contains(airdropId)).isTrue();
 
-        subject.put(airdropId, newAccountAirdrop);
+        subject.update(airdropId, newAccountAirdrop);
 
         assertThat(writableAirdropState.contains(airdropId)).isTrue();
         final var tokenValue = Objects.requireNonNull(Objects.requireNonNull(writableAirdropState.get(airdropId))
