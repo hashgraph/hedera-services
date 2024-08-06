@@ -30,11 +30,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateUpgradeAddressBooks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.configVersionOf;
 import static java.lang.Integer.MAX_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +54,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -102,12 +107,15 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
     @Account(tinybarBalance = ONE_MILLION_HBARS, stakedNodeId = 3)
     static SpecAccount NODE3_STAKER;
 
+    private static List<X509Certificate> gossipCertificates;
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
                 ensureStakingActivated(),
                 touchBalanceOf(NODE0_STAKER, NODE1_STAKER, NODE2_STAKER, NODE3_STAKER),
-                waitUntilStartOfNextStakingPeriod(1));
+                waitUntilStartOfNextStakingPeriod(1),
+                given(() -> gossipCertificates = generateX509Certificates(1)));
     }
 
     @Nested
@@ -171,11 +179,12 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 AccountID.newBuilder().setAccountNum(7L).build();
 
         @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws CertificateEncodingException {
             testLifecycle.doAdhoc(nodeCreate("node4")
                     .accountId(NEW_ACCOUNT_ID)
                     .description(CLASSIC_NODE_NAMES[4])
-                    .withAvailableSubProcessPorts());
+                    .withAvailableSubProcessPorts()
+                    .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()));
         }
 
         @HapiTest
