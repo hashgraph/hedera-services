@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.platform.system.transaction.PayloadWrapperUtils.createAppPayloadWrapper;
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;

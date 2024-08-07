@@ -130,6 +130,7 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenRejectHandler(),
                 tokenHandlers.tokenAirdropsHandler(),
                 tokenHandlers.tokenCancelAirdropHandler(),
+                tokenHandlers.tokenAirdropsHandler(),
                 addressBookHandlers.nodeCreateHandler(),
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
