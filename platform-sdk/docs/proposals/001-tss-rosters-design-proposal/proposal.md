@@ -146,6 +146,10 @@ message RosterEntry {
      * If the Ethereum ecosystem creates precompiles for BLS12_381,
      * we may switch to that curve.
      * <p>
+     * This value shall be specified according to EIP-196 and EIP-197 standards, <br/>
+     * See https://eips.ethereum.org/EIPS/eip-196#encoding and <br/>
+     * https://eips.ethereum.org/EIPS/eip-197#encoding
+     * <p>
      * This field is OPTIONAL (that is, it can initially be null)
      * but once set, it can no longer be null.
      */
