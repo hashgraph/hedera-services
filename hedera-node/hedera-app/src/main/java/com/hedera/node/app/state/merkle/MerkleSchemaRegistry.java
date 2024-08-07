@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationContextImpl;
+import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -110,7 +111,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final SchemaApplications schemaApplications;
 
-    private final SchemaStateChangeListener schemaStateChangeListener;
+    private final SchemaStateChangeListenerImpl schemaStateChangeListener;
 
     /**
      * Create a new instance with the default {@link SchemaApplications}.
@@ -129,7 +130,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.schemaApplications = requireNonNull(schemaApplications);
-        this.schemaStateChangeListener = new SchemaStateChangeListener();
+        this.schemaStateChangeListener = new SchemaStateChangeListenerImpl();
     }
 
     /**
@@ -181,6 +182,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param config The system configuration to use at the time of migration
      * @param networkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
+     * @param migrationStateChanges Tracker for state changes during migration
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
      * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
@@ -194,13 +196,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
-            @NonNull final Map<String, Object> sharedValues) {
+            @NonNull final Map<String, Object> sharedValues,
+            @NonNull final MigrationStateChanges migrationStateChanges) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
+        requireNonNull(migrationStateChanges);
         if (isSoOrdered(currentVersion, previousVersion)) {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
@@ -248,8 +252,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 newStates = writableStates = stateRoot.getWritableStates(serviceName);
             }
 
-            // TODO: register schemaStateChangeListener before doing migrations
-
             final var migrationContext = new MigrationContextImpl(
                     previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
@@ -261,6 +263,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // Now commit all the service-specific changes made during this service's update or migration
             if (writableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
                 mws.commit();
+                migrationStateChanges.trackCommit();
             }
             // And finally we can remove any states we need to remove
             schema.statesToRemove().forEach(stateKey -> {

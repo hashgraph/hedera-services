@@ -18,14 +18,17 @@ package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface QueueChangeListener {
+/**
+ * A listener that is notified when a value is added to or removed from a queue.
+ * @param <V> The type of the value
+ */
+public interface QueueChangeListener<V> {
     /**
      * Called when a value is added to a queue.
      *
      * @param value The value added to the queue
-     * @param <V> The type of the value
      */
-    <V> void queuePushChange(@NonNull V value);
+    void queuePushChange(@NonNull V value);
 
     /**
      * Called when a value is removed from a queue.

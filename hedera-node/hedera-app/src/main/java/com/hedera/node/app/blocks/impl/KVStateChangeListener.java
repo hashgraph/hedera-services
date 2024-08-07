@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.swirlds.state.StateChangeListener.StateType.MAP;
+
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.MapDeleteChange;
@@ -46,7 +48,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.state.StateChangesListener;
+import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -54,13 +56,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class KVStateChangeListener implements StateChangesListener {
-    private static final Set<DataType> TARGET_DATA_TYPES = EnumSet.of(DataType.MAP);
+public class KVStateChangeListener implements StateChangeListener {
+    private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP);
 
-    private List<StateChange> stateChanges = new ArrayList<>();
+    private final List<StateChange> stateChanges = new ArrayList<>();
 
     @Override
-    public Set<DataType> targetDataTypes() {
+    public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;
     }
 
@@ -88,6 +90,21 @@ public class KVStateChangeListener implements StateChangesListener {
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
         stateChanges.add(
                 StateChange.newBuilder().stateName(stateName).mapDelete(change).build());
+    }
+
+    /**
+     * Clears the list of state changes.
+     */
+    public void resetStateChanges() {
+        stateChanges.clear();
+    }
+
+    /**
+     * Returns the list of state changes.
+     * @return the list of state changes
+     */
+    public List<StateChange> getStateChanges() {
+        return stateChanges;
     }
 
     private static <K> MapChangeKey mapChangeKeyFor(@NonNull final K key) {
@@ -169,9 +186,5 @@ public class KVStateChangeListener implements StateChangesListener {
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());
         };
-    }
-
-    public List<StateChange> getStateChanges() {
-        return stateChanges;
     }
 }

@@ -93,6 +93,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private List<BlockItem> pendingItems;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
+    private KVStateChangeListener kvStateChangeListener;
     private RoundStateChangeListener roundStateChangeListener;
     /**
      * A future that completes after all items not in the pendingItems list have been serialized
@@ -123,6 +124,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // If there are no other changes to state, we can just use the round's consensus timestamp as the
         // last-assigned consensus time for externalizing the PUT to the block stream info singleton
         roundStateChangeListener = new RoundStateChangeListener(blockTimestamp);
+        state.registerCommitListener(roundStateChangeListener);
+        kvStateChangeListener = new KVStateChangeListener();
+        state.registerCommitListener(kvStateChangeListener);
         pendingItems = new ArrayList<>();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
@@ -204,8 +208,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public RoundStateChangeListener getRoundStateChangeListener() {
+    public RoundStateChangeListener roundStateChangeListener() {
         return roundStateChangeListener;
+    }
+
+    @Override
+    public KVStateChangeListener kvStateChangeListener() {
+        return kvStateChangeListener;
     }
 
     @Override

@@ -18,6 +18,8 @@ package com.hedera.node.app.blocks;
 
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -33,13 +35,13 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.state.StateChangesListener;
 import com.hedera.pbj.runtime.OneOf;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -50,11 +52,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.jetbrains.annotations.NotNull;
 
-public class RoundStateChangeListener implements StateChangesListener {
-    private static final Set<DataType> TARGET_DATA_TYPES = EnumSet.of(DataType.SINGLETON, DataType.QUEUE);
+public class RoundStateChangeListener implements StateChangeListener {
+    private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 
-    private SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
-    private SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
+    private final SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
+    private final SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
     private Instant lastUsedConsensusTime;
 
     public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
@@ -62,7 +64,7 @@ public class RoundStateChangeListener implements StateChangesListener {
     }
 
     @Override
-    public Set<DataType> targetDataTypes() {
+    public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;
     }
 
@@ -101,6 +103,14 @@ public class RoundStateChangeListener implements StateChangesListener {
     }
 
     public BlockItem stateChanges() {
+        final var stateChanges = StateChanges.newBuilder()
+                .stateChanges(allStateChanges())
+                .consensusTimestamp(endOfBlockTimestamp())
+                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
+        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+    }
+
+    public List<StateChange> allStateChanges() {
         final var allStateChanges = new LinkedList<StateChange>();
         for (final var entry : singletonUpdates.entrySet()) {
             allStateChanges.add(entry.getValue());
@@ -108,11 +118,7 @@ public class RoundStateChangeListener implements StateChangesListener {
         for (final var entry : queueUpdates.entrySet()) {
             allStateChanges.addAll(entry.getValue());
         }
-        final var stateChanges = StateChanges.newBuilder()
-                .stateChanges(allStateChanges)
-                .consensusTimestamp(endOfBlockTimestamp())
-                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
-        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+        return allStateChanges;
     }
 
     public @NonNull Timestamp endOfBlockTimestamp() {
@@ -157,11 +163,11 @@ public class RoundStateChangeListener implements StateChangesListener {
                 return new OneOf<>(
                         SingletonUpdateChange.NewValueOneOfType.NETWORK_STAKING_REWARDS_VALUE, networkStakingRewards);
             }
-            case Bytes protoBytes -> {
-                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BYTES_VALUE, protoBytes);
+            case ProtoBytes protoBytes -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BYTES_VALUE, protoBytes.value());
             }
-            case String protoString -> {
-                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.STRING_VALUE, protoString);
+            case ProtoString protoString -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.STRING_VALUE, protoString.value());
             }
             case RunningHashes runningHashes -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.RUNNING_HASHES_VALUE, runningHashes);

@@ -44,6 +44,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,7 @@ class IngestComponentTest {
                 .contractServiceImpl(new ContractServiceImpl(InstantSource.system()))
                 .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
+                .migrationStateChanges(List.of())
                 .build();
 
         final var state = new FakeState();

@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.TestTags.ONLY_EMBEDDED;
-import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
+import static com.hedera.services.bdd.junit.TestTags.ONLY_REPEATABLE;
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
@@ -31,32 +31,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * Annotation for a {@link HapiTest} that can only be run in embedded mode, and not concurrently with other embedded
- * tests. The {@link EmbeddedReason} attribute gives the reasons the test has to run in embedded mode. The
- * {@link ContextRequirement} attribute gives the reasons the test cannot run concurrently.
+ * Annotation for a {@link HapiTest} that can only be run in repeatable mode. The {@link EmbeddedReason} annotation
+ * enumerates common reasons a test has to run in embedded mode.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
-@ResourceLock(value = "NETWORK", mode = READ_WRITE)
-@Tag(ONLY_EMBEDDED)
-public @interface LeakyEmbeddedHapiTest {
+@ResourceLock(value = "NETWORK", mode = READ)
+@Tag(ONLY_REPEATABLE)
+public @interface RepeatableHapiTest {
     /**
-     * The reasons the test has to run in embedded mode.
-     * @return the reasons the test has to run in embedded mode
+     * The reasons the test has to run in repeatable mode.
+     * @return the reasons the test has to run in repeatable mode
      */
-    EmbeddedReason[] reason();
-    /**
-     * The requirements preventing the test from running concurrently with other tests.
-     * @return the reasons the test cannot run concurrently with other tests
-     */
-    ContextRequirement[] requirement() default {};
-
-    /**
-     * If set, the names of properties this test overrides and needs automatically
-     * restored to their original values after the test completes.
-     * @return the names of properties this test overrides
-     */
-    String[] overrides() default {};
+    RepeatableReason[] value();
 }
