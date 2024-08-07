@@ -18,11 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater.removePendingAirdrops;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -32,7 +29,6 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,10 +36,11 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -62,15 +59,15 @@ import javax.inject.Singleton;
  * HederaFunctionality#TOKEN_CLAIM_AIRDROP}.
  */
 @Singleton
-public class TokenClaimAirdropHandler extends BaseTokenHandler implements TransactionHandler {
-
-    private final CryptoTransferExecutor executor;
+public class TokenClaimAirdropHandler extends TransferExecutor implements TransactionHandler {
     private final TokenAirdropValidator validator;
 
     @Inject
-    public TokenClaimAirdropHandler(@NonNull CryptoTransferExecutor executor) {
-        this.executor = executor;
-        this.validator = new TokenAirdropValidator();
+    public TokenClaimAirdropHandler(
+            @NonNull final TokenAirdropValidator validator,
+            @NonNull final CryptoTransferValidator cryptoTransferValidator) {
+        super(cryptoTransferValidator);
+        this.validator = validator;
     }
 
     @Override
@@ -86,7 +83,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
         var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         var op = context.body().tokenClaimAirdropOrThrow();
-        var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropRecordBuilder.class);
+        var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
 
         List<TokenTransferList> transfers = new ArrayList<>();
         List<Token> tokensToAssociate = new ArrayList<>();
@@ -99,7 +96,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
             // validate existence and custom fees
             validateTrue(pendingAirdropStore.exists(airdrop), INVALID_TRANSACTION_BODY);
-            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+            validateTrue(validator.tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
 
             // build transfer lists
             final var senderId = airdrop.senderIdOrThrow();
@@ -166,7 +163,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
             @NonNull AccountID receiverId,
             @NonNull WritableAccountStore accountStore,
             @NonNull WritableTokenRelationStore tokenRelStore,
-            @NonNull TokenAirdropRecordBuilder recordBuilder) {
+            @NonNull TokenAirdropStreamBuilder recordBuilder) {
         createAndLinkTokenRels(accountStore.getAccountById(receiverId), tokensToAssociate, accountStore, tokenRelStore);
         tokensToAssociate.forEach(token -> recordBuilder.addAutomaticTokenAssociation(TokenAssociation.newBuilder()
                 .tokenId(token.tokenId())
@@ -177,7 +174,7 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
     private void transferForFree(
             @NonNull List<TokenTransferList> transfers,
             @NonNull HandleContext context,
-            @NonNull TokenAirdropRecordBuilder recordBuilder) {
+            @NonNull TokenAirdropStreamBuilder recordBuilder) {
         var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(transfers)
                 .build();
@@ -185,28 +182,6 @@ public class TokenClaimAirdropHandler extends BaseTokenHandler implements Transa
                 TransactionBody.newBuilder().cryptoTransfer(cryptoTransferBody).build();
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
         // We should skip custom fee steps here, because they must be already prepaid
-        executor.executeCryptoTransferWithoutCustomFee(
-                syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
-    }
-
-    // todo: same validation is used in TokenAirdropHandler, so when it is merged we can reuse it here too
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
-        final var token = getIfUsable(tokenId, tokenStore);
-        final var feeMeta = customFeeMetaFrom(token);
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasFractionalFee()
-                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
-                    return false;
-                }
-            }
-        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasRoyaltyFee()) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        executeCryptoTransferWithoutCustomFee(syntheticCryptoTransferTxn, transferContext, context, recordBuilder);
     }
 }

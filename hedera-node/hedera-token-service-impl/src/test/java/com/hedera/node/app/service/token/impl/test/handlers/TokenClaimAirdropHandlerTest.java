@@ -27,15 +27,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
-
-    private TokenClaimAirdropHandler tokenClaimAirdropHandler;
 
     private final PendingAirdropId firstPendingAirdropId = PendingAirdropId.newBuilder()
             .senderId(spenderId)
@@ -79,7 +76,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
         // mock record builder
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
@@ -87,7 +84,6 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimFirstAirdrop() {
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
 
         // claim first airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -122,7 +118,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimSecondAirdrop() {
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // claim second airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -161,7 +157,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimThirdAirdrop() {
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // claim third airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -203,7 +199,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
         // set up fourth additional pending airdrop
         var fourthPendingAirdropId = setUpFourthPendingAirdrop();
 
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // assert initial state
         assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
@@ -258,7 +254,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
         // set up fourth additional pending airdrop
         var fourthPendingAirdropId = setUpFourthPendingAirdrop();
 
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(executor);
+        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // assert initial state
         assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);

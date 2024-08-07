@@ -46,7 +46,7 @@ public class PendingAirdropUpdater {
 
         // commit updates
         updatedSenders.forEach((accountID, account) -> accountStore.put(account));
-        updatedAirdrops.forEach(pendingAirdropStore::patch);
+        updatedAirdrops.forEach(pendingAirdropStore::put);
         airdropsToRemove.forEach(pendingAirdropStore::remove);
     }
 
