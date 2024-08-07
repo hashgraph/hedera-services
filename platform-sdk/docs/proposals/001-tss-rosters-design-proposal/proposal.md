@@ -142,8 +142,8 @@ message RosterEntry {
     /**
      * An ALT_BN128 elliptic curve public encryption key.<br/>
      * <p>
-     * The elliptic curve type may change in the future. For example <br/>
-     * If the Ethereum ecosystem creates precompiles for BLS12_381,
+     * The elliptic curve type may change in the future. For example, <br/>
+     * if the Ethereum ecosystem creates precompiles for BLS12_381,
      * we may switch to that curve.
      * <p>
      * This value SHALL be specified according to EIP-196 and EIP-197 standards, <br/>
@@ -173,9 +173,10 @@ message RosterEntry {
 
 #### Roster Map
 
-A States API map `Roster Map` (separate from the PBJ Map modeled above) will be introduced. It will contain keys
-which will be the hash of the roster (of type `byte`) and values of type `Roster`. This map will store all candidate
-and active rosters. It will be an implementation of `ReadableKVState<>` and `WriteableKVState<>` interfaces.
+A States API map `Roster Map` will be introduced. It will contain keys which will be the hash of the roster (of
+type `byte`) and values of type `Roster`.
+This map will store all candidate and active rosters. It will be an implementation of `ReadableKVState<>`
+and `WriteableKVState<>` interfaces.
 
 The `byte` key of the Roster Map will be of the widely used type `com.hedera.pbj.runtime.io.buffer.Bytes`.
 
@@ -271,12 +272,11 @@ A Roster is considered valid if it satisfies the following conditions:
 
 1. The roster must have at least one RosterEntry.
 2. At least one RosterEntry/ies must have a non-zero weight.
-3. All RosterEntry/ies must have a valid gossip_ca_certificate which is a DER encoded X509Certificate.
-4. All RosterEntry/ies must have a valid tss_encryption_key which is a DER encoded X509Certificate.
+3. All RosterEntry/ies must have a valid gossip_ca_certificate.
+4. All RosterEntry/ies must have a valid tss_encryption_key.
 5. All RosterEntry/ies must have at least one gossip Endpoint.
 6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
-7. The roster must have a unique NodeId for each RosterEntry, and the NodeId key must match the NodeId value in the
-   corresponding RosterEntry.
+7. The roster must have a unique NodeId for each RosterEntry.
 
 On the submission of a new Candidate Roster, the platform will validate the roster against these conditions. Note
 that a constructed `Roster` can be valid, but not accepted by the platform. For example, if a new candidate roster
