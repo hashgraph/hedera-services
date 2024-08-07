@@ -564,8 +564,8 @@ public class RecordStreamBuilder
      * @return the builder
      */
     @Override
-    public RecordStreamBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
+    public RecordStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }

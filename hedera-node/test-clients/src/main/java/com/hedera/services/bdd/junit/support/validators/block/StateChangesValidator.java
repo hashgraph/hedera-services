@@ -586,6 +586,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOKEN_ID_KEY -> mapChangeKey.tokenIdKeyOrThrow();
             case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
+            case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
         };
     }
 
@@ -606,6 +607,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOKEN_RELATION_VALUE -> mapChangeValue.tokenRelationValueOrThrow();
             case TOPIC_VALUE -> mapChangeValue.topicValueOrThrow();
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
+            case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
         };
     }
 }

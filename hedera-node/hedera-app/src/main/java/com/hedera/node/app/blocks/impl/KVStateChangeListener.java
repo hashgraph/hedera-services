@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
@@ -144,6 +146,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case ContractID contractID -> MapChangeKey.newBuilder()
                     .contractIdKey(contractID)
                     .build();
+            case PendingAirdropId pendingAirdropId -> MapChangeKey.newBuilder()
+                    .pendingAirdropIdKey(pendingAirdropId)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());
         };
@@ -183,6 +188,9 @@ public class KVStateChangeListener implements StateChangeListener {
                     .tokenRelationValue(tokenRelation)
                     .build();
             case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
+            case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
+                    .accountPendingAirdropValue(accountPendingAirdrop)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());
         };
