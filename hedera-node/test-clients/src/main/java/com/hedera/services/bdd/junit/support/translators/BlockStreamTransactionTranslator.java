@@ -86,6 +86,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
 
+        recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
                 transaction.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
@@ -110,13 +111,22 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
      */
     @Override
     public List<SingleTransactionRecord> translateAll(
-            @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
+            @NonNull final List<SingleTransactionBlockItems> transactions,
+            @NonNull final List<StateChanges> stateChanges) {
         // TODO: this implementation probably isn't correct, specifically since we're passing in _all_ state changes
         // on each call to `translate`, which is likely not what we want. How do we compute the correct subset of state
         // changes for each transaction?
         return transactions.stream()
                 .filter(t -> t.txn() != null)
-                .map(txn -> translate(txn, stateChanges))
+                .map(txn -> {
+                    final var consensusTimestamp = txn.result().consensusTimestamp();
+                    final var matchingTimestampChanges = stateChanges.stream()
+                            .filter(sc -> Objects.equals(consensusTimestamp, sc.consensusTimestamp()))
+                            .toList();
+                    final var matchingChanges =
+                            matchingTimestampChanges.isEmpty() ? null : matchingTimestampChanges.getFirst();
+                    return translate(txn, matchingChanges);
+                })
                 .toList();
     }
 

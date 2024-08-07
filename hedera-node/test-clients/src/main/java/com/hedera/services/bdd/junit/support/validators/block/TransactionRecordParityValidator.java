@@ -47,7 +47,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
         // Parse the input blocks
-        final var inputs = new BlockParser().parseBlocks(blocks);
+        final var inputs = new BlocksParser().parseBlocks(blocks);
 
         // Transform the expected transaction records into the required format
         final var expectedTxnRecs = transformExpectedRecords(data);
@@ -87,11 +87,10 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         }
     }
 
-    private List<RecordStreamEntry> translateAll(final BlockRecordsInput inputs) {
-        // Translate the block transactions into SingleTransactionRecord instances
-        // TODO: Which state changes should be passed in here? (This is obviously wrong)
-        final var singleTxnRecs = TRANSACTION_RECORD_TRANSLATOR.translateAll(
-                inputs.txns(), inputs.allStateChanges().getFirst());
+    private List<RecordStreamEntry> translateAll(final BlocksData blocksData) {
+        // Translate each block transaction into a SingleTransactionRecord instance
+        final var singleTxnRecs =
+                TRANSACTION_RECORD_TRANSLATOR.translateAll(blocksData.txns(), blocksData.allStateChanges());
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()
                 .map(txnRecord -> {
@@ -140,16 +139,16 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                 .build();
     }
 
-    private record BlockRecordsInput(List<SingleTransactionBlockItems> txns, List<StateChanges> allStateChanges) {}
+    private record BlocksData(List<SingleTransactionBlockItems> txns, List<StateChanges> allStateChanges) {}
 
-    private static class BlockParser {
+    private static class BlocksParser {
         private SingleTransactionBlockItems.Builder builder = new SingleTransactionBlockItems.Builder();
         private final List<SingleTransactionBlockItems> blockTxns = new ArrayList<>();
         private final List<StateChanges> allStateChanges = new ArrayList<>();
 
-        private BlockParser() {}
+        private BlocksParser() {}
 
-        BlockRecordsInput parseBlocks(@NonNull final List<Block> blocks) {
+        BlocksData parseBlocks(@NonNull final List<Block> blocks) {
             for (var block : blocks) {
                 final var items = block.items();
 
@@ -182,7 +181,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
             }
 
             logger.info("Parsed {} blocks (with {} transactions)", blocks.size(), blockTxns.size());
-            return new BlockRecordsInput(blockTxns, allStateChanges);
+            return new BlocksData(blockTxns, allStateChanges);
         }
     }
 

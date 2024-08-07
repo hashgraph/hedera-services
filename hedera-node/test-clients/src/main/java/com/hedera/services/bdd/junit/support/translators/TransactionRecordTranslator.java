@@ -20,6 +20,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,11 +47,20 @@ public interface TransactionRecordTranslator<T> {
      * outputs.
      *
      * @param transactions a collection of transactions to translate
-     * @param stateChanges any state changes that occurred during transaction processing
+     * @param stateChanges any state changes that occurred during transaction processing. Each
+     *                     {@code StateChange} object will have a consensus timestamp that can be used
+     *                     to pair it with its associated transaction, if that transaction exists.
+     *                     (Note: some state changes will not be associated with any transaction)
      * @return the equivalent transaction record outputs
      */
     default List<SingleTransactionRecord> translateAll(
-            @NonNull final List<T> transactions, @NonNull StateChanges stateChanges) {
-        return transactions.stream().map(txn -> translate(txn, stateChanges)).toList();
+            @NonNull final List<T> transactions, @NonNull List<StateChanges> stateChanges) {
+        final var records = new ArrayList<SingleTransactionRecord>();
+        for (int i = 0; i < transactions.size(); i++) {
+            // This naive implementation assumes that the index for the transaction representation and the index for the
+            // corresponding state changes object are equal
+            records.add(translate(transactions.get(i), stateChanges.get(i)));
+        }
+        return records;
     }
 }
