@@ -25,6 +25,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
@@ -88,7 +89,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         return new SingleTransactionRecord(
                 transaction.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
-                // TODO: how do we construct the sidecar records?
+                // TODO: how do we construct correct sidecar records?
                 List.of(),
                 // TODO: construct TransactionOutputs correctly when we have access to token-related transaction types
                 new SingleTransactionRecord.TransactionOutputs(null));
@@ -111,7 +112,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     public List<SingleTransactionRecord> translateAll(
             @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
         // TODO: this implementation probably isn't correct, specifically since we're passing in _all_ state changes
-        // on each call to `translate`, which is likely not what we want. How do we correctly compute a subset of state
+        // on each call to `translate`, which is likely not what we want. How do we compute the correct subset of state
         // changes for each transaction?
         return transactions.stream()
                 .filter(t -> t.txn() != null)
@@ -208,14 +209,12 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         if (txnOutput.hasCryptoTransfer()) {
             final var assessedCustomFees = txnOutput.cryptoTransfer().assessedCustomFees();
-            if (assessedCustomFees != null) {
-                for (int i = 0; i < assessedCustomFees.size(); i++) {
-                    final var assessedCustomFee =
-                            AssessedCustomFee.parseFrom(com.hedera.hapi.node.transaction.AssessedCustomFee.PROTOBUF
-                                    .toBytes(assessedCustomFees.get(i))
-                                    .toByteArray());
-                    trb.addAssessedCustomFees(i, assessedCustomFee);
-                }
+            for (int i = 0; i < assessedCustomFees.size(); i++) {
+                final var assessedCustomFee =
+                        AssessedCustomFee.parseFrom(com.hedera.hapi.node.transaction.AssessedCustomFee.PROTOBUF
+                                .toBytes(assessedCustomFees.get(i))
+                                .toByteArray());
+                trb.addAssessedCustomFees(i, assessedCustomFee);
             }
         }
 
@@ -250,7 +249,9 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         }
 
         if (txnOutput.hasEthereumCall()) {
-            trb.setEthereumHash(toByteString(txnOutput.ethereumCall().ethereumHash()));
+            Optional.ofNullable(txnOutput.ethereumCall())
+                    .map(EthereumOutput::ethereumHash)
+                    .ifPresent(ethHash -> trb.setEthereumHash(toByteString(ethHash)));
         }
 
         //            if (txnOutput.hasTopicCreate()) {

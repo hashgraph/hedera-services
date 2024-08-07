@@ -78,12 +78,13 @@ public class OrderedComparison {
     }
 
     /**
-     * todo
+     * Like {#findDifferencesBetweenV6(String, String, RecordDiffSummarizer, Predicate, String)}, but for
+     * in-memory {@link RecordStreamEntry} objects.
      *
-     * @param firstEntries the first record stream
-     * @param secondEntries the second record stream
+     * @param firstEntries the first record stream (typically the records being tested)
+     * @param secondEntries the second record stream (typically the expected records)
      * @param recordDiffSummarizer if present, a summarizer for record diffs
-     * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
+     * @param maybeInclusionTest if set, a consumer receiving the consensus timestamp of each entry
      * @return the stream diff
      * @throws IllegalArgumentException if the record streams are misaligned
      */

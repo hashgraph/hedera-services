@@ -18,7 +18,6 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
-import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -34,8 +33,6 @@ import com.hedera.services.bdd.junit.support.translators.TransactionRecordTransl
 import com.hedera.services.bdd.utils.RcDiff;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,20 +43,6 @@ import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordParityValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
-
-    public static void main(String[] args) throws IOException {
-        //        var DONTUSEINCODE =
-        //                "/Users/matthess/Desktop/copy_vanillaTransferSucceeds_block-and-records_2aug2024/";
-        var DONTUSEINCODE = "/Users/matthess/Downloads/";
-        final var testBlocksLoc = DONTUSEINCODE + "block-0.0.3";
-        final var blocks = BLOCK_STREAM_ACCESS.readBlocks(Paths.get(testBlocksLoc));
-        final var recordsLoc = DONTUSEINCODE + "record0.0.3";
-        final var records = RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(
-                Paths.get(recordsLoc).toString(), "sidecar");
-
-        // Perform the validation(s)
-        new TransactionRecordParityValidator().validateBlockVsRecords(blocks, records);
-    }
 
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
@@ -72,9 +55,8 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         // TODO: Which state changes should be passed in? (This is obviously wrong, but to get it to compile..)
         final var actual = translateAll(inputs);
 
-        // TODO: What should the default maxDiffs and lenOfDiffSecs be?
-        final var maxDiffs = 3;
-        final var lenOfDiffSecs = 2;
+        final var maxDiffs = 10;
+        final var lenOfDiffSecs = 300;
         final var rcDiff = new RcDiff(maxDiffs, lenOfDiffSecs, expectedTxnRecs, actual, null, System.out);
         // Perform the diff
         final List<DifferingEntries> diffs;
@@ -84,14 +66,15 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
             throw new RuntimeException(e);
         }
 
-        // TODO: pass in `inputs.allStateChanges().size()` instead of zero when we actually process the state changes
+        // TODO: pass in `inputs.allStateChanges().size()` instead of zero (when the method called
+        // actually does something with the state changes)
         final var validatorSummary = new SummaryBuilder(
                         maxDiffs,
                         lenOfDiffSecs,
                         blocks.size(),
                         data.records().size(),
                         inputs.txns().size(),
-                        0,
+                        0, // Will be inputs.allStateChanges().size()
                         diffs)
                 .build();
         if (diffs.isEmpty()) {
@@ -106,9 +89,9 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
     private List<RecordStreamEntry> translateAll(final BlockRecordsInput inputs) {
         // Translate the block transactions into SingleTransactionRecord instances
-        // TODO: Which state changes should be passed in? (This is obviously wrong, but to get it to compile..)
+        // TODO: Which state changes should be passed in here? (This is obviously wrong)
         final var singleTxnRecs = TRANSACTION_RECORD_TRANSLATOR.translateAll(
-                inputs.txns(), inputs.allStateChanges().get(0));
+                inputs.txns(), inputs.allStateChanges().getFirst());
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()
                 .map(txnRecord -> {

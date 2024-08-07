@@ -86,14 +86,29 @@ public class RcDiff implements Callable<Integer> {
     }
 
     /**
-     * todo
-     * @param maxDiffsToExport
-     * @param lenOfDiffSecs
-     * @param expectedStreamsLoc
-     * @param actualStreamsLoc
-     * @param diffsLoc
-     * @return
-     * @throws IOException
+     * Instantiates an {@code RcDiff} object with record files from the given directories. The object
+     * returned from this method is immediately ready to compare the record files via the {@link #call()}
+     * method or the {@link #summarizeDiffs()} method.
+     * @param maxDiffsToExport the maximum number of diffs to report in the output
+     * @param lenOfDiffSecs the length, in seconds, of the diff to compute. This value is used to construct
+     *                      a time range from the earliest record present in the expected and actual
+     *                      streams to a caller-specified boundary point (this parameter). The earliest
+     *                      record is computed via {@code (Math.min(expected.getFirst().consensusTimestamp(),
+     *                      actual.getFirst().consensusTimestamp()}; the resulting time window then
+     *                      becomes [earliestTimestamp, earliestTimestamp + lenOfDiffSeconds). All record
+     *                      files with a starting consensus timestamp inside of this interval will be
+     *                      included in the diff calculations, while all record files with a later timestamp
+     *                      will be ignored. Note that this parameter <b>does not</b> override the
+     *                      {@code maxDiffsToExport} parameter; if the number of diffs found in the computed
+     *                      time window exceeds {@code maxDiffsToExport}, only the first
+     *                      {@code maxDiffsToExport} diffs will be reported.
+     *
+     * @param expectedStreamsLoc the location of the expected record files
+     * @param actualStreamsLoc the location of the actual record files
+     * @param diffsLoc an optional file location to write the diff output(s) to
+     * @return the initialized {@code RcDiff} object
+     * @throws IOException if there is an issue reading record files from the expected or actual
+     * streams locations
      */
     public static RcDiff fromDirs(
             final long maxDiffsToExport,
@@ -137,26 +152,12 @@ public class RcDiff implements Callable<Integer> {
     }
 
     /**
-     * todo
-     * @return
-     */
-    public List<DifferingEntries> summarizeDiffs() {
-        return diffsGiven(DEFAULT_SUMMARIZER);
-    }
-
-    /**
-     * todo
-     * @param diffs
-     * @return
-     */
-    public List<String> buildDiffOutput(@NonNull final List<DifferingEntries> diffs) {
-        return diffs.stream().map(this::readableDiff).limit(maxDiffsToExport).toList();
-    }
-
-    /**
+     * Invokes the {@link #summarizeDiffs()} method, and writes the output to both a diff file and to
+     * this instance's {@code PrintStream}. This method is intended for the Services CLI tool, which
+     * invokes the diffs computation via the {@code PicoCLI} library.
      *
-     * @return
-     * @throws Exception
+     * @return 0 if the expected and actual record streams are identical, 1 otherwise
+     * @throws Exception if any error occurs during the diff computation or output
      */
     @Override
     public Integer call() throws Exception {
@@ -169,6 +170,30 @@ public class RcDiff implements Callable<Integer> {
             dumpToFile(diffs);
             return 1;
         }
+    }
+
+    /**
+     * Computes a {@code String} summary of the differences between the expected and actual record
+     * streams. This method is essentially equivalent (except the output format) to the {@link #call()}
+     * method, but does not write the diff output to a file.
+     *
+     * @return a collection of {@code DifferingEntries} objects detailing the differences between
+     * the individual records of the expected and actual record streams
+     */
+    public List<DifferingEntries> summarizeDiffs() {
+        return diffsGiven(DEFAULT_SUMMARIZER);
+    }
+
+    /**
+     * Following the diff computations, this method builds a human-readable summary of said diffs. Each
+     * diff represents a single computed difference between the expected record stream and the actual.
+     * The output of this method is typically written to a file or printed to the console.
+     *
+     * @param diffs the computed diff results from {@link #summarizeDiffs()}
+     * @return a human-readable summary of the diffs
+     */
+    public List<String> buildDiffOutput(@NonNull final List<DifferingEntries> diffs) {
+        return diffs.stream().map(this::readableDiff).limit(maxDiffsToExport).toList();
     }
 
     private List<DifferingEntries> diffsGiven(
