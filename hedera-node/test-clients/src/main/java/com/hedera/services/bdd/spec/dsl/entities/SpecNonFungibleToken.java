@@ -22,6 +22,7 @@ import static java.util.Collections.emptyList;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenNftInfoOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -57,6 +58,15 @@ public class SpecNonFungibleToken extends SpecToken {
             throw new IllegalArgumentException("Cannot pre-mint more than 10 NFTs");
         }
         this.numPreMints = numPreMints;
+    }
+
+    /**
+     * Returns an operation that retrieves the token information.
+     *
+     * @return the operation
+     */
+    public GetTokenNftInfoOperation getInfo(final int serialNumber) {
+        return new GetTokenNftInfoOperation(this, serialNumber);
     }
 
     /**

@@ -1,0 +1,88 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.bdd.suites.contract.precompile.token;
+
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.METADATA_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
+
+@Tag(SMART_CONTRACT)
+@DisplayName("metadataUpdateValidation")
+@SuppressWarnings("java:S1192")
+@HapiTestLifecycle
+public class UpdateTokenMetadataTest {
+
+    @Contract(contract = "UpdateTokenMetadata", creationGas = 4_000_000L)
+    static SpecContract updateTokenMetadata;
+
+    @NonFungibleToken(
+            numPreMints = 3,
+            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
+    static SpecNonFungibleToken nft;
+
+    @Account
+    static SpecAccount jack;
+
+    @Account
+    static SpecAccount alice;
+
+    @Nested
+    @DisplayName("use TokenUpdateNFTs HAPI operation, to update metadata of individual NFTs")
+    class TokenUpdateNFTsTests {
+
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            nft.setTreasury(jack);
+            testLifecycle.doAdhoc(nft.authorizeContracts(updateTokenMetadata),
+                    jack.transferNFT(nft, alice, 1));
+        }
+
+        @HapiTest
+        @DisplayName("use updateMetadataForNFTs to correctly update metadata for 1 NFT")
+        public Stream<DynamicTest> metadataUpdateValidation() {
+            final int serialNumber = 1;
+            return hapiTest(
+                    nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("SN#" + serialNumber))),
+                    updateTokenMetadata
+                            .call("callUpdateNFTsMetadata", nft, new long[] {serialNumber}, "new metadata".getBytes())
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
+        }
+    }
+}

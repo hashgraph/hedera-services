@@ -106,6 +106,9 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
                 if (extraTokenAuthorizations.contains(TokenKeyType.PAUSE_KEY)) {
                     op.pauseKey(managedKeyName);
                 }
+                if (extraTokenAuthorizations.contains(TokenKeyType.METADATA_KEY)) {
+                    op.adminKey(managedKeyName);
+                }
                 yield op;
             }
             default -> throw new IllegalStateException("Cannot authorize contracts for " + target);
