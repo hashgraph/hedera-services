@@ -140,13 +140,12 @@ message RosterEntry {
     bytes gossip_ca_certificate = 3;
 
     /**
-     * An ALT_BN128 elliptic curve public signing key.<br/>
+     * An ALT_BN128 elliptic curve public encryption key.<br/>
      * <p>
      * The elliptic curve type may change in the future. For example <br/>
      * If the Ethereum ecosystem creates precompiles for BLS12_381,
-     * which is more secure, we may switch to that curve.
+     * we may switch to that curve.
      * <p>
-     * This value SHALL be the DER encoding of the presented elliptic curve public key.<br/>
      * This field is OPTIONAL (that is, it can initially be null)
      * but once set, it can no longer be null.
      */
