@@ -31,18 +31,36 @@ The proposal is to replace this mechanism with a component that would buffer rou
 
 ### Requirements
 
-Describe the requirements and acceptance criteria that the design proposal must satisfy.
+The proposed solution must meet the following requirements:
+
+- It must ensure that pre-handle is always done before the event is handled in consensus order.
+- It must not block the event handling thread.
+- It must not mix business logic with concurrency control.
 
 ### Design Decisions
 
-Describe the decisions made and the reasons why.
+The proposed solution will be implemented as a new component that will be responsible for buffering rounds until 
+pre-handle is complete. The buffering component mechanism was chosen as a solution because:
+
+- There is a precedent for this kind of solution in the platform, the `RoundDurabilityBuffer` component.
+- It is a fairly simple solution that has a high likelihood of being implemented in the short term.
+- It will address the problems with the current solution.
+- The wiring metrics will automatically give us insight into any pre-handle issues.
 
 #### Alternatives Considered
 
-Describe any alternatives considered and why they were not chosen.
+A single alternative solution was considered, using the `ForkJoinTask.join()` mechanism.
+Advantages of this solution are:
 
-If possible, provide a table illustrating the options, evaluation criteria, and scores that factored into the decision.
+- There would not be a need for a new component.
+- Implementing this mechanism in the wiring framework would be useful for other use cases.
 
+Disadvantages of this solution are:
+
+- It seems tricky to implement, pre-handle tasks are created at an earlier stage in the pipeline than handle tasks. We 
+  would somehow need to map multiple pre-handle tasks to a single handle task that is created at a later stage.
+- There are a lot of unknowns about this approach, which means the outcome and ETA would be uncertain.
+- It might require a significant change to the wiring framework.
 
 ---
 
