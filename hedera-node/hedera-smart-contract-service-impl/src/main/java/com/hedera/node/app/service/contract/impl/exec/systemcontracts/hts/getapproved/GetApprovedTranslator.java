@@ -43,8 +43,7 @@ public class GetApprovedTranslator extends AbstractCallTranslator<HtsCallAttempt
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && attempt.isSelector(ERC_GET_APPROVED))
-                || (!attempt.isTokenRedirect() && attempt.isSelector(HAPI_GET_APPROVED));
+        return attempt.isTokenRedirect() ? attempt.isSelector(ERC_GET_APPROVED) : attempt.isSelector(HAPI_GET_APPROVED);
     }
 
     /**

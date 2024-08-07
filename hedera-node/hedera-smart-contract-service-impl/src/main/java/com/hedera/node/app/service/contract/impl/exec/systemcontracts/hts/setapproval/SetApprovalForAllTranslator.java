@@ -53,8 +53,9 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return attempt.isSelector(SET_APPROVAL_FOR_ALL)
-                || (attempt.isTokenRedirect() && attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL)
+                : attempt.isSelector(SET_APPROVAL_FOR_ALL);
     }
 
     /**

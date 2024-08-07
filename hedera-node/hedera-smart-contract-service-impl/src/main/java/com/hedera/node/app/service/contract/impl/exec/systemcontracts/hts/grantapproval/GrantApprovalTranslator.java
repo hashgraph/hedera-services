@@ -34,7 +34,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -71,7 +70,7 @@ public class GrantApprovalTranslator extends AbstractCallTranslator<HtsCallAttem
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         if (attempt.isSelector(ERC_GRANT_APPROVAL)) {
             return bodyForErc(attempt);
-        } else if (attempt.isSelector(GRANT_APPROVAL)) {
+        } else if (attempt.isSelector(GRANT_APPROVAL, GRANT_APPROVAL_NFT)) {
             return bodyForClassicCall(attempt);
         } else {
             return new DispatchForResponseCodeHtsCall(
@@ -88,7 +87,7 @@ public class GrantApprovalTranslator extends AbstractCallTranslator<HtsCallAttem
     }
 
     private TransactionBody bodyForClassic(final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())) {
+        if (attempt.isSelector(GRANT_APPROVAL)) {
             return decoder.decodeGrantApproval(attempt);
         } else {
             return decoder.decodeGrantApprovalNFT(attempt);

@@ -58,9 +58,9 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE))
-                || (!attempt.isTokenRedirect()
-                        && attempt.isSelector(ASSOCIATE_ONE, ASSOCIATE_MANY, DISSOCIATE_ONE, DISSOCIATE_MANY));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE)
+                : attempt.isSelector(ASSOCIATE_ONE, ASSOCIATE_MANY, DISSOCIATE_ONE, DISSOCIATE_MANY);
     }
 
     /**

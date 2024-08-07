@@ -33,7 +33,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -249,7 +248,12 @@ public class AbstractCallAttempt {
      * @return boolean result
      */
     public boolean isSelector(@NonNull final Function... functions) {
-        return Stream.of(functions).map(Function::selector).anyMatch(s -> Arrays.equals(s, this.selector));
+        for (final var function : functions) {
+            if (Arrays.equals(function.selector(), this.selector())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {
