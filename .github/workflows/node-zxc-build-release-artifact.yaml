@@ -482,7 +482,7 @@ jobs:
           cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
 
       - name: Build Haveged Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@16ebe778df0e7752d2cfcbd924afdbbd89c1a755 # v6.6.1
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -490,7 +490,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.validate.outputs.version }}
 
       - name: Build Base Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@16ebe778df0e7752d2cfcbd924afdbbd89c1a755 # v6.6.1
         with:
           push: true
           platforms: linux/amd64,linux/arm64
@@ -498,7 +498,7 @@ jobs:
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.validate.outputs.version }}
 
       - name: Build Network Node Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@16ebe778df0e7752d2cfcbd924afdbbd89c1a755 # v6.6.1
         with:
           push: true
           platforms: linux/amd64,linux/arm64
