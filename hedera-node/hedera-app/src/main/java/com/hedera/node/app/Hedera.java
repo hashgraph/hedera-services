@@ -35,6 +35,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
@@ -107,6 +108,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -404,8 +406,9 @@ public final class Hedera implements SwirldMain {
      * @param state current state
      * @param deserializedVersion version deserialized
      * @param trigger trigger that is calling migration
+     * @return the state changes caused by the migration
      */
-    private void onMigrate(
+    private List<StateChanges.Builder> onMigrate(
             @NonNull final State state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
@@ -424,7 +427,7 @@ public final class Hedera implements SwirldMain {
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
-        serviceMigrator.doMigrations(
+        final var migrationStateChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
                 previousVersion,
@@ -436,6 +439,7 @@ public final class Hedera implements SwirldMain {
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");
+        return migrationStateChanges;
     }
 
     /*==================================================================================================================
@@ -674,9 +678,9 @@ public final class Hedera implements SwirldMain {
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        onMigrate(state, deserializedVersion, trigger, metrics);
+        final var migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics);
         // With the States API grounded in the working state, we can create the object graph from it
-        initializeDagger(state, trigger, platformState);
+        initializeDagger(state, trigger, platformState, migrationStateChanges);
 
         // Only initialize facilities from state system files if genesis setup is already done
         if (trigger != GENESIS && hasHandledGenesisTxn(state)) {
@@ -705,7 +709,10 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     private void initializeDagger(
-            @NonNull final State state, @NonNull final InitTrigger trigger, final PlatformState platformState) {
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final PlatformState platformState,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         // The Dagger component should be constructed every time we reach this point, even if
         // it exists (this avoids any problems with mutable singleton state by reconstructing
         // everything); but we must ensure the gRPC server in the old component is fully stopped
@@ -728,6 +735,7 @@ public final class Hedera implements SwirldMain {
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
+                .migrationStateChanges(migrationStateChanges)
                 .build();
         daggerApp.workingStateAccessor().setState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);

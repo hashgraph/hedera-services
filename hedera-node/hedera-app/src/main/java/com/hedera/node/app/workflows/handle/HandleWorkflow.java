@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.EventMetadata;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -82,6 +83,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -123,6 +125,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final List<StateChanges.Builder> migrationStateChanges;
 
     @Inject
     public HandleWorkflow(
@@ -148,7 +151,8 @@ public class HandleWorkflow {
             @NonNull final SystemSetup systemSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -172,6 +176,7 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         // Temporary flag to control stream mode during transition to block streams
         STREAM_MODE = configProvider
                 .getConfiguration()
@@ -194,6 +199,13 @@ public class HandleWorkflow {
         cacheWarmer.warm(state, round);
         if (STREAM_MODE != RECORDS) {
             blockStreamManager.startRound(round, state);
+            if (!migrationStateChanges.isEmpty()) {
+                migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
+                        .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
+                                .build())
+                        .build()));
+                migrationStateChanges.clear();
+            }
         }
         for (final var event : round) {
             if (STREAM_MODE != RECORDS) {

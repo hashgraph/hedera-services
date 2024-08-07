@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
@@ -26,10 +27,13 @@ import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -57,6 +61,7 @@ import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -76,11 +81,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,7 +117,22 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    public static final BlockStreamValidator.Factory FACTORY = new BlockStreamValidator.Factory() {
+    private Timestamp genesisMigrationTimestamp = null;
+
+    public static void main(String[] args) {
+        final var loc =
+                "/Users/michaeltinker/YetYetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3";
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(loc));
+        final var migrationItems = blocks.stream()
+                .flatMap(b -> b.items().stream())
+                .filter(BlockItem::hasStateChanges)
+                .filter(item -> item.stateChangesOrThrow().cause() == STATE_CHANGE_CAUSE_MIGRATION)
+                .toList();
+        System.out.println("Found " + migrationItems.size() + " migration items");
+        migrationItems.forEach(item -> System.out.println(item.stateChangesOrThrow()));
+    }
+
+    public static final Factory FACTORY = new Factory() {
         @NonNull
         @Override
         public BlockStreamValidator create(@NonNull final HapiSpec spec) {
@@ -213,7 +235,15 @@ public class StateChangesValidator implements BlockStreamValidator {
             for (final var item : block.items()) {
                 servicesWritten.clear();
                 if (item.hasStateChanges()) {
-                    applyStateChanges(item.stateChangesOrThrow());
+                    final var stateChanges = item.stateChangesOrThrow();
+                    if (genesisMigrationTimestamp == null) {
+                        genesisMigrationTimestamp = stateChanges.consensusTimestamp();
+                    }
+                    if (!isGenesisMigrationChange(stateChanges)) {
+                        applyStateChanges(stateChanges);
+                    } else {
+                        logger.info("Skipping genesis migration state changes");
+                    }
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
@@ -251,6 +281,11 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
     }
 
+    private boolean isGenesisMigrationChange(@NonNull final StateChanges stateChanges) {
+        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp)
+                && stateChanges.cause() == STATE_CHANGE_CAUSE_MIGRATION;
+    }
+
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
         for (final var stateChange : stateChanges.stateChanges()) {
             final var delimIndex = stateChange.stateName().indexOf('.');
@@ -268,8 +303,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
                 case SINGLETON_UPDATE -> {
                     final var singletonState = writableStates.getSingleton(stateKey);
-                    singletonState.put(
-                            stateChange.singletonUpdateOrThrow().newValue().value());
+                    singletonState.put(singletonPutFor(stateChange.singletonUpdateOrThrow()));
                     stateChangesSummary.countSingletonPut(serviceName, stateKey);
                 }
                 case MAP_UPDATE -> {
@@ -504,6 +538,23 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
         }
         return hashes;
+    }
+
+    private static Object singletonPutFor(@NonNull final SingletonUpdateChange singletonUpdateChange) {
+        return switch (singletonUpdateChange.newValue().kind()) {
+            case UNSET -> throw new IllegalStateException("Singleton update value is not set");
+            case BLOCK_INFO_VALUE -> singletonUpdateChange.blockInfoValueOrThrow();
+            case CONGESTION_LEVEL_STARTS_VALUE -> singletonUpdateChange.congestionLevelStartsValueOrThrow();
+            case ENTITY_NUMBER_VALUE -> singletonUpdateChange.entityNumberValueOrThrow();
+            case EXCHANGE_RATE_SET_VALUE -> singletonUpdateChange.exchangeRateSetValueOrThrow();
+            case NETWORK_STAKING_REWARDS_VALUE -> singletonUpdateChange.networkStakingRewardsValueOrThrow();
+            case BYTES_VALUE -> new ProtoBytes(singletonUpdateChange.bytesValueOrThrow());
+            case STRING_VALUE -> new ProtoString(singletonUpdateChange.stringValueOrThrow());
+            case RUNNING_HASHES_VALUE -> singletonUpdateChange.runningHashesValueOrThrow();
+            case THROTTLE_USAGE_SNAPSHOTS_VALUE -> singletonUpdateChange.throttleUsageSnapshotsValueOrThrow();
+            case TIMESTAMP_VALUE -> singletonUpdateChange.timestampValueOrThrow();
+            case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
+        };
     }
 
     private static Object queuePushFor(@NonNull final QueuePushChange queuePushChange) {
