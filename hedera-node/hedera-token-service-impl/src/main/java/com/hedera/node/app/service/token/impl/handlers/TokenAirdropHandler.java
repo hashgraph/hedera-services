@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep.PLACEHOLDER_SYNTHETIC_ASSOCIATION;
@@ -29,6 +31,7 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -132,6 +135,8 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         assessAndChargeCustomFee(context, convertedOp);
 
         for (final var xfers : op.tokenTransfers()) {
+            throwIfContract(xfers, accountStore);
+
             final var tokenId = xfers.tokenOrThrow();
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
@@ -201,6 +206,33 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         if (!tokenTransferList.isEmpty()) {
             executeAirdropCryptoTransfer(context, tokenTransferList, recordBuilder);
         }
+    }
+
+    // Currently we are not supporting airdropping to a contract. If any of the receivers is a contract and
+    // the contract doesn't have a key we throw an error
+    private static void throwIfContract(TokenTransferList tokenTransferList, WritableAccountStore accountStore) {
+        var receivers = extractAllReceivers(tokenTransferList);
+
+        for (var receiver : receivers) {
+            if (receiver.alias() != null) {
+                continue;
+            }
+            var account = accountStore.get(receiver);
+            validateTrue(account != null, INVALID_ACCOUNT_ID);
+            validateFalse(account.smartContract() && account.key().contractID() != null, INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    private static ArrayList<AccountID> extractAllReceivers(TokenTransferList tokenTransferList) {
+        var receivers = new ArrayList<AccountID>();
+        receivers.addAll(tokenTransferList.transfers().stream()
+                .filter(t -> t.amount() > 0)
+                .map(AccountAmount::accountID)
+                .toList());
+        receivers.addAll(tokenTransferList.nftTransfers().stream()
+                .map(NftTransfer::receiverAccountID)
+                .toList());
+        return receivers;
     }
 
     /**
