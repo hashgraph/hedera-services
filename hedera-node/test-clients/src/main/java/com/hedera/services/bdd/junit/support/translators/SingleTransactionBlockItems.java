@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A logical transaction wrapper for the block items produced for/by processing a single
@@ -34,7 +33,7 @@ import java.util.Objects;
  * @param output the output (if any) of processing the user transaction
  */
 public record SingleTransactionBlockItems(
-        @NonNull Transaction txn, @NonNull TransactionResult result, @Nullable TransactionOutput output) {
+        @Nullable Transaction txn, @Nullable TransactionResult result, @Nullable TransactionOutput output) {
 
     /**
      * The input block items should be exactly the block items produced for/by processing a
@@ -82,12 +81,12 @@ public record SingleTransactionBlockItems(
         private TransactionResult result;
         private TransactionOutput output;
 
-        public Builder txn(@NonNull final Transaction txn) {
+        public Builder txn(@Nullable final Transaction txn) {
             this.txn = txn;
             return this;
         }
 
-        public Builder result(@NonNull final TransactionResult result) {
+        public Builder result(@Nullable final TransactionResult result) {
             this.result = result;
             return this;
         }
@@ -98,14 +97,11 @@ public record SingleTransactionBlockItems(
         }
 
         /**
-         * Builds the logical transaction wrapper for the block items. Note that, as annotated,
-         * the {@link Transaction} and {@link TransactionResult} fields are required.
+         * Builds the logical transaction wrapper for the block items.
+         *
          * @return the built object
-         * @throws NullPointerException if either the transaction or result fields are null
          */
         public SingleTransactionBlockItems build() {
-            Objects.requireNonNull(txn, "transaction is required");
-            Objects.requireNonNull(result, "result is required");
             return new SingleTransactionBlockItems(txn, result, output);
         }
     }

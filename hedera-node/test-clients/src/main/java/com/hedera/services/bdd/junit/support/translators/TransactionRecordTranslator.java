@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.support.translators;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ public interface TransactionRecordTranslator<T> {
      * @param stateChanges any state changes that occurred during the transaction
      * @return the equivalent transaction record
      */
-    SingleTransactionRecord translate(@NonNull T transaction, @NonNull StateChanges stateChanges);
+    SingleTransactionRecord translate(@NonNull T transaction, @Nullable StateChanges stateChanges);
 
     /**
      * Much like the {@link #translate(Object, StateChanges)} method, but for translating a collection

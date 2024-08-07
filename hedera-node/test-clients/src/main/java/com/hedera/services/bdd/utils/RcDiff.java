@@ -100,7 +100,8 @@ public class RcDiff implements Callable<Integer> {
             final long lenOfDiffSecs,
             @NonNull final String expectedStreamsLoc,
             @NonNull final String actualStreamsLoc,
-            @NonNull final String diffsLoc) throws IOException {
+            @NonNull final String diffsLoc)
+            throws IOException {
         return new RcDiff(
                 maxDiffsToExport,
                 lenOfDiffSecs,

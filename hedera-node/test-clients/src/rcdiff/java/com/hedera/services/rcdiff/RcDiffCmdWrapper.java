@@ -67,7 +67,8 @@ public class RcDiffCmdWrapper implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         try {
-            return RcDiff.fromDirs(maxDiffsToExport, lenOfDiffSecs, expectedStreamsLoc, actualStreamsLoc, diffsLoc).call();
+            return RcDiff.fromDirs(maxDiffsToExport, lenOfDiffSecs, expectedStreamsLoc, actualStreamsLoc, diffsLoc)
+                    .call();
         } catch (IllegalArgumentException e) {
             throw new ParameterException(spec.commandLine(), e.getMessage(), e);
         }

@@ -186,7 +186,8 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             firstEntry,
                             null,
-                            "No modular record found at " + firstEntry.consensusTime() + " for transactionID : "
+                            "No first/test stream record found at " + firstEntry.consensusTime()
+                                    + " for transactionID : "
                                     + firstEntry.txnRecord().getTransactionID() + " transBody : " + firstEntry.body()));
                     continue;
                 }
@@ -194,11 +195,11 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             null,
                             secondEntries.get(i),
-                            "Additional modular record found at "
+                            "Additional first/test stream record found at "
                                     + secondEntries.get(i).consensusTime() + " for transactionID : "
                                     + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
-                                    + secondEntries.get(i).body()
-                                    + "\n -> \n" + secondEntries.get(i).txnRecord()));
+                                    + secondEntries.get(i).body() + "\n -> \n"
+                                    + secondEntries.get(i).txnRecord()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
