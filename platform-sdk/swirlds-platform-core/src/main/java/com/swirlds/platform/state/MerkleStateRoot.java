@@ -74,6 +74,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -354,20 +355,41 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * Puts the defined service state and its associated node into the merkle tree. The precondition
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied.
+     * MUST have a correct label applied. If the node is already present, then this method does nothing
+     * else.
      *
      * @param md The metadata associated with the state
      * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      * it doesn't have a label, or if the label isn't right.
      */
-    public <K, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
+    public void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
+        putServiceStateIfAbsent(md, nodeSupplier, n -> {});
+    }
+
+    /**
+     * Puts the defined service state and its associated node into the merkle tree. The precondition
+     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
+     * MUST have a correct label applied. No matter if the resulting node is newly created or already
+     * present, calls the provided initialization consumer with the node.
+     *
+     * @param md The metadata associated with the state
+     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
+     * @param nodeInitializer The node's initialization logic.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
+     * it doesn't have a label, or if the label isn't right.
+     */
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md,
+            @NonNull final Supplier<T> nodeSupplier,
+            @NonNull final Consumer<T> nodeInitializer) {
 
         // Validate the inputs
         throwIfImmutable();
         requireNonNull(md);
         requireNonNull(nodeSupplier);
+        requireNonNull(nodeInitializer);
 
         // Put this metadata into the map
         final var def = md.stateDefinition();
@@ -384,8 +406,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // If there is not a node there, then set it. I don't want to overwrite the existing node,
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
-        if (findNodeIndex(serviceName, def.stateKey()) == -1) {
-            final var node = requireNonNull(nodeSupplier.get());
+        final T node;
+        final var nodeIndex = findNodeIndex(serviceName, def.stateKey());
+        if (nodeIndex == -1) {
+            node = requireNonNull(nodeSupplier.get());
             final var label = node instanceof Labeled labeled ? labeled.getLabel() : null;
             if (label == null) {
                 throw new IllegalArgumentException("`node` must be a Labeled and have a label");
@@ -408,7 +432,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             }
 
             setChild(getNumberOfChildren(), node);
+        } else {
+            node = getChild(nodeIndex);
         }
+        nodeInitializer.accept(node);
     }
 
     /**

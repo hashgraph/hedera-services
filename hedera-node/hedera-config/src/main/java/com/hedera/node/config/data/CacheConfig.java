@@ -23,5 +23,4 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("cache")
 public record CacheConfig(
         @ConfigProperty(value = "records.ttl", defaultValue = "180") @NetworkProperty int recordsTtl,
-        @ConfigProperty(value = "cryptoTransfer.warmThreads", defaultValue = "30") @NetworkProperty
-                int cryptoTransferWarmThreads) {}
+        @ConfigProperty(value = "warmThreads", defaultValue = "30") @NetworkProperty int warmThreads) {}

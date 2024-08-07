@@ -57,7 +57,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -137,7 +137,7 @@ public class ClassicCreatesCall extends AbstractCall {
         // Choose a dispatch verification strategy based on whether the legacy activation address is active
         final var dispatchVerificationStrategy = verificationStrategyFor(frame, op);
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticCreate, dispatchVerificationStrategy, spenderId, ContractCallRecordBuilder.class);
+                .dispatch(syntheticCreate, dispatchVerificationStrategy, spenderId, ContractCallStreamBuilder.class);
         recordBuilder.status(standardized(recordBuilder.status()));
 
         final var status = recordBuilder.status();
