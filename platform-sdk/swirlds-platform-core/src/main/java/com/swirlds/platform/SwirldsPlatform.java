@@ -238,7 +238,7 @@ public class SwirldsPlatform implements Platform {
                 .getConfigData(PcesConfig.class)
                 .replayHealthThreshold();
         final PcesReplayer pcesReplayer = new PcesReplayer(
-                platformContext.getTime(),
+                platformContext,
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushTransactionHandler,

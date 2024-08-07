@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -65,16 +65,18 @@ class ConsistencyTestingToolRoundTests {
         final List<PlatformEvent> mockEvents = new ArrayList<>();
 
         eventContents.forEach(eventContent -> {
-            final List<OneOf<PayloadOneOfType>> payloads = new ArrayList<>();
+            final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
 
-            eventContent.forEach(payloadContent -> {
-                final Bytes bytes = Bytes.wrap(longToByteArray(payloadContent));
-                final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes);
-                payloads.add(payload);
+            eventContent.forEach(transactionContent -> {
+                final Bytes bytes = Bytes.wrap(longToByteArray(transactionContent));
+                final OneOf<TransactionOneOfType> transaction =
+                        new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, bytes);
+                transactions.add(transaction);
             });
 
-            final PlatformEvent e =
-                    new TestingEventBuilder(randotron).setTransactions(payloads).build();
+            final PlatformEvent e = new TestingEventBuilder(randotron)
+                    .setOneOfTransactions(transactions)
+                    .build();
             mockEvents.add(e);
         });
         final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);

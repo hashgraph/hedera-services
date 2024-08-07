@@ -35,14 +35,14 @@ import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -198,7 +198,7 @@ public record UserTxn(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
-            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
+            @NonNull final StreamBuilder baseBuilder) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -215,7 +215,7 @@ public record UserTxn(
                         .getStore(WritableEntityIdStore.class));
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
         final var feeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) baseBuilder);
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -267,7 +267,7 @@ public record UserTxn(
      * Returns the base stream builder for this user transaction.
      * @return the base stream builder
      */
-    public SingleTransactionRecordBuilder baseBuilder() {
-        return stack.getBaseBuilder(SingleTransactionRecordBuilder.class);
+    public StreamBuilder baseBuilder() {
+        return stack.getBaseBuilder(StreamBuilder.class);
     }
 }
