@@ -313,6 +313,32 @@ public class TokenAirdropTest {
             }
 
             @Nested
+            @DisplayName("and with receiverSigRequired=true")
+            class ReceiverSigRequiredTests {
+                private final static String RECEIVER_WITH_SIG_REQUIRED = "receiver_sig_required";
+                @HapiTest
+                final Stream<DynamicTest> receiverSigInPending() {
+
+                    return defaultHapiSpec("should go to pending state")
+                            .given(
+                                    cryptoCreate(RECEIVER_WITH_SIG_REQUIRED).receiverSigRequired(true))
+                            .when(tokenAirdrop(
+                                            moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                    .payingWith(OWNER)
+                                    .via("sigTxn"))
+                            .then(
+                                    getTxnRecord("second")
+                                            // assert transfers
+                                            .hasPriority(recordWith()
+                                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                            moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                    // assert balances
+                                    getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0)
+                            );
+                }
+            }
+
+            @Nested
             @DisplayName("with multiple tokens")
             class AirdropMultipleTokens {
                 // TODO transfer 10 tokens once MAX_CHILD_RECORDS is increased
