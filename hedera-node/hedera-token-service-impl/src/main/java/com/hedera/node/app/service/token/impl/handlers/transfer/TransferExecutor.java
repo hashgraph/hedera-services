@@ -70,6 +70,16 @@ public class TransferExecutor {
     }
 
     protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) throws PreCheckException {
+        preHandle(context, op, true);
+    }
+
+    protected void preHandleWithoutReceiverSigRequired(PreHandleContext context, CryptoTransferTransactionBody op)
+            throws PreCheckException {
+        preHandle(context, op, false);
+    }
+
+    private void preHandle(PreHandleContext context, CryptoTransferTransactionBody op, boolean receiverSigRequiredCheck)
+            throws PreCheckException {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenTransfers = op.tokenTransfers();
@@ -78,8 +88,8 @@ public class TransferExecutor {
         for (final var transfers : tokenTransfers) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
-            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
+            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false, receiverSigRequiredCheck);
+            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore, receiverSigRequiredCheck);
         }
 
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
@@ -300,20 +310,31 @@ public class TransferExecutor {
         return steps;
     }
 
+    private void checkFungibleTokenTransfers(
+            @NonNull final List<AccountAmount> transfers,
+            @NonNull final PreHandleContext ctx,
+            @NonNull final ReadableAccountStore accountStore,
+            final boolean hbarTransfer)
+            throws PreCheckException {
+        checkFungibleTokenTransfers(transfers, ctx, accountStore, hbarTransfer, true);
+    }
+
     /**
      * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
      *
-     * @param transfers The transfers to check
-     * @param ctx The context we gather signing keys into
-     * @param accountStore The account store to use to look up accounts
-     * @param hbarTransfer Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
+     * @param transfers                The transfers to check
+     * @param ctx                      The context we gather signing keys into
+     * @param accountStore             The account store to use to look up accounts
+     * @param hbarTransfer             Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
+     * @param receiverSigRequiredCheck
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
             @NonNull final List<AccountAmount> transfers,
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore,
-            final boolean hbarTransfer)
+            final boolean hbarTransfer,
+            final boolean receiverSigRequiredCheck)
             throws PreCheckException {
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of hbar INTO a single account or OUT of a
@@ -352,7 +373,7 @@ public class TransferExecutor {
                         ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
                     }
 
-                } else if (isCredit && account.receiverSigRequired()) {
+                } else if (isCredit && receiverSigRequiredCheck && account.receiverSigRequired()) {
                     ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else if (hbarTransfer) {
@@ -377,7 +398,8 @@ public class TransferExecutor {
             final PreHandleContext meta,
             final ReadableTokenStore.TokenMetadata tokenMeta,
             final CryptoTransferTransactionBody op,
-            final ReadableAccountStore accountStore)
+            final ReadableAccountStore accountStore,
+            final boolean receiverSigRequiredCheck)
             throws PreCheckException {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
@@ -386,7 +408,8 @@ public class TransferExecutor {
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
-            checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore);
+            checkReceiver(
+                    receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore, receiverSigRequiredCheck);
         }
     }
 }

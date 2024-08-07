@@ -99,7 +99,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         var convertedOp = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(op.tokenTransfers())
                 .build();
-        preHandle(context, convertedOp);
+        preHandleWithoutReceiverSigRequired(context, convertedOp);
     }
 
     @Override

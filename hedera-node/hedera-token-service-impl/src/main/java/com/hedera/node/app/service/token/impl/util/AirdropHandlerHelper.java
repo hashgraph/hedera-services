@@ -182,6 +182,8 @@ public class AirdropHandlerHelper {
         // check if we have existing association or free auto associations slots or unlimited auto associations
         if (tokenRelation != null) {
             return false;
+        } else if (receiver.receiverSigRequired()) {
+            return true;
         } else if (receiver.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
             return false;
         } else {

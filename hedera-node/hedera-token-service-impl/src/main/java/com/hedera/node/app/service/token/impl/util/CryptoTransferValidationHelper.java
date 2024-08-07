@@ -72,7 +72,8 @@ public class CryptoTransferValidationHelper {
             final PreHandleContext meta,
             final ReadableTokenStore.TokenMetadata tokenMeta,
             @Nullable final CryptoTransferTransactionBody op,
-            final ReadableAccountStore accountStore)
+            final ReadableAccountStore accountStore,
+            final boolean receiverSigRequiredCheck)
             throws PreCheckException {
 
         // Lookup the receiver account and verify it.
@@ -92,7 +93,7 @@ public class CryptoTransferValidationHelper {
             // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
             // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
             throw new PreCheckException(INVALID_ACCOUNT_ID);
-        } else if (receiverAccount.receiverSigRequired()) {
+        } else if (receiverSigRequiredCheck && receiverAccount.receiverSigRequired()) {
             // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
             meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
