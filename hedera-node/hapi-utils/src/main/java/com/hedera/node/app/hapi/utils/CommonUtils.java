@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccoun
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAirdrop;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenClaimAirdrop;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
@@ -223,6 +224,7 @@ public final class CommonUtils {
             case UTIL_PRNG -> UtilPrng;
             case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
             case TOKENAIRDROP -> TokenAirdrop;
+            case TOKENCLAIMAIRDROP -> TokenClaimAirdrop;
             case NODECREATE -> NodeCreate;
             case NODEDELETE -> NodeDelete;
             case NODEUPDATE -> NodeUpdate;
