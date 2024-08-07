@@ -56,31 +56,33 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
      * @param reason the halt reason
      * @return the status
      */
+    // FUTURE: refactor in the future to be more readable when we start looking for cleanups
+    // Future cannot be addressed until gradle update per
+    // https://github.com/autonomousapps/dependency-analysis-gradle-plugin/issues/1150
     public static ResponseCodeEnum statusFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
-        switch (reason) {
-            case SELF_DESTRUCT_TO_SELF:
-                return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-            case INVALID_SOLIDITY_ADDRESS:
-                return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-            case INVALID_ALIAS_KEY:
-                return ResponseCodeEnum.INVALID_ALIAS_KEY;
-            case INVALID_SIGNATURE:
-                return ResponseCodeEnum.INVALID_SIGNATURE;
-            case CONTRACT_ENTITY_LIMIT_REACHED:
-                return ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-            case ExceptionalHaltReason.DefaultExceptionalHaltReason.INSUFFICIENT_GAS:
-                return ResponseCodeEnum.INSUFFICIENT_GAS;
-            case ExceptionalHaltReason.DefaultExceptionalHaltReason.ILLEGAL_STATE_CHANGE:
-                return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
-            case CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS:
-                return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-            case CustomExceptionalHaltReason.INVALID_CONTRACT_ID:
-                return ResponseCodeEnum.INVALID_CONTRACT_ID;
-            case CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED:
-                return ResponseCodeEnum.INVALID_FEE_SUBMITTED;
-            default:
-                return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+        if (reason == SELF_DESTRUCT_TO_SELF) {
+            return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+        } else if (reason == INVALID_SOLIDITY_ADDRESS) {
+            return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+        } else if (reason == INVALID_ALIAS_KEY) {
+            return ResponseCodeEnum.INVALID_ALIAS_KEY;
+        } else if (reason == INVALID_SIGNATURE) {
+            return ResponseCodeEnum.INVALID_SIGNATURE;
+        } else if (reason == CONTRACT_ENTITY_LIMIT_REACHED) {
+            return ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+        } else if (reason == ExceptionalHaltReason.INSUFFICIENT_GAS) {
+            return ResponseCodeEnum.INSUFFICIENT_GAS;
+        } else if (reason == ExceptionalHaltReason.ILLEGAL_STATE_CHANGE) {
+            return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+        } else if (reason == CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS) {
+            return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_CONTRACT_ID) {
+            return ResponseCodeEnum.INVALID_CONTRACT_ID;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED) {
+            return ResponseCodeEnum.INVALID_FEE_SUBMITTED;
+        } else {
+            return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }
     }
 
