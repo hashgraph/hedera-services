@@ -27,7 +27,6 @@ import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
@@ -35,6 +34,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
@@ -84,6 +84,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.MerkleRoot;
@@ -107,6 +108,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -138,12 +140,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * Represents the Hedera Consensus Node.
  *
- * <p>This is the main entry point for the Hedera Consensus Node. It contains initialization logic for the
- * node, including its state. It constructs some artifacts for gluing the mono-service with the modular service
- * infrastructure. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
+ * <p>This is the main entry point for the Hedera Consensus Node. It contains initialization logic for the node,
+ * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain {
+public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -325,6 +326,23 @@ public final class Hedera implements SwirldMain {
         return new MerkleStateRoot(new MerkleStateLifecyclesImpl(this));
     }
 
+    @Override
+    public void notify(@NonNull final PlatformStatusChangeNotification notification) {
+        platformStatus = notification.getNewStatus();
+        logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
+        switch (platformStatus) {
+            case ACTIVE -> startGrpcServer();
+            case CATASTROPHIC_FAILURE -> shutdownGrpcServer();
+            case FREEZE_COMPLETE -> {
+                closeRecordStreams();
+                shutdownGrpcServer();
+            }
+            case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING, BEHIND -> {
+                // Nothing to do here, just enumerate for completeness
+            }
+        }
+    }
+
     /*==================================================================================================================
     *
     * Initialization Step 2: Initialize the state. Either genesis or restart or reconnect or some other trigger.
@@ -404,8 +422,9 @@ public final class Hedera implements SwirldMain {
      * @param state current state
      * @param deserializedVersion version deserialized
      * @param trigger trigger that is calling migration
+     * @return the state changes caused by the migration
      */
-    private void onMigrate(
+    private List<StateChanges.Builder> onMigrate(
             @NonNull final State state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
@@ -424,7 +443,7 @@ public final class Hedera implements SwirldMain {
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
-        serviceMigrator.doMigrations(
+        final var migrationStateChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
                 previousVersion,
@@ -436,6 +455,7 @@ public final class Hedera implements SwirldMain {
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");
+        return migrationStateChanges;
     }
 
     /*==================================================================================================================
@@ -464,32 +484,6 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
-        // The Hashgraph platform has a "platform state", and a notification service to indicate when those
-        // states change; we use these state changes for various purposes, such as turning off the gRPC
-        // server when we ISS or freeze, or turning it back on when we are active
-        final var notifications = platform.getNotificationEngine();
-        notifications.register(PlatformStatusChangeListener.class, notification -> {
-            platformStatus = notification.getNewStatus();
-            logger.info("HederaNode#{} is {}", nodeId, platformStatus.name());
-            switch (platformStatus) {
-                case ACTIVE -> startGrpcServer();
-                case CATASTROPHIC_FAILURE -> shutdownGrpcServer();
-                case FREEZE_COMPLETE -> {
-                    if (HandleWorkflow.STREAM_MODE != BLOCKS) {
-                        closeRecordStreams();
-                    }
-                    shutdownGrpcServer();
-                }
-                case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING, BEHIND -> {
-                    // Nothing to do here, just enumerate for completeness
-                }
-            }
-        });
-        // This reconnect listener checks if there is any upgrade-related side effect it missed while offline,
-        // and catches up with that side effect (e.g., writing a marker file, or unzipping the upgrade file)
-        notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
-        // This notifaction is needed for freeze / upgrade.
-        notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
     }
 
     /**
@@ -674,9 +668,9 @@ public final class Hedera implements SwirldMain {
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        onMigrate(state, deserializedVersion, trigger, metrics);
+        final var migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics);
         // With the States API grounded in the working state, we can create the object graph from it
-        initializeDagger(state, trigger, platformState);
+        initializeDagger(state, trigger, platformState, migrationStateChanges);
 
         // Only initialize facilities from state system files if genesis setup is already done
         if (trigger != GENESIS && hasHandledGenesisTxn(state)) {
@@ -705,12 +699,20 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     private void initializeDagger(
-            @NonNull final State state, @NonNull final InitTrigger trigger, final PlatformState platformState) {
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final PlatformState platformState,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+        final var notifications = platform.getNotificationEngine();
         // The Dagger component should be constructed every time we reach this point, even if
         // it exists (this avoids any problems with mutable singleton state by reconstructing
-        // everything); but we must ensure the gRPC server in the old component is fully stopped
+        // everything); but we must ensure the gRPC server in the old component is fully stopped,
+        // as well as unregister listeners from the last time this method ran
         if (daggerApp != null) {
             shutdownGrpcServer();
+            notifications.unregister(PlatformStatusChangeListener.class, this);
+            notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
+            notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
@@ -728,9 +730,13 @@ public final class Hedera implements SwirldMain {
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
+                .migrationStateChanges(migrationStateChanges)
                 .build();
         daggerApp.workingStateAccessor().setState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
+        notifications.register(PlatformStatusChangeListener.class, this);
+        notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
+        notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
     }
 
     private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
