@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl;
+package com.hedera.node.app.spi;
 
-import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import dagger.BindsInstance;
-import dagger.Component;
 import java.time.InstantSource;
-import javax.inject.Singleton;
 
-@Singleton
-@Component(modules = ContractServiceModule.class)
-public interface ContractServiceComponent {
-    @Component.Factory
-    interface Factory {
-        ContractServiceComponent create(
-                @BindsInstance InstantSource instantSource, @BindsInstance SignatureVerifier signatureVerifier);
-    }
+/**
+ * Gives context to {@link com.swirlds.state.spi.Service} implementations on how the application workflows will do
+ * shared functions like verifying signatures or computing the current instant.
+ */
+public interface AppContext {
+    /**
+     * The source of the current instant.
+     * @return the instant source
+     */
+    InstantSource instantSource();
 
-    ContractHandlers handlers();
+    /**
+     * The signature verifier the application workflows will use.
+     * @return the signature verifier
+     */
+    SignatureVerifier signatureVerifier();
 }
