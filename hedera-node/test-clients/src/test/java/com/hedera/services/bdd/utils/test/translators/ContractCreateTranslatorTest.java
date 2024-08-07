@@ -74,7 +74,7 @@ class ContractCreateTranslatorTest {
     void testTranslateContractCreate() {
         final ContractID contractID = ContractID.newBuilder().contractNum(5).build();
         final Bytes evmAddress = Bytes.fromHex("badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada");
-        final List<TransactionSidecarRecord> sidecars = List.of();
+        final List<TransactionSidecarRecord> sidecars = List.of(TransactionSidecarRecord.DEFAULT);
         // Arrange
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
