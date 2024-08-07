@@ -30,12 +30,12 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
-import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
@@ -120,14 +120,14 @@ class CryptoTransferHandlerTestBase extends StepsBase {
 
     protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                 .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
                 .build();
     }
 
     protected TransactionBody newTokenAirdrop(final List<TokenTransferList> tokenTransferLists) {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                 .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
                 .build();
     }
