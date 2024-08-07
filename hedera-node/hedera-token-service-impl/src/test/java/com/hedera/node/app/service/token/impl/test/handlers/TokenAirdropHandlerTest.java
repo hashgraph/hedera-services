@@ -397,7 +397,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         // set up transaction and context
-        givenAirdropTxn(true);
+        givenAirdropTxn(true, zeroAccountId, TOKEN_AIRDROP);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);

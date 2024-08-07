@@ -462,8 +462,4 @@ public class TxnFactory {
     public Consumer<TokenClaimAirdropTransactionBody.Builder> defaultDefTokenClaimAirdropTransactionBody() {
         return builder -> {};
     }
-
-    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
-        return builder -> {};
-    }
 }

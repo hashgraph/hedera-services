@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -243,10 +244,10 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAirdropTxn() {
-        givenAirdropTxn(false);
+        givenAirdropTxn(false, ownerId, AirDropTransferType.TOKEN_AND_NFT_AIRDROP);
     }
 
-    protected void givenAirdropTxn(boolean isReceiverAssociated) {
+    protected void givenAirdropTxn(boolean isReceiverAssociated, AccountID senderId, AirDropTransferType transferType) {
         var receiver = tokenReceiverNoAssociationId;
         if (isReceiverAssociated) {
             receiver = tokenReceiverId;
