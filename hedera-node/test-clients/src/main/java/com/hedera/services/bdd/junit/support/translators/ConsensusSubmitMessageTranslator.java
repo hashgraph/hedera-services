@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -23,12 +24,14 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     @Override
     public SingleTransactionRecord translate(
-            @NotNull SingleTransactionBlockItems transaction, @NonNull StateChanges stateChanges) {
+            @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
 
         final var txnOutputItem = transaction.output();
