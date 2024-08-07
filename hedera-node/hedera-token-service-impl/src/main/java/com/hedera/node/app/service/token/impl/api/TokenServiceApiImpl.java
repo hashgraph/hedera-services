@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.api;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -521,6 +522,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // validate if accounts exist
         final var deletedAccount = accountStore.get(deletedId);
         validateTrue(deletedAccount != null, INVALID_ACCOUNT_ID);
+        validateFalse(deletedAccount.hasHeadPendingAirdropId(), ACCOUNT_HAS_PENDING_AIRDROPS);
         final var transferAccount = accountStore.get(obtainerId);
         validateTrue(transferAccount != null, INVALID_TRANSFER_ACCOUNT_ID);
         // if the account is treasury for any other token, it can't be deleted

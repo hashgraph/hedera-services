@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
@@ -76,6 +78,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.HODL_XFE
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -104,6 +107,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
@@ -116,7 +120,25 @@ public class AirdropsDisabledTest {
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.overrideInClass(Map.of("entities.unlimitedAutoAssociationsEnabled", "false"));
+        testLifecycle.overrideInClass(Map.of(
+                "tokens.airdrops.enabled", "false",
+                "entities.unlimitedAutoAssociationsEnabled", "false"));
+    }
+
+    @HapiTest
+    @DisplayName("feature flag is disabled")
+    final Stream<DynamicTest> notSupported() {
+        return defaultHapiSpec("should fail - NOT_SUPPORTED")
+                .given(
+                        cryptoCreate("OWNER").balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate("RECEIVER"),
+                        tokenCreate("FUNGIBLE_TOKEN")
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury("OWNER"))
+                .when()
+                .then(tokenAirdrop(moving(10, "FUNGIBLE_TOKEN").between("OWNER", "RECEIVER"))
+                        .payingWith("OWNER")
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     @HapiTest
