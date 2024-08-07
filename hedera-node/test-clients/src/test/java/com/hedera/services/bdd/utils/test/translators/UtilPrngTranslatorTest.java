@@ -30,6 +30,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
 import com.hedera.services.bdd.junit.support.translators.UtilPrngTranslator;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +84,11 @@ class UtilPrngTranslatorTest {
                 .prngBytes(bytes)
                 .consensusTimestamp(timestamp)
                 .build();
+
+        assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), List.of());
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
     }
 
     @Test
@@ -106,7 +111,11 @@ class UtilPrngTranslatorTest {
                 .prngNumber(number)
                 .consensusTimestamp(timestamp)
                 .build();
+
+        assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), List.of());
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
     }
 
     @Test
@@ -124,6 +133,10 @@ class UtilPrngTranslatorTest {
         // Assert
         TransactionRecord expectedRecord =
                 TransactionRecord.newBuilder().consensusTimestamp(timestamp).build();
+
+        assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), List.of());
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
