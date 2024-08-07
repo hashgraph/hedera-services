@@ -34,6 +34,12 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+}
+
 sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
