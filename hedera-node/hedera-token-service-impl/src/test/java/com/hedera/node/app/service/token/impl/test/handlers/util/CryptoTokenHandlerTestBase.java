@@ -550,6 +550,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokensMap.put(tokenId, newToken);
     }
 
+    protected void givenAssociatedReceiver(AccountID accountID, TokenID tokenID) {
+        EntityIDPair pair =
+                EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenID).build();
+        TokenRelation rel = TokenRelation.newBuilder()
+                .tokenId(tokenID)
+                .accountId(accountID)
+                .balance(0L)
+                .frozen(false)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+
+        tokenRelsMap.put(pair, rel);
+    }
+
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
         assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
@@ -558,6 +573,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenAccountsInReadableStore();
         givenTokensInReadableStore();
         givenReadableTokenRelsStore();
+        givenReadableAirdropStore();
         givenReadableNftStore();
         givenReadableAirdropStore();
         givenReadableStakingRewardsStore();
@@ -932,6 +948,16 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .tinybarBalance(Long.MAX_VALUE)
                 .headNftId((NftID) null)
                 .headNftSerialNumber(0L)
+                .build();
+        tokenReceiverNoAssociationsAccount = givenValidAccountBuilder()
+                .build()
+                .copyBuilder()
+                .accountId(tokenReceiverNoAssociationId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .maxAutoAssociations(0)
+                .usedAutoAssociations(0)
                 .build();
         tokenReceiverNoAssociationsAccount = givenValidAccountBuilder()
                 .build()

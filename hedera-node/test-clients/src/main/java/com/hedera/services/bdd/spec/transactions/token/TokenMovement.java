@@ -25,9 +25,14 @@ import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
+import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -156,6 +161,30 @@ public class TokenMovement {
         return token;
     }
 
+    /**
+     *  Try to identify any Token -> Receiver in this movement that has no relations.
+     *  It is used when we try to estimate association fees, that should be prepaid while sending airdrop transactions.
+     *
+     * @return map Token to list of receivers accounts
+     */
+    public List<String> getAccountsWithMissingRelations(HapiSpec spec) {
+        var accountsWithoutRel = new ArrayList<String>();
+        if (receiver.isPresent() && !spec.registry().hasTokenRel(receiver.get(), token)) {
+            accountsWithoutRel.add(receiver.get());
+        }
+        receivers.ifPresent(strings -> strings.forEach(receiver -> {
+            if (!spec.registry().hasTokenRel(receiver, token)) {
+                accountsWithoutRel.add(receiver);
+            }
+        }));
+        // check if receiver is evm address
+        if (accountsWithoutRel.isEmpty() && evmAddressReceiver.isPresent()) {
+            accountsWithoutRel.add(CommonUtils.hex(evmAddressReceiver.get().toByteArray()));
+        }
+
+        return accountsWithoutRel;
+    }
+
     public boolean isTrulyToken() {
         return token != null && !token.equals(HapiSuite.HBAR_TOKEN_SENTINEL);
     }
@@ -234,6 +263,57 @@ public class TokenMovement {
         }
 
         return scopedTransfers.build();
+    }
+
+    public List<PendingAirdropRecord> specializedForPendingAirdrop(HapiSpec spec) {
+        List<PendingAirdropRecord> records = new ArrayList<>();
+        var tokenXfer = specializedFor(spec);
+        var aaSender = tokenXfer.getTransfersList().stream()
+                .filter(item -> item.getAmount() < 0)
+                .findFirst();
+        tokenXfer.getTransfersList().stream()
+                .filter(item -> item.getAmount() >= 0)
+                .forEach(transfer -> {
+                    var tokenId = tokenXfer.getToken();
+                    var pendingAirdropId = PendingAirdropId.newBuilder()
+                            .setSenderId(aaSender.orElseThrow().getAccountID())
+                            .setReceiverId(transfer.getAccountID())
+                            .setFungibleTokenType(tokenId)
+                            .build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder()
+                            .setAmount(transfer.getAmount())
+                            .build();
+                    var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                            .setPendingAirdropId(pendingAirdropId)
+                            .setPendingAirdropValue(pendingAirdropValue)
+                            .build();
+                    records.add(pendingAirdropRecord);
+                });
+
+        return records;
+    }
+
+    public List<PendingAirdropRecord> specializedForNftPendingAirdop(HapiSpec spec) {
+        List<PendingAirdropRecord> records = new ArrayList<>();
+        var tokenXfer = specializedForNft(spec);
+        var tokenId = tokenXfer.getToken();
+        tokenXfer.getNftTransfersList().stream().forEach(transfer -> {
+            var aaSender = transfer.getSenderAccountID();
+            var aaReceiver = transfer.getReceiverAccountID();
+            var pendingAirdropId = PendingAirdropId.newBuilder()
+                    .setSenderId(aaSender)
+                    .setReceiverId(aaReceiver)
+                    .setNonFungibleToken(NftID.newBuilder()
+                            .setTokenID(tokenId)
+                            .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
+                    .build();
+            var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                    .setPendingAirdropId(pendingAirdropId)
+                    .build();
+
+            records.add(pendingAirdropRecord);
+        });
+        return records;
     }
 
     private AccountAmount adjustment(String name, long value, HapiSpec spec) {

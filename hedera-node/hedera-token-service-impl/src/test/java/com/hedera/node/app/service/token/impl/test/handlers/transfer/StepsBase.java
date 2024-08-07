@@ -46,18 +46,16 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeTokenAirdropRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
-import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -78,13 +76,15 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     @Mock
     protected CryptoCreateStreamBuilder cryptoCreateRecordBuilder;
-    protected TokenAirdropRecordBuilder tokenAirdropRecordBuilder = new FakeTokenAirdropRecordBuilder().create();
+
+    @Mock
+    protected TokenAirdropStreamBuilder tokenAirdropRecordBuilder;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected HandleContext handleContext;
+    protected DispatchHandleContext handleContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext.SavepointStack stack;
@@ -288,7 +288,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(),
-                        eq(TokenAirdropRecordBuilder.class),
+                        eq(TokenAirdropStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class)))

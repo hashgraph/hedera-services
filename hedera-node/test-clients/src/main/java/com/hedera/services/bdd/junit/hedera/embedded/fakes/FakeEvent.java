@@ -19,6 +19,9 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -32,6 +35,7 @@ public class FakeEvent implements Event {
     private final NodeId creatorId;
     private final Instant timeCreated;
     private final SemanticVersion version;
+    private final EventCore eventCore;
     public final TransactionWrapper transaction;
 
     public FakeEvent(
@@ -43,6 +47,11 @@ public class FakeEvent implements Event {
         this.creatorId = requireNonNull(creatorId);
         this.timeCreated = requireNonNull(timeCreated);
         this.transaction = requireNonNull(transaction);
+        this.eventCore = EventCore.newBuilder()
+                .creatorNodeId(creatorId.id())
+                .timeCreated(HapiUtils.asTimestamp(timeCreated))
+                .version(version)
+                .build();
     }
 
     @Override
@@ -64,6 +73,18 @@ public class FakeEvent implements Event {
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        return requireNonNull(version);
+        return version;
+    }
+
+    @NonNull
+    @Override
+    public EventCore getEventCore() {
+        return eventCore;
+    }
+
+    @NonNull
+    @Override
+    public Bytes getSignature() {
+        throw new UnsupportedOperationException();
     }
 }
