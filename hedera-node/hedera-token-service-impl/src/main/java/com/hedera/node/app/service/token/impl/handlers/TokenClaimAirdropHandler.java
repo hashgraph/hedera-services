@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater.removePendingAirdrops;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -48,6 +49,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,11 +80,16 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
 
     @Override
     public void handle(@NonNull HandleContext context) throws HandleException {
+        var op = context.body().tokenClaimAirdropOrThrow();
+        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(
+                op.pendingAirdrops().size() < tokensConfig.maxAllowedPendingAirdropsToClaim(),
+                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+
         var pendingAirdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
-        var op = context.body().tokenClaimAirdropOrThrow();
         var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
 
         List<TokenTransferList> transfers = new ArrayList<>();

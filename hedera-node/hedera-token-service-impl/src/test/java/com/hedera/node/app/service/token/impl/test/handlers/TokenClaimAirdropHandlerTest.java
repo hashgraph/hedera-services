@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -25,11 +27,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
+import com.hedera.node.app.spi.workflows.HandleException;
 import java.util.ArrayList;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
@@ -48,8 +51,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
             .fungibleTokenType(fungibleTokenIDC)
             .build();
 
-    @BeforeEach
-    void stateInitialize() {
+    private void stateInitialize() {
         // setup all default states
         handlerTestBaseInternalSetUp(true);
         // setup airdrop states
@@ -83,7 +85,20 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
     }
 
     @Test
+    void pendingAirDropListMoreThanTenThrows() {
+        var airdrops = new ArrayList<PendingAirdropId>();
+        for (int i = 0; i < 11; i++) {
+            airdrops.add(PendingAirdropId.DEFAULT);
+        }
+        givenClaimAirdrop(airdrops);
+
+        final var msg = assertThrows(HandleException.class, () -> tokenClaimAirdropHandler.handle(handleContext));
+        assertEquals(ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED, msg.getStatus());
+    }
+
+    @Test
     void claimFirstAirdrop() {
+        stateInitialize();
 
         // claim first airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -118,7 +133,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimSecondAirdrop() {
-        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
+        stateInitialize();
 
         // claim second airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -157,7 +172,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimThirdAirdrop() {
-        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
+        stateInitialize();
 
         // claim third airdrop
         var airdrops = new ArrayList<PendingAirdropId>();
@@ -196,10 +211,10 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimMultipleAirdrops() {
+        stateInitialize();
+
         // set up fourth additional pending airdrop
         var fourthPendingAirdropId = setUpFourthPendingAirdrop();
-
-        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // assert initial state
         assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
@@ -251,10 +266,9 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void claimMultipleAirdrops2() {
+        stateInitialize();
         // set up fourth additional pending airdrop
         var fourthPendingAirdropId = setUpFourthPendingAirdrop();
-
-        //        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(validator);
 
         // assert initial state
         assertThat(writableAccountStore.get(spenderId).headPendingAirdropId()).isEqualTo(fourthPendingAirdropId);
