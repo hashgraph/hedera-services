@@ -183,6 +183,8 @@ public class AirdropHandlerHelper {
         if (tokenRelation != null) {
             return false;
         } else if (receiver.receiverSigRequired()) {
+            // If the receiver signature is required, even if there are open slots for auto-associations, we should
+            // always create a pending airdrop
             return true;
         } else if (receiver.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
             return false;

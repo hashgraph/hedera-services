@@ -69,10 +69,23 @@ public class TransferExecutor {
         this.validator = validator;
     }
 
+    /**
+     * Pre-handle for crypto transfer transaction.
+     * @param context handle context
+     * @param op transaction body
+     * @throws PreCheckException if any error occurs during the process
+     */
     protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) throws PreCheckException {
         preHandle(context, op, true);
     }
 
+    /**
+     * Pre-handle for airdrop transaction, that ignore reciever sign required check. Because any airdrop to
+     * receiver with signature required, should result in a pending airdrop.
+     * @param context handle context
+     * @param op transaction body
+     * @throws PreCheckException if any error occurs during the process
+     */
     protected void preHandleWithoutReceiverSigRequired(PreHandleContext context, CryptoTransferTransactionBody op)
             throws PreCheckException {
         preHandle(context, op, false);
