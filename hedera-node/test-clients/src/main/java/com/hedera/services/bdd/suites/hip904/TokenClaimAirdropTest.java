@@ -47,17 +47,16 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 @DisplayName("Claim token airdrop")
 public class TokenClaimAirdropTest {
+    private static String OWNER = "owner";
+    private static String OWNER_2 = "owner2";
+    private static String RECEIVER = "receiver";
+    private static String FUNGIBLE_TOKEN = "fungibleToken";
+    private static String FUNGIBLE_TOKEN_2 = "fungibleToken2";
+    private static String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    private static String NFT_SUPPLY_KEY = "supplyKey";
 
     @HapiTest
     final Stream<DynamicTest> claimFungibleTokenAirdrop() {
-        var OWNER = "owner";
-        var OWNER_2 = "owner2";
-        var RECEIVER = "receiver";
-        var FUNGIBLE_TOKEN = "fungibleToken";
-        var FUNGIBLE_TOKEN_2 = "fungibleToken2";
-        var NON_FUNGIBLE_TOKEN = "nonFungibleToken";
-        var NFT_SUPPLY_KEY = "supplyKey";
-
         return defaultHapiSpec("should transfer fungible tokens")
                 .given(
                         overriding("tokens.airdrops.enabled", "true"),

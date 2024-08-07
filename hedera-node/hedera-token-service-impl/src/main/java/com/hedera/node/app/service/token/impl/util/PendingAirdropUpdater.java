@@ -31,17 +31,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Class that computes the expected results of a pending airdrops removal and then commit the needed changes.
+ * This way it will save several state updates of pending airdrop's linked list pointers {@code previousAirdrop()}
+ * and {@code nextAirdrop()}, also sender's account updates of {@code headPendingAirdropId()} and
+ * {@code numberPendingAirdrops()}
+ */
 public class PendingAirdropUpdater {
+    @NonNull
+    private final WritableAirdropStore pendingAirdropStore;
 
-    public static void removePendingAirdrops(
-            @NonNull final List<PendingAirdropId> airdropsToRemove,
-            @NonNull final WritableAirdropStore pendingAirdropStore,
-            @NonNull final WritableAccountStore accountStore) {
+    @NonNull
+    private final WritableAccountStore accountStore;
+
+    public PendingAirdropUpdater(
+            @NonNull WritableAirdropStore pendingAirdropStore, @NonNull WritableAccountStore accountStore) {
+        this.pendingAirdropStore = pendingAirdropStore;
+        this.accountStore = accountStore;
+    }
+
+    public void removePendingAirdrops(@NonNull final List<PendingAirdropId> airdropsToRemove) {
         final Map<AccountID, Account> updatedSenders = new HashMap<>();
         final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops = new HashMap<>();
         // calculate state changes
         for (PendingAirdropId id : airdropsToRemove) {
-            removePendingAirdropAndUpdateStores(id, pendingAirdropStore, accountStore, updatedSenders, updatedAirdrops);
+            removePendingAirdropAndUpdateStores(id, updatedSenders, updatedAirdrops);
         }
 
         // commit updates
@@ -50,14 +64,12 @@ public class PendingAirdropUpdater {
         airdropsToRemove.forEach(pendingAirdropStore::remove);
     }
 
-    private static void removePendingAirdropAndUpdateStores(
-            PendingAirdropId airdropId,
-            WritableAirdropStore pendingAirdropStore,
-            WritableAccountStore accountStore,
-            Map<AccountID, Account> updatedSenders,
-            Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops) {
+    private void removePendingAirdropAndUpdateStores(
+            final PendingAirdropId airdropId,
+            final Map<AccountID, Account> updatedSenders,
+            final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops) {
 
-        var senderId = airdropId.senderIdOrThrow();
+        final var senderId = airdropId.senderIdOrThrow();
         var senderAccount = updatedSenders.containsKey(senderId)
                 ? updatedSenders.get(senderId)
                 : requireNonNull(accountStore.getAccountById(senderId));
