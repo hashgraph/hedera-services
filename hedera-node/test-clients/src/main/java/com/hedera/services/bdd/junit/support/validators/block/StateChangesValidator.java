@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
@@ -29,7 +29,9 @@ import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -57,6 +59,7 @@ import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -66,6 +69,7 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -74,13 +78,16 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,7 +117,9 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    public static final BlockStreamValidator.Factory FACTORY = new BlockStreamValidator.Factory() {
+    private Timestamp genesisMigrationTimestamp = null;
+
+    public static final Factory FACTORY = new Factory() {
         @NonNull
         @Override
         public BlockStreamValidator create(@NonNull final HapiSpec spec) {
@@ -141,10 +150,20 @@ public class StateChangesValidator implements BlockStreamValidator {
         if (rootHash == null) {
             throw new AssertionError("No root hash found in state metadata file");
         }
-        return new StateChangesValidator(
-                rootHash,
-                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG),
-                spec.targetNetworkOrThrow().getRequiredNode(byNodeId(0)).getExternalPath(ADDRESS_BOOK));
+        if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
+            throw new IllegalArgumentException("Cannot validate state changes for an embedded network");
+        }
+        try {
+            final var genesisConfigTxt = Files.createTempFile(Paths.get("."), "config", ".txt");
+            Files.writeString(genesisConfigTxt, subProcessNetwork.genesisConfigTxt());
+            genesisConfigTxt.toFile().deleteOnExit();
+            return new StateChangesValidator(
+                    rootHash,
+                    subProcessNetwork.getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG),
+                    genesisConfigTxt);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public StateChangesValidator(
@@ -159,41 +178,10 @@ public class StateChangesValidator implements BlockStreamValidator {
         registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
         final var currentVersion =
                 bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
-        final var migrator = new OrderedServiceMigrator();
-
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var networkInfo = new NetworkInfo() {
-            @NonNull
-            @Override
-            public Bytes ledgerId() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
+        final var networkInfo = fakeNetworkInfoFrom(addressBook);
 
-            @NonNull
-            @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @NonNull
-            @Override
-            public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
-            }
-
-            @Nullable
-            @Override
-            public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public boolean containsNode(final long nodeId) {
-                return addressBook.contains(new NodeId(nodeId));
-            }
-        };
+        final var migrator = new OrderedServiceMigrator();
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -213,7 +201,15 @@ public class StateChangesValidator implements BlockStreamValidator {
             for (final var item : block.items()) {
                 servicesWritten.clear();
                 if (item.hasStateChanges()) {
-                    applyStateChanges(item.stateChangesOrThrow());
+                    final var stateChanges = item.stateChangesOrThrow();
+                    if (genesisMigrationTimestamp == null) {
+                        genesisMigrationTimestamp = stateChanges.consensusTimestamp();
+                    }
+                    if (!isGenesisMigrationChange(stateChanges)) {
+                        applyStateChanges(stateChanges);
+                    } else {
+                        logger.info("Skipping genesis migration state changes");
+                    }
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
@@ -226,9 +222,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             if (expectedHashes == null) {
                 throw new AssertionError("No expected hashes found in " + pathToNode0SwirldsLog);
             }
-            final var sb = new StringBuilder();
-            new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
-            final var actualHashes = hashesByName(sb.toString());
+            final var actualHashes = hashesFor(state);
             final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
             final var onlyRootMismatch = new AtomicBoolean(true);
             expectedHashes.forEach((stateName, expectedHash) -> {
@@ -251,6 +245,17 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
     }
 
+    private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {
+        final var sb = new StringBuilder();
+        new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
+        return hashesByName(sb.toString());
+    }
+
+    private boolean isGenesisMigrationChange(@NonNull final StateChanges stateChanges) {
+        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp)
+                && stateChanges.cause() == STATE_CHANGE_CAUSE_MIGRATION;
+    }
+
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
         for (final var stateChange : stateChanges.stateChanges()) {
             final var delimIndex = stateChange.stateName().indexOf('.');
@@ -268,8 +273,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
                 case SINGLETON_UPDATE -> {
                     final var singletonState = writableStates.getSingleton(stateKey);
-                    singletonState.put(
-                            stateChange.singletonUpdateOrThrow().newValue().value());
+                    singletonState.put(singletonPutFor(stateChange.singletonUpdateOrThrow()));
                     stateChangesSummary.countSingletonPut(serviceName, stateKey);
                 }
                 case MAP_UPDATE -> {
@@ -410,6 +414,41 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .forEach(servicesRegistry::register);
     }
 
+    private NetworkInfo fakeNetworkInfoFrom(@NonNull final AddressBook addressBook) {
+        return new NetworkInfo() {
+            @NonNull
+            @Override
+            public Bytes ledgerId() {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @NonNull
+            @Override
+            public SelfNodeInfo selfNodeInfo() {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @NonNull
+            @Override
+            public List<NodeInfo> addressBook() {
+                return StreamSupport.stream(addressBook.spliterator(), false)
+                        .map(NodeInfoImpl::fromAddress)
+                        .toList();
+            }
+
+            @Nullable
+            @Override
+            public NodeInfo nodeInfo(final long nodeId) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public boolean containsNode(final long nodeId) {
+                return addressBook.contains(new NodeId(nodeId));
+            }
+        };
+    }
+
     private static @Nullable Bytes findRootHashFrom(@NonNull final Path stateMetadataPath) {
         try (final var lines = Files.lines(stateMetadataPath)) {
             return lines.filter(line -> line.startsWith("HASH:"))
@@ -506,6 +545,23 @@ public class StateChangesValidator implements BlockStreamValidator {
         return hashes;
     }
 
+    private static Object singletonPutFor(@NonNull final SingletonUpdateChange singletonUpdateChange) {
+        return switch (singletonUpdateChange.newValue().kind()) {
+            case UNSET -> throw new IllegalStateException("Singleton update value is not set");
+            case BLOCK_INFO_VALUE -> singletonUpdateChange.blockInfoValueOrThrow();
+            case CONGESTION_LEVEL_STARTS_VALUE -> singletonUpdateChange.congestionLevelStartsValueOrThrow();
+            case ENTITY_NUMBER_VALUE -> singletonUpdateChange.entityNumberValueOrThrow();
+            case EXCHANGE_RATE_SET_VALUE -> singletonUpdateChange.exchangeRateSetValueOrThrow();
+            case NETWORK_STAKING_REWARDS_VALUE -> singletonUpdateChange.networkStakingRewardsValueOrThrow();
+            case BYTES_VALUE -> new ProtoBytes(singletonUpdateChange.bytesValueOrThrow());
+            case STRING_VALUE -> new ProtoString(singletonUpdateChange.stringValueOrThrow());
+            case RUNNING_HASHES_VALUE -> singletonUpdateChange.runningHashesValueOrThrow();
+            case THROTTLE_USAGE_SNAPSHOTS_VALUE -> singletonUpdateChange.throttleUsageSnapshotsValueOrThrow();
+            case TIMESTAMP_VALUE -> singletonUpdateChange.timestampValueOrThrow();
+            case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
+        };
+    }
+
     private static Object queuePushFor(@NonNull final QueuePushChange queuePushChange) {
         return switch (queuePushChange.value().kind()) {
             case UNSET, PROTO_STRING_ELEMENT -> throw new IllegalStateException("Queue push value is not supported");
@@ -530,6 +586,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOKEN_ID_KEY -> mapChangeKey.tokenIdKeyOrThrow();
             case TOPIC_ID_KEY -> mapChangeKey.topicIdKeyOrThrow();
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
+            case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
         };
     }
 
@@ -550,6 +607,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOKEN_RELATION_VALUE -> mapChangeValue.tokenRelationValueOrThrow();
             case TOPIC_VALUE -> mapChangeValue.topicValueOrThrow();
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
+            case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
         };
     }
 }

@@ -43,11 +43,11 @@ import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -55,6 +55,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,13 @@ public class SteadyStateThrottlingCheck {
     private static final String SUPPLY = "supply";
     private static final String TOKEN = "token";
     private static final String CIVILIAN = "civilian";
+    /**
+     * In general, only {@code BUSY} and {@code SUCCESS} will be returned by the network ({@code BUSY} if we exhaust
+     * all retries for a particular transaction without ever submitting it); however, in CI with fewer CPUs available,
+     * occasionally {@code RECEIPT_NOT_FOUND} may also be returned if a client thread is starved.
+     */
+    private static final ResponseCodeEnum[] PERMITTED_STATUSES =
+            new ResponseCodeEnum[] {BUSY, SUCCESS, RECEIPT_NOT_FOUND};
 
     private final AtomicLong duration = new AtomicLong(180);
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -266,8 +274,7 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .payingWith(CIVILIAN)
                         .hasPrecheckFrom(OK, BUSY)
-                        // The last "known status" can still be BUSY if we exhaust retries
-                        .hasKnownStatusFrom(BUSY, SUCCESS);
+                        .hasKnownStatusFrom(PERMITTED_STATUSES);
                 return Optional.of(op);
             }
         };
@@ -342,40 +349,7 @@ public class SteadyStateThrottlingCheck {
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
                         // The last "known status" can still be BUSY if we exhaust retries
-                        .hasKnownStatusFrom(BUSY, SUCCESS)
-                        .hasPrecheckFrom(OK, BUSY);
-                return Optional.of(op);
-            }
-        };
-    }
-
-    @SuppressWarnings("java:S1144")
-    private Function<HapiSpec, OpProvider> nonFungibleMintOps() {
-        final var metadata = "01234567890123456789012345678901234567890123456789"
-                + "01234567890123456789012345678901234567890123456789";
-        return spec -> new OpProvider() {
-            @Override
-            public List<SpecOperation> suggestedInitializers() {
-                return List.of(
-                        newKeyNamed(SUPPLY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
-                        tokenCreate(TOKEN)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(SUPPLY));
-            }
-
-            @Override
-            public Optional<HapiSpecOperation> get() {
-                var op = mintToken(TOKEN, List.of(ByteString.copyFromUtf8(metadata)))
-                        .fee(ONE_HBAR)
-                        .noLogging()
-                        .rememberingNothing()
-                        .deferStatusResolution()
-                        .signedBy(TOKEN_TREASURY, SUPPLY)
-                        .payingWith(TOKEN_TREASURY)
-                        // The last "known status" can still be BUSY if we exhaust retries
-                        .hasKnownStatusFrom(BUSY, SUCCESS)
+                        .hasKnownStatusFrom(PERMITTED_STATUSES)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }

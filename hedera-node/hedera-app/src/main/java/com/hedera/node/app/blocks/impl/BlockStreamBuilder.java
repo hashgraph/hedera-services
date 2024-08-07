@@ -56,6 +56,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.ContractActions;
@@ -82,6 +83,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
@@ -135,7 +137,8 @@ public class BlockStreamBuilder
                 ContractOperationStreamBuilder,
                 TokenAccountWipeStreamBuilder,
                 CryptoUpdateStreamBuilder,
-                NodeCreateStreamBuilder {
+                NodeCreateStreamBuilder,
+                TokenAirdropStreamBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -147,6 +150,7 @@ public class BlockStreamBuilder
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
+    private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
@@ -509,6 +513,13 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
         this.tokenType = requireNonNull(tokenType);
+        return this;
+    }
+
+    @Override
+    public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 

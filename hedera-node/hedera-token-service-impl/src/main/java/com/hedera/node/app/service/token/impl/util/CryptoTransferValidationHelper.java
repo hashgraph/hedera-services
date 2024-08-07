@@ -97,7 +97,7 @@ public class CryptoTransferValidationHelper {
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
             meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
         } else if (tokenMeta.hasRoyaltyWithFallback()) {
-            // For airdrops we don't support tokens with royalties with fallback
+            // For airdrops, we don't support tokens with royalties with fallback
             if (op == null) {
                 throw new PreCheckException(INVALID_TRANSACTION);
             } else if (!receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {

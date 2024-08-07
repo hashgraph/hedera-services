@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -73,6 +74,9 @@ class SerializationTest extends MerkleTestBase {
 
     @Mock
     private MerkleStateLifecycles lifecycles;
+
+    @Mock
+    private MigrationStateChanges migrationStateChanges;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -251,7 +255,8 @@ class SerializationTest extends MerkleTestBase {
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
-                new HashMap<>());
+                new HashMap<>(),
+                migrationStateChanges);
         loadedTree.migrate(1);
 
         return loadedTree;
@@ -271,7 +276,8 @@ class SerializationTest extends MerkleTestBase {
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
-                new HashMap<>());
+                new HashMap<>(),
+                migrationStateChanges);
         return originalTree;
     }
 

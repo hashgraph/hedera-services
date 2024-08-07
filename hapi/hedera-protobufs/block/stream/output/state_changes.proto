@@ -67,6 +67,7 @@ import "state/recordcache/recordcache.proto";
 import "state/schedule/schedule.proto";
 import "state/throttles/throttle_usage_snapshots.proto";
 import "state/token/account.proto";
+import "state/token/account_pending_airdrop.proto";
 import "state/token/network_staking_rewards.proto";
 import "state/token/nft.proto";
 import "state/token/staking_node_info.proto";
@@ -478,6 +479,11 @@ message MapChangeKey {
          * A change to a virtual map keyed by contract id identifier.
          */
         proto.ContractID contract_id_key = 13;
+
+        /**
+         * A change to a virtual map keyed by pending airdrop id identifier.
+         */
+        proto.PendingAirdropId pending_airdrop_id_key = 14;
     }
 }
 
@@ -585,6 +591,11 @@ message MapChangeValue {
          * An network node value.
          */
         com.hedera.hapi.node.state.addressbook.Node node_value = 14;
+
+        /**
+         * A pending airdrop value.
+         */
+        proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
     }
 }
 
