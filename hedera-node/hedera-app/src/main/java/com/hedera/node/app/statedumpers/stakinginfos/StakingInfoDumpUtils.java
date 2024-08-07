@@ -18,8 +18,8 @@ package com.hedera.node.app.statedumpers.stakinginfos;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
@@ -45,13 +45,13 @@ public class StakingInfoDumpUtils {
      */
     public static void dumpStakingInfos(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingInfo>> nodes) {
+            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> nodes) {
         final var allStakingInfos = gatherStakingInfos(nodes);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln("[");
             for (int i = 0, n = allStakingInfos.size(); i < n; i++) {
                 final var info = allStakingInfos.get(i);
-                writer.writeln(StakingInfo.JSON.toJSON(info));
+                writer.writeln(StakingNodeInfo.JSON.toJSON(info));
                 if (i < n - 1) {
                     writer.writeln(",");
                 }
@@ -60,9 +60,9 @@ public class StakingInfoDumpUtils {
         }
     }
 
-    private static List<StakingInfo> gatherStakingInfos(
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingInfo>> infos) {
-        final var infosToReturn = new ConcurrentLinkedQueue<StakingInfo>();
+    private static List<StakingNodeInfo> gatherStakingInfos(
+            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> infos) {
+        final var infosToReturn = new ConcurrentLinkedQueue<StakingNodeInfo>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
         try {
@@ -79,8 +79,8 @@ public class StakingInfoDumpUtils {
             Thread.currentThread().interrupt();
         }
 
-        final List<StakingInfo> answer = new ArrayList<>(infosToReturn);
-        answer.sort(Comparator.comparingLong(StakingInfo::stakedNodeIdOrThrow));
+        final List<StakingNodeInfo> answer = new ArrayList<>(infosToReturn);
+        answer.sort(Comparator.comparingLong(StakingNodeInfo::nodeNumber));
         System.out.printf("=== %d nodes iterated over%n", answer.size());
         return answer;
     }

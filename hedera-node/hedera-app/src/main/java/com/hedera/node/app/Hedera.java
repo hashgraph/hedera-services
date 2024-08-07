@@ -27,7 +27,6 @@ import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
-import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
