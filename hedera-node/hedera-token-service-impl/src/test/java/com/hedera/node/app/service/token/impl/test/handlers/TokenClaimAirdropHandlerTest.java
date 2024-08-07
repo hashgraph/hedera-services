@@ -68,19 +68,6 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void pureChecksPendingAirDropListMoreThanTenThrows() {
-        final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
-        for (int i = 0; i < 11; i++) {
-            pendingAirdropIds.add(PendingAirdropId.newBuilder().build());
-        }
-        final var txn = newTokenClaimAirdrop(TokenClaimAirdropTransactionBody.newBuilder()
-                .pendingAirdrops(pendingAirdropIds)
-                .build());
-        final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(txn));
-        assertEquals(ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED, msg.responseCode());
-    }
-
-    @Test
     void pureChecksPendingAirDropDuplicateThrows() {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         for (int i = 0; i < 2; i++) {

@@ -17,9 +17,10 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -68,7 +69,7 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
             Account account = accountStore.getAccountById(receiverId);
             requireNonNull(account);
             Key key = account.key();
-            requireNonNull(key);
+            validateTruePreCheck(key != null, KEY_NOT_PROVIDED);
             context.requireKey(key);
         }
     }
@@ -83,10 +84,6 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
         final List<PendingAirdropId> pendingAirdrops = op.pendingAirdrops();
         if (pendingAirdrops.isEmpty()) {
             throw new PreCheckException(EMPTY_PENDING_AIRDROP_ID_LIST);
-        }
-
-        if (pendingAirdrops.size() > 10) {
-            throw new PreCheckException(MAX_PENDING_AIRDROP_ID_EXCEEDED);
         }
 
         final int numAirdrops = pendingAirdrops.size();
