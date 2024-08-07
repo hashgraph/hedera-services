@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+package com.hedera.node.app.hapi.fees.usage.token;
 
-description = "Hedera Services API Fees"
+import com.hederahashgraph.api.proto.java.SubType;
 
-mainModuleInfo { annotationProcessor("dagger.compiler") }
-
-testModuleInfo {
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
+/**
+ * A functional interface for creating an object of type {@code R}.
+ * @param <R> the type of object to create
+ */
+@FunctionalInterface
+public interface TokenOpsProducer<R> {
+    R create(int bpt, SubType subType, long recordDb, int t);
 }
