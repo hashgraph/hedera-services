@@ -215,7 +215,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                         .copyBuilder()
                         .nextAirdrop(nextAirdropId)
                         .build();
-                airdropStore.patch(prevAirdropId, prevAirdropToUpdate);
+                airdropStore.put(prevAirdropId, prevAirdropToUpdate);
             }
             if (nextAirdropId != null) {
                 final var nextAccountAirdrop = airdropStore.getForModify(nextAirdropId);
@@ -224,7 +224,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                         .copyBuilder()
                         .previousAirdrop(prevAirdropId)
                         .build();
-                airdropStore.patch(nextAirdropId, nextAirdropToUpdate);
+                airdropStore.put(nextAirdropId, nextAirdropToUpdate);
             }
         }
     }
