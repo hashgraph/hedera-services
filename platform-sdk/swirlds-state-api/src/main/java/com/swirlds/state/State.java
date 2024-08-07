@@ -16,6 +16,7 @@
 
 package com.swirlds.state;
 
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVState;
@@ -48,4 +49,16 @@ public interface State {
      */
     @NonNull
     WritableStates getWritableStates(@NonNull String serviceName);
+
+    /**
+     * Registers a listener to be notified on each commit if the {@link WritableStates} created by this {@link State}
+     * are marked as {@link CommittableWritableStates}. Implementations need not support unregistering listeners, as
+     * there is no real case that a client would want to be notified of only some commits made to the state.
+     *
+     * @param listener The listener to be notified.
+     * @throws UnsupportedOperationException if the state does not support listeners.
+     */
+    default void registerCommitListener(@NonNull final StateChangeListener listener) {
+        throw new UnsupportedOperationException();
+    }
 }
