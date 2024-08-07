@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -58,6 +59,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -71,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -1322,6 +1325,105 @@ public class TokenAirdropTest {
                             .payingWith(ALICE)
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+        }
+
+        @HapiTest
+        @DisplayName("account that has a token is frozen supposed to fail")
+        final Stream<DynamicTest> accountThatHasTokenIsForzenSupposedToFail() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    newKeyNamed("freezeKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .freezeKey("freezeKey")
+                            .initialSupply(15L),
+                    tokenFreeze(FUNGIBLE_TOKEN_A, ALICE),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        }
+
+        @HapiTest
+        @DisplayName("account that has a token is paused supposed to fail")
+        final Stream<DynamicTest> accountThatHasTokenIsPausedSupposedToFail() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    newKeyNamed("pauseKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .pauseKey("pauseKey")
+                            .initialSupply(15L),
+                    tokenPause(FUNGIBLE_TOKEN_A),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A).hasKnownStatus(TOKEN_IS_PAUSED),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(TOKEN_IS_PAUSED));
+        }
+
+        @HapiTest
+        @DisplayName("token with three layers of custom fees")
+        final Stream<DynamicTest> tokenWithThreeLayersOfCustomFees() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String TOM = "tom";
+            final String COLLECTOR = "collector";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
+            final String FUNGIBLE_TOKEN_C = "fungibleTokenC";
+            final String FUNGIBLE_TOKEN_D = "fungibleTokenD";
+
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_MILLION_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(COLLECTOR).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHbarFee(100, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_A),
+                    tokenCreate(FUNGIBLE_TOKEN_B)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_A, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_B),
+                    tokenCreate(FUNGIBLE_TOKEN_C)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_B, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_C),
+                    tokenCreate(FUNGIBLE_TOKEN_D)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_C, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_C),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_B),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoTransfer(moving(1000, FUNGIBLE_TOKEN_D).between(TOM, ALICE)),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_D).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH));
         }
     }
 
