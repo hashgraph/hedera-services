@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.TestTags.ONLY_EMBEDDED;
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
-@Tag(EMBEDDED)
+@Tag(ONLY_EMBEDDED)
 public @interface LeakyEmbeddedHapiTest {
     /**
      * The reasons the test has to run in embedded mode.

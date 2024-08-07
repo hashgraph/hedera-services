@@ -273,8 +273,6 @@ public class AirdropHandlerHelper {
      */
     public static boolean validateIfSystemAccount(@NonNull AccountID accountID) {
         requireNonNull(accountID);
-
-        // TODO: check for aliased system accounts
         if (isAlias(accountID)) {
             return false;
         }
