@@ -26,17 +26,19 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
-import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -72,22 +74,37 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
         Objects.requireNonNull(transaction, "transaction must not be null");
 
-        final var txnType = transaction.txn().bodyOrThrow().data().kind();
+        final HederaFunctionality txnType;
+        try {
+            txnType = CommonUtils.functionOf(CommonUtils.extractTransactionBodyUnchecked(pbjToProto(
+                    transaction.txn(),
+                    com.hedera.hapi.node.base.Transaction.class,
+                    com.hederahashgraph.api.proto.java.Transaction.class)));
+        } catch (UnknownHederaFunctionality e) {
+            throw new RuntimeException(e);
+        }
+
         final var singleTxnRecord =
                 switch (txnType) {
-                    case CONSENSUS_SUBMIT_MESSAGE -> new ConsensusSubmitMessageTranslator()
+                    case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
                             .translate(transaction, stateChanges);
-                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
                     default -> new SingleTransactionRecord(
                             transaction.txn(),
-                            com.hedera.hapi.node.transaction.TransactionRecord.newBuilder().build(),
+                            com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
+                                    .build(),
                             List.of(),
                             new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
         // TODO: get transaction type specific changes from singleTxnRecord into the recordBuilder & receiptBuilder
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var receiptBuilder = TransactionReceipt.newBuilder();
+
+        final var singleTxnRecordProto = pbjToProto(
+                singleTxnRecord.transactionRecord(),
+                com.hedera.hapi.node.transaction.TransactionRecord.class,
+                com.hederahashgraph.api.proto.java.TransactionRecord.class);
+
+        final var recordBuilder = singleTxnRecordProto.toBuilder();
+        final var receiptBuilder = singleTxnRecordProto.getReceipt().toBuilder();
 
         parseTransaction(transaction.txn(), recordBuilder);
 

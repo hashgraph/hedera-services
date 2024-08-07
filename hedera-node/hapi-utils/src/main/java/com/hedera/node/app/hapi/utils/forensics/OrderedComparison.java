@@ -54,7 +54,6 @@ public class OrderedComparison {
      * @param recordDiffSummarizer if present, a summarizer for record diffs
      * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
-     * @throws IOException if any of the record stream files cannot be read or parsed
      * @throws IllegalArgumentException if the directories contain misaligned record streams
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
@@ -98,6 +97,8 @@ public class OrderedComparison {
         final var filteredSecond = secondEntries.stream().filter(inclusionTest).toList();
 
         final var compareList = getCompareList(filteredFirst, filteredSecond);
+
+        // TODO: for some reason diff ends up comparing the same lists instead of filteredFirst & filteredSecond?
         return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
