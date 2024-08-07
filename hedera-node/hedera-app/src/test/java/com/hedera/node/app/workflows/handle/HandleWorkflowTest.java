@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -40,6 +41,7 @@ import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -96,6 +98,9 @@ class HandleWorkflowTest {
     private BlockRecordManager blockRecordManager;
 
     @Mock
+    private BlockStreamManager blockStreamManager;
+
+    @Mock
     private CacheWarmer cacheWarmer;
 
     @Mock
@@ -138,6 +143,7 @@ class HandleWorkflowTest {
 
     @BeforeEach
     void setUp() {
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
                 nodeStakeUpdates,
@@ -151,6 +157,7 @@ class HandleWorkflowTest {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
+                blockStreamManager,
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
@@ -160,7 +167,8 @@ class HandleWorkflowTest {
                 systemSetup,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                List.of());
     }
 
     @Test
