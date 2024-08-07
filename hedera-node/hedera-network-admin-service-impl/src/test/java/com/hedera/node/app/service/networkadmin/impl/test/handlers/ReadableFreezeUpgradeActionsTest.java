@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
@@ -66,6 +68,8 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -146,6 +150,8 @@ class ReadableFreezeUpgradeActionsTest {
 
     private Executor freezeExecutor;
 
+    private X509Certificate certificate;
+
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
@@ -207,7 +213,7 @@ class ReadableFreezeUpgradeActionsTest {
     }
 
     @Test
-    void preparesForUpgradeWithDAB() throws IOException {
+    void preparesForUpgradeWithDAB() throws IOException, CertificateException {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
         setupNodes();
@@ -374,7 +380,11 @@ class ReadableFreezeUpgradeActionsTest {
                         "Than a fading star"));
     }
 
-    private void setupNodes() {
+    private void setupNodes() throws CertificateException, IOException {
+        final var pemFileName = "s-public-node1.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        certificate = readCertificatePemFile(pemFilePath);
+
         final var node1 = new Node(
                 1,
                 asAccount(3),
@@ -383,8 +393,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
                         V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
@@ -397,8 +406,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
                         V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
@@ -411,8 +419,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
                         V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
-                Bytes.wrap(
-                        "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 true,
@@ -426,8 +433,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("test.domain.com", 50225),
                         V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 false,
@@ -453,7 +459,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException {
+    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());
@@ -467,9 +473,9 @@ class ReadableFreezeUpgradeActionsTest {
         assertFalse(pemFilePath3.toFile().exists());
         final Path pemFilePath4 = baseDir.resolve("s-public-node5.pem");
         assertTrue(pemFilePath4.toFile().exists());
-        final var pemFile1 = Files.readAllBytes(pemFilePath1);
-        final var pemFile2 = Files.readAllBytes(pemFilePath2);
-        final var pemFile4 = Files.readAllBytes(pemFilePath4);
+        final var pemFile1 = readCertificatePemFile(pemFilePath1);
+        final var pemFile2 = readCertificatePemFile(pemFilePath2);
+        final var pemFile4 = readCertificatePemFile(pemFilePath4);
 
         final String configContents = new StringBuilder()
                 .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
@@ -477,15 +483,9 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
                 .append("nextNodeId, 5")
                 .toString();
-        final byte[] pemFile1Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
-        final byte[] pemFile2Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
-        final byte[] pemFile4Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
+        final byte[] pemFile1Bytes = pemFile1.getEncoded();
+        final byte[] pemFile2Bytes = pemFile2.getEncoded();
+        final byte[] pemFile4Bytes = pemFile4.getEncoded();
 
         if (file.equals(EXEC_IMMEDIATE_MARKER)) {
             assertThat(logCaptor.infoLogs())
@@ -498,9 +498,9 @@ class ReadableFreezeUpgradeActionsTest {
                     .anyMatch(l -> (l.startsWith("Finished generating config.txt and pem files into " + baseDir)));
             assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
             assertThat(configFile).isEqualTo(configContents);
-            assertArrayEquals(pemFile1, pemFile1Bytes);
-            assertArrayEquals(pemFile2, pemFile2Bytes);
-            assertArrayEquals(pemFile4, pemFile4Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile1Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile2Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile4Bytes);
         }
     }
 }

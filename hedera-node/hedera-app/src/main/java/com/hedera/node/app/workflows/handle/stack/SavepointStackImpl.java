@@ -21,19 +21,19 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.IRREVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
@@ -64,7 +64,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * The stream builder for the transaction whose dispatch created this stack.
      */
-    private final SingleTransactionRecordBuilder baseBuilder;
+    private final StreamBuilder baseBuilder;
     // For the root stack of a user dispatch, the final sink of all created stream builders; otherwise null,
     // because child stacks flush their builders into the savepoint at the top of their parent stack
     @Nullable
@@ -95,7 +95,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      */
     public static SavepointStackImpl newChildStack(
             @NonNull final SavepointStackImpl root,
-            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer) {
         return new SavepointStackImpl(root, reversingBehavior, category, customizer);
@@ -126,7 +126,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      */
     private SavepointStackImpl(
             @NonNull final SavepointStackImpl parent,
-            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer) {
         requireNonNull(reversingBehavior);
@@ -228,7 +228,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     @NonNull
     @Override
-    public <T extends SingleTransactionRecordBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T extends StreamBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castBuilder(baseBuilder, recordBuilderClass);
     }
@@ -247,8 +247,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return castBuilder(result, recordBuilderClass);
     }
 
-    public static <T> T castBuilder(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final Class<T> builderClass) {
+    public static <T> T castBuilder(@NonNull final StreamBuilder builder, @NonNull final Class<T> builderClass) {
         if (!builderClass.isInstance(builder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
@@ -261,7 +260,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return all stream builders created when handling the user transaction
      * @throws NullPointerException if called on a non-root stack
      */
-    public List<SingleTransactionRecordBuilder> allStreamBuilders() {
+    public List<StreamBuilder> allStreamBuilders() {
         return requireNonNull(builderSink).allBuilders();
     }
 
@@ -322,7 +321,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Creates a new stream builder for a removable child in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createRemovableChildBuilder() {
+    public StreamBuilder createRemovableChildBuilder() {
         return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -330,7 +329,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Creates a new stream builder for a reversible child in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createReversibleChildBuilder() {
+    public StreamBuilder createReversibleChildBuilder() {
         return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -338,7 +337,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Creates a new stream builder for an irreversible preceding transaction in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createIrreversiblePrecedingBuilder() {
+    public StreamBuilder createIrreversiblePrecedingBuilder() {
         return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -350,8 +349,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the list of child records
      */
     @Deprecated
-    public List<SingleTransactionRecordBuilder> getChildBuilders() {
-        final var childRecords = new ArrayList<SingleTransactionRecordBuilder>();
+    public List<StreamBuilder> getChildBuilders() {
+        final var childRecords = new ArrayList<StreamBuilder>();
         for (final var savepoint : stack) {
             for (final var builder : savepoint.followingBuilders()) {
                 if (builder.category() == CHILD) {
@@ -413,7 +412,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
                 builder.parentConsensus(consensusTime);
             }
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+            records.add(((RecordStreamBuilder) builder).build());
         }
         return records;
     }

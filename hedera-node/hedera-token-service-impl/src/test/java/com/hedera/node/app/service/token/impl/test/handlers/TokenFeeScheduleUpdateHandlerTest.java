@@ -51,7 +51,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -91,7 +91,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private PreHandleContext preHandleContext;
 
     @Mock(strictness = LENIENT)
-    private TokenBaseRecordBuilder recordBuilder;
+    private TokenBaseStreamBuilder recordBuilder;
 
     @Mock
     private StoreMetricsService storeMetricsService;
