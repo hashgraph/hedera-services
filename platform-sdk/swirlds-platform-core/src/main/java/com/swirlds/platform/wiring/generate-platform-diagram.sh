@@ -35,7 +35,7 @@ pcli diagram \
     -s 'PcesWriter:durable event info:📝' \
     -s 'HealthMonitor:health info:🏥' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
-    -g 'Event Intake:EventHasher,InternalEventValidator,EventDeduplicator,EventSignatureValidator,Orphan Buffer,PostHashCollector' \
+    -g 'Event Intake:EventHasher,InternalEventValidator,EventDeduplicator,EventSignatureValidator,Orphan Buffer' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,EventWindowManager,getKeystoneEventSequenceNumber,getCesEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
     -g 'State File Management:State Snapshot Manager,📀,💾' \
