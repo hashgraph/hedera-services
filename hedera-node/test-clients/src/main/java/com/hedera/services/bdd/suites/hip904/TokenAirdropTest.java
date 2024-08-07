@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -76,6 +77,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -942,6 +944,68 @@ public class TokenAirdropTest {
                             .payingWith(BOB)
                             .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
+
+        @HapiTest
+        @DisplayName("FT to deleted ECDSA account")
+        final Stream<DynamicTest> ftOnDeletedECDSAAccount() {
+            final var ecdsaKey = "ecdsaKey";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ecdsaKey).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ecdsaKey),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT to deleted ECDSA account")
+        final Stream<DynamicTest> nftToDeletedECDSAAccount() {
+            final var ecdsaKey = "ecdsaKey";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ecdsaKey).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ecdsaKey),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 6)
+                                    .between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("FT on deleted ED25519 account")
+        final Stream<DynamicTest> ftOnDeletedED25519Account() {
+            final var ed25519 = "ED25519";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ed25519).shape(SigControl.ED25519_ON),
+                    cryptoCreate(deletedAccount).key(ed25519),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT on deleted ED25519 account")
+        final Stream<DynamicTest> nftOnDeletedED25519Account() {
+            final var ed25519 = "ED25519";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ed25519).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ed25519),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 7)
+                                    .between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
     }
 
     @Nested
@@ -1021,7 +1085,8 @@ public class TokenAirdropTest {
                                 ByteString.copyFromUtf8("d"),
                                 ByteString.copyFromUtf8("e"),
                                 ByteString.copyFromUtf8("f"),
-                                ByteString.copyFromUtf8("g"))),
+                                ByteString.copyFromUtf8("g"),
+                                ByteString.copyFromUtf8("h"))),
 
                 // all kind of receivers
                 cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
