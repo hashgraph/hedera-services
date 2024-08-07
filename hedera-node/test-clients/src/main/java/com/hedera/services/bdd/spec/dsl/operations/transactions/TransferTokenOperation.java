@@ -59,7 +59,7 @@ public class TransferTokenOperation extends AbstractSpecTransaction<TransferToke
         this.receiverName = requireNonNull(receiver).name();
         this.token = requireNonNull(token);
 
-        this.serialNumber = 0;
+        this.serialNumber = serialNumber;
         this.operationType = OperationType.NFT_TRANSFER;
     }
 
