@@ -73,30 +73,10 @@ changes, disk I/O changes, platform wiring changes, etc. Include diagrams of arc
 
 Remove this section if not applicable.
 
-### Module Organization and Repositories
-
-Describe any new or modified modules or repositories.
-
-Remove this section if not applicable.
-
 ### Core Behaviors
 
 Describe any new or modified behavior. What are the new or modified algorithms and protocols? Include any diagrams that
 help explain the behavior.
-
-Remove this section if not applicable.
-
-### Public API
-
-Describe any public API changes or additions. Include stakeholders of the API.
-
-Examples of public API include:
-
-* Anything defined in protobuf
-* Any functional API that is available for use outside the module that provides it.
-* Anything written or read from disk
-
-Code can be included in the proposal directory, but not committed to the code base.
 
 Remove this section if not applicable.
 
