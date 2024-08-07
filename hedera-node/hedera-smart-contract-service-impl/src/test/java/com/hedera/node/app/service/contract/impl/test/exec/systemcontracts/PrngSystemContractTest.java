@@ -35,7 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
@@ -71,7 +71,7 @@ class PrngSystemContractTest {
     ProxyWorldUpdater proxyWorldUpdater;
 
     @Mock
-    ContractCallRecordBuilder contractCallRecordBuilder;
+    ContractCallStreamBuilder contractCallRecordBuilder;
 
     @Mock
     private ProxyEvmContract mutableAccount;
@@ -163,7 +163,7 @@ class PrngSystemContractTest {
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
-                .thenReturn(mock(ContractCallRecordBuilder.class));
+                .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
@@ -182,7 +182,7 @@ class PrngSystemContractTest {
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(messageFrame.getValue()).willReturn(Wei.ONE);
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
-                .thenReturn(mock(ContractCallRecordBuilder.class));
+                .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
@@ -198,7 +198,7 @@ class PrngSystemContractTest {
 
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
-                .thenReturn(mock(ContractCallRecordBuilder.class));
+                .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
         var actual = subject.computeFully(EXPECTED_RANDOM_NUMBER, messageFrame);

@@ -40,7 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -106,7 +106,7 @@ public class Erc20TransfersCall extends AbstractCall {
             return reversionWith(INVALID_TOKEN_ID, gasRequirement);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var status = recordBuilder.status();
         if (status != SUCCESS) {
             if (status == NOT_SUPPORTED) {

@@ -39,7 +39,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
@@ -68,7 +68,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private FinalizeContext context;
 
     @Mock
-    private CryptoDeleteRecordBuilder recordBuilder;
+    private CryptoDeleteStreamBuilder recordBuilder;
 
     private final InstantSource instantSource = InstantSource.system();
 

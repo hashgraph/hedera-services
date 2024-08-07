@@ -35,8 +35,11 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.Arrays;
 import java.util.List;
@@ -76,9 +79,11 @@ class CryptoTransferHandlerTestBase extends StepsBase {
             .build();
 
     protected CryptoTransferHandler subject;
+    protected TokenAirdropHandler tokenAirdropHandler;
+    protected TokenAirdropValidator tokenAirdropValidator;
     protected TokenClaimAirdropHandler tokenClaimAirdropHandler;
     protected CryptoTransferValidator validator;
-    protected CryptoTransferExecutor executor;
+    protected TransferExecutor executor;
 
     @Mock
     protected HandleContext.SavepointStack stack;
@@ -86,9 +91,11 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        executor = new CryptoTransferExecutor();
+        executor = new TransferExecutor(validator);
         validator = new CryptoTransferValidator();
-        subject = new CryptoTransferHandler(validator, executor);
+        tokenAirdropValidator = new TokenAirdropValidator();
+        subject = new CryptoTransferHandler(validator);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         tokenClaimAirdropHandler = new TokenClaimAirdropHandler();
     }
 
@@ -108,6 +115,20 @@ class CryptoTransferHandlerTestBase extends StepsBase {
                 .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                         .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
                         .tokenTransfers(tokenTransferLists))
+                .build();
+    }
+
+    protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
+                .build();
+    }
+
+    protected TransactionBody newTokenAirdrop(final List<TokenTransferList> tokenTransferLists) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
                 .build();
     }
 

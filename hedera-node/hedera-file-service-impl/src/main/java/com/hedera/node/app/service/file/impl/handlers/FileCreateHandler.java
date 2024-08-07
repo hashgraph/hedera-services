@@ -35,7 +35,7 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -158,7 +158,7 @@ public class FileCreateHandler implements TransactionHandler {
 
             handleContext
                     .savepointStack()
-                    .getBaseBuilder(CreateFileRecordBuilder.class)
+                    .getBaseBuilder(CreateFileStreamBuilder.class)
                     .fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
