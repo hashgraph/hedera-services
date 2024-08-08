@@ -375,19 +375,19 @@ enum StateIdentifier {
     STATE_ID_FREEZE_TIME = 23;
 
     /**
-     * A state identifier for the block stream information.
+     * A state identifier for the block stream status singleton.
      */
     STATE_ID_BLOCK_STREAM_INFO = 24;
 
     /**
-     * A state identifier for the record cache.
-     */
-    STATE_ID_RECORD_QUEUE = 25;
-
-    /**
      * A state identifier for pending airdrops.
      */
-    STATE_ID_PENDING_AIRDROPS = 26;
+    STATE_ID_PENDING_AIRDROPS = 25;
+
+    /**
+     * A state identifier for the record cache.
+     */
+    STATE_ID_RECORD_QUEUE = 126;
 
     /**
      * A state for the `150` upgrade file data
@@ -577,9 +577,12 @@ message SingletonUpdateChange {
         proto.Timestamp timestamp_value = 10;
 
         /**
-         * A change to the block stream information singleton.
+         * A change to the block stream status singleton.
+         * <p>
+         * This MUST be updated at the beginning of a block, with the
+         * information for the immediately prior block.
          */
-        proto.BlockStreamInfo block_stream_info_value = 11;
+        com.hedera.hapi.node.state.blockstream.BlockStreamInfo block_stream_info_value = 11;
     }
 }
 
