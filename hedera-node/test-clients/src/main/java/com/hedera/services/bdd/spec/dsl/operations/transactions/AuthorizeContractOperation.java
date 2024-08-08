@@ -107,7 +107,7 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
                     op.pauseKey(managedKeyName);
                 }
                 if (extraTokenAuthorizations.contains(TokenKeyType.METADATA_KEY)) {
-                    op.adminKey(managedKeyName);
+                    op.metadataKey(managedKeyName);
                 }
                 yield op;
             }
