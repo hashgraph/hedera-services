@@ -41,7 +41,9 @@ message BlockStreamInfo {
    */
   bytes last_block_hash = 2;
   /**
-   * The previous, previous running hash of all record stream items
+   * The consensus time of the last block, to determine if this round was the first across some distinguished boundary in 
+   * consensus time, such as UTC midnight. May also be used to purge entities expiring between the last block time and 
+   * this time.
    */
   Timestamp last_block_time = 3;
   /**
