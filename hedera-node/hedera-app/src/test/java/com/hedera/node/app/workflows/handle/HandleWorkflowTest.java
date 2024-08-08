@@ -181,5 +181,6 @@ class HandleWorkflowTest {
         subject.handleRound(state, platformState, round);
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
+        verify(recordCache).resetRoundReceipts();
     }
 }

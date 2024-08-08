@@ -58,7 +58,6 @@ public class V0540RecordCacheSchema extends Schema {
     @NonNull
     @Override
     public Set<String> statesToRemove() {
-        log.info("Removing state {}", TXN_RECORD_QUEUE);
         return Set.of(TXN_RECORD_QUEUE);
     }
 
@@ -81,10 +80,14 @@ public class V0540RecordCacheSchema extends Schema {
                     .build();
             receipts.add(receipt);
         }
-        final var entries =
-                TransactionReceiptEntries.newBuilder().entries(receipts).build();
-        receiptQueue.add(entries);
-        log.info("Migrated {} records from {} to {}", receipts.size(), TXN_RECORD_QUEUE, TXN_RECEIPT_QUEUE);
-        log.info("Migrated receipts {}", entries);
+
+        if(!receipts.isEmpty()) {
+            final var entries =
+                    TransactionReceiptEntries.newBuilder().entries(receipts).build();
+            receiptQueue.add(entries);
+            log.info("Migrated {} records from {} to {}", receipts.size(), TXN_RECORD_QUEUE, TXN_RECEIPT_QUEUE);
+        } else {
+            log.info("No records to migrate from {} to {}", TXN_RECORD_QUEUE, TXN_RECEIPT_QUEUE);
+        }
     }
 }

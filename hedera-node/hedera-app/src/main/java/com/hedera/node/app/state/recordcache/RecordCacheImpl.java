@@ -304,32 +304,35 @@ public class RecordCacheImpl implements HederaRecordCache {
             final var receiptsList = queue.peek();
             if (receiptsList != null) {
                 if (receiptsList.entries().isEmpty()) {
+                    queue.poll();
                     continue;
                 }
-                final var youngestEntryStart = receiptsList.entries().stream()
+                final var latestReceipt = receiptsList.entries().stream()
                         .filter(TransactionReceiptEntry::hasTransactionId)
                         .max(TRANSACTION_VALID_START_COMPARATOR)
                         .get();
-                logger.info("Checking if the youngest entry {} is expired", youngestEntryStart);
-                final var txId = youngestEntryStart.transactionId();
+                final var latestTxId = latestReceipt.transactionId();
                 // If the valid start time is before the earliest valid start, then it has expired
-                if (isBefore(txId.transactionValidStart(), earliestValidStart)) {
+                if (isBefore(latestTxId.transactionValidStart(), earliestValidStart)) {
                     // Remove from the histories.  Note that all transactions are added to this map
                     // keyed to the "user transaction" ID, so removing the entry here removes both
                     // "parent" and "child" transaction records associated with that ID.
-                    histories.remove(txId);
-                    logger.info("Removing expired transaction {}", txId);
+                    for(final var e : receiptsList.entries()) {
+                        final var txId = e.transactionIdOrThrow();
+                        histories.remove(txId);
+                        // Remove from the payer to transaction index
+                        final var payerAccountId = txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
+                        final var transactionIDs =
+                                payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
+                        transactionIDs.remove(txId);
+                        if (transactionIDs.isEmpty()) {
+                            payerToTransactionIndex.remove(payerAccountId);
+                        }
+                        logger.info("Removing expired receipt {}", txId);
+                    }
                     // remove from queue as well.  The queue only permits removing the current "HEAD",
                     // but that should always be correct here.
-                    queue.removeIf(TruePredicate.INSTANCE);
-                    // Remove from the payer to transaction index
-                    final var payerAccountId = txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
-                    final var transactionIDs =
-                            payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
-                    transactionIDs.remove(txId);
-                    if (transactionIDs.isEmpty()) {
-                        payerToTransactionIndex.remove(payerAccountId);
-                    }
+                    queue.poll();
                 } else {
                     break;
                 }
