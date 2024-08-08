@@ -598,7 +598,7 @@ public class NumericValidationTest {
         @HapiTest
         @DisplayName("when using updateNFTsMetadata for specific NFT from NFT collection with invalid serial number")
         public Stream<DynamicTest> failToUpdateNFTsMetadata() {
-            return Stream.of(new long[] {}, new long[] {-1, 1})
+            return Stream.of(new long[] {}, new long[] {0}, new long[] {-1, 1})
                     .flatMap(invalidSerialNumbers -> hapiTest(numericContract
                             .call("updateNFTsMetadata", nft, invalidSerialNumbers, "tiger".getBytes())
                             .gas(1_000_000L)

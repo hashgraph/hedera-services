@@ -61,7 +61,7 @@ public class SpecNonFungibleToken extends SpecToken {
     }
 
     /**
-     * Returns an operation that retrieves the token information.
+     * Returns an operation that retrieves the information for an NFT, identified by its serial number.
      *
      * @return the operation
      */
