@@ -227,7 +227,6 @@ public class UpdateDecoder {
         }
     }
 
-    @Nullable
     public TransactionBody decodeUpdateNFTsMetadata(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA.decodeCall(
                 attempt.input().toArrayUnsafe());
@@ -235,8 +234,6 @@ public class UpdateDecoder {
         final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
         final List<Long> serialNumbers = Longs.asList(call.get(SERIAL_NUMBERS));
         final byte[] metadata = call.get(METADATA);
-
-        if (serialNumbers.isEmpty()) return null;
 
         final var txnBodyBuilder = TokenUpdateNftsTransactionBody.newBuilder()
                 .token(tokenId)

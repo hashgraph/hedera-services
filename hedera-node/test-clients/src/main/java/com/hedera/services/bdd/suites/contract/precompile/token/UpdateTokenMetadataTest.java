@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -55,7 +57,7 @@ public class UpdateTokenMetadataTest {
     static SpecContract updateTokenMetadata;
 
     @NonFungibleToken(
-            numPreMints = 5,
+            numPreMints = 10,
             keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
     static SpecNonFungibleToken nft;
 
@@ -111,5 +113,16 @@ public class UpdateTokenMetadataTest {
                     nft.getInfo(4).andAssert(info -> info.hasMetadata(ByteString.EMPTY)),
                     nft.getInfo(5).andAssert(info -> info.hasMetadata(ByteString.EMPTY)));
         }
+
+        @HapiTest
+        @DisplayName("use updateMetadataForNFTs to update metadata for NFTs with large metadata")
+        public Stream<DynamicTest> failToUseUpdateMetadataForNFTsLargeMetadata() {
+            final byte[] largeMetadata = new byte[1_000];
+            return hapiTest(updateTokenMetadata
+                    .call("callUpdateNFTsMetadata", nft, new long[] {1}, largeMetadata)
+                    .gas(1_000_000L)
+                    .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, METADATA_TOO_LONG)));
+        }
+
     }
 }
