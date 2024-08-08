@@ -38,7 +38,7 @@ public class UpdateNFTsMetadataTranslator extends AbstractCallTranslator<HtsCall
     private final UpdateDecoder decoder;
 
     @Inject
-    public UpdateNFTsMetadataTranslator(final UpdateDecoder decoder) {
+    public UpdateNFTsMetadataTranslator(@NonNull final UpdateDecoder decoder) {
         this.decoder = decoder;
     }
 
