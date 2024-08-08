@@ -1323,6 +1323,27 @@ public class TokenAirdropTest {
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
         }
+
+        @HapiTest
+        @DisplayName("account that supposed to signed has been deleted")
+        final Stream<DynamicTest> accountThatSupposedToSignedHasBeenDeleted() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(BOB)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoDelete(ALICE),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            // pay by default payer, but sign with ALICE too
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
     }
 
     @Nested
