@@ -59,9 +59,6 @@ public class UpdateTokenMetadataTest {
     @Account(maxAutoAssociations = 100, tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecAccount treasury;
 
-    @Account(maxAutoAssociations = 100, tinybarBalance = ONE_HUNDRED_HBARS)
-    static SpecAccount alice;
-
     @Nested
     @DisplayName("use TokenUpdateNFTs HAPI operation, to update metadata of individual NFTs")
     class TokenUpdateNFTsTests {
@@ -99,10 +96,5 @@ public class UpdateTokenMetadataTest {
                     nft.getInfo(3).andAssert(info -> info.hasMetadata(metadata("Nemo"))));
         }
 
-        @HapiTest
-        @DisplayName("ds")
-        public Stream<DynamicTest> metadaata() {
-            return null;
-        }
     }
 }
