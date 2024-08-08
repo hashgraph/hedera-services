@@ -112,8 +112,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void gasPriceInTinybarsHardcoded() {
-        given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
-        assertEquals(1234L, subject.gasPriceInTinybars());
+        assertEquals(1L, subject.gasPriceInTinybars());
     }
 
     @Test
