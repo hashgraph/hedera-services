@@ -18,8 +18,8 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
-import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
-import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
+import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -41,7 +41,6 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.config.ConfigProvider;
@@ -378,7 +377,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             nMinus1HashFuture = hashFuture;
             hashFuture = hashFuture.thenCombineAsync(
                     supplyAsync(() -> noThrowSha384HashOf(bytes.toByteArray()), executor),
-                    HashUtils::combine,
+                    BlockImplUtils::combine,
                     executor);
         }
     }

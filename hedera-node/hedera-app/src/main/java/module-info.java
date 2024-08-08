@@ -107,6 +107,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.blocks;
     exports com.hedera.node.app.fees;
     exports com.hedera.node.app.throttle;
+    exports com.hedera.node.app.blocks.impl;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

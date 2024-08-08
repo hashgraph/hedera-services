@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
+import com.hedera.node.app.blocks.impl.RoundStateChangeListener;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;

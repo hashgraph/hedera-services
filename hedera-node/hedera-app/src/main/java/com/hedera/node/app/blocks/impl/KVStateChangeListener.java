@@ -17,7 +17,6 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
-import static com.swirlds.state.merkle.StateUtils.stateIdentifierOf;
 
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
@@ -70,8 +69,12 @@ public class KVStateChangeListener implements StateChangeListener {
     }
 
     @Override
-    public <K, V> void mapUpdateChange(@NonNull final String stateName, @NonNull final K key, @NonNull final V value) {
-        Objects.requireNonNull(stateName, "stateName must not be null");
+    public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+        return BlockImplUtils.stateIdFor(serviceName, stateKey);
+    }
+
+    @Override
+    public <K, V> void mapUpdateChange(final int stateId, @NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(value, "value must not be null");
 
@@ -79,24 +82,18 @@ public class KVStateChangeListener implements StateChangeListener {
                 .key(mapChangeKeyFor(key))
                 .value(mapChangeValueFor(value))
                 .build();
-        final var stateChange = StateChange.newBuilder()
-                .stateId(stateIdentifierOf(stateName))
-                .mapUpdate(change)
-                .build();
+        final var stateChange =
+                StateChange.newBuilder().stateId(stateId).mapUpdate(change).build();
         stateChanges.add(stateChange);
     }
 
     @Override
-    public <K> void mapDeleteChange(@NonNull final String stateName, @NonNull final K key) {
-        Objects.requireNonNull(stateName, "stateName must not be null");
+    public <K> void mapDeleteChange(final int stateId, @NonNull final K key) {
         Objects.requireNonNull(key, "key must not be null");
-
         final var change =
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
-        stateChanges.add(StateChange.newBuilder()
-                .stateId(stateIdentifierOf(stateName))
-                .mapDelete(change)
-                .build());
+        stateChanges.add(
+                StateChange.newBuilder().stateId(stateId).mapDelete(change).build());
     }
 
     /**

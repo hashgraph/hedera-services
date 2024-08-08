@@ -304,8 +304,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     // This class represents a service that depends on EntityIdService. This class will create a simple mapping from an
     // entity ID to a string value.
     private static class DependentService implements Service {
-        static final String NAME = "DependentService";
-        static final String STATE_KEY = "DS_MAPPINGS";
+        static final String NAME = "TokenService";
+        static final String STATE_KEY = "ACCOUNTS";
 
         @NonNull
         @Override
