@@ -103,6 +103,7 @@ class IngestComponentTest {
 
         final var state = new FakeState();
         state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));
+        state.addService(RecordCacheService.NAME, Map.of("TransactionReceiptQueue", new ArrayDeque<String>()));
         app.workingStateAccessor().setState(state);
     }
 

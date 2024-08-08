@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
@@ -178,52 +179,60 @@ public class HandleWorkflow {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         recordCache.resetRoundReceipts();
-        for (final var event : round) {
-            final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
-            if (creator == null) {
-                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
-                    logger.warn(
-                            "Received event (version {} vs current {}) from node {} which is not in the address book",
-                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
-                            com.hedera.hapi.util.HapiUtils.toString(version),
-                            event.getCreatorId());
-                }
-                continue;
-            }
-            // log start of event to transaction state log
-            logStartEvent(event, creator);
-            // handle each transaction of the event
-            for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
-                final var platformTxn = it.next();
-                try {
-                    // skip system transactions
-                    if (!platformTxn.isSystem()) {
-                        userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+        try {
+            for (final var event : round) {
+                final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
+                if (creator == null) {
+                    if (!isSoOrdered(event.getSoftwareVersion(), version)) {
+                        // We were given an event for a node that *does not exist in the address book* and was not from
+                        // a
+                        // strictly earlier software upgrade. This will be logged as a warning, as this should never
+                        // happen,
+                        // and we will skip the event. The platform should guarantee that we never receive an event that
+                        // isn't associated with the address book, and every node in the address book must have an
+                        // account
+                        // ID, since you cannot delete an account belonging to a node, and you cannot change the address
+                        // book
+                        // non-deterministically.
+                        logger.warn(
+                                "Received event (version {} vs current {}) from node {} which is not in the address book",
+                                com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                                com.hedera.hapi.util.HapiUtils.toString(version),
+                                event.getCreatorId());
                     }
-                } catch (final Exception e) {
-                    logger.fatal(
-                            "Possibly CATASTROPHIC failure while running the handle workflow. "
-                                    + "While this node may not die right away, it is in a bad way, most likely fatally.",
-                            e);
+                    continue;
+                }
+                // log start of event to transaction state log
+                logStartEvent(event, creator);
+                // handle each transaction of the event
+                for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
+                    final var platformTxn = it.next();
+                    try {
+                        // skip system transactions
+                        if (!platformTxn.isSystem()) {
+                            userTransactionsHandled.set(true);
+                            handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        }
+                    } catch (final Exception e) {
+                        logger.fatal(
+                                "Possibly CATASTROPHIC failure while running the handle workflow. "
+                                        + "While this node may not die right away, it is in a bad way, most likely fatally.",
+                                e);
+                    }
                 }
             }
-        }
-        // Update all throttle metrics once per round
-        throttleServiceManager.updateAllMetrics();
-        // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
-        // that have been being computed in background threads. The running hash has to be included in
-        // state, but we want to synchronize with background threads as infrequently as possible. So once per
-        // round is the minimum we can do.
-        if (userTransactionsHandled.get()) {
-            blockRecordManager.endRound(state);
+            // Update all throttle metrics once per round
+            throttleServiceManager.updateAllMetrics();
+            // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
+            // that have been being computed in background threads. The running hash has to be included in
+            // state, but we want to synchronize with background threads as infrequently as possible. So once per
+            // round is the minimum we can do.
+            if (userTransactionsHandled.get()) {
+                blockRecordManager.endRound(state);
+            }
+        } finally {
+            // If there is an exception, we need to commit the receipts to the record cache
+            recordCache.commitAndPurgeIfAny(state, asTimestamp(round.getConsensusTimestamp()));
         }
     }
 

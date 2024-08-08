@@ -28,7 +28,10 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStream
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -239,6 +242,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
                 STARTING_BLOCK);
+        verify(recordCache, times(259)).commitAndPurgeIfAny(any(), any());
     }
 
     @Test
