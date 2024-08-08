@@ -236,9 +236,7 @@ public class UpdateDecoder {
         final List<Long> serialNumbers = Longs.asList(call.get(SERIAL_NUMBERS));
         final byte[] metadata = call.get(METADATA);
 
-        if (serialNumbers.isEmpty() || metadata.length == 0) {
-            return null;
-        }
+        if (serialNumbers.isEmpty()) return null;
 
         final var txnBodyBuilder = TokenUpdateNftsTransactionBody.newBuilder()
                 .token(tokenId)

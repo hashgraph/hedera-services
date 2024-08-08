@@ -19,12 +19,14 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.METADATA_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 @DisplayName("metadataUpdateTests")
+@SuppressWarnings("java:S1192") // literals are duplicated for readability
 @HapiTestLifecycle
 public class UpdateTokenMetadataTest {
 
@@ -53,7 +56,7 @@ public class UpdateTokenMetadataTest {
 
     @NonFungibleToken(
             numPreMints = 3,
-            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
+            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
     static SpecNonFungibleToken nft;
 
     @Account(maxAutoAssociations = 100, tinybarBalance = ONE_HUNDRED_HBARS)
@@ -72,7 +75,7 @@ public class UpdateTokenMetadataTest {
 
         @HapiTest
         @DisplayName("use updateMetadataForNFTs to correctly update metadata for 1 NFT")
-        public Stream<DynamicTest> metadataUpdateWorksForSingleNFT() {
+        public Stream<DynamicTest> usingUpdateMetadataForNFTsWorksForSingleNFT() {
             final int serialNumber = 1;
             return hapiTest(
                     nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("SN#" + serialNumber))),
@@ -85,7 +88,7 @@ public class UpdateTokenMetadataTest {
 
         @HapiTest
         @DisplayName("use updateMetadataForNFTs to correctly update metadata for multiple individual NFTs")
-        public Stream<DynamicTest> metadataUpdateWorksForMultipleNFTs() {
+        public Stream<DynamicTest> usingUpdateMetadataForNFTsWorksForMultipleNFTs() {
             final long[] serialNumbers = new long[] {2, 3};
             return hapiTest(
                     updateTokenMetadata
@@ -94,6 +97,19 @@ public class UpdateTokenMetadataTest {
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
                     nft.getInfo(2).andAssert(info -> info.hasMetadata(metadata("Nemo"))),
                     nft.getInfo(3).andAssert(info -> info.hasMetadata(metadata("Nemo"))));
+        }
+
+        @HapiTest
+        @DisplayName("use updateMetadataForNFTs with empty metadata to update individual NFT")
+        public Stream<DynamicTest> usingUpdateMetadataForNFTsWorksWithEmptyMetadata() {
+            final long[] serialNumbers = new long[] {2, 3};
+            return hapiTest(
+                    updateTokenMetadata
+                            .call("callUpdateNFTsMetadata", nft, serialNumbers, new byte[] {})
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                    nft.getInfo(2).andAssert(info -> info.hasMetadata(ByteString.EMPTY)),
+                    nft.getInfo(3).andAssert(info -> info.hasMetadata(ByteString.EMPTY)));
         }
     }
 }
