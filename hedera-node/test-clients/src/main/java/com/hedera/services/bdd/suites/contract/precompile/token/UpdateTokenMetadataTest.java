@@ -100,7 +100,7 @@ public class UpdateTokenMetadataTest {
         }
 
         @HapiTest
-        @DisplayName("use updateMetadataForNFTs with empty metadata to update individual NFT")
+        @DisplayName("use updateMetadataForNFTs with empty metadata to update multiple NFTs")
         public Stream<DynamicTest> usingUpdateMetadataForNFTsWorksWithEmptyMetadata() {
             final long[] serialNumbers = new long[] {4, 5};
             return hapiTest(
