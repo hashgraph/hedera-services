@@ -31,7 +31,6 @@ import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.spi.validation.TruePredicate;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -317,11 +316,12 @@ public class RecordCacheImpl implements HederaRecordCache {
                     // Remove from the histories.  Note that all transactions are added to this map
                     // keyed to the "user transaction" ID, so removing the entry here removes both
                     // "parent" and "child" transaction records associated with that ID.
-                    for(final var e : receiptsList.entries()) {
+                    for (final var e : receiptsList.entries()) {
                         final var txId = e.transactionIdOrThrow();
                         histories.remove(txId);
                         // Remove from the payer to transaction index
-                        final var payerAccountId = txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
+                        final var payerAccountId =
+                                txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
                         final var transactionIDs =
                                 payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
                         transactionIDs.remove(txId);
@@ -339,7 +339,7 @@ public class RecordCacheImpl implements HederaRecordCache {
             } else {
                 break;
             }
-        } while (true);
+        } while (queue.peek() != null);
     }
     // ---------------------------------------------------------------------------------------------------------------
     // Implementation methods of RecordCache

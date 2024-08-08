@@ -81,7 +81,7 @@ public class V0540RecordCacheSchema extends Schema {
             receipts.add(receipt);
         }
 
-        if(!receipts.isEmpty()) {
+        if (!receipts.isEmpty()) {
             final var entries =
                     TransactionReceiptEntries.newBuilder().entries(receipts).build();
             receiptQueue.add(entries);
