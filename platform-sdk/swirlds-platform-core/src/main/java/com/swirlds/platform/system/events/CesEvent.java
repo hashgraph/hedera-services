@@ -18,6 +18,7 @@ package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
@@ -48,7 +49,8 @@ public class CesEvent extends AbstractSerializableHashable
     public static final long UNDEFINED = -1;
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
-    public static final int CLASS_VERSION = 1;
+    private static final int CLASS_VERSION = 1;
+    private static final int CONSENSUS_DATA_CLASS_VERSION = 2;
 
     /** the pre-consensus event */
     private PlatformEvent platformEvent;
@@ -94,7 +96,7 @@ public class CesEvent extends AbstractSerializableHashable
         // some fields used to be part of the stream but are no longer used
         // in order to maintain compatibility with older versions of the stream, we write a constant in their place
 
-        out.writeInt(ConsensusData.CLASS_VERSION);
+        out.writeInt(CONSENSUS_DATA_CLASS_VERSION);
         out.writeLong(UNDEFINED); // ConsensusData.generation
         out.writeLong(UNDEFINED); // ConsensusData.roundCreated
         out.writeBoolean(false); // ConsensusData.stale
@@ -181,8 +183,18 @@ public class CesEvent extends AbstractSerializableHashable
     }
 
     /**
-     * @return the signature for the event
+     * {{@inheritDoc}}
      */
+    @NonNull
+    @Override
+    public EventCore getEventCore() {
+        return getPlatformEvent().getEventCore();
+    }
+
+    /**
+     * {{ @inheritDoc }}
+     */
+    @NonNull
     public Bytes getSignature() {
         return platformEvent.getSignature();
     }

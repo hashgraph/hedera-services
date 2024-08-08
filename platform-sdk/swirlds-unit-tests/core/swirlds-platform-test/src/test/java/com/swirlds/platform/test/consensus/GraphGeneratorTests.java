@@ -187,7 +187,7 @@ public class GraphGeneratorTests {
                 otherParentId = null;
             } else {
                 otherParentId =
-                        event.getBaseEvent().getOtherParents().getFirst().getCreator();
+                        event.getBaseEvent().getOtherParents().getFirst().creator();
             }
 
             if (Objects.equals(otherParentId, nodeId)) {

@@ -16,7 +16,12 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.state.StateChangeListener.StateType.MAP;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -25,6 +30,8 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.common.utility.RuntimeObjectRecord;
+import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
@@ -37,8 +44,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.state.State;
+import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.merkle.StateMetadata;
-import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.merkle.memory.InMemoryReadableKVState;
@@ -51,6 +58,8 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyReadableStates;
+import com.swirlds.state.spi.KVChangeListener;
+import com.swirlds.state.spi.QueueChangeListener;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -65,12 +74,15 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,6 +108,9 @@ import org.apache.logging.log4j.Logger;
 @ConstructableIgnored
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, State, MerkleRoot {
+
+    // PlatformState is a special case, and it always has 0 index
+    static final int PLATFORM_STATE_INDEX = 0;
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -114,8 +129,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     // indices globally, assuming these indices do not change that often. We need to re-think index lookup,
     // but at this point all major rewrites seem to risky.
     private static final Map<String, Integer> INDEX_LOOKUP = new ConcurrentHashMap<>();
-
-    private long classId;
 
     /**
      * The callbacks for Hedera lifecycle events.
@@ -143,6 +156,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Cache of used {@link WritableStates}.
      */
     private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
+    /**
+     * Listeners to be notified of state changes on {@link MerkleWritableStates#commit()} calls for any service.
+     */
+    private final List<StateChangeListener> listeners = new ArrayList<>();
+
+    /**
+     * Used to track the lifespan of this state.
+     */
+    private final RuntimeObjectRecord registryRecord;
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
@@ -151,7 +173,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     public MerkleStateRoot(@NonNull final MerkleStateLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
-        this.classId = CLASS_ID;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
     /**
@@ -166,6 +188,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public MerkleStateRoot() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
     /**
@@ -217,8 +240,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // Copy the Merkle route from the source instance
         super(from);
 
-        this.classId = from.classId;
         this.lifecycles = from.lifecycles;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -238,7 +261,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     @Override
     public long getClassId() {
-        return classId;
+        return CLASS_ID;
     }
 
     @Override
@@ -274,6 +297,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
+    protected void destroyNode() {
+        registryRecord.release();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @NonNull
     public ReadableStates getReadableStates(@NonNull String serviceName) {
         return readableStatesMap.computeIfAbsent(serviceName, s -> {
@@ -293,6 +324,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             final var stateMetadata = services.getOrDefault(s, Map.of());
             return new MerkleWritableStates(serviceName, stateMetadata);
         });
+    }
+
+    @Override
+    public void registerCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -336,20 +373,41 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * Puts the defined service state and its associated node into the merkle tree. The precondition
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied.
+     * MUST have a correct label applied. If the node is already present, then this method does nothing
+     * else.
      *
      * @param md The metadata associated with the state
      * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      * it doesn't have a label, or if the label isn't right.
      */
-    public <K, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
+    public void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
+        putServiceStateIfAbsent(md, nodeSupplier, n -> {});
+    }
+
+    /**
+     * Puts the defined service state and its associated node into the merkle tree. The precondition
+     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
+     * MUST have a correct label applied. No matter if the resulting node is newly created or already
+     * present, calls the provided initialization consumer with the node.
+     *
+     * @param md The metadata associated with the state
+     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
+     * @param nodeInitializer The node's initialization logic.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
+     * it doesn't have a label, or if the label isn't right.
+     */
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md,
+            @NonNull final Supplier<T> nodeSupplier,
+            @NonNull final Consumer<T> nodeInitializer) {
 
         // Validate the inputs
         throwIfImmutable();
         requireNonNull(md);
         requireNonNull(nodeSupplier);
+        requireNonNull(nodeInitializer);
 
         // Put this metadata into the map
         final var def = md.stateDefinition();
@@ -366,8 +424,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // If there is not a node there, then set it. I don't want to overwrite the existing node,
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
-        if (findNodeIndex(serviceName, def.stateKey()) == -1) {
-            final var node = requireNonNull(nodeSupplier.get());
+        final T node;
+        final var nodeIndex = findNodeIndex(serviceName, def.stateKey());
+        if (nodeIndex == -1) {
+            node = requireNonNull(nodeSupplier.get());
             final var label = node instanceof Labeled labeled ? labeled.getLabel() : null;
             if (label == null) {
                 throw new IllegalArgumentException("`node` must be a Labeled and have a label");
@@ -384,13 +444,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 throw new IllegalArgumentException("A label must be specified on the node");
             }
 
-            if (!label.equals(StateUtils.computeLabel(serviceName, def.stateKey()))) {
+            if (!label.equals(computeLabel(serviceName, def.stateKey()))) {
                 throw new IllegalArgumentException(
                         "A label must be computed based on the same " + "service name and state key in the metadata!");
             }
 
             setChild(getNumberOfChildren(), node);
+        } else {
+            node = getChild(nodeIndex);
         }
+        nodeInitializer.accept(node);
     }
 
     /**
@@ -431,7 +494,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @return -1 if not found, otherwise the index into the children
      */
     public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
-        final var label = StateUtils.computeLabel(serviceName, stateKey);
+        final var label = computeLabel(serviceName, stateKey);
 
         final Integer index = INDEX_LOOKUP.get(label);
         if (index != null && checkNodeIndex(index, label)) {
@@ -706,39 +769,63 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
-            return new OnDiskWritableKVState<>(
+            final var state = new OnDiskWritableKVState<>(
                     extractStateKey(md),
                     md.onDiskKeyClassId(),
                     md.stateDefinition().keyCodec(),
                     md.onDiskValueClassId(),
                     md.stateDefinition().valueCodec(),
                     v);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(MAP)) {
+                    registerKVListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
-            return new InMemoryWritableKVState<>(
+            final var state = new InMemoryWritableKVState<>(
                     extractStateKey(md),
                     md.inMemoryValueClassId(),
                     md.stateDefinition().keyCodec(),
                     md.stateDefinition().valueCodec(),
                     m);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(MAP)) {
+                    registerKVListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
         @NonNull
         protected WritableSingletonState<?> createReadableSingletonState(
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
-            return new WritableSingletonStateImpl<>(extractStateKey(md), s);
+            final var state = new WritableSingletonStateImpl<>(extractStateKey(md), s);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(SINGLETON)) {
+                    registerSingletonListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @NonNull
         @Override
         protected WritableQueueState<?> createReadableQueueState(
                 @NonNull final StateMetadata md, @NonNull final QueueNode<?> q) {
-            return new WritableQueueStateImpl<>(extractStateKey(md), q);
+            final var state = new WritableQueueStateImpl<>(extractStateKey(md), q);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(QUEUE)) {
+                    registerQueueListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
@@ -767,6 +854,48 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             singletonInstances.remove(stateKey);
             queueInstances.remove(stateKey);
         }
+
+        private <V> void registerSingletonListener(
+                @NonNull final String serviceName,
+                @NonNull final WritableSingletonStateBase<V> singletonState,
+                @NonNull final StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, singletonState.getStateKey());
+            singletonState.registerListener(value -> listener.singletonUpdateChange(stateName, value));
+        }
+
+        private <V> void registerQueueListener(
+                @NonNull final String serviceName,
+                @NonNull final WritableQueueStateBase<V> queueState,
+                @NonNull final StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, queueState.getStateKey());
+            queueState.registerListener(new QueueChangeListener<>() {
+                @Override
+                public void queuePushChange(@NonNull final V value) {
+                    listener.queuePushChange(stateName, value);
+                }
+
+                @Override
+                public void queuePopChange() {
+                    listener.queuePopChange(stateName);
+                }
+            });
+        }
+
+        private <K, V> void registerKVListener(
+                @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, state.getStateKey());
+            state.registerListener(new KVChangeListener<>() {
+                @Override
+                public void mapUpdateChange(@NonNull K key, @NonNull V value) {
+                    listener.mapUpdateChange(stateName, key, value);
+                }
+
+                @Override
+                public void mapDeleteChange(@NonNull K key) {
+                    listener.mapDeleteChange(stateName, key);
+                }
+            });
+        }
     }
 
     @NonNull
@@ -774,8 +903,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return md.stateDefinition().stateKey();
     }
 
-    // FUTURE USE: the following code will become relevant with
-    // https://github.com/hashgraph/hedera-services/issues/11773
     @NonNull
     @Override
     public SwirldState getSwirldState() {
@@ -788,17 +915,31 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformState getPlatformState() {
-        throw new UnsupportedOperationException(
-                "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+        return getChild(PLATFORM_STATE_INDEX);
     }
 
     /**
-     * {@inheritDoc}
+     * Set the platform state. This method shifts existing children to the right to insert
+     * {@link PlatformState} instance at the {@code PLATFORM_STATE_INDEX} index.
+     * If the platform state is already present, it doesn't do the shifting.
      */
     @Override
     public void setPlatformState(@NonNull final PlatformState platformState) {
-        throw new UnsupportedOperationException(
-                "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+        if (getChild(PLATFORM_STATE_INDEX) instanceof PlatformState) {
+            setChild(PLATFORM_STATE_INDEX, platformState);
+            return;
+        }
+
+        INDEX_LOOKUP.clear();
+        // Shift all existing children to the right
+        if (getNumberOfChildren() != 0) {
+            for (int i = getNumberOfChildren(); i > 0; i--) {
+                MerkleNode child = getChild(i - 1);
+                setChild(i, child.copy());
+                setChild(i - 1, null);
+            }
+        }
+        setChild(PLATFORM_STATE_INDEX, platformState);
     }
 
     /**
@@ -807,6 +948,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return com.swirlds.platform.state.State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }
