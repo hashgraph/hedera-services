@@ -20,7 +20,6 @@ import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
-import static com.swirlds.state.merkle.StateUtils.stateIdentifierOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -56,8 +55,8 @@ import org.jetbrains.annotations.NotNull;
 public class RoundStateChangeListener implements StateChangeListener {
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 
-    private final SortedMap<String, StateChange> singletonUpdates = new TreeMap<>();
-    private final SortedMap<String, List<StateChange>> queueUpdates = new TreeMap<>();
+    private final SortedMap<Integer, StateChange> singletonUpdates = new TreeMap<>();
+    private final SortedMap<Integer, List<StateChange>> queueUpdates = new TreeMap<>();
     private Instant lastUsedConsensusTime;
 
     public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
@@ -75,37 +74,33 @@ public class RoundStateChangeListener implements StateChangeListener {
     }
 
     @Override
-    public <V> void queuePushChange(@NonNull final String stateName, @NonNull final V value) {
-        requireNonNull(stateName);
+    public <V> void queuePushChange(final int stateId, @NonNull final V value) {
         requireNonNull(value);
         final var stateChange = StateChange.newBuilder()
-                .stateId(stateIdentifierOf(stateName))
+                .stateId(stateId)
                 .queuePush(new QueuePushChange(queuePushChangeValueFor(value)))
                 .build();
-        queueUpdates.computeIfAbsent(stateName, k -> new LinkedList<>()).add(stateChange);
+        queueUpdates.computeIfAbsent(stateId, k -> new LinkedList<>()).add(stateChange);
     }
 
     @Override
-    public void queuePopChange(@NonNull final String stateName) {
-        requireNonNull(stateName, "stateName must not be null");
-
+    public void queuePopChange(final int stateId) {
         final var stateChange = StateChange.newBuilder()
-                .stateId(stateIdentifierOf(stateName))
+                .stateId(stateId)
                 .queuePop(new QueuePopChange())
                 .build();
-        queueUpdates.computeIfAbsent(stateName, k -> new LinkedList<>()).add(stateChange);
+        queueUpdates.computeIfAbsent(stateId, k -> new LinkedList<>()).add(stateChange);
     }
 
     @Override
-    public <V> void singletonUpdateChange(@NonNull final String stateName, @NonNull final V value) {
-        requireNonNull(stateName, "stateName must not be null");
+    public <V> void singletonUpdateChange(final int stateId, @NonNull final V value) {
         requireNonNull(value, "value must not be null");
 
         final var stateChange = StateChange.newBuilder()
-                .stateId(stateIdentifierOf(stateName))
+                .stateId(stateId)
                 .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value)))
                 .build();
-        singletonUpdates.put(stateName, stateChange);
+        singletonUpdates.put(stateId, stateChange);
     }
 
     public BlockItem stateChanges() {

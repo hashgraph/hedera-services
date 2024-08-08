@@ -53,10 +53,10 @@ public class StateTest {
             }
         };
 
-        assertThatCode(() -> subject.mapUpdateChange("label", "key", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.mapDeleteChange("label", "key")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.singletonUpdateChange("label", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.queuePushChange("label", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.queuePopChange("label")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.mapUpdateChange(0, "key", "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.mapDeleteChange(0, "key")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.singletonUpdateChange(0, "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.queuePushChange(0, "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.queuePopChange(0)).doesNotThrowAnyException();
     }
 }
