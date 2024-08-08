@@ -34,7 +34,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -94,7 +94,7 @@ public class AutoAccountCreator {
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
+                syntheticCreation.build(), CryptoCreateStreamBuilder.class, null, handleContext.payer());
         childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.

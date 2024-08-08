@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -75,7 +75,7 @@ public class ContractCallHandler implements TransactionHandler {
         // (FUTURE) Remove ExternalizeAbortResult.NO, this is only
         // for mono-service fidelity during differential testing
         outcome.addCallDetailsTo(
-                context.savepointStack().getBaseBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
+                context.savepointStack().getBaseBuilder(ContractCallStreamBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

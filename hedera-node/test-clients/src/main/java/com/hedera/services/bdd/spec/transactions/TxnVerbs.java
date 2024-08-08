@@ -77,8 +77,11 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCancelAirdrop;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
@@ -100,6 +103,7 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -166,8 +170,23 @@ public class TxnVerbs {
         return new HapiCryptoTransfer(sources);
     }
 
+    @SafeVarargs
+    public static HapiTokenCancelAirdrop tokenCancelAirdrop(
+            final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+        return new HapiTokenCancelAirdrop(pendingAirdropIds);
+    }
+
+    @SafeVarargs
+    public static HapiTokenClaimAirdrop tokenClaimAirdrop(Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+        return new HapiTokenClaimAirdrop(pendingAirdropIds);
+    }
+
     public static HapiCryptoUpdate cryptoUpdate(String account) {
         return new HapiCryptoUpdate(account);
+    }
+
+    public static HapiTokenAirdrop tokenAirdrop(TokenMovement... sources) {
+        return new HapiTokenAirdrop(sources);
     }
 
     public static HapiCryptoUpdate cryptoUpdateAliased(final String alias) {

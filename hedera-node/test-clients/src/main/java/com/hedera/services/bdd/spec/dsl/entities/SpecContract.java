@@ -37,6 +37,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
@@ -92,6 +93,15 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         requireNonNull(network);
         final var networkContract = contractOrThrow(network);
         return headlongAddressOf(networkContract);
+    }
+
+    /**
+     * Returns an operation to get the balance of the account.
+     *
+     * @return the operation
+     */
+    public GetBalanceOperation getBalance() {
+        return new GetBalanceOperation(this);
     }
 
     /**

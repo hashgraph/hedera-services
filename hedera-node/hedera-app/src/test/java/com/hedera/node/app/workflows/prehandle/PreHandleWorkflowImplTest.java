@@ -27,7 +27,7 @@ import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
-import static com.swirlds.platform.system.transaction.PayloadWrapperUtils.createAppPayloadWrapper;
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,8 +63,8 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -225,7 +225,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Nested
     @DisplayName("Handling of exceptions caused by bugs in our code")
     final class ExceptionTest {
-        private PayloadWrapper platformTx;
+        private TransactionWrapper platformTx;
         private Stream<Transaction> transactions;
         private AccountID creator;
 

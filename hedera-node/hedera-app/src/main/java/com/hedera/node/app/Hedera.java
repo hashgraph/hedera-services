@@ -56,8 +56,12 @@ import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.signature.AppSignatureVerifier;
+import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
+import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
@@ -259,7 +263,14 @@ public final class Hedera implements SwirldMain {
                 () -> version.readableServicesVersion(),
                 () -> HapiUtils.toString(version.getHapiVersion()));
         fileServiceImpl = new FileServiceImpl();
-        contractServiceImpl = new ContractServiceImpl(instantSource);
+
+        final var appContext = new AppContextImpl(
+                instantSource,
+                new AppSignatureVerifier(
+                        bootstrapConfig.getConfigData(HederaConfig.class),
+                        new SignatureExpanderImpl(),
+                        new SignatureVerifierImpl(CryptographyHolder.get())));
+        contractServiceImpl = new ContractServiceImpl(appContext);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
@@ -279,11 +290,10 @@ public final class Hedera implements SwirldMain {
                 .forEach(servicesRegistry::register);
         try {
             // And the factory for the MerkleStateRoot class id must be our constructor
-            // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     MerkleStateRoot.class, () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this))));
         } catch (final ConstructableRegistryException e) {
-            logger.error("Failed to register MerkleStateRoot factory with ConstructableRegistry", e);
+            logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
     }
@@ -320,12 +330,7 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public MerkleRoot newMerkleStateRoot() {
-        // this State class will be deprecated in https://github.com/hashgraph/hedera-services/pull/14356
-        final com.swirlds.platform.state.State state = new com.swirlds.platform.state.State();
-        state.setSwirldState(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this)));
-        return state;
-        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
-        // return new MerkleStateRoot(new MerkleStateLifecyclesImpl(this));
+        return new MerkleStateRoot(new MerkleStateLifecyclesImpl(this));
     }
 
     /*==================================================================================================================

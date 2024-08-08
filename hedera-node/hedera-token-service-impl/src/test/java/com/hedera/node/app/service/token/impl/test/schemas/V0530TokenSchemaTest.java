@@ -31,9 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
@@ -69,7 +69,7 @@ class V0530TokenSchemaTest {
         final var firstStateDef = sortedResult.getFirst();
         assertThat(firstStateDef.stateKey()).isEqualTo("PENDING_AIRDROPS");
         assertThat(firstStateDef.keyCodec()).isEqualTo(PendingAirdropId.PROTOBUF);
-        assertThat(firstStateDef.valueCodec()).isEqualTo(PendingAirdropValue.PROTOBUF);
+        assertThat(firstStateDef.valueCodec()).isEqualTo(AccountPendingAirdrop.PROTOBUF);
     }
 
     @Test

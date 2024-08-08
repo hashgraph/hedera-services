@@ -217,7 +217,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         }
 
         final long transactionContents =
-                byteArrayToLong(transaction.getApplicationPayload().toByteArray(), 0);
+                byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
             logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
@@ -236,7 +236,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
                 return;
             }
             final long transactionContents =
-                    byteArrayToLong(transaction.getApplicationPayload().toByteArray(), 0);
+                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
             if (!transactionsAwaitingPostHandle.add(transactionContents)) {
                 logger.error(

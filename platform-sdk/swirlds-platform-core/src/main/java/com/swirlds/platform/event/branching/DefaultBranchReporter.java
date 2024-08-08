@@ -25,7 +25,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -70,7 +70,7 @@ public class DefaultBranchReporter implements BranchReporter {
     /**
      * The most recent non-ancient branching event for each node (not present or null if there are none).
      */
-    private final Map<NodeId, EventDescriptor> mostRecentBranchingEvents = new HashMap<>();
+    private final Map<NodeId, EventDescriptorWrapper> mostRecentBranchingEvents = new HashMap<>();
 
     /**
      * The total number of nodes that currently have a non-ancient branching event.
@@ -125,7 +125,8 @@ public class DefaultBranchReporter implements BranchReporter {
         final NodeId creator = event.getCreatorId();
         nodeLoggers.get(creator).error(EXCEPTION.getMarker(), "Node {} is branching", creator);
 
-        final EventDescriptor previousBranchingEvent = mostRecentBranchingEvents.put(creator, event.getDescriptor());
+        final EventDescriptorWrapper previousBranchingEvent =
+                mostRecentBranchingEvents.put(creator, event.getDescriptor());
 
         if (previousBranchingEvent == null) {
             // This node is now branching but wasn't previously.
@@ -172,7 +173,7 @@ public class DefaultBranchReporter implements BranchReporter {
         currentEventWindow = eventWindow;
 
         for (final NodeId nodeId : nodes) {
-            final EventDescriptor mostRecentBranchingEvent = mostRecentBranchingEvents.get(nodeId);
+            final EventDescriptorWrapper mostRecentBranchingEvent = mostRecentBranchingEvents.get(nodeId);
             if (mostRecentBranchingEvent != null && eventWindow.isAncient(mostRecentBranchingEvent)) {
                 // Branching event is ancient, forget it.
                 mostRecentBranchingEvents.put(nodeId, null);
