@@ -80,8 +80,9 @@ public class TransferExecutor {
     }
 
     /**
-     * Pre-handle for airdrop transaction, that ignore reciever sign required check. Because any airdrop to
-     * receiver with signature required, should result in a pending airdrop.
+     * Pre-handle for airdrop transaction, that ignore receiver sign required check. Because airdrops to
+     * receiver with signature required, should result in a pending airdrop or failed transaction depending
+     * on association.
      * @param context handle context
      * @param op transaction body
      * @throws PreCheckException if any error occurs during the process

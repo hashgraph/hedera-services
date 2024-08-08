@@ -100,7 +100,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 .tokenTransfers(op.tokenTransfers())
                 .build();
         // Any receiver that has `receiverSigRequired` will be ignored during airdrops.
-        // The airdrop will result in pending state for the receiver.
+        // The airdrop will result in pending state or failed transaction depending on association.
         preHandleWithoutReceiverSigRequired(context, convertedOp);
     }
 
