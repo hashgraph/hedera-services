@@ -459,8 +459,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDABFilesCreated(final String file, final Path baseDir)
-            throws IOException, CertificateException {
+    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());
