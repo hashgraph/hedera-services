@@ -95,6 +95,5 @@ public class UpdateTokenMetadataTest {
                     nft.getInfo(2).andAssert(info -> info.hasMetadata(metadata("Nemo"))),
                     nft.getInfo(3).andAssert(info -> info.hasMetadata(metadata("Nemo"))));
         }
-
     }
 }
