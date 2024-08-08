@@ -213,7 +213,7 @@ class ReadableFreezeUpgradeActionsTest {
     }
 
     @Test
-    void preparesForUpgradeWithDynamicAddressBook() throws IOException, CertificateException {
+    void preparesForUpgradeWithDAB() throws IOException, CertificateException {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
         setupNodes();
@@ -223,7 +223,7 @@ class ReadableFreezeUpgradeActionsTest {
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertDynamicAddressBookFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -459,7 +459,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDynamicAddressBookFilesCreated(final String file, final Path baseDir)
+    private void assertDABFilesCreated(final String file, final Path baseDir)
             throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
