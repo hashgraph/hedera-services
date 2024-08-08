@@ -18,12 +18,13 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.NFT_AIRDROP;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AIRDROP;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AND_NFT_AIRDROP;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -282,7 +283,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
     @Test
@@ -397,7 +398,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         // set up transaction and context
-        givenAirdropTxn(true, zeroAccountId, TOKEN_AIRDROP);
+        givenAirdropTxn(true, ownerId, TOKEN_AND_NFT_AIRDROP);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
