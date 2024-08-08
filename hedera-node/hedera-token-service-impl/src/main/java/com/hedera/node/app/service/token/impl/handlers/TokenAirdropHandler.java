@@ -69,6 +69,8 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Inject;
@@ -135,7 +137,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         assessAndChargeCustomFee(context, convertedOp);
 
         for (final var xfers : op.tokenTransfers()) {
-            throwIfContract(xfers, accountStore);
+            throwIfContractWithoutAdminKey(xfers, accountStore);
 
             final var tokenId = xfers.tokenOrThrow();
             boolean shouldExecuteCryptoTransfer = false;
@@ -208,9 +210,12 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         }
     }
 
-    // Currently we are not supporting airdropping to a contract. If any of the receivers is a contract and
-    // the contract doesn't have a key we throw an error
-    private static void throwIfContract(TokenTransferList tokenTransferList, WritableAccountStore accountStore) {
+    /**
+     * Currently we are not supporting airdropping to a contract. If any of the receivers is a contract and
+     * the contract doesn't have a key we throw an error
+     */
+    private static void throwIfContractWithoutAdminKey(
+            TokenTransferList tokenTransferList, WritableAccountStore accountStore) {
         var receivers = extractAllReceivers(tokenTransferList);
 
         for (var receiver : receivers) {
@@ -219,12 +224,13 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             }
             var account = accountStore.get(receiver);
             validateTrue(account != null, INVALID_ACCOUNT_ID);
+            requireNonNull(account.key());
             validateFalse(account.smartContract() && account.key().contractID() != null, INVALID_TRANSACTION_BODY);
         }
     }
 
-    private static ArrayList<AccountID> extractAllReceivers(TokenTransferList tokenTransferList) {
-        var receivers = new ArrayList<AccountID>();
+    private static Collection<AccountID> extractAllReceivers(TokenTransferList tokenTransferList) {
+        var receivers = new HashSet<AccountID>();
         receivers.addAll(tokenTransferList.transfers().stream()
                 .filter(t -> t.amount() > 0)
                 .map(AccountAmount::accountID)

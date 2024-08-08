@@ -93,7 +93,8 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableNftStore nftStore) {
         var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfers(), INVALID_TRANSACTION_BODY);
+        validateTrue(
+                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(), INVALID_TRANSACTION_BODY);
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
