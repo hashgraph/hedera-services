@@ -19,7 +19,7 @@ package com.hedera.node.app.records.impl;
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
-import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
+import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;

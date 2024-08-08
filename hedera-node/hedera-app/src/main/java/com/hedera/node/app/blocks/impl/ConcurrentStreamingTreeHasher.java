@@ -124,7 +124,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         static {
             EMPTY_HASHES[0] = noThrowSha384HashOf(new byte[0]);
             for (int i = 1; i < MAX_DEPTH; i++) {
-                EMPTY_HASHES[i] = HashUtils.combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
+                EMPTY_HASHES[i] = BlockImplUtils.combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
             }
         }
 
@@ -171,7 +171,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                         for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
                             final var left = scheduledWork.get(i);
                             final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
-                            result.add(HashUtils.combine(left, right));
+                            result.add(BlockImplUtils.combine(left, right));
                         }
                         return result;
                     },

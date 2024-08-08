@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
+package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
@@ -67,6 +67,11 @@ public class RoundStateChangeListener implements StateChangeListener {
     @Override
     public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;
+    }
+
+    @Override
+    public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+        return BlockImplUtils.stateIdFor(serviceName, stateKey);
     }
 
     @Override

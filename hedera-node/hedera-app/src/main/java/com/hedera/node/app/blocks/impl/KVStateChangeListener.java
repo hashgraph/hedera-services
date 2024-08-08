@@ -70,6 +70,11 @@ public class KVStateChangeListener implements StateChangeListener {
     }
 
     @Override
+    public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+        return BlockImplUtils.stateIdFor(serviceName, stateKey);
+    }
+
+    @Override
     public <K, V> void mapUpdateChange(@NonNull final String stateName, @NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(stateName, "stateName must not be null");
         Objects.requireNonNull(key, "key must not be null");
