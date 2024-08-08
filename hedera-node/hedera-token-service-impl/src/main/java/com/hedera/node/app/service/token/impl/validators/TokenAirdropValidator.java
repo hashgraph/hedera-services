@@ -193,7 +193,7 @@ public class TokenAirdropValidator {
             final TokenID tokenId,
             final AccountAmount senderAmount,
             final ReadableTokenRelationStore tokenRelStore) {
-
+        //validate association and account frozen
         final var tokenRel = getIfUsable(senderAccount.accountIdOrThrow(), tokenId, tokenRelStore);
 
         if (senderAmount.isApproval()) {
@@ -221,7 +221,8 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableNftStore nftStore) {
-        final var tokenRel = getIfUsable(senderAccount.accountIdOrThrow(), tokenId, tokenRelStore);
+        //validate association and account frozen
+        getIfUsable(senderAccount.accountIdOrThrow(), tokenId, tokenRelStore);
 
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
