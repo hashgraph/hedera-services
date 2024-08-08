@@ -20,6 +20,7 @@ import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
+import static com.swirlds.state.merkle.StateUtils.stateIdentifierOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -73,7 +74,7 @@ public class RoundStateChangeListener implements StateChangeListener {
         requireNonNull(stateName);
         requireNonNull(value);
         final var stateChange = StateChange.newBuilder()
-                .stateName(stateName)
+                .stateId(stateIdentifierOf(stateName))
                 .queuePush(new QueuePushChange(queuePushChangeValueFor(value)))
                 .build();
         queueUpdates.computeIfAbsent(stateName, k -> new LinkedList<>()).add(stateChange);
@@ -84,7 +85,7 @@ public class RoundStateChangeListener implements StateChangeListener {
         requireNonNull(stateName, "stateName must not be null");
 
         final var stateChange = StateChange.newBuilder()
-                .stateName(stateName)
+                .stateId(stateIdentifierOf(stateName))
                 .queuePop(new QueuePopChange())
                 .build();
         queueUpdates.computeIfAbsent(stateName, k -> new LinkedList<>()).add(stateChange);
@@ -96,7 +97,7 @@ public class RoundStateChangeListener implements StateChangeListener {
         requireNonNull(value, "value must not be null");
 
         final var stateChange = StateChange.newBuilder()
-                .stateName(stateName)
+                .stateId(stateIdentifierOf(stateName))
                 .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value)))
                 .build();
         singletonUpdates.put(stateName, stateChange);

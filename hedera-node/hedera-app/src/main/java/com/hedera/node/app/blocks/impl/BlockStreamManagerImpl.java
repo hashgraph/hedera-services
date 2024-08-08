@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
@@ -176,7 +177,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
                         .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
                         .stateChanges(StateChange.newBuilder()
-                                .stateName(BlockStreamService.NAME + "." + BLOCK_STREAM_INFO_KEY)
+                                .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
                                 .singletonUpdate(
                                         new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
                                 .build())

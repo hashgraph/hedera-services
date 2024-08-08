@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
+import static com.swirlds.state.merkle.StateUtils.stateIdentifierOf;
 
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
@@ -78,8 +79,10 @@ public class KVStateChangeListener implements StateChangeListener {
                 .key(mapChangeKeyFor(key))
                 .value(mapChangeValueFor(value))
                 .build();
-        final var stateChange =
-                StateChange.newBuilder().stateName(stateName).mapUpdate(change).build();
+        final var stateChange = StateChange.newBuilder()
+                .stateId(stateIdentifierOf(stateName))
+                .mapUpdate(change)
+                .build();
         stateChanges.add(stateChange);
     }
 
@@ -90,8 +93,10 @@ public class KVStateChangeListener implements StateChangeListener {
 
         final var change =
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
-        stateChanges.add(
-                StateChange.newBuilder().stateName(stateName).mapDelete(change).build());
+        stateChanges.add(StateChange.newBuilder()
+                .stateId(stateIdentifierOf(stateName))
+                .mapDelete(change)
+                .build());
     }
 
     /**

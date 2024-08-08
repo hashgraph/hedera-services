@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.swirlds.state.merkle.StateUtils.stateIdentifierOf;
+
 import com.hedera.hapi.block.stream.output.NewStateChange;
 import com.hedera.hapi.block.stream.output.NewStateType;
 import com.hedera.hapi.block.stream.output.RemovedStateChange;
@@ -35,8 +37,10 @@ public class SchemaStateChangeListenerImpl implements SchemaStateChangeListener 
         Objects.requireNonNull(type, "type must not be null");
 
         final var change = NewStateChange.newBuilder().stateType(type).build();
-        final var stateChange =
-                StateChange.newBuilder().stateName(stateName).stateAdd(change).build();
+        final var stateChange = StateChange.newBuilder()
+                .stateId(stateIdentifierOf(stateName))
+                .stateAdd(change)
+                .build();
         stateChanges.add(stateChange);
     }
 
@@ -45,7 +49,7 @@ public class SchemaStateChangeListenerImpl implements SchemaStateChangeListener 
         Objects.requireNonNull(stateName, "stateName must not be null");
 
         final var stateChange = StateChange.newBuilder()
-                .stateName(stateName)
+                .stateId(stateIdentifierOf(stateName))
                 .stateRemove(new RemovedStateChange())
                 .build();
         stateChanges.add(stateChange);
