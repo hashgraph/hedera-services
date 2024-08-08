@@ -21,10 +21,13 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockStreamTransactionTranslator;
@@ -36,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +51,13 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
         // Parse the input blocks
-        final var inputs = new BlocksParser().parseBlocks(blocks);
+        final BlocksData inputs;
+        try {
+            inputs = new BlocksParser().parseBlocks(blocks);
+        } catch (ParseException e) {
+            Assertions.fail("Failed to parse blocks.", e);
+            return;
+        }
 
         // Transform the expected transaction records into the required format
         final var expectedTxnRecs = transformExpectedRecords(data);
@@ -63,7 +73,8 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         try {
             diffs = rcDiff.summarizeDiffs();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            Assertions.fail("Failed to compare all records.", e);
+            return;
         }
 
         // TODO: pass in `inputs.allStateChanges().size()` instead of zero (when the method called
@@ -148,19 +159,23 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
         private BlocksParser() {}
 
-        BlocksData parseBlocks(@NonNull final List<Block> blocks) {
+        BlocksData parseBlocks(@NonNull final List<Block> blocks) throws ParseException {
             for (var block : blocks) {
                 final var items = block.items();
 
                 for (final var item : items) {
-                    if (item.hasHeader()) {
+                    if (item.hasEventHeader()) {
                         // build and reassign
                         final var SingleTransactionBlockItems = builder.build();
                         blockTxns.add(SingleTransactionBlockItems);
                         builder = new SingleTransactionBlockItems.Builder();
                     }
-                    if (item.hasTransaction()) {
-                        builder.txn(item.transaction());
+                    if (item.hasEventTransaction()) {
+                        final var submittedTxnBytes = item.eventTransaction().applicationTransactionOrElse(Bytes.EMPTY);
+                        if (!(Objects.equals(submittedTxnBytes, Bytes.EMPTY))) {
+                            final var submittedTxn = Transaction.PROTOBUF.parse(submittedTxnBytes);
+                            builder.txn(submittedTxn);
+                        }
                     } else if (item.hasTransactionResult()) {
                         builder.result(item.transactionResult());
                     } else if (item.hasTransactionOutput()) {

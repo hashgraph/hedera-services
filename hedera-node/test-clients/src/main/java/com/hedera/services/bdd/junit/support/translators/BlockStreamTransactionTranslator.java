@@ -26,7 +26,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
-import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
@@ -50,8 +49,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Converts a block stream transaction into a {@link TransactionRecord}. We can then use the converted
@@ -59,27 +56,25 @@ import org.slf4j.LoggerFactory;
  */
 public class BlockStreamTransactionTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
-    private static final Logger log = LoggerFactory.getLogger(BlockStreamTransactionTranslator.class);
-
     /**
      * Translates a {@link SingleTransactionBlockItems} into a {@link SingleTransactionRecord}.
      *
-     * @param transaction A wrapper for block items representing a single transaction input
+     * @param txnWrapper A wrapper for block items representing a single transaction input
      * @return the translated txnInput record
      */
     @Override
     public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        Objects.requireNonNull(transaction, "transaction must not be null");
+            @NonNull final SingleTransactionBlockItems txnWrapper, @Nullable final StateChanges stateChanges) {
+        Objects.requireNonNull(txnWrapper, "transaction must not be null");
 
         final var recordBuilder = TransactionRecord.newBuilder();
         final var receiptBuilder = TransactionReceipt.newBuilder();
 
-        parseTransaction(transaction.txn(), recordBuilder);
+        parseTransaction(txnWrapper.txn(), recordBuilder);
 
         try {
-            parseTransactionResult(transaction.result(), recordBuilder, receiptBuilder);
-            parseTransactionOutput(transaction.output(), recordBuilder, receiptBuilder);
+            parseTransactionResult(txnWrapper.result(), recordBuilder, receiptBuilder);
+            parseTransactionOutput(txnWrapper.output(), recordBuilder, receiptBuilder);
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
@@ -88,7 +83,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
-                transaction.txn(),
+                txnWrapper.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
                 // TODO: how do we construct correct sidecar records?
                 List.of(),
@@ -268,13 +263,13 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
 
-        if (txnOutput.hasSubmitMessage()) {
-            //                rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-
-            Optional.ofNullable(txnOutput.submitMessage().topicRunningHashVersion())
-                    .map(RunningHashVersion::protoOrdinal)
-                    .ifPresent(rb::setTopicRunningHashVersion);
-        }
+        //        if (txnOutput.hasSubmitMessage()) {
+        //            rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
+        //
+        //            Optional.ofNullable(txnOutput.submitMessage().topicRunningHashVersion())
+        //                    .map(RunningHashVersion::protoOrdinal)
+        //                    .ifPresent(rb::setTopicRunningHashVersion);
+        //        }
 
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());
