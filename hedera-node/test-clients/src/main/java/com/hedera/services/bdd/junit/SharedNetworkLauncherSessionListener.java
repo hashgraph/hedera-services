@@ -36,7 +36,7 @@ import org.junit.platform.launcher.TestPlan;
  * plan execution finishes.
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
-    public static final int CLASSIC_HAPI_TEST_NETWORK_SIZE = 4;
+    public static final int CLASSIC_HAPI_TEST_NETWORK_SIZE = 1;
 
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {

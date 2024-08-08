@@ -40,7 +40,6 @@ import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContrac
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CryptoTransferOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
-import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokenOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokensOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
@@ -100,13 +99,6 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         requireNonNull(token);
         requireNonNull(to);
         return new TransferTokensOperation(this, to, token, units);
-    }
-
-    public TransferTokenOperation transferNFT(
-            @NonNull final SpecToken token, @NonNull SpecAccount to, final long serialNumber) {
-        requireNonNull(token);
-        requireNonNull(to);
-        return new TransferTokenOperation(token, this, to, serialNumber);
     }
 
     /**

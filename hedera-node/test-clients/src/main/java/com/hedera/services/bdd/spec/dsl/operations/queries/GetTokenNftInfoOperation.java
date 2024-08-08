@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * Operation dispatching HapiGetTokenNFTInfo, to retrieve the info for specific NFT from collection,
+ * identified by the serial number.
+ */
 public class GetTokenNftInfoOperation extends AbstractSpecOperation implements SpecOperation {
     private final SpecToken target;
     private final int serialNumber;

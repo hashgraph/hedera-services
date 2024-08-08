@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.METADATA_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -39,6 +40,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -76,7 +78,7 @@ public class NumericValidationTest {
 
     @NonFungibleToken(
             numPreMints = 5,
-            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
+            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
     static SpecNonFungibleToken nft;
 
     private static final String NEGATIVE_ONE = "FFFFFFFFFFFFFFFF";
@@ -398,7 +400,8 @@ public class NumericValidationTest {
         public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
             lifecycle.doAdhoc(
                     fungibleToken.authorizeContracts(numericContractComplex),
-                    nft.authorizeContracts(numericContractComplex),
+                    nft.authorizeContracts(numericContractComplex, numericContract)
+                            .alsoAuthorizing(TokenKeyType.METADATA_KEY, TokenKeyType.SUPPLY_KEY),
                     alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS),
                     numericContractComplex.getBalance().andAssert(balance -> balance.hasTinyBars(ONE_HUNDRED_HBARS)));
         }
@@ -589,6 +592,16 @@ public class NumericValidationTest {
             return Stream.of(fungibleToken, nft)
                     .flatMap(testCaseToken -> hapiTest(numericContractComplex
                             .call("updateTokenInfoV3", testCaseToken, -1L, -1L, 5000L)
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        }
+
+        @HapiTest
+        @DisplayName("when using updateNFTsMetadata for specific NFT from NFT collection with invalid serial number")
+        public Stream<DynamicTest> failToUpdateNFTsMetadata() {
+            return Stream.of(new long[] {}, new long[] {-1, 1})
+                    .flatMap(invalidSerialNumbers -> hapiTest(numericContract
+                            .call("updateNFTsMetadata", nft, invalidSerialNumbers, "tiger".getBytes())
+                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
         }
     }

@@ -44,8 +44,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
-@DisplayName("metadataUpdateValidation")
-@SuppressWarnings("java:S1192")
+@DisplayName("metadataUpdateTests")
 @HapiTestLifecycle
 public class UpdateTokenMetadataTest {
 
@@ -76,15 +75,34 @@ public class UpdateTokenMetadataTest {
 
         @HapiTest
         @DisplayName("use updateMetadataForNFTs to correctly update metadata for 1 NFT")
-        public Stream<DynamicTest> metadataUpdateValidation() {
+        public Stream<DynamicTest> metadataUpdateWorksForSingleNFT() {
             final int serialNumber = 1;
             return hapiTest(
                     nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("SN#" + serialNumber))),
                     updateTokenMetadata
-                            .call("callUpdateNFTsMetadata", nft, new long[] {serialNumber}, "new metadata".getBytes())
+                            .call("callUpdateNFTsMetadata", nft, new long[] {serialNumber}, "The Lion King".getBytes())
                             .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("new metadata"))));
+                    nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("The Lion King"))));
+        }
+
+        @HapiTest
+        @DisplayName("use updateMetadataForNFTs to correctly update metadata for multiple individual NFTs")
+        public Stream<DynamicTest> metadataUpdateWorksForMultipleNFTs() {
+            final long[] serialNumbers = new long[] {2, 3};
+            return hapiTest(
+                    updateTokenMetadata
+                            .call("callUpdateNFTsMetadata", nft, serialNumbers, "Nemo".getBytes())
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                    nft.getInfo(2).andAssert(info -> info.hasMetadata(metadata("Nemo"))),
+                    nft.getInfo(3).andAssert(info -> info.hasMetadata(metadata("Nemo"))));
+        }
+
+        @HapiTest
+        @DisplayName("ds")
+        public Stream<DynamicTest> metadaata() {
+            return null;
         }
     }
 }
