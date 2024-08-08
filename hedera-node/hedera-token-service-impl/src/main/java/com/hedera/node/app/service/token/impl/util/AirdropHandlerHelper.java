@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIVER_SIG_REQUIRED;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
@@ -38,6 +39,7 @@ import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -93,14 +95,14 @@ public class AirdropHandlerHelper {
                 continue;
             }
 
-            if (aa.amount() > 0) {
-                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
-            }
-
             final var account =
                     getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             final var tokenRel = tokenRelStore.get(accountId, tokenId);
-            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+            var isPendingAirdrop = false;
+            if (aa.amount() > 0) {
+                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
+                isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+            }
 
             if (isPendingAirdrop) {
                 pendingFungibleAmounts.add(aa);
@@ -181,6 +183,9 @@ public class AirdropHandlerHelper {
     private static boolean isPendingAirdrop(@NonNull Account receiver, @Nullable TokenRelation tokenRelation) {
         // check if we have existing association or free auto associations slots or unlimited auto associations
         if (tokenRelation != null) {
+            if (receiver.receiverSigRequired()) {
+                throw new HandleException(RECEIVER_SIG_REQUIRED);
+            }
             return false;
         } else if (receiver.receiverSigRequired()) {
             // If the receiver signature is required, even if there are open slots for auto-associations, we should
