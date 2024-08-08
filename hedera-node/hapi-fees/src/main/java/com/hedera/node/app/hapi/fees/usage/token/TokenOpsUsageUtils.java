@@ -187,7 +187,15 @@ public enum TokenOpsUsageUtils {
         return baseSize;
     }
 
-    public static <T> int keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
-        return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0;
+    /**
+     * Get the size of the key if it is present in the transaction body
+     * @param body the body of the transaction
+     * @param check the predicate to check if the key is present
+     * @param getter the function to get the key
+     * @return the size of the key if it is present, 0 otherwise
+     * @param <T> the type of the body
+     */
+    public static <T> int keySizeIfPresent(final T body, final Predicate<T> check, final Function<T, Key> getter) {
+        return check.test(body) ? getAccountKeyStorageSize(getter.apply(body)) : 0;
     }
 }

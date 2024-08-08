@@ -24,5 +24,13 @@ import com.hederahashgraph.api.proto.java.SubType;
  */
 @FunctionalInterface
 public interface TokenOpsProducer<R> {
-    R create(int bpt, SubType subType, long recordDb, int t);
+    /**
+     * Creates an object of type {@code R}.
+     * @param bpt the base price of the transaction
+     * @param subType the subType of the transaction
+     * @param transferRecordRb the record bytes for the transfer
+     * @param serialNumsCount the serial number count
+     * @return
+     */
+    R create(int bpt, SubType subType, long transferRecordRb, int serialNumsCount);
 }
