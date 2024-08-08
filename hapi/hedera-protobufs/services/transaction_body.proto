@@ -405,8 +405,8 @@ message TransactionBody {
         TokenRejectTransactionBody tokenReject = 57;
 
         /**
-        * A transaction body for a `tokenAirdrop` request.
-        */
+         * A transaction body for a `tokenAirdrop` request.
+         */
         TokenAirdropTransactionBody tokenAirdrop = 58;
 
         /**

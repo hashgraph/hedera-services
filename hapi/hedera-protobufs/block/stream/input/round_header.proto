@@ -38,9 +38,9 @@ option java_multiple_files = true;
  * This message delivers information about a consensus round.
  */
 message RoundHeader {
-  /**
-   * A round number.<br/>
-   * This is the number assigned to the round for consensus.
-   */
-  uint64 round_number = 1;
+    /**
+     * A round number.<br/>
+     * This is the number assigned to the round for consensus.
+     */
+    uint64 round_number = 1;
 }

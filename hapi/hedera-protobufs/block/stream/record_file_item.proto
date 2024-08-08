@@ -59,46 +59,46 @@ import "timestamp.proto";
  *      individual files from cloud storage services.
  */
 message RecordFileItem {
-  /**
-   * The block number of this block.
-   * <p>
-   * This value MUST be exactly `1` more than the previous block.<br/>
-   * Client systems SHOULD optimistically reject any block with a gap or
-   * reverse in `number` sequence, and MAY assume the block stream has
-   * encountered data loss, data corruption, or unauthorized modification.
-   */
-  uint64 number = 1;
+    /**
+     * The block number of this block.
+     * <p>
+     * This value MUST be exactly `1` more than the previous block.<br/>
+     * Client systems SHOULD optimistically reject any block with a gap or
+     * reverse in `number` sequence, and MAY assume the block stream has
+     * encountered data loss, data corruption, or unauthorized modification.
+     */
+    uint64 number = 1;
 
-  /**
-   * The consensus time the record file was produced for.<br/>
-   * This comes from the record file name.
-   */
-  proto.Timestamp creation_time = 2;
+    /**
+     * The consensus time the record file was produced for.<br/>
+     * This comes from the record file name.
+     */
+    proto.Timestamp creation_time = 2;
 
-  /**
-   * The contents of a record file.<br/>
-   * The first 4 bytes are a 32bit int little endian version number.
-   * The versions that existed are 2,3,5 and 6.
-   */
-  bytes record_file_contents = 3;
+    /**
+     * The contents of a record file.<br/>
+     * The first 4 bytes are a 32bit int little endian version number.
+     * The versions that existed are 2,3,5 and 6.
+     */
+    bytes record_file_contents = 3;
 
-  /**
-   * The contents of sidecar files for this block.<br/>
-   * Each block can have zero or more sidecar files.
-   */
-  repeated bytes sidecar_file_contents = 4;
+    /**
+     * The contents of sidecar files for this block.<br/>
+     * Each block can have zero or more sidecar files.
+     */
+    repeated bytes sidecar_file_contents = 4;
 
-  /**
-   * A hash algorithm.<br/>
-   * This is the algorithm used to hash the block.
-   * <p>
-   * This SHOULD always be `SHA2_384`.
-   */
-  proto.BlockHashAlgorithm hash_algorithm = 5;
+    /**
+     * A hash algorithm.<br/>
+     * This is the algorithm used to hash the block.
+     * <p>
+     * This SHOULD always be `SHA2_384`.
+     */
+    proto.BlockHashAlgorithm hash_algorithm = 5;
 
-  /**
-   * A collection of RSA signatures from consensus nodes.<br/>
-   * These signatures validate the hash of the record_file_contents field.
-   */
-  repeated bytes record_file_hash_signatures = 6;
+    /**
+     * A collection of RSA signatures from consensus nodes.<br/>
+     * These signatures validate the hash of the record_file_contents field.
+     */
+    repeated bytes record_file_hash_signatures = 6;
 }

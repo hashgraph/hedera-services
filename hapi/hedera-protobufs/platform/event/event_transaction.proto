@@ -46,20 +46,20 @@ option java_multiple_files = true;
  */
 message EventTransaction {
   oneof transaction {
-    /**
-     * An application transaction.
-     * <p>
-     * The contents of this transaction SHALL be defined by the application
-     * subsystem that created the event.<br/>
-     * The contents MUST be a serialized protobuf message.
-     */
-    bytes application_transaction = 1;
-    /**
-     * A state signature.
-     * <p>
-     * This transaction SHALL be a valid state signature for a state snapshot.
-     */
-    StateSignatureTransaction state_signature_transaction = 2;
+      /**
+       * An application transaction.
+       * <p>
+       * The contents of this transaction SHALL be defined by the application
+       * subsystem that created the event.<br/>
+       * The contents MUST be a serialized protobuf message.
+       */
+      bytes application_transaction = 1;
+      /**
+       * A state signature.
+       * <p>
+       * This transaction SHALL be a valid state signature for a state snapshot.
+       */
+      StateSignatureTransaction state_signature_transaction = 2;
   }
 
 }

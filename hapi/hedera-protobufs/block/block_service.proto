@@ -378,9 +378,9 @@ message SingleBlockResponse {
     com.hedera.hapi.block.stream.Block block = 2;
 }
 
-/**
- * An enumeration indicating the status of this request.
- */
+    /**
+     * An enumeration indicating the status of this request.
+     */
 enum SingleBlockResponseCode {
     /**
      * An "unset value" flag, this value SHALL NOT be used.<br/>

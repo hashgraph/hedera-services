@@ -152,27 +152,27 @@ service TokenService {
     rpc rejectToken (Transaction) returns (TransactionResponse);
 
     /**
- * Airdrop one or more tokens to one or more accounts.<br/>
- * This distributes tokens from the balance of one or more sending account(s) to the balance
- * of one or more recipient accounts. Accounts will receive the tokens in one of four ways.
- * <ul>
- *   <li>An account already associated to the token to be distributed SHALL receive the
- *       airdropped tokens immediately to the recipient account balance.</li>
- *   <li>An account with available automatic association slots SHALL be automatically
- *       associated to the token, and SHALL immediately receive the airdropped tokens to the
- *       recipient account balance.</li>
- *   <li>An account with "receiver signature required" set SHALL have a "Pending Airdrop"
- *       created and MUST claim that airdrop with a `claimAirdrop` transaction.</li>
- *   <li>An account with no available automatic association slots SHALL have a
- *       "Pending Airdrop" created and MUST claim that airdrop with a `claimAirdrop`
- *       transaction. </li>
- * </ul>
- * Any airdrop that completes immediately SHALL be irreversible. Any airdrop that results in a
- * "Pending Airdrop" MAY be canceled via a `cancelAirdrop` transaction.<br/>
- * All transfer fees (including custom fees and royalties), as well as the rent cost for the
- * first auto-renewal period for any automatic-association slot occupied by the airdropped
- * tokens, SHALL be charged to the account submitting this transaction.
- */
+     * Airdrop one or more tokens to one or more accounts.<br/>
+     * This distributes tokens from the balance of one or more sending account(s) to the balance
+     * of one or more recipient accounts. Accounts will receive the tokens in one of four ways.
+     * <ul>
+     *   <li>An account already associated to the token to be distributed SHALL receive the
+     *       airdropped tokens immediately to the recipient account balance.</li>
+     *   <li>An account with available automatic association slots SHALL be automatically
+     *       associated to the token, and SHALL immediately receive the airdropped tokens to the
+     *       recipient account balance.</li>
+     *   <li>An account with "receiver signature required" set SHALL have a "Pending Airdrop"
+     *       created and MUST claim that airdrop with a `claimAirdrop` transaction.</li>
+     *   <li>An account with no available automatic association slots SHALL have a
+     *       "Pending Airdrop" created and MUST claim that airdrop with a `claimAirdrop`
+     *       transaction. </li>
+     * </ul>
+     * Any airdrop that completes immediately SHALL be irreversible. Any airdrop that results in a
+     * "Pending Airdrop" MAY be canceled via a `cancelAirdrop` transaction.<br/>
+     * All transfer fees (including custom fees and royalties), as well as the rent cost for the
+     * first auto-renewal period for any automatic-association slot occupied by the airdropped
+     * tokens, SHALL be charged to the account submitting this transaction.
+     */
     rpc airdropTokens (Transaction) returns (TransactionResponse);
 
     /**
@@ -191,4 +191,5 @@ service TokenService {
      * time the claim is made, that claim SHALL fail.
      */
     rpc claimAirdrop (Transaction) returns (TransactionResponse);
+
 }
