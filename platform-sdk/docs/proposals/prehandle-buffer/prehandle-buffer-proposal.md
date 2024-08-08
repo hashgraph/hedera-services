@@ -148,10 +148,10 @@ The following changes would be made to the wiring:
 
 ### Metrics
 
-Are there new metrics? Are the computation of existing metrics changing? Are there expected observable metric impacts
-that change how someone should relate to the metric?
-
-Remove this section if not applicable.
+- the metric `WAITING_FOR_PREHANDLE` phase of the `RoundHandlingMetrics` should be removed.
+- the wiring should track the number of tasks waiting on the new component.
+- the new component should have a metric that tracks the number of rounds that are waiting for pre-handle to complete.
+- we should also track the capacity of the circular buffer, just to be sure that it is not growing to much.
 
 ### Performance
 
