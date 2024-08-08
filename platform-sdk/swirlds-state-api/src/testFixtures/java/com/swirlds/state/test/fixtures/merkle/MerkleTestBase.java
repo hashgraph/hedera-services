@@ -351,8 +351,6 @@ public class MerkleTestBase extends StateTestBase {
     /** A convenience method used to deserialize a merkle tree */
     protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
             throws IOException {
-        // Restore to a fresh MerkleDb instance
-        MerkleDb.resetDefaultInstancePath();
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);

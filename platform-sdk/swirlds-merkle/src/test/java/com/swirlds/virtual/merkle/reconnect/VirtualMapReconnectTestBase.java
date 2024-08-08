@@ -25,13 +25,13 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
@@ -56,6 +56,7 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 public class VirtualMapReconnectTestBase {
 
@@ -95,10 +96,15 @@ public class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
+    @TempDir
+    private static Path tempDirectory;
+
+    private static TestFileSystemManager testFileSystemManager;
+
     VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path defaultVirtualMapPath = testFileSystemManager.resolveNewTemp("merkledb");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
         final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1, DigestType.SHA_384,
@@ -114,6 +120,7 @@ public class VirtualMapReconnectTestBase {
 
     @BeforeAll
     public static void setup() throws Exception {
+        testFileSystemManager = new TestFileSystemManager(tempDirectory);
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(TestKeySerializer.class, TestKeySerializer::new));
         ConstructableRegistry.getInstance()

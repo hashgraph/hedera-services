@@ -21,7 +21,7 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class DataFileReaderCloseTest {
 
@@ -46,9 +47,15 @@ class DataFileReaderCloseTest {
 
     private static final BaseSerializer<long[]> serializer = new TwoLongSerializer();
 
+    @TempDir
+    private static Path tempDirectory;
+
+    private static TestFileSystemManager testFileSystemManager;
+
     @BeforeAll
     static void setup() throws IOException {
-        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
+        testFileSystemManager = new TestFileSystemManager(tempDirectory);
+        final Path dir = testFileSystemManager.resolve(Path.of("readerIsOpenTest"));
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection<>(dbConfig, dir, "store", serializer, null);
     }
@@ -107,7 +114,7 @@ class DataFileReaderCloseTest {
 
     @Test
     void readWhileFinishWritingTest() throws IOException {
-        final Path tmpDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        final var tmpDir = Files.createDirectory(testFileSystemManager.resolve(Path.of("readWhileFinishWritingTest")));
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;

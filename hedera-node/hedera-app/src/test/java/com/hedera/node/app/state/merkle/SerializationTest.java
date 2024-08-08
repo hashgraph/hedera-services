@@ -25,10 +25,11 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -53,6 +54,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Set;
@@ -60,6 +62,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -74,11 +77,18 @@ class SerializationTest extends MerkleTestBase {
     @Mock
     private MerkleStateLifecycles lifecycles;
 
+    @TempDir
+    Path tempDir;
+
+    private TestFileSystemManager testFileSystemManager;
+
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
 
-        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        this.testFileSystemManager = new TestFileSystemManager(tempDir);
+        this.dir = testFileSystemManager.resolveNewTemp(null);
+        Files.createDirectory(this.dir);
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
@@ -218,7 +228,8 @@ class SerializationTest extends MerkleTestBase {
 
         CRYPTO.digestTreeSync(loadedTree);
         // refreshing the dir
-        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        dir = testFileSystemManager.resolveNewTemp(null);
+        Files.createDirectory(dir);
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
@@ -242,6 +253,8 @@ class SerializationTest extends MerkleTestBase {
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
+        // Restore to a fresh MerkleDb instance
+        MerkleDb.setDefaultPath(testFileSystemManager.resolveNewTemp("merkledb"));
         final MerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
         newRegistry.migrate(
                 loadedTree,

@@ -1043,9 +1043,6 @@ platform-sdk/sdk/metricsDoc.tsv
 # Mermaid Files
 **/platform-components.mermaid
 
-# Temporary Test Folders (Poorly Behaved Tests)
-**/swirlds-tmp
-
 # Preconsensus event stream files
 *.pces
 *.pcesD

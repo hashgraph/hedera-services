@@ -185,7 +185,7 @@ public final class MerkleDb {
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
                 try {
-                    p = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb");
+                    p = Files.createTempDirectory(null).resolve(MERKLEDB_COMPONENT);
                 } catch (IOException z) {
                     throw new UncheckedIOException(z);
                 }

@@ -37,7 +37,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
@@ -65,6 +65,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -75,11 +76,14 @@ class MerkleDbDataSourceTest {
     private static final int COUNT = 10_000;
     private static final Random RANDOM = new Random(1234);
 
+    @TempDir
+    private static Path tempDirectory;
+
     private static Path testDirectory;
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
+        testDirectory = new TestFileSystemManager(tempDirectory).resolve(Path.of("MerkleDbDataSourceTest"));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

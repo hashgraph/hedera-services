@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -38,14 +38,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MerkleDbBuilderTest {
+
+    @TempDir
+    private static Path tempDirectory;
 
     private static Path testDirectory;
 
     @BeforeAll
     static void setup() throws IOException {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbBuilderTest");
+        final var testFileSystemManager = new TestFileSystemManager(tempDirectory);
+        testDirectory = testFileSystemManager.resolve(Path.of("MerkleDbBuilderTest"));
     }
 
     @AfterEach
@@ -74,7 +79,7 @@ class MerkleDbBuilderTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(testDirectory.resolve("merkledb"), tableConfig);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
             dataSource = builder.build("test1", false);
@@ -95,7 +100,8 @@ class MerkleDbBuilderTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(testDirectory.resolve("merkledb"), tableConfig);
+        MerkleDb.setDefaultPath(testDirectory.resolve("merkledb"));
         final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance();
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
@@ -130,9 +136,9 @@ class MerkleDbBuilderTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
         tableConfig.preferDiskIndices(true).maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
-        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
         final Path defaultDbPath = testDirectory.resolve("defaultDatabasePath");
+        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
+                new MerkleDbDataSourceBuilder<>(defaultDbPath, tableConfig);
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {

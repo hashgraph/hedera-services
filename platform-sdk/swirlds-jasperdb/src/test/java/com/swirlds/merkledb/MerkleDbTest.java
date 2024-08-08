@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -41,15 +41,22 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @Tag(TIMING_SENSITIVE)
 public class MerkleDbTest {
 
+    @TempDir
+    private static Path tempDir;
+
+    private static TestFileSystemManager testFileSystemManager;
+
     @BeforeAll
     public static void setup() throws Exception {
-        MerkleDb.resetDefaultInstancePath();
+        testFileSystemManager = new TestFileSystemManager(tempDir);
+        MerkleDb.setDefaultPath(tempDir);
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
@@ -82,7 +89,7 @@ public class MerkleDbTest {
     void testChangeDefaultPath() throws IOException {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance();
         Assertions.assertNotNull(instance1);
-        final Path tempDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path tempDir = testFileSystemManager.resolveNewTemp(null);
         MerkleDb.setDefaultPath(tempDir);
         final MerkleDb instance2 = MerkleDb.getDefaultInstance();
         Assertions.assertNotNull(instance2);
@@ -93,7 +100,7 @@ public class MerkleDbTest {
     @Test
     @DisplayName("MerkleDb paths")
     void testMerkleDbDirs() throws IOException {
-        final Path tempDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path tempDir = testFileSystemManager.resolveNewTemp(null);
         MerkleDb.setDefaultPath(tempDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         Assertions.assertEquals(tempDir, instance.getStorageDir());
@@ -114,7 +121,7 @@ public class MerkleDbTest {
                 .withConfigDataType(MerkleDbConfig.class)
                 .build()
                 .getConfigData(MerkleDbConfig.class);
-        final Path dbDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadata");
+        final Path dbDir = testFileSystemManager.resolve(Path.of("testLoadMetadata"));
         final MerkleDb sourceDb = MerkleDb.getInstance(dbDir, sourceConfig);
 
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -122,7 +129,8 @@ public class MerkleDbTest {
                 sourceDb.createDataSource("table" + sourceUsePbj, tableConfig, false);
 
         for (final boolean snapshotUsePbj : new boolean[] {true, false}) {
-            final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadataSnapshot");
+            final Path snapshotDir = testFileSystemManager.resolveNewTemp("testLoadMetadataSnapshot");
+            Files.createDirectory(snapshotDir);
             Files.delete(snapshotDir);
             // Don't call sourceDb.snapshot() as it would create and initialize an instance for snapshotDir
             FileUtils.hardLinkTree(dbDir, snapshotDir.resolve("db"));
@@ -146,7 +154,7 @@ public class MerkleDbTest {
     @Test
     @DisplayName("MerkleDb data source paths")
     void testDataSourcePaths() throws IOException {
-        final Path tempDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path tempDir = testFileSystemManager.resolveNewTemp(null);
         final MerkleDb instance = MerkleDb.getInstance(tempDir);
         final Path dbDir = instance.getStorageDir();
         final String tableName = "tabley";
@@ -233,7 +241,7 @@ public class MerkleDbTest {
     @Test
     @DisplayName("Get and create data source")
     void testGetDataSource() throws IOException {
-        final Path dbDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path dbDir = testFileSystemManager.resolveNewTemp(null);
         MerkleDb.setDefaultPath(dbDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tableb";
@@ -263,7 +271,7 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
 
         final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
@@ -290,7 +298,7 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName2, tableConfig, false);
         Assertions.assertNotNull(dataSource2);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource1);
         instance.snapshot(snapshotDir, dataSource2);
 
@@ -357,7 +365,7 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> activeCopy2 =
                 instance.copyDataSource(dataSource2, true);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables");
+        final Path snapshotDir = testFileSystemManager.resolve(Path.of("testSnapshotCopiedTables"));
         // Make a snapshot of original table 1
         instance.snapshot(snapshotDir, dataSource1);
         // Table with this name already exists in the target dir, so exception
@@ -368,7 +376,7 @@ public class MerkleDbTest {
         Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, dataSource2));
 
         // Now try in a different order
-        final Path snapshotDir2 = LegacyTemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables2");
+        final Path snapshotDir2 = testFileSystemManager.resolve(Path.of("testSnapshotCopiedTables2"));
         instance.snapshot(snapshotDir2, inactiveCopy1);
         Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir2, dataSource1));
         instance.snapshot(snapshotDir2, dataSource2);
@@ -401,10 +409,10 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
 
-        final Path newDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path newDir = testFileSystemManager.resolveNewTemp(null);
         MerkleDb.setDefaultPath(newDir);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null);
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
@@ -426,13 +434,13 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
         // Make sure the instance can be restored even without the shared dir. In the future this
         // test may need to be removed, when the shared folder becomes mandatory to exist
         Files.delete(snapshotDir.resolve("shared"));
 
-        final Path newDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path newDir = testFileSystemManager.resolveNewTemp(null);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, newDir);
         Assertions.assertTrue(Files.exists(instance2.getSharedDir()));
 
@@ -452,7 +460,7 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName + "2", tableConfig, false);
         Assertions.assertNotNull(dataSource2);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
         // Can't snapshot into the same target MerkleDb instance again
         Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, dataSource));
@@ -523,7 +531,7 @@ public class MerkleDbTest {
                 instance1.createDataSource(tableName + "1", tableConfig, true);
         Assertions.assertNotNull(dataSource);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile("checkBackgroundCompactionsOnImport");
+        final Path snapshotDir = testFileSystemManager.resolve(Path.of("checkBackgroundCompactionsOnImport"));
         instance1.snapshot(snapshotDir, dataSource);
 
         Assertions.assertTrue(dataSource.isCompactionEnabled());

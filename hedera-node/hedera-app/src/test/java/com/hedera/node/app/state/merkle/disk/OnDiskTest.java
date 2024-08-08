@@ -27,8 +27,9 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
@@ -45,10 +46,12 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * A variety of robust tests for the on-disk merkle data structure, especially including
@@ -64,10 +67,17 @@ class OnDiskTest extends MerkleTestBase {
     private StateDefinition<AccountID, Account> def;
     private VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> virtualMap;
 
+    @TempDir
+    private Path tempDir;
+
+    private TestFileSystemManager testFileSystemManager;
+
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        testFileSystemManager = new TestFileSystemManager(tempDir);
+        final Path storageDir = testFileSystemManager.resolveNewTemp(null);
+        Files.createDirectory(storageDir);
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -158,13 +168,17 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        final Path snapshotDir = testFileSystemManager.resolveNewTemp("snapshot");
+        Files.createDirectory(snapshotDir);
         final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
         final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, DEFAULT_CONFIG, new SchemaApplications());
         r.register(schema);
+
+        // Restore to a fresh MerkleDb instance
+        MerkleDb.setDefaultPath(testFileSystemManager.resolveNewTemp("merkledb"));
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, snapshotDir);

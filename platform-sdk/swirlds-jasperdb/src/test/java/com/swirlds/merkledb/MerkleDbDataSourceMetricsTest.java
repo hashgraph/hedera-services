@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MerkleDbDataSourceMetricsTest {
 
@@ -54,13 +55,17 @@ class MerkleDbDataSourceMetricsTest {
     // default number of longs per chunk
     private static final int COUNT = 1_048_576;
     private static final int HASHES_RAM_THRESHOLD = COUNT / 2;
+
+    @TempDir
+    private static Path tempDirectory;
+
     private static Path testDirectory;
     private MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource;
     private Metrics metrics;
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceMetricsTest");
+        testDirectory = new TestFileSystemManager(tempDirectory).resolve(Path.of("MerkleDbDataSourceMetricsTest"));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

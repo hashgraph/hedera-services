@@ -18,7 +18,6 @@ package com.swirlds.merkledb.collections;
 
 import static java.lang.Math.toIntExact;
 
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -193,7 +193,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     }
 
     static Path createTempFile(final String sourceFileName) throws IOException {
-        return LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX).resolve(sourceFileName);
+        return Files.createTempDirectory(null).resolve(sourceFileName);
     }
 
     /** {@inheritDoc} */
