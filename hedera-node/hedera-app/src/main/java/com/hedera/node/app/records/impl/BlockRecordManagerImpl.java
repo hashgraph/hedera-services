@@ -17,6 +17,8 @@
 package com.hedera.node.app.records.impl;
 
 import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_INFO;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -295,7 +297,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                             .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK)
                             .consensusTimestamp(endOfRoundTimestamp)
                             .stateChanges(StateChange.newBuilder()
-                                    .stateName(BlockRecordService.NAME + "." + RUNNING_HASHES_STATE_KEY)
+                                    .stateId(STATE_ID_RUNNING_HASHES.protoOrdinal())
                                     .singletonUpdate(
                                             new SingletonUpdateChange(singletonUpdateChangeValueFor(runningHashes)))
                                     .build())
@@ -309,7 +311,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                             .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK)
                             .consensusTimestamp(endOfRoundTimestamp)
                             .stateChanges(StateChange.newBuilder()
-                                    .stateName(BlockRecordService.NAME + "." + BLOCK_INFO_STATE_KEY)
+                                    .stateId(STATE_ID_BLOCK_INFO.protoOrdinal())
                                     .singletonUpdate(
                                             new SingletonUpdateChange(singletonUpdateChangeValueFor(blockInfo)))
                                     .build())

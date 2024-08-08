@@ -16,6 +16,43 @@
 
 package com.swirlds.state.merkle;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ALIASES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_INFO;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONGESTION_STARTS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONTRACT_BYTECODE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONTRACT_STORAGE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ENTITY_ID;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FILES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FREEZE_TIME;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_MIDNIGHT_RATES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWORK_REWARDS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RECORD_QUEUE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_STAKING_INFO;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROTTLE_USAGE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKENS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN_RELATIONS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOPICS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_150;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_151;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_152;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_153;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_154;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_155;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_156;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_157;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_158;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_159;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_FILE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_FILE_HASH;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -149,6 +186,64 @@ public final class StateUtils {
      */
     public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
         return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
+    }
+
+    /**
+     * Given the state name, returns the canonical identifier of that state.
+     * @param stateName The state name
+     * @return The canonical identifier of the state
+     */
+    public static int stateIdentifierOf(@NonNull final String stateName) {
+        return switch (stateName) {
+            case "AddressBookService.NODES" -> STATE_ID_NODES.protoOrdinal();
+            case "BlockRecordService.BLOCKS" -> STATE_ID_BLOCK_INFO.protoOrdinal();
+            case "BlockRecordService.RUNNING_HASHES" -> STATE_ID_RUNNING_HASHES.protoOrdinal();
+            case "BlockStreamService.BLOCK_STREAM_INFO" -> STATE_ID_BLOCK_STREAM_INFO.protoOrdinal();
+            case "CongestionThrottleService.CONGESTION_LEVEL_STARTS" -> STATE_ID_CONGESTION_STARTS.protoOrdinal();
+            case "CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS" -> STATE_ID_THROTTLE_USAGE.protoOrdinal();
+            case "ConsensusService.TOPICS" -> STATE_ID_TOPICS.protoOrdinal();
+            case "ContractService.BYTECODE" -> STATE_ID_CONTRACT_BYTECODE.protoOrdinal();
+            case "ContractService.STORAGE" -> STATE_ID_CONTRACT_STORAGE.protoOrdinal();
+            case "EntityIdService.ENTITY_ID" -> STATE_ID_ENTITY_ID.protoOrdinal();
+            case "FeeService.MIDNIGHT_RATES" -> STATE_ID_MIDNIGHT_RATES.protoOrdinal();
+            case "FileService.FILES" -> STATE_ID_FILES.protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=150]]" -> STATE_ID_UPGRADE_DATA_150
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=151]]" -> STATE_ID_UPGRADE_DATA_151
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=152]]" -> STATE_ID_UPGRADE_DATA_152
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=153]]" -> STATE_ID_UPGRADE_DATA_153
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=154]]" -> STATE_ID_UPGRADE_DATA_154
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=155]]" -> STATE_ID_UPGRADE_DATA_155
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=156]]" -> STATE_ID_UPGRADE_DATA_156
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=157]]" -> STATE_ID_UPGRADE_DATA_157
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=158]]" -> STATE_ID_UPGRADE_DATA_158
+                    .protoOrdinal();
+            case "FileService.UPGRADE_DATA[FileID[shardNum=0, realmNum=0, fileNum=159]]" -> STATE_ID_UPGRADE_DATA_159
+                    .protoOrdinal();
+            case "FileService.UPGRADE_FILE" -> STATE_ID_UPGRADE_FILE.protoOrdinal();
+            case "FreezeService.FREEZE_TIME" -> STATE_ID_FREEZE_TIME.protoOrdinal();
+            case "FreezeService.UPGRADE_FILE_HASH" -> STATE_ID_UPGRADE_FILE_HASH.protoOrdinal();
+            case "RecordCache.TransactionRecordQueue" -> STATE_ID_RECORD_QUEUE.protoOrdinal();
+            case "ScheduleService.SCHEDULES_BY_EQUALITY" -> STATE_ID_SCHEDULES_BY_EQUALITY.protoOrdinal();
+            case "ScheduleService.SCHEDULES_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULES_BY_EXPIRY.protoOrdinal();
+            case "ScheduleService.SCHEDULES_BY_ID" -> STATE_ID_SCHEDULES_BY_ID.protoOrdinal();
+            case "TokenService.ACCOUNTS" -> STATE_ID_ACCOUNTS.protoOrdinal();
+            case "TokenService.ALIASES" -> STATE_ID_ALIASES.protoOrdinal();
+            case "TokenService.NFTS" -> STATE_ID_NFTS.protoOrdinal();
+            case "TokenService.PENDING_AIRDROPS" -> STATE_ID_PENDING_AIRDROPS.protoOrdinal();
+            case "TokenService.STAKING_INFOS" -> STATE_ID_STAKING_INFO.protoOrdinal();
+            case "TokenService.STAKING_NETWORK_REWARDS" -> STATE_ID_NETWORK_REWARDS.protoOrdinal();
+            case "TokenService.TOKEN_RELS" -> STATE_ID_TOKEN_RELATIONS.protoOrdinal();
+            case "TokenService.TOKENS" -> STATE_ID_TOKENS.protoOrdinal();
+            default -> throw new IllegalStateException("State has no identifier - '" + stateName + "'");
+        };
     }
 
     /**

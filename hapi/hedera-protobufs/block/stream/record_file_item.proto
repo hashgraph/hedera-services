@@ -39,13 +39,26 @@ import "basic_types.proto";
 import "timestamp.proto";
 
 /**
- * A Block for record files.
+ * A Block Item for record files.
  *
- * A `RecordBlock` contains data produced before the innovation of the
+ * A `RecordFileItem` contains data produced before the innovation of the
  * Block Stream, when data was stored in files and validated by individual
- * signature files rather than a block proof.
+ * signature files rather than a block proof.<br/>
+ * This item enables a single format, the Block Stream, to carry both
+ * historical and current data; eliminating the need to search two sources for
+ * block and block chain data.<br/>
+ * Any block containing this item requires special handling.
+ * - The block SHALL NOT have a `BlockHeader`.
+ * - The block SHALL NOT have a `BlockProof`.
+ * - The block SHALL contain _exactly one_ `RecordFileItem`.
+ * - The block SHALL NOT contain any item other than a `RecordFileItem`.
+ * - The content of the `RecordFileItem` MUST be validated using the
+ *   signature data and content provided herein according to the
+ *   process used for Record Files prior to the creation of Block Stream.
+ *    - This block item only replaces the requirement to read several
+ *      individual files from cloud storage services.
  */
-message RecordBlock {
+message RecordFileItem {
     /**
      * The block number of this block.
      * <p>
@@ -85,7 +98,7 @@ message RecordBlock {
 
     /**
      * A collection of RSA signatures from consensus nodes.<br/>
-     * These signatures secure the hash of the record_file_contents field.
+     * These signatures validate the hash of the record_file_contents field.
      */
     repeated bytes record_file_hash_signatures = 6;
 }

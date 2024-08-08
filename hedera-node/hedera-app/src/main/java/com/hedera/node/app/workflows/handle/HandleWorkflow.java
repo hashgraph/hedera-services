@@ -36,7 +36,7 @@ import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.EventMetadata;
+import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -266,7 +266,7 @@ public class HandleWorkflow {
 
     private void streamMetadata(@NonNull final ConsensusEvent event) {
         final var metadataItem = BlockItem.newBuilder()
-                .startEvent(new EventMetadata(event.getEventCore(), event.getSignature()))
+                .eventHeader(new EventHeader(event.getEventCore(), event.getSignature()))
                 .build();
         blockStreamManager.writeItem(metadataItem);
     }
@@ -495,6 +495,7 @@ public class HandleWorkflow {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return builder.transaction(txnInfo.transaction())
+                .serializedTransaction(txnInfo.serializedTransaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())
                 .exchangeRate(exchangeRateManager.exchangeRates())

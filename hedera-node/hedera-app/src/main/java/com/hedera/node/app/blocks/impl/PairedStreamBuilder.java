@@ -142,6 +142,13 @@ public class PairedStreamBuilder
     }
 
     @Override
+    public PairedStreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
+        recordBuilder.serializedTransaction(serializedTransaction);
+        blockStreamBuilder.serializedTransaction(serializedTransaction);
+        return this;
+    }
+
+    @Override
     public int getNumAutoAssociations() {
         return blockStreamBuilder.getNumAutoAssociations();
     }

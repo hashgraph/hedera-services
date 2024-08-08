@@ -66,6 +66,7 @@ option java_package = "com.hedera.hapi.block.protoc";
 // <<<pbj.java_package = "com.hedera.hapi.block">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
+import "basic_types.proto";
 import "stream/block.proto";
 import "stream/block_item.proto";
 
@@ -75,12 +76,12 @@ import "stream/block_item.proto";
  * Each item in the stream MUST contain one `BlockItem`.<br/>
  * Each Block MUST begin with a single `BlockHeader` block item.<br/>
  * The block node SHALL append each `BlockItem` to an internal structure
- * to construct full blocks.<br/>
- * The block node MUST verify the running hash for each item before sending a
- * response message acknowledging that item.
+ * to reconstruct full blocks.<br/>
+ * The block node MUST verify the block proof for each block before sending a
+ * response message acknowledging that block.<br/>
  * Each Block MUST end with a single `BlockStateProof` block item.<br/>
  * The block node MUST verify the Block using the `BlockStateProof` to
- * ensure all data was received correctly.<br/>
+ * ensure all data was received and processed correctly.<br/>
  */
 message PublishStreamRequest {
     /**
@@ -90,17 +91,18 @@ message PublishStreamRequest {
 }
 
 /**
- * A partial response to writing a block stream.
+ * A response to writing a block stream.
  *
- * This message is sent in response to each BlockItem in a block stream sent
+ * This message is sent in response to each Block in a block stream sent
  * to a block node. The block stream is sent as a stream of messages, and each
- * message MUST be acknowledged with a message of this type.<br/>
- * Each `BlockItem` SHALL be acknowledged with an
- * `Acknowledgement` response.<br/>
- * Each completed block SHALL be acknowledged with an
- * `Acknowledgement` response.<br/>
+ * message MAY be acknowledged with a message of this type.<br/>
+ * Each `BlockItem` MAY be acknowledged with an `Acknowledgement`
+ * response. Item acknowledgement is an OPTIONAL feature.<br/>
+ * Each completed block SHALL be acknowledged with an `Acknowledgement`
+ * response. Block acknowledgement is a REQUIRED feature.<br/>
  * A final response SHALL be sent with an `EndOfStream` status result after
- * the last block stream item is received.<br/>
+ * the last block stream item is received, or when the receiving system
+ * must end the stream for any reason.<br/>
  * If a failure is detected (which may include a block or block item that
  * fails validation) an `EndOfStream` response SHALL be sent with a
  * relevant error status.
@@ -108,7 +110,7 @@ message PublishStreamRequest {
 message PublishStreamResponse {
     oneof response {
         /**
-         * A response sent for each item and for each block.
+         * A response sent for each block, and optionally for each item.
          */
         Acknowledgement acknowledgement = 1;
 
@@ -126,6 +128,8 @@ message PublishStreamResponse {
         oneof acknowledgements {
             /**
              * A response type to acknowledge a full and complete block.
+             * <p>
+             * All block node implementations SHOULD acknowledge each block.
              */
             BlockAcknowledgement block_ack = 1;
 
@@ -167,9 +171,9 @@ message PublishStreamResponse {
      * received and verified.<br/>
      * The block node SHALL send exactly one `BlockAcknowledgement` for
      * each successful block.<br/>
-     * The `BlockAcknowledgement` response SHALL be sent after sending an
+     * The `BlockAcknowledgement` response MAY be sent after sending an
      * `ItemAcknowledgement` response for the `BlockStateProof` item
-     * at the end of the block.
+     * at the end of the block, if item acknowledgement is enabled.
      */
     message BlockAcknowledgement {
         /**
@@ -193,8 +197,10 @@ message PublishStreamResponse {
          * existing block.
          * <p>
          * If a source system receives acknowledgement with this flag set
-         * true the source system SHOULD end the stream and query the block
-         * node for the highest known block before continuing.
+         * true the source system SHOULD end the stream. The `block_number`
+         * returned SHALL be the last block known and verified by the receiving
+         * system, and the source system MAY resume publishing immediately
+         * after that block.
          */
         bool block_already_exists = 3;
     }
@@ -273,20 +279,34 @@ enum PublishStreamResponseCode {
      * The source MUST start a new stream before the failed block.
      */
     STREAM_ITEMS_BAD_STATE_PROOF = 4;
+
+    /**
+     * The block node is "behind" the publisher.<br/>
+     * Ths consensus node has sent a block later than this block node
+     * can process. The publisher may retry by sending blocks immediately
+     * following the `block_number` returned, or may end the stream and
+     * try again later.
+     * <p>
+     * Block nodes that are "behind" SHOULD attempt to "catch up" by requesting
+     * blocks from another block node or other source of recent historical
+     * block stream data.
+     */
+    STREAM_ITEMS_BEHIND = 5;
 }
 
 /**
  * A request to read a single block.
  *
  * A client system SHALL send this message to request a single block,
- * including the block state proof.
- *
- * > REVIEW NOTE
- * >> We _could_ make `block_number` optional and remove `retrieve_latest`.
- * >> An **unset** `block_number` would then result in returning the latest
- * >> block.<br/>
- * >> It is not entirely clear which option would be easier for developers to
- * >> use, but initial intuition is that a boolean is easier to understand.
+ * including the block state proof.<br/>
+ * A client MAY request that the block be sent without verification.
+ * A compliant Block Node MAY respond to requests that allow unverified
+ * responses by returning the full requested block before verifying
+ * the included block proof.<br/>
+ * A compliant Block Node MAY support _only_ requests that allow unverified
+ * blocks, but MUST clearly document that limitation, and MUST respond to
+ * a request that does not allow unverified blocks with the
+ * `ALLOW_UNVERIFIED_REQUIRED` response code.
  */
 message SingleBlockRequest {
     /**
@@ -300,7 +320,22 @@ message SingleBlockRequest {
     uint64 block_number = 1;
 
     /**
-     * A boolean to request the latest available block.
+     * A flag to indicate that the requested block may be sent without
+     * verifying its `BlockProof`.<br/>
+     * This might be set by a client that expects to perform its own
+     * verification and wishes lower latency or, potentially, lower cost.
+     * <p>
+     * If this value is set, then the responding Block Node MAY respond with a
+     * block that has not completed verification of its `BlockProof`.<br/>
+     * If this is _not_ set then the Block Node MUST respond with either a
+     * fully verified and validated block, or `VERIFIED_BLOCK_UNAVAILABLE` if
+     * the requested block is not yet verified.<br/>
+     * The default value is _not set_.
+     */
+    bool allow_unverified = 2;
+
+    /**
+     * A flag to request the latest available block.
      * <p>
      * This value MAY be set `true` to request the last block available.<br/>
      * If this value is set to `true` then `block_number` MUST NOT be set and
@@ -343,7 +378,7 @@ message SingleBlockResponse {
     com.hedera.hapi.block.stream.Block block = 2;
 }
 
-/**
+    /**
      * An enumeration indicating the status of this request.
      */
 enum SingleBlockResponseCode {
@@ -383,6 +418,25 @@ enum SingleBlockResponseCode {
      * lowest and highest block numbers available at this block node server.
      */
     READ_BLOCK_NOT_AVAILABLE = 4;
+
+    /**
+     * The request for a verified block cannot be fulfilled.<br/>
+     * The client requested a verified block from a block node that does not
+     * offer verified blocks.
+     * <p>
+     * The client MAY retry the request with the `allow_unverified` flag set.
+     */
+    ALLOW_UNVERIFIED_REQUIRED = 5;
+
+    /**
+     * The request for a verified block cannot be fulfilled.<br/>
+     * The client requested a verified block from a block node but the
+     * requested block is not yet verified.
+     * <p>
+     * The client MAY retry the request after a short delay
+     * (typically 2 seconds or more).
+     */
+    VERIFIED_BLOCK_UNAVAILABLE = 6;
 }
 
 /**
@@ -433,6 +487,23 @@ message SubscribeStreamRequest {
      * </ul>
      */
     uint64 end_block_number = 2;
+
+    /**
+     * A flag to indicate that the requested block(s) may be sent before
+     * verifying each block's `BlockProof`.<br/>
+     * This might be set by a client that expects to perform its own
+     * verification and wishes lower latency or, potentially, lower cost.
+     * <p>
+     * If this value is set, then the responding Block Node MAY respond with
+     * blocks that have not (yet) completed block proof verification.<br/>
+     * If this is _not set_ then the Block Node MUST respond with only
+     * fully verified and validated block(s).<br/>
+     * If this is _set_, then a Block Node MAY stream items from
+     * blocks that have not yet been verified or do not yet have
+     * a block proof available.<br/>
+     * The default value is _not set_.
+     */
+    bool allow_unverified = 3;
 }
 
 /**
@@ -668,6 +739,54 @@ message ServerStatusResponse {
      * in any `StateSnapshotRequest` sent to this block node.
      */
     bool only_latest_state = 3;
+
+    /**
+     * Version information.<br/>
+     * Versions for the block network address book, block stream protocol
+     * buffer schema, and block node software.
+     */
+    BlockNodeVersions version_information = 4;
+}
+
+/**
+ * Version information for a block node.
+ *
+ * The `stream_proto_version` SHOULD be an officially released Block Stream
+ * version.
+ * The `address_book_version` SHALL be defined by networks of block nodes.
+ * The `software_version` SHALL be defined by the implementation of the
+ * Block Node specification.
+ */
+message BlockNodeVersions {
+    /**
+     * A version of the Block Node network address book.<br/>
+     * The address book version describes what version of address book
+     * this block node holds for discovering and identifying other block nodes.
+     * <p>
+     * This version SHALL be specific to each "network" of interconnected
+     * Block Nodes.
+     */
+    proto.SemanticVersion address_book_version = 1;
+
+    /**
+     * A version of the Block Stream specification.<br/>
+     * This is the Stream version currently supported by this Block Node.
+     * <p>
+     * Implementations SHOULD make reasonable effort to ensure the latest
+     * released Block Stream version is supported.<br/>
+     * This version MUST be an officially released Block Stream version if
+     * the responding block node is not private.
+     */
+    proto.SemanticVersion stream_proto_version = 2;
+
+    /**
+     * A version of the block node software.<br/>
+     * This is the software version that this block node is currently
+     * running.
+     * <p>
+     * This value is implementation-defined.
+     */
+    proto.SemanticVersion software_version = 3;
 }
 
 /**

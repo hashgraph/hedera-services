@@ -28,15 +28,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Captures the state changes that occur during a migration.
  */
 public class MigrationStateChanges {
-    private static final Logger log = LogManager.getLogger(MigrationStateChanges.class);
-
     private final List<List<StateChange>> stateChanges = new ArrayList<>();
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
     private final RoundStateChangeListener roundStateChangeListener = new RoundStateChangeListener(Instant.EPOCH);
@@ -59,7 +55,6 @@ public class MigrationStateChanges {
     public void trackCommit() {
         final var maybeKvChanges = kvStateChangeListener.getStateChanges();
         if (!maybeKvChanges.isEmpty()) {
-            log.info("Tracking migration state changes {}", maybeKvChanges);
             stateChanges.add(new ArrayList<>(maybeKvChanges));
             kvStateChangeListener.resetStateChanges();
         }

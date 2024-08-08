@@ -241,7 +241,8 @@ class UtilizationScaledThrottleMultiplierTest {
                         .build(),
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                TOKEN_MINT);
+                TOKEN_MINT,
+                null);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
         state = new FakeState()
@@ -279,7 +280,8 @@ class UtilizationScaledThrottleMultiplierTest {
                         .build(),
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                TOKEN_MINT);
+                TOKEN_MINT,
+                null);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
         var storeFactory = new ReadableStoreFactory(new FakeState());

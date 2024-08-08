@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl;
+package com.hedera.node.app.services;
 
-import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import dagger.BindsInstance;
-import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
-import javax.inject.Singleton;
 
-@Singleton
-@Component(modules = ContractServiceModule.class)
-public interface ContractServiceComponent {
-    @Component.Factory
-    interface Factory {
-        ContractServiceComponent create(
-                @BindsInstance InstantSource instantSource, @BindsInstance SignatureVerifier signatureVerifier);
-    }
-
-    ContractHandlers handlers();
-}
+/**
+ * Implements the {@link AppContext} interface.
+ * @param instantSource the source of the current instant
+ * @param signatureVerifier the signature verifier
+ */
+public record AppContextImpl(@NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier)
+        implements AppContext {}

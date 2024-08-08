@@ -66,18 +66,6 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         listeners.add(listener);
     }
 
-    /**
-     * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
-     * a listener, as the lifecycle of a {@link WritableSingletonState} is scoped to the set of mutations made to a
-     * state in a round; and there is no case where an application would only want to be notified of a subset of those
-     * changes.
-     * @param listener the listener to register
-     */
-    public void registerListener(@NonNull final SingletonChangeListener<T> listener) {
-        requireNonNull(listener);
-        listeners.add(listener);
-    }
-
     @Override
     public T get() {
         // Possible pattern: "put" and then "get". In this case, "read" should be false!! Otherwise,

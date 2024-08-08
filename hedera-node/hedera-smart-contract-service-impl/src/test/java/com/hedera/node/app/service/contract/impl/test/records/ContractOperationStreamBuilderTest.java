@@ -52,6 +52,11 @@ class ContractOperationStreamBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationStreamBuilder() {
             @Override
+            public StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction) {
+                return this;
+            }
+
+            @Override
             public int getNumAutoAssociations() {
                 return 0;
             }

@@ -31,6 +31,8 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
@@ -51,9 +53,11 @@ import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.config.VersionedConfiguration;
@@ -91,6 +95,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
@@ -118,6 +123,8 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     private Timestamp genesisMigrationTimestamp = null;
+
+    public static void main(String[] args) {}
 
     public static final Factory FACTORY = new Factory() {
         @NonNull
@@ -258,14 +265,15 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
         for (final var stateChange : stateChanges.stateChanges()) {
-            final var delimIndex = stateChange.stateName().indexOf('.');
+            final var stateName = BlockStreamUtils.stateNameOf(stateChange.stateId());
+            final var delimIndex = stateName.indexOf('.');
             if (delimIndex == -1) {
-                Assertions.fail("State name " + stateChange.stateName() + " is not in the correct format");
+                Assertions.fail("State name '" + stateName + "' is not in the correct format");
             }
-            final var serviceName = stateChange.stateName().substring(0, delimIndex);
+            final var serviceName = stateName.substring(0, delimIndex);
             final var writableStates = state.getWritableStates(serviceName);
             servicesWritten.add(serviceName);
-            final var stateKey = stateChange.stateName().substring(delimIndex + 1);
+            final var stateKey = stateName.substring(delimIndex + 1);
             switch (stateChange.changeOperation().kind()) {
                 case UNSET -> throw new IllegalStateException("Change operation is not set");
                 case STATE_ADD, STATE_REMOVE -> {
@@ -398,7 +406,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(instantSource),
+                        new ContractServiceImpl(new AppContextImpl(instantSource, fakeSignatureVerifier())),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -445,6 +453,25 @@ public class StateChangesValidator implements BlockStreamValidator {
             @Override
             public boolean containsNode(final long nodeId) {
                 return addressBook.contains(new NodeId(nodeId));
+            }
+        };
+    }
+
+    private SignatureVerifier fakeSignatureVerifier() {
+        return new SignatureVerifier() {
+            @Override
+            public boolean verifySignature(
+                    @NonNull Key key,
+                    @NonNull Bytes bytes,
+                    @NonNull MessageType messageType,
+                    @NonNull SignatureMap signatureMap,
+                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public KeyCounts countSimpleKeys(@NonNull Key key) {
+                throw new UnsupportedOperationException("Not implemented");
             }
         };
     }

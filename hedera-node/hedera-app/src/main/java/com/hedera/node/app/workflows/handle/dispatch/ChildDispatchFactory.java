@@ -459,7 +459,8 @@ public class ChildDispatchFactory {
                 AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
-                functionOfTxn(txBody));
+                functionOfTxn(txBody),
+                null);
     }
 
     /**

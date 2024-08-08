@@ -464,7 +464,8 @@ public class ThrottleAccumulator {
                         effectivePayer,
                         SignatureMap.DEFAULT,
                         Bytes.EMPTY,
-                        scheduledFunction);
+                        scheduledFunction,
+                        null);
 
                 return shouldThrottleTxn(true, innerTxnInfo, now, state);
             }
@@ -527,7 +528,8 @@ public class ThrottleAccumulator {
                     effectivePayer,
                     SignatureMap.DEFAULT,
                     Bytes.EMPTY,
-                    scheduledFunction);
+                    scheduledFunction,
+                    null);
 
             return shouldThrottleTxn(true, innerTxnInfo, now, state);
         }
