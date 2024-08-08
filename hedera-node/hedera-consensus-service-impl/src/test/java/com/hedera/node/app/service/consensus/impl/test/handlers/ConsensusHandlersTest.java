@@ -38,7 +38,7 @@ class ConsensusHandlersTest {
     private ConsensusHandlers consensusHandlers;
 
     @BeforeEach
-    public void setUp() {
+    public void before() {
         consensusCreateTopicHandler = mock(ConsensusCreateTopicHandler.class);
         consensusDeleteTopicHandler = mock(ConsensusDeleteTopicHandler.class);
         consensusGetTopicInfoHandler = mock(ConsensusGetTopicInfoHandler.class);

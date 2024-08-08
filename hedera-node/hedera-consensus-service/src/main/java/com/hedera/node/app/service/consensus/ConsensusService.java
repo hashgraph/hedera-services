@@ -44,7 +44,7 @@ public interface ConsensusService extends RpcService {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */

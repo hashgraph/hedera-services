@@ -30,7 +30,7 @@ public class ConsensusServiceImplTest {
     private ConsensusServiceImpl subject;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         subject = new ConsensusServiceImpl();
     }
 
