@@ -55,7 +55,7 @@ public class UpdateTokenMetadataTest {
     static SpecContract updateTokenMetadata;
 
     @NonFungibleToken(
-            numPreMints = 3,
+            numPreMints = 5,
             keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
     static SpecNonFungibleToken nft;
 
@@ -102,14 +102,14 @@ public class UpdateTokenMetadataTest {
         @HapiTest
         @DisplayName("use updateMetadataForNFTs with empty metadata to update individual NFT")
         public Stream<DynamicTest> usingUpdateMetadataForNFTsWorksWithEmptyMetadata() {
-            final long[] serialNumbers = new long[] {2, 3};
+            final long[] serialNumbers = new long[] {4, 5};
             return hapiTest(
                     updateTokenMetadata
                             .call("callUpdateNFTsMetadata", nft, serialNumbers, new byte[] {})
                             .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    nft.getInfo(2).andAssert(info -> info.hasMetadata(ByteString.EMPTY)),
-                    nft.getInfo(3).andAssert(info -> info.hasMetadata(ByteString.EMPTY)));
+                    nft.getInfo(4).andAssert(info -> info.hasMetadata(ByteString.EMPTY)),
+                    nft.getInfo(5).andAssert(info -> info.hasMetadata(ByteString.EMPTY)));
         }
     }
 }
