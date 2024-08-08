@@ -156,8 +156,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         if (txnOutput.hasSubmitMessage()) {
             //                rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-            rb.topicRunningHashVersion(
-                    txnOutput.submitMessage().topicRunningHashVersion().protoOrdinal());
         }
 
         //            if (txnOutput.hasCreateToken()) {

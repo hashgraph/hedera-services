@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.blocks;
 
-import static com.hedera.hapi.block.stream.output.RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -114,7 +112,6 @@ public class BlockStreamBuilderTest {
         assertTrue(outputBlockItem.hasTransactionOutput());
         final var output = outputBlockItem.transactionOutput();
         assertTrue(output.hasSubmitMessage());
-        assertSame(WITH_MESSAGE_DIGEST_AND_PAYER, output.submitMessageOrThrow().topicRunningHashVersion());
     }
 
     @Test
@@ -199,8 +196,10 @@ public class BlockStreamBuilderTest {
 
     private void validateTransactionBlockItems(final List<BlockItem> blockItems) {
         final var txnBlockItem = blockItems.get(0);
-        assertTrue(txnBlockItem.hasTransaction());
-        assertEquals(transaction, txnBlockItem.transaction());
+        assertTrue(txnBlockItem.hasEventTransaction());
+        assertEquals(
+                Transaction.PROTOBUF.toBytes(transaction),
+                txnBlockItem.eventTransaction().applicationTransactionOrThrow());
     }
 
     private BlockStreamBuilder createBaseBuilder() {

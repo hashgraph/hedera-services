@@ -27,8 +27,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
-import com.hedera.hapi.block.stream.BlockHeader;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -141,7 +141,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
         outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
         pendingItems.add(BlockItem.newBuilder()
-                .header(BlockHeader.newBuilder()
+                .blockHeader(BlockHeader.newBuilder()
                         .number(blockNumber)
                         .previousBlockHash(previousBlockHash)
                         .hashAlgorithm(SHA2_384)
@@ -295,16 +295,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             for (int i = 0, n = scheduledWork.size(); i < n; i++) {
                 final var item = scheduledWork.get(i);
                 final var serializedItem = serializedItems.get(i);
-                final var kind = item.items().kind();
+                final var kind = item.item().kind();
                 switch (kind) {
-                    case START_EVENT, TRANSACTION, SYSTEM_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
+                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
                     case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
                             serializedItem);
                     default -> {
                         // Other items are not part of the input/output trees
                     }
                 }
-                if (kind == BlockItem.ItemsOneOfType.TRANSACTION_RESULT) {
+                if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
                     runningHashManager.nextResult(serializedItem);
                 }
                 writer.writeItem(serializedItem);

@@ -146,6 +146,10 @@ public class RecordStreamBuilder
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data
     private Transaction transaction;
+
+    @Nullable
+    private Bytes serializedTransaction;
+
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -353,6 +357,12 @@ public class RecordStreamBuilder
     @NonNull
     public RecordStreamBuilder transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
+        return this;
+    }
+
+    @Override
+    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
+        this.serializedTransaction = serializedTransaction;
         return this;
     }
 

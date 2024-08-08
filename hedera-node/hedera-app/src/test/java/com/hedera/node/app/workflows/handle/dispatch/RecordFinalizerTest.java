@@ -97,7 +97,8 @@ public class RecordFinalizerTest {
             TX_BODY,
             SignatureMap.DEFAULT,
             Bytes.EMPTY,
-            HederaFunctionality.CRYPTO_TRANSFER);
+            HederaFunctionality.CRYPTO_TRANSFER,
+            null);
 
     private RecordStreamBuilder recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private RecordFinalizer subject;

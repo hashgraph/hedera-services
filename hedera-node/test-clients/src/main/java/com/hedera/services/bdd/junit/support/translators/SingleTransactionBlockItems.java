@@ -20,6 +20,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.pbj.runtime.ParseException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -51,13 +52,19 @@ public record SingleTransactionBlockItems(
     public static SingleTransactionBlockItems asSingleTransaction(@NonNull final List<BlockItem> items) {
         final var builder = new Builder();
         final var txnItem = items.get(0);
-        if (!txnItem.hasTransaction()) {
+        if (!txnItem.hasEventTransaction() || !txnItem.eventTransactionOrThrow().hasApplicationTransaction()) {
             throw new IllegalArgumentException("Expected a transaction item!");
         }
         // The nullable warnings here aren't warranted since we check for `hasTransaction()` above.
         // Similarly for the other fields
         //noinspection DataFlowIssue
-        builder.txn(txnItem.transaction());
+        final Transaction txn;
+        try {
+            txn = Transaction.PROTOBUF.parse(txnItem.eventTransactionOrThrow().applicationTransactionOrThrow());
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(e);
+        }
+        builder.txn(txn);
 
         final var resultItem = items.get(1);
         if (!resultItem.hasTransactionResult()) {
