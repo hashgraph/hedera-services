@@ -16,13 +16,6 @@
 
 package com.hedera.node.app.blocks.impl;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.CreateContractOutput;
@@ -32,7 +25,6 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.SubmitMessageOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
@@ -96,6 +88,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -105,6 +98,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of {@link BlockStreamBuilder} that produces block items for a single user or
@@ -807,7 +807,6 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
         // TOD0: Need to confirm what the value should be
-        transactionOutputBuilder.submitMessage(new SubmitMessageOutput());
         return this;
     }
 
@@ -1037,7 +1036,6 @@ public class BlockStreamBuilder
         transactionResultBuilder.status(ResponseCodeEnum.OK);
         transactionResultBuilder.parentConsensusTimestamp(Timestamp.DEFAULT);
 
-        transactionOutputBuilder.submitMessage((SubmitMessageOutput) null);
         transactionOutputBuilder.cryptoTransfer((CryptoTransferOutput) null);
         transactionOutputBuilder.utilPrng((UtilPrngOutput) null);
         transactionOutputBuilder.contractCall((CallContractOutput) null);

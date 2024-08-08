@@ -298,14 +298,15 @@ enum PublishStreamResponseCode {
  * A request to read a single block.
  *
  * A client system SHALL send this message to request a single block,
- * including the block state proof.
- *
- * > REVIEW NOTE
- * >> We _could_ make `block_number` optional and remove `retrieve_latest`.
- * >> An **unset** `block_number` would then result in returning the latest
- * >> block.<br/>
- * >> It is not entirely clear which option would be easier for developers to
- * >> use, but initial intuition is that a boolean is easier to understand.
+ * including the block state proof.<br/>
+ * A client MAY request that the block be sent without verification.
+ * A compliant Block Node MAY respond to requests that allow unverified
+ * responses by returning the full requested block before verifying
+ * the included block proof.<br/>
+ * A compliant Block Node MAY support _only_ requests that allow unverified
+ * blocks, but MUST clearly document that limitation, and MUST respond to
+ * a request that does not allow unverified blocks with the
+ * `ALLOW_UNVERIFIED_REQUIRED` response code.
  */
 message SingleBlockRequest {
     /**
@@ -319,7 +320,22 @@ message SingleBlockRequest {
     uint64 block_number = 1;
 
     /**
-     * A boolean to request the latest available block.
+     * A flag to indicate that the requested block may be sent without
+     * verifying its `BlockProof`.<br/>
+     * This might be set by a client that expects to perform its own
+     * verification and wishes lower latency or, potentially, lower cost.
+     * <p>
+     * If this value is set, then the responding Block Node MAY respond with a
+     * block that has not completed verification of its `BlockProof`.<br/>
+     * If this is _not_ set then the Block Node MUST respond with either a
+     * fully verified and validated block, or `VERIFIED_BLOCK_UNAVAILABLE` if
+     * the requested block is not yet verified.<br/>
+     * The default value is _not set_.
+     */
+    bool allow_unverified = 2;
+
+    /**
+     * A flag to request the latest available block.
      * <p>
      * This value MAY be set `true` to request the last block available.<br/>
      * If this value is set to `true` then `block_number` MUST NOT be set and
@@ -363,8 +379,8 @@ message SingleBlockResponse {
 }
 
 /**
-     * An enumeration indicating the status of this request.
-     */
+ * An enumeration indicating the status of this request.
+ */
 enum SingleBlockResponseCode {
     /**
      * An "unset value" flag, this value SHALL NOT be used.<br/>
@@ -402,6 +418,25 @@ enum SingleBlockResponseCode {
      * lowest and highest block numbers available at this block node server.
      */
     READ_BLOCK_NOT_AVAILABLE = 4;
+
+    /**
+     * The request for a verified block cannot be fulfilled.<br/>
+     * The client requested a verified block from a block node that does not
+     * offer verified blocks.
+     * <p>
+     * The client MAY retry the request with the `allow_unverified` flag set.
+     */
+    ALLOW_UNVERIFIED_REQUIRED = 5;
+
+    /**
+     * The request for a verified block cannot be fulfilled.<br/>
+     * The client requested a verified block from a block node but the
+     * requested block is not yet verified.
+     * <p>
+     * The client MAY retry the request after a short delay
+     * (typically 2 seconds or more).
+     */
+    VERIFIED_BLOCK_UNAVAILABLE = 6;
 }
 
 /**
@@ -452,6 +487,23 @@ message SubscribeStreamRequest {
      * </ul>
      */
     uint64 end_block_number = 2;
+
+    /**
+     * A flag to indicate that the requested block(s) may be sent before
+     * verifying each block's `BlockProof`.<br/>
+     * This might be set by a client that expects to perform its own
+     * verification and wishes lower latency or, potentially, lower cost.
+     * <p>
+     * If this value is set, then the responding Block Node MAY respond with
+     * blocks that have not (yet) completed block proof verification.<br/>
+     * If this is _not set_ then the Block Node MUST respond with only
+     * fully verified and validated block(s).<br/>
+     * If this is _set_, then a Block Node MAY stream items from
+     * blocks that have not yet been verified or do not yet have
+     * a block proof available.<br/>
+     * The default value is _not set_.
+     */
+    bool allow_unverified = 3;
 }
 
 /**

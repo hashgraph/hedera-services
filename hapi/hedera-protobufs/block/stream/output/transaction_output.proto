@@ -37,7 +37,6 @@ option java_multiple_files = true;
 
 import "stream/output/schedule_service.proto";
 import "stream/output/util_service.proto";
-import "stream/output/consensus_service.proto";
 import "stream/output/crypto_service.proto";
 import "stream/output/smart_contract_service.proto";
 
@@ -52,10 +51,13 @@ import "stream/output/smart_contract_service.proto";
  * >> and also not reflected in state changes. All other transaction types
  * >> are _currently_ not included here. We have, however, allocated names
  * >> and indexes for those transaction types to preserve consistency if we
- * >> add them later. We have reserved field indexes 9 to 43 for this purpose.
+ * >> add them later.
  *
  * <!--
  * Reserved definitions:
+ * import "stream/output/consensus_service.proto";
+ *    SubmitMessageOutput submit_message;
+ *
  * import "stream/smart_contract_service.proto";
  *    UpdateContractOutput contract_update;
  *    DeleteContractOutput contract_delete;
@@ -111,47 +113,41 @@ import "stream/output/smart_contract_service.proto";
 message TransactionOutput {
     oneof transaction {
         /**
-         * Output from a submit message transaction.
-         */
-        SubmitMessageOutput submit_message = 1;
-
-        /**
          * Output from a crypto transfer transaction.
          */
-        CryptoTransferOutput crypto_transfer = 2;
+        CryptoTransferOutput crypto_transfer = 1;
 
         /**
          * Output from a utilPrng transaction to request a
          * deterministic pseudo-random number.
          */
-        UtilPrngOutput util_prng = 3;
+        UtilPrngOutput util_prng = 2;
 
         /**
          * Output from a contract call transaction.
          */
-        CallContractOutput contract_call = 4;
+        CallContractOutput contract_call = 3;
 
         /**
          * Output from an ethereum call transaction.
          */
-        EthereumOutput ethereum_call = 5;
+        EthereumOutput ethereum_call = 4;
 
         /**
          * Output from a contract create transaction.
          */
-        CreateContractOutput contract_create = 6;
+        CreateContractOutput contract_create = 5;
 
         /**
          * Output from a schedule create transaction that executed
          * immediately on creation.
          */
-        CreateScheduleOutput create_schedule = 7;
+        CreateScheduleOutput create_schedule = 6;
 
         /**
          * Output from a schedule sign transaction that resulted in
          * executing the scheduled transaction.
          */
-        SignScheduleOutput sign_schedule = 8;
+        SignScheduleOutput sign_schedule = 7;
     }
-    reserved 9 to 43;
 }

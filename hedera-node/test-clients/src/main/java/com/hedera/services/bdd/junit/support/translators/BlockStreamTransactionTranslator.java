@@ -16,9 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
-
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
@@ -30,8 +27,12 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.swirlds.common.exceptions.NotImplementedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 import java.util.Objects;
+
+import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
+import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 
 /**
  * Converts a block stream transaction into a {@link TransactionRecord}. We can then use the converted
@@ -153,10 +154,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasTopicCreate()) {
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
-
-        if (txnOutput.hasSubmitMessage()) {
-            //                rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-        }
 
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());

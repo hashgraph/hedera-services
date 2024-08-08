@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.records;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -40,17 +37,26 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class ContractOperationStreamBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationStreamBuilder() {
+            @Override
+            public StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction) {
+                return this;
+            }
+
             @Override
             public int getNumAutoAssociations() {
                 return 0;

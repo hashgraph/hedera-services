@@ -16,15 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
-import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
-import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
@@ -77,6 +68,10 @@ import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -93,9 +88,15 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
+
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A validator that asserts the state changes in the block stream, when applied directly to a {@link MerkleStateRoot}
@@ -118,6 +119,10 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     private Timestamp genesisMigrationTimestamp = null;
+
+    public static void main(String[] args) {
+
+    }
 
     public static final Factory FACTORY = new Factory() {
         @NonNull
