@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.components;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -29,9 +30,14 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.signature.AppSignatureVerifier;
+import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
+import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -84,6 +90,12 @@ class IngestComponentTest {
                 "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);
+        final var appContext = new AppContextImpl(
+                InstantSource.system(),
+                new AppSignatureVerifier(
+                        DEFAULT_CONFIG.getConfigData(HederaConfig.class),
+                        new SignatureExpanderImpl(),
+                        new SignatureVerifierImpl(CryptographyHolder.get())));
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
@@ -96,7 +108,7 @@ class IngestComponentTest {
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
-                .contractServiceImpl(new ContractServiceImpl(InstantSource.system()))
+                .contractServiceImpl(new ContractServiceImpl(appContext))
                 .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
                 .build();

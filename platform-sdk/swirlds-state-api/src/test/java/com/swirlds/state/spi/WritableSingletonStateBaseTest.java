@@ -18,10 +18,15 @@ package com.swirlds.state.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
 
@@ -178,5 +183,36 @@ public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
         assertThat(state.get()).isEqualTo(ESTONIA);
         backingStore.set(FRANCE);
         assertThat(state.get()).isEqualTo(ESTONIA); // Does not see change
+    }
+
+    @Nested
+    @DisplayName("with registered listeners")
+    @ExtendWith(MockitoExtension.class)
+    final class WithRegisteredListeners {
+        @Mock
+        private SingletonChangeListener<String> firstListener;
+
+        @Mock
+        private SingletonChangeListener<String> secondListener;
+
+        private final WritableSingletonStateBase<String> subject = createState();
+
+        @BeforeEach
+        void setUp() {
+            subject.registerListener(firstListener);
+            subject.registerListener(secondListener);
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of puts")
+        void allAreNotifiedOfPopsAndAddsInOrder() {
+            final var inOrder = inOrder(firstListener, secondListener);
+
+            subject.put("Dragonfruit");
+            subject.commit();
+
+            inOrder.verify(firstListener).singletonUpdateChange("Dragonfruit");
+            inOrder.verify(secondListener).singletonUpdateChange("Dragonfruit");
+        }
     }
 }
