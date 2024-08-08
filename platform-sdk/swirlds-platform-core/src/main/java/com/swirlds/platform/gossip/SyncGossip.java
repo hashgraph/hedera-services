@@ -40,8 +40,6 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.linking.GossipLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -113,7 +111,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     private final SyncConfig syncConfig;
-    private final InOrderLinker inOrderLinker;
     private final Shadowgraph shadowgraph;
     private final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
@@ -187,7 +184,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         this.threadManager = Objects.requireNonNull(threadManager);
 
-        inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
@@ -478,7 +474,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * Clear the internal state of the gossip engine.
      */
     private void clear() {
-        inOrderLinker.clear();
         shadowgraph.clear();
     }
 
@@ -502,16 +497,10 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         clearInput.bindConsumer(ignored -> clear());
 
         eventInput.bindConsumer(event -> {
-            final EventImpl linkedEvent = inOrderLinker.linkEvent(event);
-            if (linkedEvent != null) {
-                shadowgraph.addEvent(linkedEvent);
-            }
+            shadowgraph.addEvent(new EventImpl(event, null, null));
         });
 
-        eventWindowInput.bindConsumer(eventWindow -> {
-            inOrderLinker.setEventWindow(eventWindow);
-            shadowgraph.updateEventWindow(eventWindow);
-        });
+        eventWindowInput.bindConsumer(shadowgraph::updateEventWindow);
 
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
         platformStatusInput.bindConsumer(currentPlatformStatus::set);
