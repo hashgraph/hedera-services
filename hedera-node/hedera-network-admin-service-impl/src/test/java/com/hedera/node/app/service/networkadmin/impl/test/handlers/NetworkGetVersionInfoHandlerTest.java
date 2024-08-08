@@ -50,7 +50,7 @@ class NetworkGetVersionInfoHandlerTest {
     private NetworkGetVersionInfoHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         subject = new NetworkGetVersionInfoHandler();
     }
 

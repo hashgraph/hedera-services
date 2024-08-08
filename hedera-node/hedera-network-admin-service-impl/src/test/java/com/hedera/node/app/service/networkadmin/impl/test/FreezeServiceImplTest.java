@@ -79,11 +79,11 @@ class FreezeServiceImplTest {
     @Test
     void migratesAsExpected() {
         final var subject = new FreezeServiceImpl();
-        final var registry = new FakeSchemaRegistry();
+        final var schemaRegistry = new FakeSchemaRegistry();
         final var state = new FakeState();
 
-        subject.registerSchemas(registry);
-        registry.migrate(FreezeService.NAME, state, networkInfo);
+        subject.registerSchemas(schemaRegistry);
+        schemaRegistry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
                 state.getReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
         assertNull(upgradeFileHashKeyState.get());

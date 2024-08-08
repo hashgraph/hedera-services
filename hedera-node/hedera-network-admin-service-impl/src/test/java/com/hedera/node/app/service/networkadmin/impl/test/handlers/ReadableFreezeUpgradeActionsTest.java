@@ -153,7 +153,7 @@ class ReadableFreezeUpgradeActionsTest {
     private X509Certificate certificate;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void before() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
@@ -171,8 +171,8 @@ class ReadableFreezeUpgradeActionsTest {
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
         zipArchivePath = Path.of(zipSourceDir + "/valid.zip");
         try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipArchivePath.toFile()))) {
-            ZipEntry e = new ZipEntry("garden_path_sentence.txt");
-            out.putNextEntry(e);
+            ZipEntry entry = new ZipEntry("garden_path_sentence.txt");
+            out.putNextEntry(entry);
 
             String fileContent = "The old man the boats";
             byte[] data = fileContent.getBytes();
@@ -213,7 +213,7 @@ class ReadableFreezeUpgradeActionsTest {
     }
 
     @Test
-    void preparesForUpgradeWithDAB() throws IOException, CertificateException {
+    void preparesForUpgradeWithDynamicAddressBook() throws IOException, CertificateException {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
         setupNodes();
@@ -223,7 +223,7 @@ class ReadableFreezeUpgradeActionsTest {
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDynamicAddressBookFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -459,7 +459,8 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException, CertificateException {
+    private void assertDynamicAddressBookFilesCreated(final String file, final Path baseDir)
+            throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());

@@ -54,7 +54,7 @@ class NetworkAdminHandlersTest {
     private NetworkAdminHandlers networkAdminHandlers;
 
     @BeforeEach
-    public void setUp() {
+    public void before() {
         freezeHandler = mock(FreezeHandler.class);
         networkGetAccountDetailsHandler = mock(NetworkGetAccountDetailsHandler.class);
         networkGetByKeyHandler = mock(NetworkGetByKeyHandler.class);

@@ -44,7 +44,7 @@ class NetworkGetExecutionTimeHandlerTest {
     private NetworkGetExecutionTimeHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         subject = new NetworkGetExecutionTimeHandler();
     }
 

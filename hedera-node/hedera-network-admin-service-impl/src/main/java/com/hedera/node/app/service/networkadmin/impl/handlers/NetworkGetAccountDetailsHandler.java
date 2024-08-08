@@ -236,7 +236,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     }
 
     private void addTokenRelation(
-            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
+            List<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
         TokenFreezeStatus freezeStatus = FREEZE_NOT_APPLICABLE;
         if (token.hasFreezeKey()) {
             freezeStatus = tokenRelation.frozen() ? FROZEN : UNFROZEN;

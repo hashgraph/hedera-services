@@ -54,7 +54,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     private NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         networkTransactionGetRecordHandler = new NetworkTransactionGetRecordHandler();
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
@@ -105,7 +105,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     }
 
     @Test
-    void validatesQueryWhenValidRecord() throws Throwable {
+    void validatesQueryWhenValidRecord() {
 
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
@@ -115,7 +115,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     }
 
     @Test
-    void validatesQueryWhenNoTransactionId() throws Throwable {
+    void validatesQueryWhenNoTransactionId() {
 
         final var query = createEmptysQuery();
         given(context.query()).willReturn(query);
@@ -124,9 +124,9 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     }
 
     @Test
-    void validatesQueryWhenNoAccountId() throws Throwable {
+    void validatesQueryWhenNoAccountId() {
 
-        final var query = createGetTransactionRecordQuery(transactionIDWithoutAccount(0, 0), false, false);
+        final var query = createGetTransactionRecordQuery(transactionIdWithoutAccount(0, 0), false, false);
         given(context.query()).willReturn(query);
 
         assertThrowsPreCheck(() -> networkTransactionGetRecordHandler.validate(context), INVALID_ACCOUNT_ID);
@@ -154,7 +154,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
 
-        final var query = createGetTransactionRecordQuery(transactionIDNotInCache, false, false);
+        final var query = createGetTransactionRecordQuery(transactionIdNotInCache, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -227,7 +227,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
     @Test
     @DisplayName("test computeFees When Free")
-    void testComputeFees() throws Throwable {
+    void testComputeFees() {
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
         given(context.recordCache()).willReturn(cache);
@@ -240,7 +240,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
     @Test
     @DisplayName("test computeFees with duplicates and children")
-    void testComputeFeesWithDuplicatesAndChildRecords() throws Throwable {
+    void testComputeFeesWithDuplicatesAndChildRecords() {
         final var query = createGetTransactionRecordQuery(transactionID, true, true);
         given(context.query()).willReturn(query);
         given(context.recordCache()).willReturn(cache);

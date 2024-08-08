@@ -143,7 +143,7 @@ public class NetworkAdminHandlerTestBase {
     protected TransactionID otherNonceOneTransactionID;
     protected TransactionID otherNonceTwoTransactionID;
     protected TransactionID otherNonceThreeTransactionID;
-    protected TransactionID transactionIDNotInCache;
+    protected TransactionID transactionIdNotInCache;
 
     protected TransactionRecord primaryRecord;
     protected TransactionRecord duplicate1;
@@ -199,7 +199,7 @@ public class NetworkAdminHandlerTestBase {
         otherNonceOneTransactionID = transactionID(validStartTime.plusNanos(1), 1);
         otherNonceTwoTransactionID = transactionID(validStartTime.plusNanos(2), 2);
         otherNonceThreeTransactionID = transactionID(validStartTime.plusNanos(3), 3);
-        transactionIDNotInCache = transactionID(validStartTime.plusNanos(5), 5);
+        transactionIdNotInCache = transactionID(validStartTime.plusNanos(5), 5);
 
         givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
@@ -347,16 +347,6 @@ public class NetworkAdminHandlerTestBase {
         givenValidFungibleToken(autoRenewAccountId, false, false, false, false, true, true);
     }
 
-    protected void givenValidNonFungibleToken() {
-        givenValidFungibleToken();
-        nonFungibleToken = fungibleToken
-                .copyBuilder()
-                .tokenId(nonFungibleTokenId)
-                .customFees(List.of())
-                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                .build();
-    }
-
     protected void givenValidFungibleToken(
             AccountID autoRenewAccountId,
             boolean deleted,
@@ -394,6 +384,16 @@ public class NetworkAdminHandlerTestBase {
                 Collections.emptyList(),
                 metadata,
                 metadataKey);
+    }
+
+    protected void givenValidNonFungibleToken() {
+        givenValidFungibleToken();
+        nonFungibleToken = fungibleToken
+                .copyBuilder()
+                .tokenId(nonFungibleTokenId)
+                .customFees(List.of())
+                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .build();
     }
 
     protected void givenValidAccount(
@@ -478,7 +478,7 @@ public class NetworkAdminHandlerTestBase {
                 .build();
     }
 
-    protected TransactionID transactionIDWithoutAccount(int nanos, int nonce) {
+    protected TransactionID transactionIdWithoutAccount(int nanos, int nonce) {
         final var now = Instant.now();
         return TransactionID.newBuilder()
                 .transactionValidStart(

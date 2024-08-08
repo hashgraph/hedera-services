@@ -54,7 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Provides read-only actions that take place during network upgrade
+ * Provides read-only actions that take place during network upgrade.
  */
 public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
@@ -315,8 +315,8 @@ public class ReadableFreezeUpgradeActions {
         final var name = "node" + (node.nodeId() + 1);
         final var alias = nameToAlias(name);
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
-        final int INT = 0;
-        final int EXT = 1;
+        final int internal = 0;
+        final int external = 1;
 
         final var stakingNodeInfo = activeNode.stakingInfo();
         if (stakingNodeInfo != null) {
@@ -334,13 +334,13 @@ public class ReadableFreezeUpgradeActions {
                     .append(", ")
                     .append(weight)
                     .append(", ")
-                    .append(hostNameFor(gossipEndpoints.get(INT)))
+                    .append(hostNameFor(gossipEndpoints.get(internal)))
                     .append(", ")
-                    .append(gossipEndpoints.get(INT).port())
+                    .append(gossipEndpoints.get(internal).port())
                     .append(", ")
-                    .append(hostNameFor(gossipEndpoints.get(EXT)))
+                    .append(hostNameFor(gossipEndpoints.get(external)))
                     .append(", ")
-                    .append(gossipEndpoints.get(EXT).port())
+                    .append(gossipEndpoints.get(external).port())
                     .append(", ")
                     .append(node.accountId().shardNum() + "." + node.accountId().realmNum() + "."
                             + node.accountId().accountNum())

@@ -69,14 +69,14 @@ class UnzipUtilityTest {
     private final String FILENAME_3 = "subdirectory/subdirectoryFileToZip3.txt";
 
     @BeforeEach
-    void setup() throws IOException {
+    void before() throws IOException {
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
 
         // set up test zip with one file in it
         testZipWithOneFile = new File(zipSourceDir + "/testZipWithOneFile.zip");
         try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(testZipWithOneFile))) {
-            ZipEntry e = new ZipEntry(FILENAME_1);
-            out.putNextEntry(e);
+            ZipEntry entry = new ZipEntry(FILENAME_1);
+            out.putNextEntry(entry);
 
             String fileContent = "Time flies like an arrow but fruit flies like a banana";
             byte[] data = fileContent.getBytes();

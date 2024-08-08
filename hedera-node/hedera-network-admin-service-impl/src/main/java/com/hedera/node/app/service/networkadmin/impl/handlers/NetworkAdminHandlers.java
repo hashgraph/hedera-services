@@ -47,7 +47,7 @@ public class NetworkAdminHandlers {
     private final NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
 
     /**
-     * Creates a new AdminHandlers
+     * Creates a new AdminHandlers.
      */
     @Inject
     public NetworkAdminHandlers(
@@ -79,7 +79,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the freeze handler
+     * Returns the freeze handler.
      *
      * @return the freeze handler
      */
@@ -88,7 +88,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network get account details handler
+     * Returns the network get account details handler.
      *
      * @return the network get account details handler
      */
@@ -97,7 +97,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network get by key handler
+     * Returns the network get by key handler.
      * @return the network get by key handler
      */
     public NetworkGetByKeyHandler networkGetByKeyHandler() {
@@ -105,7 +105,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network get execution time handler
+     * Returns the network get execution time handler.
      * @return the network get execution time handler
      */
     public NetworkGetExecutionTimeHandler networkGetExecutionTimeHandler() {
@@ -113,7 +113,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network get version info handler
+     * Returns the network get version info handler.
      * @return the network get version info handler
      */
     public NetworkGetVersionInfoHandler networkGetVersionInfoHandler() {
@@ -121,7 +121,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network transaction get receipt handler
+     * Returns the network transaction get receipt handler.
      * @return the network transaction get receipt handler
      */
     public NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler() {
@@ -129,7 +129,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network transaction get record handler
+     * Returns the network transaction get record handler.
      * @return the network transaction get record handler
      */
     public NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler() {
@@ -137,7 +137,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network unchecked submit handler
+     * Returns the network unchecked submit handler.
      * @return the network unchecked submit handler
      */
     public NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler() {
@@ -145,7 +145,7 @@ public class NetworkAdminHandlers {
     }
 
     /**
-     * Returns the network transaction get fast record handler
+     * Returns the network transaction get fast record handler.
      * @return the network transaction get fast record handler
      */
     public NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler() {

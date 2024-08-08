@@ -44,7 +44,7 @@ class NetworkGetByKeyHandlerTest {
     private NetworkGetByKeyHandler subject;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         subject = new NetworkGetByKeyHandler();
     }
 

@@ -91,7 +91,7 @@ class FreezeUpgradeActionsTest {
     private ReadableStakingInfoStore stakingInfoStore;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void before() throws IOException {
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
         final Executor freezeExectuor = new ForkJoinPool(
@@ -103,8 +103,8 @@ class FreezeUpgradeActionsTest {
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
         zipArchivePath = Path.of(zipSourceDir + "/valid.zip");
         try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipArchivePath.toFile()))) {
-            ZipEntry e = new ZipEntry("garden_path_sentence.txt");
-            out.putNextEntry(e);
+            ZipEntry entry = new ZipEntry("garden_path_sentence.txt");
+            out.putNextEntry(entry);
 
             String fileContent = "The old man the boats";
             byte[] data = fileContent.getBytes();

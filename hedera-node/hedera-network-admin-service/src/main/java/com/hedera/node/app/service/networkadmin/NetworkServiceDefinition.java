@@ -51,7 +51,7 @@ public final class NetworkServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the base path for the Network Service
+     * Returns the base path for the Network Service.
      *
      * @return the base path
      */
@@ -62,7 +62,7 @@ public final class NetworkServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the set of rpc methods supported by the network service
+     * Returns the set of rpc methods supported by the network service.
      *
      * @return the methods
      */

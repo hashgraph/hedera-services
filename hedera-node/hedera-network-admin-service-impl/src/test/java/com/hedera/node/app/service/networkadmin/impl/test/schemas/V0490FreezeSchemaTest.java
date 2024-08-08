@@ -33,7 +33,7 @@ public class V0490FreezeSchemaTest {
     private V0490FreezeSchema subject;
 
     @BeforeEach
-    void setUp() {
+    void before() {
         subject = new V0490FreezeSchema();
     }
 
