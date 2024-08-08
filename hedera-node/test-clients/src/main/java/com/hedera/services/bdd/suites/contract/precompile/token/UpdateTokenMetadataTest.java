@@ -19,9 +19,9 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
-import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.METADATA_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,13 +54,13 @@ public class UpdateTokenMetadataTest {
 
     @NonFungibleToken(
             numPreMints = 3,
-            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
+            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
     static SpecNonFungibleToken nft;
 
-    @Account
-    static SpecAccount jack;
+    @Account(maxAutoAssociations = 100, tinybarBalance = ONE_HUNDRED_HBARS)
+    static SpecAccount treasury;
 
-    @Account
+    @Account(maxAutoAssociations = 100, tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecAccount alice;
 
     @Nested
@@ -68,9 +69,9 @@ public class UpdateTokenMetadataTest {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-            nft.setTreasury(jack);
-            testLifecycle.doAdhoc(nft.authorizeContracts(updateTokenMetadata),
-                    jack.transferNFT(nft, alice, 1));
+            nft.setTreasury(treasury);
+            testLifecycle.doAdhoc(nft.authorizeContracts(updateTokenMetadata)
+                    .alsoAuthorizing(TokenKeyType.METADATA_KEY, TokenKeyType.SUPPLY_KEY));
         }
 
         @HapiTest
@@ -82,7 +83,8 @@ public class UpdateTokenMetadataTest {
                     updateTokenMetadata
                             .call("callUpdateNFTsMetadata", nft, new long[] {serialNumber}, "new metadata".getBytes())
                             .gas(1_000_000L)
-                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
+                            .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                    nft.getInfo(serialNumber).andAssert(info -> info.hasMetadata(metadata("new metadata"))));
         }
     }
 }
