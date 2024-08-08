@@ -123,6 +123,5 @@ public class UpdateTokenMetadataTest {
                     .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, METADATA_TOO_LONG)));
         }
-
     }
 }
