@@ -1329,7 +1329,7 @@ public class TokenAirdropTest {
 
         @HapiTest
         @DisplayName("account that has a token is frozen supposed to fail")
-        final Stream<DynamicTest> accountThatHasTokenIsForzenSupposedToFail() {
+        final Stream<DynamicTest> accountThatHasTokenIsFrozenSupposedToFail() {
             final String ALICE = "alice";
             final String BOB = "bob";
             final String FUNGIBLE_TOKEN_A = "fungibleTokenA";

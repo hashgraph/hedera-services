@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -25,11 +26,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -100,6 +103,7 @@ public class TokenAirdropValidator {
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
+            validateFalse(token.paused(), TOKEN_IS_PAUSED);
 
             // process fungible token transfers if any.
             // PureChecks validates there is only one debit, so findFirst should return one item
@@ -196,6 +200,7 @@ public class TokenAirdropValidator {
             final ReadableTokenRelationStore tokenRelStore) {
         final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
         if (senderAmount.isApproval()) {
             final var tokenAllowances = senderAccount.tokenAllowances();
             var haveExistingAllowance = false;
@@ -223,6 +228,7 @@ public class TokenAirdropValidator {
             @NonNull final ReadableNftStore nftStore) {
         final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
 
