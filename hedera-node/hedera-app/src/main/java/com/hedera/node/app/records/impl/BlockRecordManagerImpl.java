@@ -30,6 +30,7 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -85,6 +86,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private boolean eventRecoveryCompleted = false;
 
+    private final ConfigProvider configProvider;
+
     /**
      * Construct BlockRecordManager
      *
@@ -99,7 +102,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
 
         requireNonNull(state);
-        requireNonNull(configProvider);
+        this.configProvider = requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
@@ -274,6 +277,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
+
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Add runningHash state changes block item and block info block item to the stream
+        }
     }
 
     // ========================================================================================================
