@@ -202,6 +202,18 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
+    void setsEthHashOnThrottledContext() {
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
+        given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
+                .willReturn(recordBuilder);
+
+        assertDoesNotThrow(() -> subject.handleThrottled(handleContext));
+    }
+
+    @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
