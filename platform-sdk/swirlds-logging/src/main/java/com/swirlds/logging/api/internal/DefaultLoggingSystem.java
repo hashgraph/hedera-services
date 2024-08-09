@@ -34,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -102,7 +101,7 @@ public class DefaultLoggingSystem {
             final InternalLoggingConfig loggingConfig = configuration.getConfigData(InternalLoggingConfig.class);
             final long millis = Optional.ofNullable(loggingConfig.reloadConfigPeriod())
                     .orElse(Duration.ofSeconds(10))
-                    .get(ChronoUnit.MILLIS);
+                    .toMillis();
             BaseExecutorFactory.getInstance()
                     .scheduleAtFixedRate(this::updateConfiguration, 0, millis, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
@@ -125,6 +124,7 @@ public class DefaultLoggingSystem {
             final ConfigSource configSource = new PropertyFileConfigSource(configFilePath);
             return ConfigurationBuilder.create()
                     .withSource(configSource)
+                    .withConfigDataType(InternalLoggingConfig.class)
                     .withConverter(new MarkerStateConverter())
                     .withConverter(new ConfigLevelConverter())
                     .build();
@@ -133,7 +133,9 @@ public class DefaultLoggingSystem {
                     Level.WARN,
                     "Unable to load logging configuration from path: '%s'. Using default configuration."
                             .formatted(configFilePath));
-            return ConfigurationBuilder.create().build();
+            return ConfigurationBuilder.create()
+                    .withConfigDataType(InternalLoggingConfig.class)
+                    .build();
         }
     }
 
