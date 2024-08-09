@@ -18,6 +18,10 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.state.StateChangeListener.StateType.MAP;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -40,8 +44,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.state.State;
+import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.merkle.StateMetadata;
-import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.merkle.memory.InMemoryReadableKVState;
@@ -54,6 +58,8 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyReadableStates;
+import com.swirlds.state.spi.KVChangeListener;
+import com.swirlds.state.spi.QueueChangeListener;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -68,8 +74,10 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -148,6 +156,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Cache of used {@link WritableStates}.
      */
     private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
+    /**
+     * Listeners to be notified of state changes on {@link MerkleWritableStates#commit()} calls for any service.
+     */
+    private final List<StateChangeListener> listeners = new ArrayList<>();
 
     /**
      * Used to track the lifespan of this state.
@@ -314,6 +326,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         });
     }
 
+    @Override
+    public void registerCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -426,7 +444,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 throw new IllegalArgumentException("A label must be specified on the node");
             }
 
-            if (!label.equals(StateUtils.computeLabel(serviceName, def.stateKey()))) {
+            if (!label.equals(computeLabel(serviceName, def.stateKey()))) {
                 throw new IllegalArgumentException(
                         "A label must be computed based on the same " + "service name and state key in the metadata!");
             }
@@ -476,7 +494,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @return -1 if not found, otherwise the index into the children
      */
     public int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
-        final var label = StateUtils.computeLabel(serviceName, stateKey);
+        final var label = computeLabel(serviceName, stateKey);
 
         final Integer index = INDEX_LOOKUP.get(label);
         if (index != null && checkNodeIndex(index, label)) {
@@ -751,39 +769,63 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
-            return new OnDiskWritableKVState<>(
+            final var state = new OnDiskWritableKVState<>(
                     extractStateKey(md),
                     md.onDiskKeyClassId(),
                     md.stateDefinition().keyCodec(),
                     md.onDiskValueClassId(),
                     md.stateDefinition().valueCodec(),
                     v);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(MAP)) {
+                    registerKVListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
                 @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
-            return new InMemoryWritableKVState<>(
+            final var state = new InMemoryWritableKVState<>(
                     extractStateKey(md),
                     md.inMemoryValueClassId(),
                     md.stateDefinition().keyCodec(),
                     md.stateDefinition().valueCodec(),
                     m);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(MAP)) {
+                    registerKVListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
         @NonNull
         protected WritableSingletonState<?> createReadableSingletonState(
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
-            return new WritableSingletonStateImpl<>(extractStateKey(md), s);
+            final var state = new WritableSingletonStateImpl<>(extractStateKey(md), s);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(SINGLETON)) {
+                    registerSingletonListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @NonNull
         @Override
         protected WritableQueueState<?> createReadableQueueState(
                 @NonNull final StateMetadata md, @NonNull final QueueNode<?> q) {
-            return new WritableQueueStateImpl<>(extractStateKey(md), q);
+            final var state = new WritableQueueStateImpl<>(extractStateKey(md), q);
+            listeners.forEach(listener -> {
+                if (listener.stateTypes().contains(QUEUE)) {
+                    registerQueueListener(serviceName, state, listener);
+                }
+            });
+            return state;
         }
 
         @Override
@@ -811,6 +853,48 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             kvInstances.remove(stateKey);
             singletonInstances.remove(stateKey);
             queueInstances.remove(stateKey);
+        }
+
+        private <V> void registerSingletonListener(
+                @NonNull final String serviceName,
+                @NonNull final WritableSingletonStateBase<V> singletonState,
+                @NonNull final StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, singletonState.getStateKey());
+            singletonState.registerListener(value -> listener.singletonUpdateChange(stateName, value));
+        }
+
+        private <V> void registerQueueListener(
+                @NonNull final String serviceName,
+                @NonNull final WritableQueueStateBase<V> queueState,
+                @NonNull final StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, queueState.getStateKey());
+            queueState.registerListener(new QueueChangeListener<>() {
+                @Override
+                public void queuePushChange(@NonNull final V value) {
+                    listener.queuePushChange(stateName, value);
+                }
+
+                @Override
+                public void queuePopChange() {
+                    listener.queuePopChange(stateName);
+                }
+            });
+        }
+
+        private <K, V> void registerKVListener(
+                @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
+            final var stateName = computeLabel(serviceName, state.getStateKey());
+            state.registerListener(new KVChangeListener<>() {
+                @Override
+                public void mapUpdateChange(@NonNull K key, @NonNull V value) {
+                    listener.mapUpdateChange(stateName, key, value);
+                }
+
+                @Override
+                public void mapDeleteChange(@NonNull K key) {
+                    listener.mapDeleteChange(stateName, key);
+                }
+            });
         }
     }
 

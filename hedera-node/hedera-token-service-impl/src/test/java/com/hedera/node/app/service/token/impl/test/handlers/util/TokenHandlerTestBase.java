@@ -280,6 +280,7 @@ public class TokenHandlerTestBase {
                 2,
                 false,
                 null,
-                null);
+                null,
+                0);
     }
 }

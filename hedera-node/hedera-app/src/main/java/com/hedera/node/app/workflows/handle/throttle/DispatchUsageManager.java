@@ -64,10 +64,10 @@ public class DispatchUsageManager {
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
-        this.networkInfo = networkInfo;
-        this.handleWorkflowMetrics = handleWorkflowMetrics;
-        this.throttleServiceManager = throttleServiceManager;
-        this.networkUtilizationManager = networkUtilizationManager;
+        this.networkInfo = requireNonNull(networkInfo);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
