@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -31,6 +32,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateNFTsMetadataTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,9 +71,17 @@ class UpdateNFTsMetadataTranslatorTest {
 
     @Test
     void matchesUpdateNFTsMetadataTest() {
+        given(attempt.configuration()).willReturn(getTestConfiguration(true));
         given(attempt.selector()).willReturn(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
+    }
+
+    @Test
+    void doesNotMatchUpdateNFTsMetadataWhenDisabled() {
+        given(attempt.configuration()).willReturn(getTestConfiguration(false));
+        var matches = subject.matches(attempt);
+        assertFalse(matches);
     }
 
     @Test
@@ -87,5 +99,12 @@ class UpdateNFTsMetadataTranslatorTest {
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
+    }
+
+    @NonNull
+    Configuration getTestConfiguration(final boolean enableUpdateNFTsMetadata) {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.systemContract.updateNFTsMetadata.enabled", enableUpdateNFTsMetadata)
+                .getOrCreateConfig();
     }
 }
