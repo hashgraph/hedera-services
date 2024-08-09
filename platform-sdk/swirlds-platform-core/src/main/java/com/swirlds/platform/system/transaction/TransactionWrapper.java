@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,17 +38,31 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final OneOf<TransactionOneOfType> payload;
+    private final EventTransaction payload;
+    /** The hash of the transaction */
+    private Bytes hash;
 
     /**
-     * Constructs a new payload wrapper
+     * Constructs a new transaction wrapper
      *
-     * @param payload the hapi payload
+     * @param transaction the hapi transaction
      *
-     * @throws NullPointerException if payload is null
+     * @throws NullPointerException if transaction is null
      */
-    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> payload) {
-        this.payload = Objects.requireNonNull(payload, "payload should not be null");
+    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
+        Objects.requireNonNull(transaction, "transaction should not be null");
+        this.payload = new EventTransaction(transaction);
+    }
+
+    /**
+     * Constructs a new transaction wrapper
+     *
+     * @param transaction the hapi transaction
+     *
+     * @throws NullPointerException if transaction is null
+     */
+    public TransactionWrapper(@NonNull final EventTransaction transaction) {
+        this.payload = Objects.requireNonNull(transaction, "transaction should not be null");
     }
 
     /**
@@ -97,7 +113,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @NonNull
     @Override
-    public OneOf<TransactionOneOfType> getTransaction() {
+    public EventTransaction getTransaction() {
         return payload;
     }
 
@@ -127,5 +143,23 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public <T> void setMetadata(@Nullable final T metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Set the hash of the transaction
+     * @param hash the hash of the transaction
+     */
+    public void setHash(@NonNull final Bytes hash) {
+        this.hash = Objects.requireNonNull(hash, "hash should not be null");
+    }
+
+    /**
+     * Get the hash of the transaction
+     * @return the hash of the transaction
+     * @throws NullPointerException may be thrown if the transaction is not yet hashed
+     */
+    @NonNull
+    public Bytes getHash() {
+        return Objects.requireNonNull(hash, "hash should not be null");
     }
 }

@@ -52,7 +52,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -81,7 +81,7 @@ class FileUpdateTest extends FileTestBase {
     private HandleContext.SavepointStack stack;
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private StreamBuilder recordBuilder;
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -275,7 +275,7 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         when(handleContext.body()).thenReturn(txBody);
         when(handleContext.savepointStack()).thenReturn(stack);
-        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
@@ -388,7 +388,7 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         when(handleContext.body()).thenReturn(txBody);
         when(handleContext.savepointStack()).thenReturn(stack);
-        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
 
         subject.handle(handleContext);
@@ -412,7 +412,7 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         when(handleContext.body()).thenReturn(txBody);
         when(handleContext.savepointStack()).thenReturn(stack);
-        when(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).thenReturn(recordBuilder);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
 
         subject.handle(handleContext);

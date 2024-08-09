@@ -56,7 +56,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.LongPair;
@@ -262,7 +262,7 @@ public class FileUpdateHandler implements TransactionHandler {
         if (op.hasExpirationTime()) {
             final var category = handleContext
                     .savepointStack()
-                    .getBaseBuilder(SingleTransactionRecordBuilder.class)
+                    .getBaseBuilder(StreamBuilder.class)
                     .category();
             final var isInternalDispatch = category == CHILD || category == PRECEDING;
             final long startSeconds = isInternalDispatch

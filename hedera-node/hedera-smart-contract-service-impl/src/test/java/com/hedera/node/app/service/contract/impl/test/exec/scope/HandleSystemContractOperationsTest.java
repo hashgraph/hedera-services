@@ -38,10 +38,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -62,7 +62,7 @@ class HandleSystemContractOperationsTest {
     private HandleContext context;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private ExchangeRateInfo exchangeRateInfo;
@@ -104,12 +104,12 @@ class HandleSystemContractOperationsTest {
         given(keyVerifier.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
         doCallRealMethod().when(strategy).asSignatureTestIn(context, A_SECP256K1_KEY);
 
-        subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);
+        subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferStreamBuilder.class);
 
         verify(context)
                 .dispatchChildTransaction(
                         eq(TransactionBody.DEFAULT),
-                        eq(CryptoTransferRecordBuilder.class),
+                        eq(CryptoTransferStreamBuilder.class),
                         captor.capture(),
                         eq(A_NEW_ACCOUNT_ID),
                         eq(CHILD));
@@ -131,7 +131,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
@@ -163,7 +163,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
@@ -187,7 +187,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
