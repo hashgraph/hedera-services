@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAird
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -43,8 +42,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -52,7 +55,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 @HapiTestLifecycle
 @DisplayName("Claim token airdrop")
-public class TokenClaimAirdropTest {
+public class TokenClaimAirdropTest extends TokenAirdropBase {
     private static final String OWNER = "owner";
     private static final String OWNER_2 = "owner2";
     private static final String RECEIVER = "receiver";
@@ -61,12 +64,19 @@ public class TokenClaimAirdropTest {
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String NFT_SUPPLY_KEY = "supplyKey";
 
+    @BeforeAll
+    static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+        lifecycle.overrideInClass(Map.of(
+                "entities.unlimitedAutoAssociationsEnabled", "true",
+                "tokens.airdrops.enabled", "true",
+                "tokens.airdrops.claim.enabled", "true"));
+        lifecycle.doAdhoc(setUpTokensAndAllReceivers());
+    }
+
     @HapiTest
     final Stream<DynamicTest> claimFungibleTokenAirdrop() {
         return defaultHapiSpec("should transfer fungible tokens")
                 .given(
-                        overriding("tokens.airdrops.enabled", "true"),
-                        overriding("tokens.airdrops.claim.enabled", "true"),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(OWNER_2).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
