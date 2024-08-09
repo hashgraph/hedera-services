@@ -31,7 +31,7 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
-import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
+import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
@@ -71,8 +71,8 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     protected CryptoTransferHandler subject;
     protected TokenAirdropHandler tokenAirdropHandler;
     protected TokenAirdropValidator tokenAirdropValidator;
+    protected TokenClaimAirdropHandler tokenClaimAirdropHandler;
     protected CryptoTransferValidator validator;
-    protected TransferExecutor executor;
 
     @Mock
     protected HandleContext.SavepointStack stack;
@@ -80,11 +80,11 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        executor = new TransferExecutor(validator);
         validator = new CryptoTransferValidator();
         tokenAirdropValidator = new TokenAirdropValidator();
         subject = new CryptoTransferHandler(validator);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
+        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(tokenAirdropValidator, validator);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {

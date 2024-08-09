@@ -130,7 +130,7 @@ public class TokenAirdropValidator {
         }
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+    public boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
