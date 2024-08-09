@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Token;
@@ -41,7 +40,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor
 import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
-import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -90,7 +89,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
-        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
         final List<TokenTransferList> transfers = new ArrayList<>();
         final List<Token> tokensToAssociate = new ArrayList<>();
@@ -116,7 +115,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         }
 
         // associate tokens
-        associateForFree(tokensToAssociate, receiverId, accountStore, tokenRelStore, recordBuilder);
+        associateForFree(tokensToAssociate, receiverId, accountStore, tokenRelStore);
 
         // do the crypto transfer
         transferForFree(transfers, context, recordBuilder);
@@ -170,19 +169,14 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
             @NonNull final List<Token> tokensToAssociate,
             @NonNull final AccountID receiverId,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final TokenAirdropStreamBuilder recordBuilder) {
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
         createAndLinkTokenRels(accountStore.getAccountById(receiverId), tokensToAssociate, accountStore, tokenRelStore);
-        tokensToAssociate.forEach(token -> recordBuilder.addAutomaticTokenAssociation(TokenAssociation.newBuilder()
-                .tokenId(token.tokenId())
-                .accountId(receiverId)
-                .build()));
     }
 
     private void transferForFree(
             @NonNull final List<TokenTransferList> transfers,
             @NonNull final HandleContext context,
-            @NonNull final TokenAirdropStreamBuilder recordBuilder) {
+            @NonNull final CryptoTransferStreamBuilder recordBuilder) {
         final var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(transfers)
                 .build();

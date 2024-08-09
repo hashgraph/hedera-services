@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ public class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase 
 
         // mock record builder
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
