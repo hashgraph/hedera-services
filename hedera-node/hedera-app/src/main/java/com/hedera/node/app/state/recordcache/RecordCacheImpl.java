@@ -90,7 +90,8 @@ public class RecordCacheImpl implements HederaRecordCache {
      * Comparator for sorting {@link TransactionReceiptEntry} by the transaction valid start timestamp.
      */
     public static final Comparator<TransactionReceiptEntry> TRANSACTION_VALID_START_COMPARATOR = Comparator.comparing(
-            e -> e.transactionIdOrElse(TransactionID.DEFAULT).transactionValidStart(), TIMESTAMP_COMPARATOR);
+            e -> e.transactionIdOrElse(TransactionID.DEFAULT).transactionValidStartOrElse(Timestamp.DEFAULT),
+            TIMESTAMP_COMPARATOR);
 
     /**
      * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
@@ -132,6 +133,11 @@ public class RecordCacheImpl implements HederaRecordCache {
      * the node was configured to keep records for. In other words, the amount of time it takes to rebuild this
      * data structure is not dependent on the size of state, but rather, the number of transactions that had occurred
      * within a 3-minute window prior to the node stopping.
+     * <p>
+     * A new instance of the cache is constructed every time the node restarts or reconnects (and hence re-initializes
+     * its Dagger2 components). This is because the cache is stateful and must be rebuilt from the state at the time of
+     * startup. This is a deterministic process, and the cache will always be rebuilt in the same way, given the same
+     * state.
      *
      * @param deduplicationCache   A cache containing known {@link TransactionID}s, used for deduplication
      * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
@@ -148,40 +154,18 @@ public class RecordCacheImpl implements HederaRecordCache {
         this.configProvider = requireNonNull(configProvider);
         this.histories = new ConcurrentHashMap<>();
 
-        rebuild();
-    }
-
-    /**
-     * Rebuild the internal data structures based on the current working state. Called during startup and during
-     * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
-     * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
-     */
-    public void rebuild() {
-        histories.clear();
-        payerToTransactionIndex.clear();
-        // FUTURE: It doesn't hurt to clear the dedupe cache here, but is also probably not the best place to do it. The
-        // system should clear the dedupe cache directly and not indirectly through this call.
-        deduplicationCache.clear();
-
-        final var queue = getReadableQueue(workingStateAccessor);
+        // Rebuild the in-memory data structures based on the current working state at the moment of startup
+        final var queue = getReadableQueue();
         final var itr = queue.iterator();
         while (itr.hasNext()) {
-            final var entry = itr.next();
-            for (final var e : entry.entries()) {
-                final var rec = asTxnRecord(e);
-                logger.debug("Rebuilding record cache with {}", rec);
-                addToInMemoryCache(e.nodeId(), e.transactionIdOrThrow().accountIDOrThrow(), rec);
-                deduplicationCache.add(e.transactionIdOrThrow());
+            final var roundReceipts = itr.next();
+            for (final var receipt : roundReceipts.entries()) {
+                final var partialRecord = asTxnRecord(receipt);
+                addToInMemoryCache(
+                        receipt.nodeId(), receipt.transactionIdOrThrow().accountIDOrThrow(), partialRecord);
+                deduplicationCache.add(receipt.transactionIdOrThrow());
             }
         }
-    }
-
-    private static TransactionRecord asTxnRecord(final TransactionReceiptEntry receipt) {
-        return TransactionRecord.newBuilder()
-                .receipt(
-                        TransactionReceipt.newBuilder().status(receipt.status()).build())
-                .transactionID(receipt.transactionId())
-                .build();
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -247,7 +231,7 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     /**
-     * Called during {@link #rebuild()} or {@link #add(long, AccountID, List)}, this method adds the given
+     * Called during when constructing the cache or {@link #add(long, AccountID, List)}, this method adds the given
      * {@link TransactionRecord} to the internal lookup data structures.
      *
      * @param nodeId The ID of the node that submitted the transaction.
@@ -396,9 +380,16 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     /** Utility method that get the readable queue from the working state */
-    private ReadableQueueState<TransactionReceiptEntries> getReadableQueue(
-            final WorkingStateAccessor workingStateAccessor) {
+    private ReadableQueueState<TransactionReceiptEntries> getReadableQueue() {
         final var states = requireNonNull(workingStateAccessor.getState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECEIPT_QUEUE);
+    }
+
+    private static TransactionRecord asTxnRecord(final TransactionReceiptEntry receipt) {
+        return TransactionRecord.newBuilder()
+                .receipt(
+                        TransactionReceipt.newBuilder().status(receipt.status()).build())
+                .transactionID(receipt.transactionId())
+                .build();
     }
 }

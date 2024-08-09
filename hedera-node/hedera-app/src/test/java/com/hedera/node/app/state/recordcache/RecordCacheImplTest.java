@@ -259,8 +259,6 @@ final class RecordCacheImplTest extends AppTestBase {
             queue.add(oldEntry);
             ((ListWritableQueueState<?>) queue).commit();
 
-            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
-
             // When we replace the data "behind the scenes" (emulating a reconnect) and call rebuild
             final var payer1 = accountId(1001);
             final var payer2 = accountId(1002);
@@ -279,7 +277,7 @@ final class RecordCacheImplTest extends AppTestBase {
             queue.add(entry);
             ((ListWritableQueueState<?>) queue).commit();
 
-            cache.rebuild();
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
             final var entry0Record = asRecord(entries.get(0));
             final var entry1Record = asRecord(entries.get(1));
