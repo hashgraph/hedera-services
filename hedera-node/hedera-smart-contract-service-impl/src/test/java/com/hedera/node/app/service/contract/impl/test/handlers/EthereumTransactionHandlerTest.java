@@ -206,7 +206,7 @@ class EthereumTransactionHandlerTest {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
         given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
                 .willReturn(recordBuilder);
 

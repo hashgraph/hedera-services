@@ -170,7 +170,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.savepointStack()
-                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
+                .getBaseBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
     }
 
