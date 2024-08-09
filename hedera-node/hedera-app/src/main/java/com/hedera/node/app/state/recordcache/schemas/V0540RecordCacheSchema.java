@@ -31,18 +31,18 @@ import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class V0540RecordCacheSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0540RecordCacheSchema.class);
+
     public static final String TXN_RECEIPT_QUEUE = "TransactionReceiptQueue";
     /**
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
-
-    private static final Logger log = LoggerFactory.getLogger(V0540RecordCacheSchema.class);
 
     public V0540RecordCacheSchema() {
         super(VERSION);
