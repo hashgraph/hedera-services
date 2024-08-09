@@ -28,7 +28,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkUncheckedSu
 import dagger.Module;
 
 /**
- * Dagger module for the networkadmin service.
+ * Dagger module for the networkadmin service
  */
 @Module
 public interface NetworkAdminServiceInjectionModule {

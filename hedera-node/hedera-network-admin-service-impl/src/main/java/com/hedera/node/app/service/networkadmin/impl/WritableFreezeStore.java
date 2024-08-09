@@ -72,11 +72,11 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     /**
      * Sets or clears the update file hash.
      *
-     * @param fileHash The update file hash to set. If null, clears the update file hash.
+     * @param updateFileHash The update file hash to set. If null, clears the update file hash.
      */
-    public void updateFileHash(@NonNull final Bytes fileHash) {
-        requireNonNull(fileHash);
-        this.updateFileHash.put(new ProtoBytes(fileHash));
+    public void updateFileHash(@NonNull final Bytes updateFileHash) {
+        requireNonNull(updateFileHash);
+        this.updateFileHash.put(new ProtoBytes(updateFileHash));
     }
 
     @Override

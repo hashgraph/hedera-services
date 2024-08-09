@@ -39,7 +39,7 @@ class NetworkServiceImplTest {
     private NetworkServiceImpl subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new NetworkServiceImpl();
     }
 

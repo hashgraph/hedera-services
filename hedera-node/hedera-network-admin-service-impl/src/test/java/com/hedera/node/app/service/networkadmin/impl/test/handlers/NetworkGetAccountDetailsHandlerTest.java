@@ -73,7 +73,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     private CryptoOpsUsage cryptoOpsUsage;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         this.cryptoOpsUsage = new CryptoOpsUsage();
         networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler(cryptoOpsUsage);
         final var configuration = HederaTestConfigBuilder.createConfig();
@@ -117,7 +117,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     }
 
     @Test
-    void validatesQueryWhenValidAccount() {
+    void validatesQueryWhenValidAccount() throws Throwable {
 
         final var query = createGetAccountDetailsQuery(accountId);
         given(context.query()).willReturn(query);
@@ -127,7 +127,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     }
 
     @Test
-    void validatesQueryWhenNoAccount() {
+    void validatesQueryWhenNoAccount() throws Throwable {
 
         final var query = createEmptysQuery();
         given(context.query()).willReturn(query);

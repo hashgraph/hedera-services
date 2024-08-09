@@ -59,7 +59,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     private NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         networkTransactionGetReceiptHandler = new NetworkTransactionGetReceiptHandler();
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
@@ -212,7 +212,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var responseHeader =
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
 
-        final var query = createGetTransactionReceiptQuery(transactionIdNotInCache, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionIDNotInCache, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
