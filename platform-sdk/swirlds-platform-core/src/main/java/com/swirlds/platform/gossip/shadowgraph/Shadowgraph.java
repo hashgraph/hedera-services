@@ -551,11 +551,13 @@ public class Shadowgraph implements Clearable {
             } else {
                 // Every event received should be insertable, so throw an exception if that is not the case
                 if (status == InsertableStatus.EXPIRED_EVENT) {
-                    throw new ShadowgraphInsertionException(
-                            String.format(
-                                    "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                    status, e, oldestUnexpiredIndicator),
-                            status);
+                    logger.warn(
+                            SYNC_INFO.getMarker(),
+                            "`addEvent`: did not insert, status is {} for event {}, oldestUnexpiredIndicator = {}",
+                            status,
+                            e,
+                            oldestUnexpiredIndicator);
+                    return false;
                 } else if (status == InsertableStatus.NULL_EVENT) {
                     throw new ShadowgraphInsertionException(
                             String.format("`addEvent`: did not insert, status is %s", status), status);
