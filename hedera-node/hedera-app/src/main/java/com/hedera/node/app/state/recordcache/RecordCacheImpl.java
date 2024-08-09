@@ -99,9 +99,13 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private static final History EMPTY_HISTORY = new History();
 
-    /** Gives access to the current working state. */
+    /**
+     * Gives access to the current working state.
+     */
     private final WorkingStateAccessor workingStateAccessor;
-    /** Used for looking up the max valid duration window for a transaction. This must be looked up dynamically. */
+    /**
+     * Used for looking up the max valid duration window for a transaction. This must be looked up dynamically.
+     */
     private final ConfigProvider configProvider;
     /**
      * Every record added to the cache has a unique transaction ID. Each of these must be recorded in the dedupe cache
@@ -139,10 +143,10 @@ public class RecordCacheImpl implements HederaRecordCache {
      * startup. This is a deterministic process, and the cache will always be rebuilt in the same way, given the same
      * state.
      *
-     * @param deduplicationCache   A cache containing known {@link TransactionID}s, used for deduplication
+     * @param deduplicationCache A cache containing known {@link TransactionID}s, used for deduplication
      * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
-     *                             records must be saved in state or read from state.
-     * @param configProvider       Used for looking up the max valid duration window for a transaction dynamically
+     * records must be saved in state or read from state.
+     * @param configProvider Used for looking up the max valid duration window for a transaction dynamically
      */
     @Inject
     public RecordCacheImpl(
@@ -161,8 +165,10 @@ public class RecordCacheImpl implements HederaRecordCache {
             final var roundReceipts = itr.next();
             for (final var receipt : roundReceipts.entries()) {
                 final var partialRecord = asTxnRecord(receipt);
+                // Make the partial record queryable
                 addToInMemoryCache(
                         receipt.nodeId(), receipt.transactionIdOrThrow().accountIDOrThrow(), partialRecord);
+                // Ensure this node won't submit duplicate transactions and be penalized for it
                 deduplicationCache.add(receipt.transactionIdOrThrow());
             }
         }
@@ -172,7 +178,9 @@ public class RecordCacheImpl implements HederaRecordCache {
     // Implementation methods of HederaRecordCache
     // ---------------------------------------------------------------------------------------------------------------
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void add(
             final long nodeId,
@@ -190,11 +198,12 @@ public class RecordCacheImpl implements HederaRecordCache {
         // For each transaction, in order, add to the in-memory data structures.
         for (final var singleTransactionRecord : transactionRecords) {
             final var rec = singleTransactionRecord.transactionRecord();
+            // Make the full record queryable, but don't include all the details in state (so a reconnected node
+            // will only have a partial record available)
             addToInMemoryCache(nodeId, payerAccountId, rec);
+            // Include its receipt in the current round's entries, to be committed to state and the end of the round
             transactionReceipts.add(new TransactionReceiptEntry(
-                    nodeId,
-                    rec.transactionIDOrThrow(),
-                    requireNonNull(rec.receipt()).status()));
+                    nodeId, rec.transactionIDOrThrow(), rec.receiptOrThrow().status()));
         }
     }
 
@@ -236,7 +245,7 @@ public class RecordCacheImpl implements HederaRecordCache {
      *
      * @param nodeId The ID of the node that submitted the transaction.
      * @param payerAccountId The {@link AccountID} of the payer of the transaction, so we can look up transactions by
-     *                      payer later, if needed.
+     * payer later, if needed.
      * @param transactionRecord The record to add.
      */
     private void addToInMemoryCache(
@@ -284,48 +293,39 @@ public class RecordCacheImpl implements HederaRecordCache {
         final var earliestValidStart = new Timestamp(
                 consensusTimestamp.getEpochSecond() - config.transactionMaxValidDuration(),
                 consensusTimestamp.getNano());
-        // Loop in order and expunge the entry if the youngest TransactionReceiptEntry is expired
-        do {
-            final var roundReceipts = queue.peek();
-            if (roundReceipts != null) {
-                if (roundReceipts.entries().isEmpty()) {
-                    queue.poll();
-                    continue;
-                }
-                final var latestReceipt = roundReceipts.entries().stream()
-                        .filter(TransactionReceiptEntry::hasTransactionId)
-                        .max(TRANSACTION_VALID_START_COMPARATOR)
-                        .get();
-                final var latestTxId = latestReceipt.transactionId();
-                // If the valid start time is before the earliest valid start, then it has expired
-                if (isBefore(latestTxId.transactionValidStart(), earliestValidStart)) {
-                    // Remove from the histories.  Note that all transactions are added to this map
-                    // keyed to the "user transaction" ID, so removing the entry here removes both
-                    // "parent" and "child" transaction records associated with that ID.
-                    for (final var e : roundReceipts.entries()) {
-                        final var txId = e.transactionIdOrThrow();
-                        histories.remove(txId);
-                        // Remove from the payer to transaction index
-                        final var payerAccountId =
-                                txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
-                        final var transactionIDs =
-                                payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
-                        transactionIDs.remove(txId);
-                        if (transactionIDs.isEmpty()) {
-                            payerToTransactionIndex.remove(payerAccountId);
-                        }
-                        logger.info("Removing expired receipt {}", txId);
+        // Loop in order and expunge the entry if even the latest TransactionReceiptEntry is expired
+        TransactionReceiptEntries roundReceipts;
+        while ((roundReceipts = queue.peek()) != null) {
+            final var latestReceiptValidStart = roundReceipts.entries().stream()
+                    .max(TRANSACTION_VALID_START_COMPARATOR)
+                    .map(entry -> entry.transactionIdOrElse(TransactionID.DEFAULT)
+                            .transactionValidStartOrElse(Timestamp.DEFAULT))
+                    .orElse(earliestValidStart);
+            // If even the latest valid start time is before the earliest valid start, then all transaction
+            // ids used in this round are expired and cannot be duplicated
+            if (isBefore(latestReceiptValidStart, earliestValidStart)) {
+                // Remove all in-memory context for these transaction ids.  Note that all transactions are added
+                // to this map keyed to the "user transaction" ID, so removing the entry here removes both "parent"
+                // and "child" transaction records associated with that ID.
+                for (final var receipt : roundReceipts.entries()) {
+                    final var txId = receipt.transactionIdOrThrow();
+                    histories.remove(txId);
+                    // Remove from the payer to transaction index
+                    final var payerAccountId = txId.accountIDOrThrow(); // NOTE: Not accurate if the payer was the node
+                    final var transactionIDs =
+                            payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
+                    transactionIDs.remove(txId);
+                    if (transactionIDs.isEmpty()) {
+                        payerToTransactionIndex.remove(payerAccountId);
                     }
-                    // remove from queue as well.  The queue only permits removing the current "HEAD",
-                    // but that should always be correct here.
-                    queue.poll();
-                } else {
-                    break;
+                    logger.info("Removing expired receipt {}", txId);
                 }
+                // Remove the round receipts from the queue
+                queue.poll();
             } else {
                 break;
             }
-        } while (queue.peek() != null);
+        }
     }
     // ---------------------------------------------------------------------------------------------------------------
     // Implementation methods of RecordCache
@@ -379,7 +379,9 @@ public class RecordCacheImpl implements HederaRecordCache {
         return records;
     }
 
-    /** Utility method that get the readable queue from the working state */
+    /**
+     * Utility method that get the readable queue from the working state
+     */
     private ReadableQueueState<TransactionReceiptEntries> getReadableQueue() {
         final var states = requireNonNull(workingStateAccessor.getState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECEIPT_QUEUE);
