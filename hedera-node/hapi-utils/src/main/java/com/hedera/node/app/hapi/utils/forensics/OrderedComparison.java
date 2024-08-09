@@ -98,7 +98,6 @@ public class OrderedComparison {
 
         final var compareList = getCompareList(filteredFirst, filteredSecond);
 
-        // TODO: for some reason diff ends up comparing the same lists instead of filteredFirst & filteredSecond?
         return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 

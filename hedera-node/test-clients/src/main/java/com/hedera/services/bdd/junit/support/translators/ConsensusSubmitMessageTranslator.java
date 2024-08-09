@@ -31,7 +31,8 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
 
-        // TODO: Where in state is the topicRunningHashVersion stored?
+        // TODO: Where in state is the topicRunningHashVersion stored? Hardcode to 3 for now.
+        receiptBuilder.topicRunningHashVersion(3L);
         //        final var txnOutputItem = transaction.output();
         //        if (txnOutputItem != null && txnOutputItem.hasSubmitMessage()) {
         //            final var submitMessageOutput = txnOutputItem.submitMessage();
@@ -39,14 +40,16 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
         //            receiptBuilder.topicRunningHashVersion(version);
         //        }
 
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    final var topic = stateChange.mapUpdate().value().topicValue();
-                    receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                    receiptBuilder.topicRunningHash(topic.runningHash());
-                });
+        if (stateChanges != null) {
+            stateChanges.stateChanges().stream()
+                    .filter(StateChange::hasMapUpdate)
+                    .findFirst()
+                    .ifPresent(stateChange -> {
+                        final var topic = stateChange.mapUpdate().value().topicValue();
+                        receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
+                        receiptBuilder.topicRunningHash(topic.runningHash());
+                    });
+        }
 
         return new SingleTransactionRecord(
                 transaction.txn(),

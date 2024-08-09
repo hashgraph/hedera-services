@@ -85,7 +85,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         // TODO: Which state changes should be passed in? (This is obviously wrong, but to get it to compile..)
         final var actual = translateAll(inputs);
 
-        final var maxDiffs = 10;
+        final var maxDiffs = 1000;
         final var lenOfDiffSecs = 300;
         final var rcDiff = new RcDiff(maxDiffs, lenOfDiffSecs, expectedTxnRecs, actual, null, System.out);
         // Perform the diff
