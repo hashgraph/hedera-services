@@ -211,7 +211,8 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
         if (advertiseCreation) {
             final String banner = "\n\n"
-                    + bannerWith(String.format("Created node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
+                    + bannerWith(String.format(
+                            "Created node '%s' with id '%d'.", description.orElse(nodeName), lastReceipt.getNodeId()));
             LOG.info(banner);
         }
         if (nodeIdObserver != null) {

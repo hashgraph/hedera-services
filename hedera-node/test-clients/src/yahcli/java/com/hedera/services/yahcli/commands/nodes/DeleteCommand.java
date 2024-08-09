@@ -19,13 +19,10 @@ package com.hedera.services.yahcli.commands.nodes;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils;
 import com.hedera.services.yahcli.config.ConfigUtils;
 import com.hedera.services.yahcli.suites.DeleteNodeSuite;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
@@ -57,7 +54,7 @@ public class DeleteCommand implements Callable<Integer> {
         if (adminKeyPath == null) {
             COMMON_MESSAGES.warn("No --adminKey option, payer signature alone must meet signing requirements");
         } else {
-            validateAdminKeyLoc(adminKeyPath);
+            NodesCommand.validateKeyAt(adminKeyPath, yahcli);
         }
 
         final var delegate = new DeleteNodeSuite(config.asSpecConfig(), targetId, adminKeyPath);
@@ -71,22 +68,6 @@ public class DeleteCommand implements Callable<Integer> {
         }
 
         return 0;
-    }
-
-    private void validateAdminKeyLoc(@NonNull final String adminKeyPath) {
-        final Optional<File> adminKeyFile;
-        try {
-            adminKeyFile = AccessoryUtils.keyFileAt(adminKeyPath.substring(0, adminKeyPath.lastIndexOf('.')));
-        } catch (Exception e) {
-            throw new CommandLine.ParameterException(
-                    nodesCommand.getYahcli().getSpec().commandLine(),
-                    "Could not load a key from '" + adminKeyPath + "' (" + e.getMessage() + ")");
-        }
-        if (adminKeyFile.isEmpty()) {
-            throw new CommandLine.ParameterException(
-                    nodesCommand.getYahcli().getSpec().commandLine(),
-                    "Could not load a key from '" + adminKeyPath + "'");
-        }
     }
 
     private long validatedNodeId(@NonNull final String nodeId) {

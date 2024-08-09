@@ -16,14 +16,22 @@
 
 package com.hedera.services.yahcli.commands.nodes;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asCsServiceEndpoints;
+import static com.hedera.services.yahcli.commands.nodes.NodesCommand.validateKeyAt;
+import static com.hedera.services.yahcli.commands.nodes.NodesCommand.validatedX509Cert;
+import static com.hedera.services.yahcli.config.ConfigUtils.keyFileFor;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.yahcli.config.ConfigUtils;
 import com.hedera.services.yahcli.suites.UpdateNodeSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.File;
+import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
@@ -74,18 +82,80 @@ public class UpdateCommand implements Callable<Integer> {
 
     @CommandLine.Option(
             names = {"-k", "--adminKey"},
-            paramLabel = "path to the updated admin key to use")
+            paramLabel = "path to the current admin key to use")
     String adminKeyPath;
+
+    @CommandLine.Option(
+            names = {"-nk", "--newAdminKey"},
+            paramLabel = "path to the updated admin key to use")
+    String newAdminKeyPath;
 
     @Override
     public Integer call() throws Exception {
         final var yahcli = nodesCommand.getYahcli();
         var config = ConfigUtils.configFrom(yahcli);
         final var targetNodeId = validatedNodeId(nodeId);
-        final var delegate = new UpdateNodeSuite(config.asSpecConfig(), targetNodeId);
+        final AccountID newAccountId;
+        final String feeAccountKeyLoc;
+        final List<ServiceEndpoint> newGossipEndpoints;
+        final List<ServiceEndpoint> newHapiEndpoints;
+        final byte[] newGossipCaCertificate;
+        final byte[] newHapiCertificateHash;
+        if (accountId == null) {
+            newAccountId = null;
+            feeAccountKeyLoc = null;
+        } else {
+            newAccountId = validatedAccountId(accountId);
+            final var feeAccountKeyFile = keyFileFor(config.keysLoc(), "account" + newAccountId.getAccountNum());
+            feeAccountKeyLoc = feeAccountKeyFile.map(File::getPath).orElse(null);
+            if (feeAccountKeyLoc == null) {
+                COMMON_MESSAGES.warn("No key on disk for account 0.0." + newAccountId.getAccountNum()
+                        + ", payer and admin key signatures must meet its signing requirements");
+            }
+        }
+        if (adminKeyPath == null) {
+            COMMON_MESSAGES.warn("No --adminKey option, payer signature alone must meet signing requirements");
+        } else {
+            validateKeyAt(adminKeyPath, yahcli);
+        }
+        if (newAdminKeyPath != null) {
+            validateKeyAt(newAdminKeyPath, yahcli);
+        }
+        if (gossipEndpoints != null) {
+            newGossipEndpoints = asCsServiceEndpoints(gossipEndpoints);
+        } else {
+            newGossipEndpoints = null;
+        }
+        if (serviceEndpoints != null) {
+            newHapiEndpoints = asCsServiceEndpoints(serviceEndpoints);
+        } else {
+            newHapiEndpoints = null;
+        }
+        if (gossipCaCertificatePath != null) {
+            newGossipCaCertificate = validatedX509Cert(gossipCaCertificatePath, yahcli);
+        } else {
+            newGossipCaCertificate = null;
+        }
+        if (hapiCertificatePath != null) {
+            newHapiCertificateHash = noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath, yahcli));
+        } else {
+            newHapiCertificateHash = null;
+        }
+        final var delegate = new UpdateNodeSuite(
+                config.asSpecConfig(),
+                targetNodeId,
+                newAccountId,
+                feeAccountKeyLoc,
+                adminKeyPath,
+                newAdminKeyPath,
+                description,
+                newGossipEndpoints,
+                newHapiEndpoints,
+                newGossipCaCertificate,
+                newHapiCertificateHash);
         delegate.runSuiteSync();
 
-        if (delegate.getFinalSpecs().get(0).getStatus() == HapiSpec.SpecStatus.PASSED) {
+        if (delegate.getFinalSpecs().getFirst().getStatus() == HapiSpec.SpecStatus.PASSED) {
             COMMON_MESSAGES.info("SUCCESS - node" + targetNodeId + " has been updated");
         } else {
             COMMON_MESSAGES.warn("FAILED to update node" + targetNodeId);

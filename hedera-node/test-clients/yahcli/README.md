@@ -661,4 +661,75 @@ yahcli will warn that at least one of the payer and admin key signatures must pr
 corresponding to a _.pem_ file, its contents will automatically be used for the PEM passphrase.
 
 ```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes create \
+  --accountNum 23 \
+  --description 'Testing 123' \
+  --gossipEndpoints 127.0.0.1:50070,10.1.2.3:50070 \
+  --serviceEndpoints a.b.com:50213 \
+  --gossipCaCertificate s-public-node1.pem \
+  --hapiCertificate s-public-node1.pem \
+  --adminKey adminKey.pem
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+.!. No key on disk for account 0.0.23, payer and admin key signatures must meet its signing requirements
+2024-08-09 13:59:26.692 INFO   215  HapiNodeCreate -
+
+********************************************************************************
+********************************************************************************
+**                                                                            **
+** Created node 'Testing 123' with id '3'.                                    **
+**                                                                            **
+********************************************************************************
+********************************************************************************
+
+.i. SUCCESS - created node3
+```
+
+:warning: If the payer and admin keys do not meet the signing requirements of the new node's fee collection account,
+there must be a key in the target network's _keys/_ directory for that account.
+
+# (DAB) Deleting a node
+
+To delete a node, you can use the `nodes delete` command. The only required option is the node ID to delete; but in
+general you will also want to provide the `--adminKey` option with the path to the admin key for the node being deleted.
+(This can be omitted if the yahcli payer key is the same as the admin key.)
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes delete \
+  --nodeId 3 \
+  --adminKey adminKey.pem
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+.i. SUCCESS - node3 has been deleted
+```
+
+# (DAB) Updating a node
+
+To update a node, you can use the `nodes update` command. The only required option is the node ID to update; but in
+general you will also want to provide the `--adminKey` option with the path to the admin key for the node being updated.
+(This can be omitted if the yahcli payer key is the same as the admin key.)
+
+To change every available field, the command might look like,
+
+```
+docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes update \
+  --nodeId 1 \
+  --adminKey adminKey.pem \
+  --accountNum 42 \
+  --description 'Testing 456' \
+  --gossipEndpoints 127.0.0.1:60070,10.1.2.3:60070 \
+  --serviceEndpoints a.b.com:60213 \
+  --gossipCaCertificate s-public-node1.pem \
+  --hapiCertificate s-public-node1.pem \
+  --newAdminKey newAdminKey.pem
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+.!. No key on disk for account 0.0.42, payer and admin key signatures must meet its signing requirements
+.i. SUCCESS - node1 has been updated
+```
+
+:warning: You can only change the fee collection account if the target network's properties include,
+
+```
+nodes.updateAccountIdAllowed=true
 ```

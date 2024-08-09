@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asCsServiceEndpoin
 import static com.hedera.services.yahcli.config.ConfigUtils.keyFileFor;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
-import com.hedera.node.app.service.addressbook.AddressBookHelper;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils;
 import com.hedera.services.yahcli.config.ConfigUtils;
@@ -30,9 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.security.cert.CertificateException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -101,8 +97,8 @@ public class CreateCommand implements Callable<Integer> {
                 Optional.ofNullable(description).orElse(""),
                 asCsServiceEndpoints(gossipEndpoints),
                 asCsServiceEndpoints(serviceEndpoints),
-                validatedX509Cert(gossipCaCertificatePath),
-                noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath)),
+                NodesCommand.validatedX509Cert(gossipCaCertificatePath, yahcli),
+                noThrowSha384HashOf(NodesCommand.validatedX509Cert(hapiCertificatePath, yahcli)),
                 adminKeyPath,
                 maybeFeeAccountKeyPath);
         delegate.runSuiteSync();
@@ -130,16 +126,6 @@ public class CreateCommand implements Callable<Integer> {
             throw new CommandLine.ParameterException(
                     nodesCommand.getYahcli().getSpec().commandLine(),
                     "Could not load a key from '" + adminKeyPath + "'");
-        }
-    }
-
-    private byte[] validatedX509Cert(@NonNull final String loc) {
-        try {
-            return AddressBookHelper.readCertificatePemFile(Paths.get(loc)).getEncoded();
-        } catch (IOException | CertificateException e) {
-            throw new CommandLine.ParameterException(
-                    nodesCommand.getYahcli().getSpec().commandLine(),
-                    "Could not load a certificate from '" + loc + "'");
         }
     }
 

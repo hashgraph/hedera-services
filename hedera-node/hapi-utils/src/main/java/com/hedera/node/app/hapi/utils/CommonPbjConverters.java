@@ -102,9 +102,15 @@ public class CommonPbjConverters {
     }
 
     public static @NonNull List<com.hederahashgraph.api.proto.java.ServiceEndpoint> fromPbj(
-            @NonNull List<ServiceEndpoint> endpoint) {
+            @NonNull final List<ServiceEndpoint> endpoint) {
         requireNonNull(endpoint);
         return endpoint.stream().map(CommonPbjConverters::fromPbj).toList();
+    }
+
+    public static @NonNull List<ServiceEndpoint> toPbj(
+            @NonNull final List<com.hederahashgraph.api.proto.java.ServiceEndpoint> endpoint) {
+        requireNonNull(endpoint);
+        return endpoint.stream().map(CommonPbjConverters::toPbj).toList();
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.ServiceEndpoint fromPbj(
