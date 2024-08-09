@@ -123,6 +123,7 @@ public class TokenClaimAirdropTest {
                         getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                         // assert token associations
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                        getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN_2)),
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
     }
 }
