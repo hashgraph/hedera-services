@@ -29,6 +29,9 @@ appear below.
 16. [Scheduling a transaction](#scheduling-a-transaction)
 17. [Scheduling public key list update](#scheduling-public-key-list-update)
 18. [Activating staking after a network reset](#activating-staking)
+19. [(DAB) Creating a node](#dab-creating-a-node)
+20. [(DAB) Deleting a node](#dab-deleting-a-node)
+21. [(DAB) Updating a node](#dab-updating-a-node)
 
 # Setting up the working directory
 
