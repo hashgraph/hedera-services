@@ -30,9 +30,9 @@ public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTra
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @NotNull StateChanges stateChanges) {
         final var recordBuilder = TransactionRecord.newBuilder();
-
-        if (transaction.output().hasUtilPrng()) {
-            final var entropy = transaction.output().utilPrng().entropy();
+        final var txOutput = transaction.output();
+        if (txOutput != null && txOutput.hasUtilPrng()) {
+            final var entropy = txOutput.utilPrng().entropy();
             if (entropy.kind() == PRNG_BYTES) {
                 recordBuilder.prngBytes(entropy.as());
             } else if (entropy.kind() == PRNG_NUMBER) {

@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
@@ -30,12 +28,15 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -67,22 +68,34 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             @NonNull final SingleTransactionBlockItems txnWrapper, @Nullable final StateChanges stateChanges) {
         Objects.requireNonNull(txnWrapper, "transaction must not be null");
 
-        final var txnType = txnWrapper.txn().bodyOrThrow().data().kind();
+        final HederaFunctionality txnType;
+        try {
+            txnType = CommonUtils.functionOf(CommonUtils.extractTransactionBodyUnchecked(pbjToProto(
+                    txnWrapper.txn(),
+                    com.hedera.hapi.node.base.Transaction.class,
+                    com.hederahashgraph.api.proto.java.Transaction.class)));
+        } catch (UnknownHederaFunctionality e) {
+            throw new RuntimeException(e);
+        }
+
         final var singleTxnRecord =
                 switch (txnType) {
-                    case UTIL_PRNG -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
-                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
+                    case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
-                            protoToPbj(TransactionRecord.newBuilder().build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
+                            com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
+                                    .build(),
                             List.of(),
                             new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
-        final var txnRecord = singleTxnRecord.transactionRecord();
-        final var recordBuilder = txnRecord.copyBuilder();
+        final var txnRecord = pbjToProto(
+                singleTxnRecord.transactionRecord(),
+                com.hedera.hapi.node.transaction.TransactionRecord.class,
+                com.hederahashgraph.api.proto.java.TransactionRecord.class);
+        final var recordBuilder = txnRecord.toBuilder();
         final var receiptBuilder =
-                txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
+                txnRecord.hasReceipt() ? txnRecord.getReceipt().toBuilder() : TransactionReceipt.newBuilder();
 
         parseTransaction(txnWrapper.txn(), recordBuilder);
 
@@ -94,8 +107,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         }
 
         // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
-
-        recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
                 txnWrapper.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
