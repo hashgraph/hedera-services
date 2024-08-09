@@ -35,7 +35,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -95,7 +95,7 @@ final class BlockRecordManagerTest extends AppTestBase {
     private BlockRecordWriterFactory blockRecordWriterFactory;
 
     @Mock
-    private BlockStreamManager blockStreamManager;
+    private BlockStreamManagerImpl blockStreamManager;
 
     @BeforeEach
     void setUpEach() throws Exception {

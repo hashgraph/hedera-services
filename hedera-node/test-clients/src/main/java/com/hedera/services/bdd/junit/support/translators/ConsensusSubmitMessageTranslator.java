@@ -31,12 +31,13 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
 
-        final var txnOutputItem = transaction.output();
-        if (txnOutputItem != null && txnOutputItem.hasSubmitMessage()) {
-            final var submitMessageOutput = txnOutputItem.submitMessage();
-            final var version = submitMessageOutput.topicRunningHashVersion().protoOrdinal();
-            receiptBuilder.topicRunningHashVersion(version);
-        }
+        // TODO: Where in state is the topicRunningHashVersion stored?
+        //        final var txnOutputItem = transaction.output();
+        //        if (txnOutputItem != null && txnOutputItem.hasSubmitMessage()) {
+        //            final var submitMessageOutput = txnOutputItem.submitMessage();
+        //            final var version = submitMessageOutput.topicRunningHashVersion().protoOrdinal();
+        //            receiptBuilder.topicRunningHashVersion(version);
+        //        }
 
         stateChanges.stateChanges().stream()
                 .filter(StateChange::hasMapUpdate)

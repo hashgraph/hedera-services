@@ -7,20 +7,6 @@
  * state that matches network state at the beginning of that block MUST produce
  * a resultant state that matches the network state at the end of that block.
  *
- * > REVIEW NOTE
- * >> We have quite a few very large bytes values in state (e.g. files,
- * >> contracts, etc..). Would it be worthwhile to store changes to a bytes
- * >> value as a simplified difference set? Would it be worthwhile to do the
- * >> same for repeated items (perhaps only when over some threshold in length)?
- * >> This might also help with things like the 0.0.98 problem, because we
- * >> could record an empty difference set for the large repeated items.
- * >
- * >> Another thought. Protobuf is pretty good at optimizing a difference/merge
- * >> entry for a protobuf encoded message. Could we perhaps only write changed
- * >> fields for state mutations and apply those changed fields to the existing
- * >> entity to recreate the modified state?
- *
- *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
  * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
@@ -55,8 +41,10 @@ option java_multiple_files = true;
 import "google/protobuf/wrappers.proto";
 import "basic_types.proto";
 import "exchange_rate.proto";
+import "state/addressbook/node.proto";
 import "state/blockrecords/block_info.proto";
 import "state/blockrecords/running_hashes.proto";
+import "state/blockstream/block_stream_info.proto";
 import "state/common.proto";
 import "state/congestion/congestion_level_starts.proto";
 import "state/consensus/topic.proto";
@@ -67,14 +55,13 @@ import "state/recordcache/recordcache.proto";
 import "state/schedule/schedule.proto";
 import "state/throttles/throttle_usage_snapshots.proto";
 import "state/token/account.proto";
+import "state/token/account_pending_airdrop.proto";
 import "state/token/network_staking_rewards.proto";
 import "state/token/nft.proto";
 import "state/token/staking_node_info.proto";
 import "state/token/token.proto";
 import "state/token/token_relation.proto";
 import "timestamp.proto";
-import "state/blockstream/block_stream_info.proto";
-import "state/addressbook/node.proto";
 
 /**
  * The "cause" of a state change.
@@ -127,6 +114,19 @@ enum StateChangesCause {
  * The order of state change sets SHALL be determined by the
  * `consensus_timestamp`, which is a strictly ascending value
  * determined by network consensus.
+ *
+ * ### Consensus Timestamp
+ * This value enables a consumer of the block stream to order state
+ * changes by a consistent ascending value that is determined by network
+ * consensus. A primary use case would be to enter state changes in a
+ * time-series database.<br/>
+ * This value depends on the cause of the state change.
+ *  1. For transactions, this is the transaction consensus timestamp.
+ *  1. For events without transactions, this is the consensus timestamp of
+ *     the event (round?).
+ *  1. For changes that are not the result of a transaction, but still follow
+ *     a transaction within an event, this is the consensus timestamp of the
+ *     preceding transaction.
  */
 message StateChanges {
     /**
@@ -141,8 +141,7 @@ message StateChanges {
     /**
      * The consensus timestamp of this set of changes.
      * <p>
-     * This value SHALL be the same value the network used to order
-     * events in this block.
+     * This value SHALL be deterministic with the cause of the state change.
      */
     proto.Timestamp consensus_timestamp = 2;
 
@@ -166,16 +165,27 @@ message StateChanges {
  * is applied to the network state at the start of that round the result
  * SHALL match the network state at the end of the round.
  * TODO: Need documentation for how the merkle tree is constructed.
- *       Need to reference that document, stored in platform docs, here.
+ *       Need to reference that document, stored in platform docs?, here.
  */
 message StateChange {
     /**
-     * A state name.
+     * A state identifier.<br/>
+     * The reason we use an integer field here, and not an enum field is to
+     * better support forward compatibility. There will be many cases when a
+     * block node or other client (such as a dApp) with HAPI version N wants
+     * to process blocks from HAPI version N+1, for example. If we use a
+     * protobuf enum then when that is mapped Java or Rust it would not be
+     * parsed as an enum value because those languages do not support unknown
+     * enum values. ProtoC has a workaround for this but it is complex and
+     * requires non-deterministic parsing. Our solution to create an integer
+     * field and provide an enumeration for mapping that integer is intended
+     * as an acceptable compromise solution.
      * <p>
-     * This name SHALL identify the merkle subtree "state" to be modified and
-     * often corresponds to a `VirtualMap` name.
+     * This number SHALL identify the merkle subtree "state" to be modified and
+     * often corresponds to a `VirtualMap` identifier.
+     * This number SHALL be a valid value for the `StateIdentifier` enum.
      */
-    string state_name = 1;
+    uint32 state_id = 1;
 
     oneof change_operation {
         /**
@@ -216,6 +226,218 @@ message StateChange {
          */
         QueuePopChange queue_pop = 8;
     }
+}
+
+/**
+ * An informational enumeration of all known states.
+ * This enumeration is included here So that people know the mapping from
+ * integer to state "name".
+ *
+ * State changes are expressed in terms of changes to named states at the
+ * high level conceptual model of the state type like map key/values or
+ * queue appends. To say which state the change is on we will include an
+ * `integer` number for the state name. This is done for performance and
+ * efficiency as there will be 10s of thousands of state changes in a block.
+ *
+ * We use an integer, and provide this enumeration, for the following reasons.
+ * - If we have a extra 8-10 bytes per state change at 40-50K state changes
+ *   per second then that is an extra 2.5-4 megabits of bandwidth. Compression
+ *   should help a lot but that is not guaranteed.
+ * - When the state name is used as part of complex key in the big state
+ *   merkle map. The smaller the key is, in bytes, the more efficient the
+ *   database is, because more keys can fit in a single disk page.
+ * - When parsing keys, parsing a UTF-8 string to a Java String is a many
+ *   times more expensive than parsing a VARINT to an integer.
+ *
+ * Note: This enumeration is never transmitted directly in the block stream.
+ * This enumeration is provided for clients to _interpret_ the value
+ * of the `StateChange`.`state_id` field.
+ */
+enum StateIdentifier {
+    /**
+     * A state identifier for the Topics state.
+     */
+    STATE_ID_TOPICS = 0;
+
+    /**
+     * A state identifier for the next entity Identifier.
+     */
+    STATE_ID_ENTITY_ID = 1;
+
+    /**
+     * A state identifier for the Accounts state.
+     */
+    STATE_ID_ACCOUNTS = 2;
+
+    /**
+     * A state identifier for account aliases.
+     */
+    STATE_ID_ALIASES = 3;
+
+    /**
+     * A state identifier for contract storage slots.
+     */
+    STATE_ID_CONTRACT_STORAGE = 4;
+
+    /**
+     * A state identifier for contract bytecode.
+     */
+    STATE_ID_CONTRACT_BYTECODE = 5;
+
+    /**
+     * A state identifier for Hedera File Service (HFS).
+     */
+    STATE_ID_FILES = 6;
+
+    /**
+     * A state identifier for Hedera Token Service (HTS).
+     */
+    STATE_ID_TOKENS = 7;
+
+    /**
+     * A state identifier for non-fungible/unique tokens.
+     */
+    STATE_ID_NFTS = 8;
+
+    /**
+     * A state identifier for token relationships.
+     */
+    STATE_ID_TOKEN_RELATIONS = 9;
+
+    /**
+     * A state identifier for network staking information.
+     */
+    STATE_ID_STAKING_INFO = 10;
+
+    /**
+     * A state identifier for network staking rewards.
+     */
+    STATE_ID_NETWORK_REWARDS = 11;
+
+    /**
+     * A state identifier for throttle usage.
+     */
+    STATE_ID_THROTTLE_USAGE = 12;
+
+    /**
+     * A state identifier for network congestion start times.
+     */
+    STATE_ID_CONGESTION_STARTS = 13;
+
+    /**
+     * A state identifier for scheduled transactions.
+     */
+    STATE_ID_SCHEDULES_BY_ID = 14;
+
+    /**
+     * A state identifier for scheduled transaction expiration.
+     */
+    STATE_ID_SCHEDULES_BY_EXPIRY = 15;
+
+    /**
+     * A state identifier for scheduled transaction deduplication.
+     */
+    STATE_ID_SCHEDULES_BY_EQUALITY = 16;
+
+    /**
+     * A state identifier for conversion rate updates.
+     */
+    STATE_ID_MIDNIGHT_RATES = 17;
+
+    /**
+     * A state identifier for the network running hash(es).
+     */
+    STATE_ID_RUNNING_HASHES = 18;
+
+    /**
+     * A state identifier for network block information.
+     */
+    STATE_ID_BLOCK_INFO = 19;
+
+    /**
+     * A state identifier for address book nodes.
+     */
+    STATE_ID_NODES = 20;
+
+    /**
+     * A state identifier for the next "upgrade" file.
+     */
+    STATE_ID_UPGRADE_FILE = 21;
+
+    /**
+     * A state identifier for the hash of the next "upgrade" file.
+     */
+    STATE_ID_UPGRADE_FILE_HASH = 22;
+
+    /**
+     * A state identifier for the next network freeze time.
+     */
+    STATE_ID_FREEZE_TIME = 23;
+
+    /**
+     * A state identifier for the block stream information.
+     */
+    STATE_ID_BLOCK_STREAM_INFO = 24;
+
+    /**
+     * A state identifier for the record cache.
+     */
+    STATE_ID_RECORD_QUEUE = 25;
+
+    /**
+     * A state identifier for pending airdrops.
+     */
+    STATE_ID_PENDING_AIRDROPS = 26;
+
+    /**
+     * A state for the `150` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_150 = 10001;
+
+    /**
+     * A state for the `151` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_151 = 10002;
+
+    /**
+     * A state for the `152` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_152 = 10003;
+
+    /**
+     * A state for the `153` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_153 = 10004;
+
+    /**
+     * A state for the `154` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_154 = 10005;
+
+    /**
+     * A state for the `155` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_155 = 10006;
+
+    /**
+     * A state for the `156` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_156 = 10007;
+
+    /**
+     * A state for the `157` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_157 = 10008;
+
+    /**
+     * A state for the `158` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_158 = 10009;
+
+    /**
+     * A state for the `159` upgrade file data
+     */
+    STATE_ID_UPGRADE_DATA_159 = 10010;
 }
 
 /**
@@ -354,6 +576,9 @@ message SingletonUpdateChange {
          */
         proto.Timestamp timestamp_value = 10;
 
+        /**
+         * A change to the block stream information singleton.
+         */
         proto.BlockStreamInfo block_stream_info_value = 11;
     }
 }
@@ -398,7 +623,8 @@ message MapDeleteChange {
     /**
      * A key in a virtual map.
      * <p>
-     * This key SHALL be removed. The mapped value, also, SHALL be removed.<br/>
+     * This key SHALL be removed.<br/>
+     * The mapped value SHALL also be removed.<br/>
      * This field is REQUIRED.
      */
     MapChangeKey key = 1;
@@ -478,24 +704,16 @@ message MapChangeKey {
          * A change to a virtual map keyed by contract id identifier.
          */
         proto.ContractID contract_id_key = 13;
+
+        /**
+         * A change to a virtual map keyed by pending airdrop id identifier.
+         */
+        proto.PendingAirdropId pending_airdrop_id_key = 14;
     }
 }
 
 /**
  * A value updated in, or added to, a virtual map.
- *
- * > REVIEW NOTE
- * >> Should we only set the modified fields here, possibly with a field mask
- * >> protobuf to tell the recipient which fields are _actually_ set?
- * >> <p>
- * >> It is not clear if we can easily detect what to send (perhaps we
- * >> can during record processing in the consensus node, we just don't
- * >> currently), though. If we can do that the total data volume would
- * >> probably shrink quite a lot...<br/>
- * >> It requires a block node to apply to an existing state copy to create
- * >> a "materialized" block stream (higher cost?) for many consumers, but
- * >> could save a ton of cost (and shift more cost to consumers of the block
- * >> nodes, improving "fairness" by moving cost closer to the demand).
  *
  */
 message MapChangeValue {
@@ -583,8 +801,14 @@ message MapChangeValue {
 
         /**
          * An network node value.
-         */
+        */
         com.hedera.hapi.node.state.addressbook.Node node_value = 14;
+
+        /**
+         * A pending airdrop value.
+         */
+        proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
+
     }
 }
 

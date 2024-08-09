@@ -71,15 +71,7 @@ message DeleteTopicOutput {}
  * The actual topic running hash SHALL be present in a `StateChanges` block
  * item, and is not duplicated here.
  */
-message SubmitMessageOutput {
-    /**
-     * The version of inputs to the topic running hash.
-     * <p>
-     * For all current transactions, this value SHALL be
-     * `WITH_MESSAGE_DIGEST_AND_PAYER`.
-     */
-    RunningHashVersion topic_running_hash_version = 1;
-}
+message SubmitMessageOutput {}
 
 /**
  * A version of the topic running hash.

@@ -52,8 +52,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Converts a block stream transaction into a {@link TransactionRecord}. We can then use the converted
@@ -61,23 +59,21 @@ import org.slf4j.LoggerFactory;
  */
 public class BlockStreamTransactionTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
-    private static final Logger log = LoggerFactory.getLogger(BlockStreamTransactionTranslator.class);
-
     /**
      * Translates a {@link SingleTransactionBlockItems} into a {@link SingleTransactionRecord}.
      *
-     * @param transaction A wrapper for block items representing a single transaction input
+     * @param txnWrapper A wrapper for block items representing a single transaction input
      * @return the translated txnInput record
      */
     @Override
     public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        Objects.requireNonNull(transaction, "transaction must not be null");
+            @NonNull final SingleTransactionBlockItems txnWrapper, @Nullable final StateChanges stateChanges) {
+        Objects.requireNonNull(txnWrapper, "transaction must not be null");
 
         final HederaFunctionality txnType;
         try {
             txnType = CommonUtils.functionOf(CommonUtils.extractTransactionBodyUnchecked(pbjToProto(
-                    transaction.txn(),
+                    txnWrapper.txn(),
                     com.hedera.hapi.node.base.Transaction.class,
                     com.hederahashgraph.api.proto.java.Transaction.class)));
         } catch (UnknownHederaFunctionality e) {
@@ -87,16 +83,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var singleTxnRecord =
                 switch (txnType) {
                     case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
-                            .translate(transaction, stateChanges);
+                            .translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
-                            transaction.txn(),
+                            txnWrapper.txn(),
                             com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
                                     .build(),
                             List.of(),
                             new SingleTransactionRecord.TransactionOutputs(null));
                 };
-
-        // TODO: get transaction type specific changes from singleTxnRecord into the recordBuilder & receiptBuilder
 
         final var singleTxnRecordProto = pbjToProto(
                 singleTxnRecord.transactionRecord(),
@@ -106,19 +100,20 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var recordBuilder = singleTxnRecordProto.toBuilder();
         final var receiptBuilder = singleTxnRecordProto.getReceipt().toBuilder();
 
-        parseTransaction(transaction.txn(), recordBuilder);
+        parseTransaction(txnWrapper.txn(), recordBuilder);
 
         try {
-            parseTransactionResult(transaction.result(), recordBuilder, receiptBuilder);
-            parseTransactionOutput(transaction.output(), recordBuilder, receiptBuilder);
+            parseTransactionResult(txnWrapper.result(), recordBuilder, receiptBuilder);
+            parseTransactionOutput(txnWrapper.output(), recordBuilder, receiptBuilder);
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
 
         // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
 
+        recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
-                transaction.txn(),
+                txnWrapper.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
                 // TODO: how do we construct correct sidecar records?
                 List.of(),
@@ -141,13 +136,22 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
      */
     @Override
     public List<SingleTransactionRecord> translateAll(
-            @NonNull final List<SingleTransactionBlockItems> transactions, @NonNull final StateChanges stateChanges) {
+            @NonNull final List<SingleTransactionBlockItems> transactions,
+            @NonNull final List<StateChanges> stateChanges) {
         // TODO: this implementation probably isn't correct, specifically since we're passing in _all_ state changes
         // on each call to `translate`, which is likely not what we want. How do we compute the correct subset of state
         // changes for each transaction?
         return transactions.stream()
                 .filter(t -> t.txn() != null)
-                .map(txn -> translate(txn, stateChanges))
+                .map(txn -> {
+                    final var consensusTimestamp = txn.result().consensusTimestamp();
+                    final var matchingTimestampChanges = stateChanges.stream()
+                            .filter(sc -> Objects.equals(consensusTimestamp, sc.consensusTimestamp()))
+                            .toList();
+                    final var matchingChanges =
+                            matchingTimestampChanges.isEmpty() ? null : matchingTimestampChanges.getFirst();
+                    return translate(txn, matchingChanges);
+                })
                 .toList();
     }
 

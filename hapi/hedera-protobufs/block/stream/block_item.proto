@@ -43,13 +43,13 @@ option java_package = "com.hedera.hapi.block.stream.protoc";
 // <<<pbj.java_package = "com.hedera.hapi.block.stream">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
-import "transaction.proto";
-import "basic_types.proto";
-import "stream/block_header.proto";
+import "event/event_transaction.proto";
 import "stream/block_proof.proto";
-import "stream/event_metadata.proto";
+import "stream/record_file_item.proto";
+import "stream/input/event_metadata.proto";
+import "stream/input/round_header.proto";
+import "stream/output/block_header.proto";
 import "stream/output/state_changes.proto";
-import "stream/input/system_transaction.proto";
 import "stream/output/transaction_output.proto";
 import "stream/output/transaction_result.proto";
 
@@ -60,10 +60,10 @@ import "stream/output/transaction_result.proto";
  * with the following constraints applicable to the _unfiltered_ stream.
  * - A block SHALL start with a `header`.
  * - A block SHALL end with a `state_proof`.
- * - A `header` SHALL be followed by a `start_event`.
- * - A `start_event` SHALL be followed by one or more `system_transaction`
- *   or `transaction` items.
- * - A `transaction` SHALL be followed by a `transaction_result`.
+ * - A `block_header` SHALL be followed by an `event_header`.
+ * - An `event_header` SHALL be followed by one or more
+ *   `event_transaction` items.
+ * - An `event_transaction` SHALL be followed by a `transaction_result`.
  * - A `transaction_result` MAY be followed by a `transaction_output`.
  * - A `transaction_result` (or a `transaction_output`, if present) MAY be
  *     followed by one or more `state_changes`.
@@ -79,9 +79,8 @@ import "stream/output/transaction_result.proto";
  *   repeated {
  *     start_event
  *     repeated {
- *       (optional) repeated system_transaction
- *       (optional) transaction
- *       (optional) transaction_result
+ *       event_transaction
+ *       transaction_result
  *       (optional) transaction_output
  *       (optional) repeated state_changes
  *     }
@@ -89,45 +88,55 @@ import "stream/output/transaction_result.proto";
  * state_proof
  * ```
  * A filtered stream may exclude some items above, depending on filter
- * criteria. A filtered item is replaced with its merkle path to maintain
- * block stream verifiability.
+ * criteria. A filtered item is replaced with a merkle path and hash value
+ * to maintain block stream verifiability.
  *
  * A BlockItem SHALL be individually and directly processed to create the
- * running hash. Items to be hashed MUST NOT be contained within another
- * item, and items which might be filtered out of the stream MUST NOT be
+ * item hash.<br/>
+ * Items to be hashed MUST NOT be contained within another item.<br/>
+ * Items which might be filtered out of the stream MUST NOT be
  * contained in other items.
  */
 message BlockItem {
-    oneof items {
+    oneof item {
         /**
-         * A header for the block, marking the start of a new block.
+         * An header for the block, marking the start of a new block.
          */
-        BlockHeader header = 1;
+        com.hedera.hapi.block.stream.output.BlockHeader block_header = 1;
 
         /**
-         * An item emitted at the start of a new network "event".
-         */
-        EventMetadata start_event = 2;
-
-        /**
-         * A system transaction.
+         * An header emitted at the start of a new network "event".
          * <p>
-         * This item MAY be removed as the platform removes the concept.
+         * This item SHALL contain the properties relevant to a single
+         * gossip event.
          */
-        com.hedera.hapi.block.stream.input.SystemTransaction system_transaction = 3;
+        com.hedera.hapi.block.stream.input.EventHeader event_header = 2;
 
         /**
-         * A raw network transaction.<br/>
-         * This is just a legacy container for bytes representing
-         * a serialized `SignedTransaction`.
+         * An header emitted at the start of a new consensus "round".
+         * <p>
+         * This item SHALL contain the properties relevant to a single
+         * consensus round.
          */
-        proto.Transaction transaction = 4;
+        com.hedera.hapi.block.stream.input.RoundHeader round_header = 3;
+
+        /**
+         * A single transaction.
+         * <p>
+         * This item SHALL contain the serialized bytes of a
+         * single transaction.<br/>
+         * Each event transaction SHALL be either a `SignedTransaction` or
+         * an internal system-generated transaction.<br/>
+         * This item MUST NOT contain data for more than one
+         * `SignedTransaction` or system-generated transaction.
+         */
+        com.hedera.hapi.platform.event.EventTransaction event_transaction = 4;
 
         /**
          * The result of running a transaction.
          * <p>
-         * This item SHALL be present immediately after a
-         * `transaction` item.<br/>
+         * This item SHALL be present immediately after an
+         * `event_transaction` item.<br/>
          * This item MAY be redacted in some circumstances, and SHALL be
          * replaced with a `filtered_item` if removed.
          */
@@ -155,16 +164,9 @@ message BlockItem {
         com.hedera.hapi.block.stream.output.StateChanges state_changes = 7;
 
         /**
-         * A block state proof.<br/>
-         * The state proof for the BlockInfo node in the network state at
-         * the end of this block.<br/>
-         * This item is not part of the block stream hash chain/tree, and
-         * marks the end of a block.
-         */
-        BlockProof state_proof = 8;
-
-        /**
-         * Verification data for an item filtered from the stream.
+         * Verification data for an item filtered from the stream.<br/>
+         * This is a hash for a merkle tree node where the contents of that
+         * part of the merkle tree have been removed from this stream.
          * <p>
          * Items of this type SHALL NOT be present in the full (unfiltered)
          * block stream.<br/>
@@ -174,7 +176,40 @@ message BlockItem {
          * of a block, but MAY preclude verification or reconstruction of
          * consensus state.<br/>
          */
-        FilteredBlockItem filtered_item = 9;
+        FilteredItemHash filtered_item_hash = 8;
+
+        /**
+         * A signed block proof.<br/>
+         * The signed merkle proof for this block. This will validate
+         * a "virtual" merkle tree containing the previous block "virtual"
+         * root, an "input" subtree, an "output" subtree, and
+         * a "state changes" subtree.
+         * <p>
+         * This item is not part of the block stream hash chain/tree, and
+         * MUST follow after the end of a block.
+         */
+        BlockProof block_proof = 9;
+
+        /**
+         * A record file and associated data.
+         * <p>
+         * This MUST contain a single Record file, associated Sidecar files,
+         * and data from related Signature files.
+         * If this item is present, special treatment is
+         * REQUIRED for this block.
+         * <ul>
+         *   <li>The block SHALL NOT have a `BlockHeader`.</li>
+         *   <li>The block SHALL NOT have a `BlockProof`.</li>
+         *   <li>The block SHALL contain _exactly one_ `RecordFileItem`.</li>
+         *   <li>The block SHALL NOT contain any item other than a
+         *       `RecordFileItem`.</li>
+         *   <li>The content of the `RecordFileItem` MUST be validated using
+         *       the signature data and content provided within according to
+         *       the process used for Record Files prior to the creation
+         *       of Block Stream.</li>
+         * </ul>
+         */
+        RecordFileItem record_file = 10;
     }
 }
 
@@ -189,7 +224,7 @@ message BlockItem {
  * of a block, but MAY preclude verification or reconstruction
  * of consensus state.<br/>
  */
-message FilteredBlockItem {
+message FilteredItemHash {
     /**
      * A hash of an item filtered from the stream.
      * <p>

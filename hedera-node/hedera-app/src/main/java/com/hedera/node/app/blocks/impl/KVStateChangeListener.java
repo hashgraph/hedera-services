@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
@@ -67,8 +69,12 @@ public class KVStateChangeListener implements StateChangeListener {
     }
 
     @Override
-    public <K, V> void mapUpdateChange(@NonNull final String stateName, @NonNull final K key, @NonNull final V value) {
-        Objects.requireNonNull(stateName, "stateName must not be null");
+    public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+        return BlockImplUtils.stateIdFor(serviceName, stateKey);
+    }
+
+    @Override
+    public <K, V> void mapUpdateChange(final int stateId, @NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(value, "value must not be null");
 
@@ -77,19 +83,17 @@ public class KVStateChangeListener implements StateChangeListener {
                 .value(mapChangeValueFor(value))
                 .build();
         final var stateChange =
-                StateChange.newBuilder().stateName(stateName).mapUpdate(change).build();
+                StateChange.newBuilder().stateId(stateId).mapUpdate(change).build();
         stateChanges.add(stateChange);
     }
 
     @Override
-    public <K> void mapDeleteChange(@NonNull final String stateName, @NonNull final K key) {
-        Objects.requireNonNull(stateName, "stateName must not be null");
+    public <K> void mapDeleteChange(final int stateId, @NonNull final K key) {
         Objects.requireNonNull(key, "key must not be null");
-
         final var change =
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
         stateChanges.add(
-                StateChange.newBuilder().stateName(stateName).mapDelete(change).build());
+                StateChange.newBuilder().stateId(stateId).mapDelete(change).build());
     }
 
     /**
@@ -144,6 +148,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case ContractID contractID -> MapChangeKey.newBuilder()
                     .contractIdKey(contractID)
                     .build();
+            case PendingAirdropId pendingAirdropId -> MapChangeKey.newBuilder()
+                    .pendingAirdropIdKey(pendingAirdropId)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());
         };
@@ -183,6 +190,9 @@ public class KVStateChangeListener implements StateChangeListener {
                     .tokenRelationValue(tokenRelation)
                     .build();
             case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
+            case AccountPendingAirdrop accountPendingAirdrop -> MapChangeValue.newBuilder()
+                    .accountPendingAirdropValue(accountPendingAirdrop)
+                    .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());
         };

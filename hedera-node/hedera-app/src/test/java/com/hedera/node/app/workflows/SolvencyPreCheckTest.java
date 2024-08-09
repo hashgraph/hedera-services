@@ -465,7 +465,8 @@ class SolvencyPreCheckTest extends AppTestBase {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        return new TransactionInfo(transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, functionality);
+        return new TransactionInfo(
+                transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, functionality, null);
     }
 
     private static AccountAmount send(AccountID accountID, long amount) {

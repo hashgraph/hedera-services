@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
@@ -53,14 +54,28 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 @DisplayName("updateNode")
+@HapiTestLifecycle
 public class NodeUpdateTest {
+    private static List<X509Certificate> gossipCertificates;
+
+    @BeforeAll
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        gossipCertificates = generateX509Certificates(2);
+    }
+
     @HapiTest
     @DisplayName("cannot update a negative nodeid")
     final Stream<DynamicTest> cannotUpdateNegativeNodeId() {
@@ -75,19 +90,23 @@ public class NodeUpdateTest {
 
     @HapiTest
     @DisplayName("cannot update a deleted node")
-    final Stream<DynamicTest> updateDeletedNodeFail() {
+    final Stream<DynamicTest> updateDeletedNodeFail() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeDelete("testNode"),
                 nodeUpdate("testNode").hasPrecheck(INVALID_NODE_ID));
     }
 
     @HapiTest
-    final Stream<DynamicTest> validateAdminKey() {
+    final Stream<DynamicTest> validateAdminKey() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
                 nodeUpdate("testNode")
                         .adminKey(WRONG_LENGTH_EDDSA_KEY)
@@ -96,26 +115,32 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> updateEmptyGossipCaCertificateFail() {
+    final Stream<DynamicTest> updateEmptyGossipCaCertificateFail() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").gossipCaCertificate(new byte[0]).hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> updateAccountIdNotAllowed() {
+    final Stream<DynamicTest> updateAccountIdNotAllowed() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").accountId("0.0.100").hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED));
     }
 
     @HapiTest
-    final Stream<DynamicTest> validateGossipEndpoint() {
+    final Stream<DynamicTest> validateGossipEndpoint() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(asServiceEndpoint("127.0.0.1:80")))
@@ -131,10 +156,12 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> validateServiceEndpoint() {
+    final Stream<DynamicTest> validateServiceEndpoint() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(asServiceEndpoint("127.0.0.2:60"), invalidServiceEndpoint()))
@@ -142,7 +169,7 @@ public class NodeUpdateTest {
     }
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> updateMultipleFieldsWork() {
+    final Stream<DynamicTest> updateMultipleFieldsWork() throws CertificateEncodingException {
         final var updateOp = nodeUpdate("testNode")
                 .adminKey("adminKey2")
                 .signedBy(DEFAULT_PAYER, "adminKey", "adminKey2")
@@ -152,12 +179,15 @@ public class NodeUpdateTest {
                         asServiceEndpoint("127.0.0.2:60"),
                         asServiceEndpoint("127.0.0.3:60")))
                 .serviceEndpoint(List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")))
-                .gossipCaCertificate("caCert".getBytes())
+                .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
                 .grpcCertificateHash("grpcCert".getBytes());
         return hapiTest(
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
-                nodeCreate("testNode").description("description to be changed").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .description("description to be changed")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 updateOp,
                 viewNode("testNode", node -> {
                     assertEquals("updated description", node.description(), "Node description should be updated");
@@ -172,10 +202,14 @@ public class NodeUpdateTest {
                             List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")),
                             node.serviceEndpoint(),
                             "Node serviceEndpoint should be updated");
-                    assertEquals(
-                            Bytes.wrap("caCert"),
-                            node.gossipCaCertificate(),
-                            "Node gossipCaCertificate should be updated");
+                    try {
+                        assertEquals(
+                                Bytes.wrap(gossipCertificates.getLast().getEncoded()),
+                                node.gossipCaCertificate(),
+                                "Node gossipCaCertificate should be updated");
+                    } catch (CertificateEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
                     assertEquals(
                             Bytes.wrap("grpcCert"),
                             node.grpcCertificateHash(),
@@ -185,7 +219,7 @@ public class NodeUpdateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
+    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
                 .given(
@@ -195,6 +229,8 @@ public class NodeUpdateTest {
                                 .adminKey("adminKey")
                                 .description(description)
                                 .fee(ONE_HBAR)
+                                .gossipCaCertificate(
+                                        gossipCertificates.getFirst().getEncoded())
                                 .via("nodeCreation"),
                         nodeUpdate("ntb")
                                 .payingWith("payer")
@@ -207,11 +243,13 @@ public class NodeUpdateTest {
     }
 
     @LeakyHapiTest(overrides = {"nodes.maxServiceEndpoint"})
-    final Stream<DynamicTest> validateServiceEndpointSize() {
+    final Stream<DynamicTest> validateServiceEndpointSize() throws CertificateEncodingException {
         return hapiTest(
                 overriding("nodes.maxServiceEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(
@@ -222,11 +260,13 @@ public class NodeUpdateTest {
     }
 
     @LeakyHapiTest(overrides = {"nodes.maxGossipEndpoint"})
-    final Stream<DynamicTest> validateGossipEndpointSize() {
+    final Stream<DynamicTest> validateGossipEndpointSize() throws CertificateEncodingException {
         return hapiTest(
                 overriding("nodes.maxGossipEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(
@@ -237,11 +277,13 @@ public class NodeUpdateTest {
     }
 
     @LeakyHapiTest(overrides = {"nodes.nodeMaxDescriptionUtf8Bytes"})
-    final Stream<DynamicTest> updateTooLargeDescriptionFail() {
+    final Stream<DynamicTest> updateTooLargeDescriptionFail() throws CertificateEncodingException {
         return hapiTest(
                 overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKey("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .description("toolarge")

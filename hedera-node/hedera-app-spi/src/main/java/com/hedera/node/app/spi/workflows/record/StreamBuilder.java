@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -57,6 +58,13 @@ public interface StreamBuilder {
      * @return this builder
      */
     StreamBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Sets the serialized bytes for the transaction; if known, we can avoid re-serializing the transaction.
+     * @param serializedTransaction if non-null, the serialized transaction
+     * @return this builder
+     */
+    StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction);
 
     /**
      * Returns the transaction for this stream item builder.

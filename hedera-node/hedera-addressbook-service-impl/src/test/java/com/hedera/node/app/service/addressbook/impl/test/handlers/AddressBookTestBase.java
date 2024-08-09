@@ -38,13 +38,20 @@ import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchem
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Random;
+import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -268,5 +275,15 @@ public class AddressBookTestBase {
                 .weight(0)
                 .adminKey(key)
                 .build();
+    }
+
+    public static List<X509Certificate> generateX509Certificates(final int n) {
+        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+                .withSize(n)
+                .withRealKeysEnabled(true)
+                .build();
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
+                .map(Address::getSigCert)
+                .collect(Collectors.toList());
     }
 }

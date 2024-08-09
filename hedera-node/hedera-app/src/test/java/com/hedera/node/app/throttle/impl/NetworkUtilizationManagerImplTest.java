@@ -115,7 +115,8 @@ class NetworkUtilizationManagerImplTest {
                 AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                CRYPTO_TRANSFER);
+                CRYPTO_TRANSFER,
+                null);
 
         // when
         subject.trackFeePayments(consensusNow, state);

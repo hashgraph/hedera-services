@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -45,12 +46,17 @@ public class StateTest {
             public Set<StateType> stateTypes() {
                 return EnumSet.allOf(StateType.class);
             }
+
+            @Override
+            public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+                return 0;
+            }
         };
 
-        assertThatCode(() -> subject.mapUpdateChange("label", "key", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.mapDeleteChange("label", "key")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.singletonUpdateChange("label", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.queuePushChange("label", "value")).doesNotThrowAnyException();
-        assertThatCode(() -> subject.queuePopChange("label")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.mapUpdateChange(0, "key", "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.mapDeleteChange(0, "key")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.singletonUpdateChange(0, "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.queuePushChange(0, "value")).doesNotThrowAnyException();
+        assertThatCode(() -> subject.queuePopChange(0)).doesNotThrowAnyException();
     }
 }

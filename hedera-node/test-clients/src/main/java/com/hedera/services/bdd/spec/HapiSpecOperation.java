@@ -413,7 +413,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
         return txnWithSignedTxnBytesBuilder.build();
     }
 
-    private Transaction getSigned(final HapiSpec spec, final Transaction.Builder builder, final List<Key> keys)
+    protected Transaction getSigned(final HapiSpec spec, final Transaction.Builder builder, final List<Key> keys)
             throws Throwable {
         return sigMapGen.isPresent()
                 ? spec.keys().sign(spec, builder, keys, overrides, sigMapGen.get())
