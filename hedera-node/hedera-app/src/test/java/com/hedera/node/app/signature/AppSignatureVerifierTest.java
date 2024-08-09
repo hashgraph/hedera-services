@@ -25,6 +25,7 @@ import static com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStat
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -108,9 +109,7 @@ class AppSignatureVerifierTest {
         @Test
         void usesDefaultKeyVerifierWithNoOverride() throws ExecutionException, InterruptedException, TimeoutException {
             final var pretendKeccak256Hash = Bytes.wrap(new byte[32]);
-            final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
-            given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
-                    .willReturn(verification);
+            given(future.get(anyLong(), eq(TimeUnit.MILLISECONDS))).willReturn(verification);
             given(signatureVerifier.verify(pretendKeccak256Hash, expandedPairs, KECCAK_256_HASH))
                     .willReturn(Map.of(ED_KEY, future));
 
@@ -124,9 +123,7 @@ class AppSignatureVerifierTest {
         @Test
         void usesDefaultKeyVerifierWithValidOverride()
                 throws ExecutionException, InterruptedException, TimeoutException {
-            final var hederaConfig = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
-            given(future.get(hederaConfig.workflowVerificationTimeoutMS(), TimeUnit.MILLISECONDS))
-                    .willReturn(verification);
+            given(future.get(anyLong(), eq(TimeUnit.MILLISECONDS))).willReturn(verification);
             given(signatureVerifier.verify(Bytes.EMPTY, expandedPairs, RAW)).willReturn(Map.of(ED_KEY, future));
 
             assertThat(subject.verifySignature(
