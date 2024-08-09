@@ -43,12 +43,16 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,6 +168,28 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                             com.hedera.hapi.node.base.TransactionID.class,
                             TransactionID.class))
                     .setMemo(txn.body().memo());
+        } else {
+            final TransactionBody txnBody;
+            try {
+                txnBody = CommonUtils.extractTransactionBody(
+                        pbjToProto(txn, Transaction.class, com.hederahashgraph.api.proto.java.Transaction.class));
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+            recordBuilder.setTransactionID(txnBody.getTransactionID()).setMemo(txnBody.getMemo());
+        }
+
+        try {
+            final Bytes transactionBytes;
+            if (txn.signedTransactionBytes().length() > 0) {
+                transactionBytes = txn.signedTransactionBytes();
+            } else {
+                transactionBytes = Transaction.PROTOBUF.toBytes(txn);
+            }
+            final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+            recordBuilder.setTransactionHash(ByteString.copyFrom(digest.digest(transactionBytes.toByteArray())));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
 
         return recordBuilder;
