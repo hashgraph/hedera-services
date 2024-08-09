@@ -65,7 +65,7 @@ class UtilPrngTranslatorTest {
 
     @Test
     void testTranslateWithPrngBytes() {
-        // Arrange
+        // When
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
@@ -73,10 +73,9 @@ class UtilPrngTranslatorTest {
         final Bytes bytes = Bytes.fromHex("badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada");
         when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_BYTES, bytes));
 
-        // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
-        // Assert
+        // Then
         TransactionRecord expectedRecord =
                 TransactionRecord.newBuilder().prngBytes(bytes).build();
 
@@ -88,7 +87,7 @@ class UtilPrngTranslatorTest {
 
     @Test
     void testTranslateWithPrngNumber() {
-        // Arrange
+        // When
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
@@ -96,10 +95,9 @@ class UtilPrngTranslatorTest {
         final int number = 42;
         when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER, number));
 
-        // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
-        // Assert
+        // Then
         TransactionRecord expectedRecord =
                 TransactionRecord.newBuilder().prngNumber(number).build();
 
@@ -111,15 +109,14 @@ class UtilPrngTranslatorTest {
 
     @Test
     void testTranslateNoPrng() {
-        // Arrange
+        // When
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(false);
 
-        // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
-        // Assert
+        // Then
         TransactionRecord expectedRecord = TransactionRecord.DEFAULT;
 
         assertEquals(mockTransaction, result.transaction());
