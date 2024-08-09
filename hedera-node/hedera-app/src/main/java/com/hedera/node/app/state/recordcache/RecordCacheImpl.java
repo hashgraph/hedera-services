@@ -323,7 +323,6 @@ public class RecordCacheImpl implements HederaRecordCache {
                     if (transactionIDs.isEmpty()) {
                         payerToTransactionIndex.remove(payerAccountId);
                     }
-                    logger.info("Removing expired receipt {}", txId);
                 }
                 // Remove the round receipts from the queue
                 queue.poll();
