@@ -154,10 +154,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private final VirtualLeafRecord[] leafRecordCache;
 
     /** Thread pool storing internal records */
-    private final ExecutorService storeInternalExecutor;
+    private final ExecutorService storeHashesExecutor;
 
     /** Thread pool storing key-to-path mappings */
-    private final ExecutorService storeKeyToPathExecutor;
+    private final ExecutorService storeLeavesExecutor;
 
     /** Thread pool creating snapshots, it is unbounded in threads, but we use at most 7 */
     private final ExecutorService snapshotExecutor;
@@ -192,21 +192,21 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
-        // create thread pool storing internal records
-        storeInternalExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
+        // create thread pool storing virtual node hashes
+        storeHashesExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
                 .setComponent(MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
-                .setThreadName("Store Internal Records")
-                .setExceptionHandler((t, ex) ->
-                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", tableName, ex))
-                .buildFactory());
-        // create thread pool storing key-to-path mappings
-        storeKeyToPathExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MERKLEDB_COMPONENT)
-                .setThreadGroup(threadGroup)
-                .setThreadName("Store Key to Path")
+                .setThreadName("Store hashes")
                 .setExceptionHandler((t, ex) -> logger.error(
-                        EXCEPTION.getMarker(), "[{}] Uncaught exception during storing" + " keys", tableName, ex))
+                        EXCEPTION.getMarker(), "[{}] Uncaught exception during storing hashes", tableName, ex))
+                .buildFactory());
+        // create thread pool storing virtual leaf nodes
+        storeLeavesExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
+                .setComponent(MERKLEDB_COMPONENT)
+                .setThreadGroup(threadGroup)
+                .setThreadName("Store leaves")
+                .setExceptionHandler((t, ex) -> logger.error(
+                        EXCEPTION.getMarker(), "[{}] Uncaught exception during storing leaves", tableName, ex))
                 .buildFactory());
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
         snapshotExecutor = Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
@@ -469,15 +469,16 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             throws IOException {
         try {
             validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
-            final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 1 : 0);
+            final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 2 : 1);
 
-            // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
             if (lastLeafPath > 0) {
-                storeInternalExecutor.execute(() -> {
+                // Use an executor to make sure the data source is not closed in parallel. See
+                // the comment in close() for details
+                storeHashesExecutor.execute(() -> {
                     try {
                         writeHashes(lastLeafPath, hashRecordsToUpdate);
                     } catch (final IOException e) {
-                        logger.error(EXCEPTION.getMarker(), "[{}] Failed to store internal records", tableName, e);
+                        logger.error(EXCEPTION.getMarker(), "[{}] Failed to store hashes", tableName, e);
                         throw new UncheckedIOException(e);
                     } finally {
                         countDownLatch.countDown();
@@ -485,9 +486,25 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 });
             }
 
-            // we might as well do this in the archive thread rather than leaving it waiting
-            writeLeavesToPathToKeyValue(
-                    firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate, leafRecordsToDelete, isReconnectContext);
+            // Use an executor to make sure the data source is not closed in parallel. See
+            // the comment in close() for details
+            storeLeavesExecutor.execute(() -> {
+                try {
+                    // we might as well do this in the archive thread rather than leaving it waiting
+                    writeLeavesToPathToKeyValue(
+                            firstLeafPath,
+                            lastLeafPath,
+                            leafRecordsToAddOrUpdate,
+                            leafRecordsToDelete,
+                            isReconnectContext);
+                } catch (final IOException e) {
+                    logger.error(EXCEPTION.getMarker(), "[{}] Failed to store leaves", tableName, e);
+                    throw new UncheckedIOException(e);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+
             // wait for the other threads in the rare case they are not finished yet. We need to
             // have all writing
             // done before we return as when we return the state version we are writing is deleted
@@ -706,24 +723,31 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     public void close() throws IOException {
         if (!closed.getAndSet(true)) {
             try {
-                // stop merging and shutdown the datasource compactor
+                // Stop merging and shutdown the datasource compactor
                 compactionCoordinator.stopAndDisableBackgroundCompaction();
-                // shut down all executors
-                shutdownThreadsAndWait(storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
+                // Shut down all executors. If a flush is currently in progress, it will be interrupted.
+                // It's critical to make sure there are no disk read/write operations before all indiced
+                // and file collections are closed below
+                shutdownThreadsAndWait(storeHashesExecutor, storeLeavesExecutor, snapshotExecutor);
             } finally {
                 try {
                     // close all closable data stores
                     logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
+                    // Hashes store
                     if (hashStoreRam != null) {
                         hashStoreRam.close();
                     }
                     if (hashStoreDisk != null) {
                         hashStoreDisk.close();
                     }
+                    // Then hashes index
                     pathToDiskLocationInternalNodes.close();
-                    pathToDiskLocationLeafNodes.close();
+                    // Key to paths, both store and index
                     keyToPath.close();
+                    // Leaves store
                     pathToKeyValue.close();
+                    // Then leaves index
+                    pathToDiskLocationLeafNodes.close();
                 } catch (final Exception e) {
                     logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
                 } catch (final Error t) {

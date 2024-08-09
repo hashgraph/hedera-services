@@ -18,9 +18,16 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.platform.state.MerkleStateRoot.PLATFORM_STATE_INDEX;
+import static com.swirlds.state.StateChangeListener.StateType.MAP;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
@@ -35,8 +42,9 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.State;
+import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.merkle.StateMetadata;
-import com.swirlds.state.merkle.StateUtils;
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -48,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +68,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -334,7 +344,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             final var map = new HashMap<String, MerkleNode>();
             for (int i = 0; i < 10; i++) {
                 final var serviceName = "Service_" + i;
-                final var label = StateUtils.computeLabel(serviceName, FRUIT_STATE_KEY);
+                final var label = computeLabel(serviceName, FRUIT_STATE_KEY);
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
@@ -358,13 +368,13 @@ class MerkleStateRootTest extends MerkleTestBase {
 
                 // Verify everything OTHER THAN the removed service node is still present
                 for (final var entry : map.entrySet()) {
-                    final var label = StateUtils.computeLabel(entry.getKey(), FRUIT_STATE_KEY);
+                    final var label = computeLabel(entry.getKey(), FRUIT_STATE_KEY);
                     assertThat(getNodeForLabel(label)).isSameAs(entry.getValue());
                 }
 
                 // Verify NONE OF THE REMOVED SERVICES have a node still present
                 for (final var removedKey : removedServiceNames) {
-                    final var label = StateUtils.computeLabel(removedKey, FRUIT_STATE_KEY);
+                    final var label = computeLabel(removedKey, FRUIT_STATE_KEY);
                     assertThat(getNodeForLabel(label)).isNull();
                 }
             }
@@ -879,6 +889,70 @@ class MerkleStateRootTest extends MerkleTestBase {
                             .withIgnoredFields("route")
                             .build())
                     .isEqualTo(platformState2);
+        }
+    }
+
+    @Nested
+    @DisplayName("with registered listeners")
+    class WithRegisteredListeners {
+        @Mock
+        private StateChangeListener kvListener;
+
+        @Mock
+        private StateChangeListener nonKvListener;
+
+        @BeforeEach
+        void setUp() {
+            given(kvListener.stateTypes()).willReturn(EnumSet.of(MAP));
+            given(nonKvListener.stateTypes()).willReturn(EnumSet.of(QUEUE, SINGLETON));
+
+            setupAnimalMerkleMap();
+            setupFruitVirtualMap();
+            setupSingletonCountry();
+            setupSteamQueue();
+
+            add(fruitVirtualMap, fruitVirtualMetadata, C_KEY, CHERRY);
+            add(animalMerkleMap, animalMetadata, C_KEY, CUTTLEFISH);
+            countrySingleton.setValue(FRANCE);
+            steamQueue.add(ART);
+        }
+
+        @Test
+        void appropriateListenersAreInvokedOnCommit() {
+            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
+            stateRoot.putServiceStateIfAbsent(fruitVirtualMetadata, () -> fruitVirtualMap);
+            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
+            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
+
+            stateRoot.registerCommitListener(kvListener);
+            stateRoot.registerCommitListener(nonKvListener);
+
+            final var states = stateRoot.getWritableStates(FIRST_SERVICE);
+            final var animalState = states.get(ANIMAL_STATE_KEY);
+            final var fruitState = states.get(FRUIT_STATE_KEY);
+            final var countryState = states.getSingleton(COUNTRY_STATE_KEY);
+            final var steamState = states.getQueue(STEAM_STATE_KEY);
+
+            fruitState.put(E_KEY, EGGPLANT);
+            fruitState.remove(C_KEY);
+            animalState.put(A_KEY, AARDVARK);
+            animalState.remove(C_KEY);
+            countryState.put(ESTONIA);
+            steamState.poll();
+            steamState.add(BIOLOGY);
+
+            ((CommittableWritableStates) states).commit();
+
+            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), E_KEY, EGGPLANT);
+            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), C_KEY);
+            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), A_KEY, AARDVARK);
+            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), C_KEY);
+            verify(nonKvListener).singletonUpdateChange(computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY), ESTONIA);
+            verify(nonKvListener).queuePushChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY), BIOLOGY);
+            verify(nonKvListener).queuePopChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY));
+
+            verifyNoMoreInteractions(kvListener);
+            verifyNoMoreInteractions(nonKvListener);
         }
     }
 }
