@@ -1,4 +1,4 @@
-# Yahcli v0.4.0
+# Yahcli v0.4.8
 
 Yahcli (_Yet Another Hedera Command Line Interface_) supports DevOps
 actions against the Hedera networks listed in a _config.yml_ file.
@@ -661,7 +661,7 @@ yahcli will warn that at least one of the payer and admin key signatures must pr
 corresponding to a _.pem_ file, its contents will automatically be used for the PEM passphrase.
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes create \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes create \
   --accountNum 23 \
   --description 'Testing 123' \
   --gossipEndpoints 127.0.0.1:50070,10.1.2.3:50070 \
@@ -695,7 +695,7 @@ general you will also want to provide the `--adminKey` option with the path to t
 (This can be omitted if the yahcli payer key is the same as the admin key.)
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes delete \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes delete \
   --nodeId 3 \
   --adminKey adminKey.pem
 Log level is WARN
@@ -712,7 +712,7 @@ general you will also want to provide the `--adminKey` option with the path to t
 To change every available field, the command might look like,
 
 ```
-docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.9 -n localhost -p 2 nodes update \
+docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes update \
   --nodeId 1 \
   --adminKey adminKey.pem \
   --accountNum 42 \
