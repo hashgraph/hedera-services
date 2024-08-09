@@ -242,7 +242,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
                 STARTING_BLOCK);
-        verify(recordCache, times(259)).commitAndPurgeIfAny(any(), any());
+        verify(recordCache, times(259)).commitRoundReceipts(any(), any());
     }
 
     @Test

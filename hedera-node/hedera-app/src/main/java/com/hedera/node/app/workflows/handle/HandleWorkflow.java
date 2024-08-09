@@ -232,7 +232,7 @@ public class HandleWorkflow {
             }
         } finally {
             // If there is an exception, we need to commit the receipts to the record cache
-            recordCache.commitAndPurgeIfAny(state, asTimestamp(round.getConsensusTimestamp()));
+            recordCache.commitRoundReceipts(state, asTimestamp(round.getConsensusTimestamp()));
         }
     }
 

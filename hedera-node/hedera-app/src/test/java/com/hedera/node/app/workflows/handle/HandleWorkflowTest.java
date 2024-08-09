@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -185,6 +184,6 @@ class HandleWorkflowTest {
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();
-        verify(recordCache).commitAndPurgeIfAny(any(), any());
+        verify(recordCache).commitRoundReceipts(any(), any());
     }
 }

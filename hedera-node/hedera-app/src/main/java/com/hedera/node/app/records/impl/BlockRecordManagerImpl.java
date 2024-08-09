@@ -280,7 +280,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-        recordCache.commitAndPurgeIfAny(state, blockRecordInfoState.get().consTimeOfLastHandledTxn());
+        recordCache.commitRoundReceipts(state, blockRecordInfoState.get().consTimeOfLastHandledTxn());
     }
 
     // ========================================================================================================

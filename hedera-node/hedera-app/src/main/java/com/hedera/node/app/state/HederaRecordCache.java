@@ -20,6 +20,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.config.data.HederaConfig;
+import com.hederahashgraph.api.proto.java.TransactionReceiptEntries;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -78,13 +80,25 @@ public interface HederaRecordCache extends RecordCache {
     void resetRoundReceipts();
 
     /**
-     * Looks at the youngest entry of the all the receits in {@link com.hederahashgraph.api.proto.java.TransactionReceiptEntries}.
-     * If the youngest entry's transaction valid start is before 120secs of current block time, purges those from the queue.
-     * Commits the current round's transaction receipts to the transaction receipt queue in {@link State}.
+     * Commits the current round's transaction receipts to the transaction receipt queue in {@link State},
+     * doing additional work as needed to purge the receipts from any round whose transaction ids cannot
+     * be duplicated because they are now expired.
+     * <p>
+     * Purging receipts works as follows:
+     * <ol>
+     *     <li>Find the latest {@link TransactionID#transactionValidStart()} of the all the receipts in the
+     *     {@link TransactionReceiptEntries} object at the head of the round receipt queue.</li>
+     *     <li>If even the latest valid start is more than {@link HederaConfig#transactionMaxValidDuration()}
+     *     seconds before consensus time now, purge the history of all receipts from that round, and remove it
+     *     from the queue.</li>
+     *     <li>Repeat this process until the queue is empty or the round at the head of the queue has a valid
+     *     start within {@link HederaConfig#transactionMaxValidDuration()} seconds of the given consensus time
+     *     (meaning it might still be duplicated).</li>
+     * </ol>
      * @param state The state to commit the transaction receipts to
-     * @param timeStamp The timestamp of the current block
+     * @param consensusNow The current consensus time
      */
-    void commitAndPurgeIfAny(final State state, final Timestamp timeStamp);
+    void commitRoundReceipts(@NonNull State state, @NonNull Timestamp consensusNow);
 
     /** The possible results of a duplicate check */
     enum DuplicateCheckResult {

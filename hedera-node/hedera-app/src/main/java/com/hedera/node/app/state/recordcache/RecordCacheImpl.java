@@ -220,12 +220,14 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     @Override
-    public void commitAndPurgeIfAny(final State state, final Timestamp blockTimestamp) {
+    public void commitRoundReceipts(@NonNull final State state, @NonNull final Timestamp consensusNow) {
+        requireNonNull(state);
+        requireNonNull(consensusNow);
         // Looks at all the receipts in the queue and if the youngest entry's transaction valid start is before 120secs
         // of current block time, purges those from the queue.
         final var states = state.getWritableStates(RecordCacheService.NAME);
         final var queue = states.<TransactionReceiptEntries>getQueue(TXN_RECEIPT_QUEUE);
-        removeExpiredReceipts(queue, blockTimestamp);
+        removeExpiredReceipts(queue, consensusNow);
 
         queue.add(new TransactionReceiptEntries(new ArrayList<>(transactionReceipts)));
 
