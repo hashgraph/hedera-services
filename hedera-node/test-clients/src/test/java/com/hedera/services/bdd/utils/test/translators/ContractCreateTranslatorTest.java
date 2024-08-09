@@ -72,10 +72,11 @@ class ContractCreateTranslatorTest {
 
     @Test
     void testTranslateContractCreate() {
+        // Given
         final ContractID contractID = ContractID.newBuilder().contractNum(5).build();
         final Bytes evmAddress = Bytes.fromHex("badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada");
         final List<TransactionSidecarRecord> sidecars = List.of(TransactionSidecarRecord.DEFAULT);
-        // Arrange
+        // When
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasContractCreate()).thenReturn(true);
@@ -88,10 +89,9 @@ class ContractCreateTranslatorTest {
         final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
         when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
 
-        // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
-        // Assert
+        // Then
         TransactionReceipt expectedReceipt =
                 TransactionReceipt.newBuilder().contractID(contractID).build();
 
