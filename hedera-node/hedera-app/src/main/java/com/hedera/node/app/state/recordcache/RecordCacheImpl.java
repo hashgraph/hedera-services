@@ -296,11 +296,16 @@ public class RecordCacheImpl implements HederaRecordCache {
         // Loop in order and expunge the entry if even the latest TransactionReceiptEntry is expired
         TransactionReceiptEntries roundReceipts;
         while ((roundReceipts = queue.peek()) != null) {
+            if (roundReceipts.entries().isEmpty()) {
+                logger.warn("Unexpected empty round receipts in the queue, removing them");
+                queue.poll();
+                continue;
+            }
             final var latestReceiptValidStart = roundReceipts.entries().stream()
                     .max(TRANSACTION_VALID_START_COMPARATOR)
                     .map(entry -> entry.transactionIdOrElse(TransactionID.DEFAULT)
                             .transactionValidStartOrElse(Timestamp.DEFAULT))
-                    .orElse(earliestValidStart);
+                    .orElseThrow();
             // If even the latest valid start time is before the earliest valid start, then all transaction
             // ids used in this round are expired and cannot be duplicated
             if (isBefore(latestReceiptValidStart, earliestValidStart)) {
