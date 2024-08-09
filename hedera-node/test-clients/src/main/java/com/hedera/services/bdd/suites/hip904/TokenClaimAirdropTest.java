@@ -18,7 +18,13 @@ package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
@@ -47,13 +53,13 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 @DisplayName("Claim token airdrop")
 public class TokenClaimAirdropTest {
-    private static String OWNER = "owner";
-    private static String OWNER_2 = "owner2";
-    private static String RECEIVER = "receiver";
-    private static String FUNGIBLE_TOKEN = "fungibleToken";
-    private static String FUNGIBLE_TOKEN_2 = "fungibleToken2";
-    private static String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
-    private static String NFT_SUPPLY_KEY = "supplyKey";
+    private static final String OWNER = "owner";
+    private static final String OWNER_2 = "owner2";
+    private static final String RECEIVER = "receiver";
+    private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String FUNGIBLE_TOKEN_2 = "fungibleToken2";
+    private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    private static final String NFT_SUPPLY_KEY = "supplyKey";
 
     @HapiTest
     final Stream<DynamicTest> claimFungibleTokenAirdrop() {
@@ -86,7 +92,7 @@ public class TokenClaimAirdropTest {
                         // do pending airdrop
                         tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
                                 .payingWith(OWNER),
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN_2).between(OWNER_2, RECEIVER))
+                        tokenAirdrop(moving(20, FUNGIBLE_TOKEN_2).between(OWNER_2, RECEIVER))
                                 .payingWith(OWNER_2),
                         tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                                 .payingWith(OWNER),
@@ -97,13 +103,26 @@ public class TokenClaimAirdropTest {
                                         pendingAirdrop(OWNER_2, RECEIVER, FUNGIBLE_TOKEN_2),
                                         pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
                                 .payingWith(RECEIVER)
-                                .feeUsd(0.001))
-                .then( // assert balance fungible tokens
+                                .feeUsd(0.001)
+                                .via("claimTxn"))
+                .then( // assert txn record
+                        getTxnRecord("claimTxn")
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(includingFungibleMovement(
+                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
+                                        .tokenTransfers(includingFungibleMovement(
+                                                moving(20, FUNGIBLE_TOKEN_2).between(OWNER_2, RECEIVER)))
+                                        .tokenTransfers(includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                                .between(OWNER, RECEIVER)))),
+                        // assert balance fungible tokens
                         getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 990),
-                        getAccountBalance(OWNER_2).hasTokenBalance(FUNGIBLE_TOKEN_2, 990),
+                        getAccountBalance(OWNER_2).hasTokenBalance(FUNGIBLE_TOKEN_2, 980),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN_2, 10),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN_2, 20),
                         // assert balances NFT
-                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
+                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                        // assert token associations
+                        getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                        getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
     }
 }
