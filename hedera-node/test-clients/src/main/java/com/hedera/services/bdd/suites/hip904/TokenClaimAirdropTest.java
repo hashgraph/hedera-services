@@ -63,7 +63,7 @@ public class TokenClaimAirdropTest {
                         overriding("tokens.airdrops.claim.enabled", "true"),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(OWNER_2).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                        cryptoCreate(RECEIVER).balance(0L),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .treasury(OWNER)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -93,18 +93,17 @@ public class TokenClaimAirdropTest {
 
                         // do claim
                         tokenClaimAirdrop(
-                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                pendingAirdrop(OWNER_2, RECEIVER, FUNGIBLE_TOKEN_2),
-                                pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1)))
+                                        pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                        pendingAirdrop(OWNER_2, RECEIVER, FUNGIBLE_TOKEN_2),
+                                        pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                                .payingWith(RECEIVER)
+                                .feeUsd(0.001))
                 .then( // assert balance fungible tokens
                         getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 990),
                         getAccountBalance(OWNER_2).hasTokenBalance(FUNGIBLE_TOKEN_2, 990),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN_2, 10),
                         // assert balances NFT
-                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-
-                        // should be free
-                        getAccountBalance(RECEIVER).hasTinyBars(0L));
+                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
     }
 }

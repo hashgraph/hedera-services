@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,14 +30,14 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -265,8 +265,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         // check if we have the proper transfer
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenId)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenId)
+                        .balance())
                 .isEqualTo(10);
 
         // check sender's pending airdrops head id and count
@@ -304,8 +304,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         // check if we have the proper transfer
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
+                        .balance())
                 .isEqualTo(10);
 
         // check sender's pending airdrops head id and count
@@ -343,8 +343,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         // check if we have the proper transfer
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDC)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDC)
+                        .balance())
                 .isEqualTo(10);
 
         // check sender's pending airdrops head id and count
@@ -393,12 +393,12 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         // check if we have the proper transfer
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
+                        .balance())
                 .isEqualTo(10);
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDC)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDC)
+                        .balance())
                 .isEqualTo(10);
 
         // check sender's pending airdrops head id and count
@@ -447,12 +447,12 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         // check if we have the proper transfer
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDB)
+                        .balance())
                 .isEqualTo(10);
         assertThat(writableTokenRelStore
-                .get(tokenReceiverNoAssociationId, fungibleTokenIDD)
-                .balance())
+                        .get(tokenReceiverNoAssociationId, fungibleTokenIDD)
+                        .balance())
                 .isEqualTo(10);
 
         // check sender's pending airdrops head id and count
