@@ -523,6 +523,25 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
+        @DisplayName("FT with fractional fee and receiverSigRequired")
+        final Stream<DynamicTest> tokenWithCustomFeeAndSignedByReceiver() {
+            final var receiverWithSigRequired = "receiverWithSigRequired";
+
+            return defaultHapiSpec("should go to pending state")
+                    .given(
+                            cryptoCreate(receiverWithSigRequired)
+                                    .receiverSigRequired(true)
+                                    .maxAutomaticTokenAssociations(0),
+                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE))
+                    .when(cryptoTransfer(
+                            moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .then(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE).between(OWNER, receiverWithSigRequired))
+                            .payingWith(OWNER)
+                            .signedBy(OWNER, receiverWithSigRequired)
+                            .via("txn"));
+        }
+
+        @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
             return defaultHapiSpec(" sender should prepay hbar custom fee")
