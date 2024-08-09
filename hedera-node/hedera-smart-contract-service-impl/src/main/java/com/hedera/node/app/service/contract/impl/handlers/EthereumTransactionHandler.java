@@ -155,6 +155,19 @@ public class EthereumTransactionHandler implements TransactionHandler {
         throwIfUnsuccessful(outcome.status());
     }
 
+    /**
+     * Does work needed to externalize details after an Ethereum transaction is throttled.
+     * @param context the handle context
+     */
+    public void handleThrottled(@NonNull final HandleContext context) {
+        final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+        context.savepointStack()
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
+                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
+    }
+
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
