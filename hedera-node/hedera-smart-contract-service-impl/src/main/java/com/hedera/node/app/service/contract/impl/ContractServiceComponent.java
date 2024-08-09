@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
@@ -27,7 +28,8 @@ import javax.inject.Singleton;
 public interface ContractServiceComponent {
     @Component.Factory
     interface Factory {
-        ContractServiceComponent create(@BindsInstance InstantSource instantSource);
+        ContractServiceComponent create(
+                @BindsInstance InstantSource instantSource, @BindsInstance SignatureVerifier signatureVerifier);
     }
 
     ContractHandlers handlers();

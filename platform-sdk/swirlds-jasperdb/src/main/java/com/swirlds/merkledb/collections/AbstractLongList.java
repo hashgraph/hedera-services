@@ -26,7 +26,6 @@ import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -261,7 +260,7 @@ public abstract class AbstractLongList<C> implements LongList {
     @Override
     public long get(final long index, final long defaultValue) {
         if (index < 0 || index >= maxLongs) {
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException(index);
         }
         if (index >= size.get()) {
             return defaultValue;
@@ -653,23 +652,23 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /** {@inheritDoc} */
     @Override
-    public final void close() {
-        try {
-            onClose();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public void close() {
         size.set(0);
         for (int i = 0; i < chunkList.length(); i++) {
-            chunkList.set(i, null);
+            final C chunk = chunkList.getAndSet(i, null);
+            if (chunk != null) {
+                closeChunk(chunk);
+            }
         }
     }
 
     /**
-     * Called when the list is closed. Subclasses may override this method to perform additional cleanup.
-     * @throws IOException if an I/O error occurs
+     * Chunk cleanup code, to be overridden in subclasses, if needed. This method is called for
+     * every chunk one by one, when this list is closed.
+     *
+     * @param chunk the chunk to clean up
      */
-    protected void onClose() throws IOException {
+    protected void closeChunk(@NonNull final C chunk) {
         // to be overridden
     }
 }
