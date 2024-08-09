@@ -65,7 +65,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new ConsensusGetTopicInfoHandler();
     }
 
@@ -141,7 +141,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Topic Id in transaction is needed during validate")
-    void validatesQueryIfInvalidTopicInTrans() {
+    void validatesQueryIfInvalidTopicInTrans() throws Throwable {
         readableTopicState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
@@ -158,7 +158,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("deleted topic is not valid")
-    void validatesQueryIfDeletedTopic() {
+    void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId, true);
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);

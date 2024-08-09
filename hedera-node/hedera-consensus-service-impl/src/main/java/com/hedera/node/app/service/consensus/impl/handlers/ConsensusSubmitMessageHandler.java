@@ -31,7 +31,6 @@ import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -166,8 +165,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic == null) {
             throw new HandleException(INVALID_TOPIC_ID);
         }
-        // If the message is too large, user will be able to submit the message fragments in chunks
-        // Validate if chunk info is correct
+        /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
         validateChunkInfo(txnId, payer, op);
     }
 
@@ -197,8 +195,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
             }
 
-            // Validate if the transaction is submitting initial chunk,payer in initial transaction Id
-            // should be same as payer of the transaction
+            /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
             if (1 == chunkInfo.number()
                     && !chunkInfo
                             .initialTransactionIDOrElse(TransactionID.DEFAULT)
@@ -222,7 +219,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             throws IOException {
         requireNonNull(txn);
         requireNonNull(topic);
-        final var consensusTimeNow = requireNonNullElse(consensusNow, Instant.ofEpochSecond(0));
 
         final var submitMessage = txn.consensusSubmitMessageOrThrow();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
@@ -231,6 +227,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         // This line will be uncommented once there is PBJ fix to make copyBuilder() public
         final var topicBuilder = topic.copyBuilder();
+
+        if (null == consensusNow) {
+            consensusNow = Instant.ofEpochSecond(0);
+        }
 
         var sequenceNumber = topic.sequenceNumber();
         var runningHash = topic.runningHash();
@@ -245,8 +245,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             out.writeLong(topicId.shardNum());
             out.writeLong(topicId.realmNum());
             out.writeLong(topicId.topicNum());
-            out.writeLong(consensusTimeNow.getEpochSecond());
-            out.writeInt(consensusTimeNow.getNano());
+            out.writeLong(consensusNow.getEpochSecond());
+            out.writeInt(consensusNow.getNano());
 
             /* Update the sequence number */
             topicBuilder.sequenceNumber(++sequenceNumber);

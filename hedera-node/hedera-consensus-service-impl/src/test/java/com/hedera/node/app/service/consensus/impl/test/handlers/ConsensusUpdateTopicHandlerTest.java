@@ -87,7 +87,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     private ConsensusUpdateTopicHandler subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new ConsensusUpdateTopicHandler();
     }
 
@@ -387,9 +387,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     void appliesNewAutoRenewNumViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var autoRenewAcc = AccountID.newBuilder().accountNum(666).build();
+        final var autoRenewAccount = AccountID.newBuilder().accountNum(666).build();
         final var op =
-                OP_BUILDER.topicID(topicId).autoRenewAccount(autoRenewAcc).build();
+                OP_BUILDER.topicID(topicId).autoRenewAccount(autoRenewAccount).build();
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -411,7 +411,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var newTopic = writableTopicState.get(topicId);
-        assertEquals(autoRenewAcc, newTopic.autoRenewAccountId());
+        assertEquals(autoRenewAccount, newTopic.autoRenewAccountId());
     }
 
     @Test

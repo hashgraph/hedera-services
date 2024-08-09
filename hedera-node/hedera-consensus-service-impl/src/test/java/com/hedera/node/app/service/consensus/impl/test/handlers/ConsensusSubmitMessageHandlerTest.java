@@ -88,7 +88,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
 
@@ -358,6 +358,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
+    private TransactionBody newDefaultSubmitMessageTxn(final long topicEntityNum) {
+        return newSubmitMessageTxn(
+                topicEntityNum,
+                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
+    }
+
     private TransactionBody newSubmitMessageTxn(final long topicEntityNum, final String message) {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
@@ -367,12 +373,6 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
                 .build();
-    }
-
-    private TransactionBody newDefaultSubmitMessageTxn(final long topicEntityNum) {
-        return newSubmitMessageTxn(
-                topicEntityNum,
-                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
     }
 
     private TransactionBody newDefaultSubmitMessageTxn() {

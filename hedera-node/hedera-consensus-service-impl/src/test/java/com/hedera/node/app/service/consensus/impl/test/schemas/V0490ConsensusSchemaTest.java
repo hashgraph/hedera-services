@@ -32,7 +32,7 @@ public class V0490ConsensusSchemaTest {
     private V0490ConsensusSchema subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new V0490ConsensusSchema();
     }
 

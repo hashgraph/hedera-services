@@ -57,14 +57,14 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
      */
     @Override
     @Nullable
-    public Topic getTopic(@NonNull TopicID id) {
+    public Topic getTopic(@NonNull final TopicID id) {
         requireNonNull(id);
         return topicState.get(id);
     }
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state
+     * @return the number of topics in the state.
      */
     public long sizeOfState() {
         return topicState.size();

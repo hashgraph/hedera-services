@@ -40,7 +40,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
     private ReadableTopicStore subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new ReadableTopicStoreImpl(readableStates);
     }
 

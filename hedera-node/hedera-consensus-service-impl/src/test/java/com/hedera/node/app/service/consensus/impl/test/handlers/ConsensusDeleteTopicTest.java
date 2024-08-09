@@ -76,7 +76,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new ConsensusDeleteTopicHandler();
 
         writableTopicState = writableTopicStateWithOneKey();

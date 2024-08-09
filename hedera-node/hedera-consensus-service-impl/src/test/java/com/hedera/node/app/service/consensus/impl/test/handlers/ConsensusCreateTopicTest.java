@@ -91,8 +91,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private EntityNumGenerator entityNumGenerator;
 
-    private WritableTopicStore writableTopicStore;
-    private Configuration configuration;
+    private WritableTopicStore topicStore;
+    private Configuration config;
     private ConsensusCreateTopicHandler subject;
 
     private TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
@@ -116,14 +116,14 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     }
 
     @BeforeEach
-    void before() {
+    void setUp() {
         subject = new ConsensusCreateTopicHandler();
-        configuration = HederaTestConfigBuilder.create()
+        config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 10L)
                 .getOrCreateConfig();
-        writableTopicStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
-        given(handleContext.configuration()).willReturn(configuration);
-        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
+        topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
+        given(handleContext.configuration()).willReturn(config);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
@@ -264,8 +264,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic = writableTopicStore.getTopic(
-                TopicID.newBuilder().topicNum(1_234L).build());
+        final var createdTopic =
+                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -278,8 +278,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertNotNull(writableTopicStore.getTopic(
-                TopicID.newBuilder().topicNum(1_234L).build()));
+        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
     }
 
     @Test
@@ -301,8 +300,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic = writableTopicStore.getTopic(
-                TopicID.newBuilder().topicNum(1_234L).build());
+        final var createdTopic =
+                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -315,8 +314,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertNotNull(writableTopicStore.getTopic(
-                TopicID.newBuilder().topicNum(1_234L).build()));
+        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
     }
 
     @Test
@@ -368,7 +366,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .validateMemo(txnBody.consensusCreateTopicOrThrow().memo());
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(0, writableTopicStore.sizeOfState());
+        assertEquals(0, topicStore.sizeOfState());
     }
 
     @Test
@@ -385,7 +383,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .when(validator)
                 .validateKey(adminKey);
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(0, writableTopicStore.sizeOfState());
+        assertEquals(0, topicStore.sizeOfState());
     }
 
     @Test
@@ -398,7 +396,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
+        final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         assertEquals(1, topicStore.sizeOfState());
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
@@ -426,7 +424,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
+        final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         assertEquals(1, topicStore.sizeOfState());
 
         given(handleContext.attributeValidator()).willReturn(validator);
