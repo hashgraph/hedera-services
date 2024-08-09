@@ -22,7 +22,6 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.NewStateType;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
@@ -111,8 +110,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final SchemaApplications schemaApplications;
 
-    private final SchemaStateChangeListenerImpl schemaStateChangeListener;
-
     /**
      * Create a new instance with the default {@link SchemaApplications}.
      *
@@ -130,7 +127,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.schemaApplications = requireNonNull(schemaApplications);
-        this.schemaStateChangeListener = new SchemaStateChangeListenerImpl();
     }
 
     /**
@@ -266,12 +262,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 migrationStateChanges.trackCommit();
             }
             // And finally we can remove any states we need to remove
-            schema.statesToRemove().forEach(stateKey -> {
-                stateRoot.removeServiceState(serviceName, stateKey);
-
-                final var stateName = serviceName + "." + stateKey;
-                schemaStateChangeListener.schemaRemoveStateChange(stateName);
-            });
+            schema.statesToRemove().forEach(stateKey -> stateRoot.removeServiceState(serviceName, stateKey));
         }
     }
 
@@ -287,7 +278,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
                     logger.info("  Ensuring {} has state {}", serviceName, stateKey);
-                    final var stateName = serviceName + "." + stateKey;
                     final var md = new StateMetadata<>(serviceName, schema, def);
                     if (def.singleton()) {
                         stateRoot.putServiceStateIfAbsent(
@@ -299,7 +289,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().valueCodec(),
                                         null));
 
-                        schemaStateChangeListener.schemaAddStateChange(stateName, NewStateType.SINGLETON);
                     } else if (def.queue()) {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
@@ -310,7 +299,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec()));
 
-                        schemaStateChangeListener.schemaAddStateChange(stateName, NewStateType.QUEUE);
                     } else if (!def.onDisk()) {
                         stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
@@ -342,7 +330,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     return new VirtualMap<>(label, dsBuilder);
                                 },
                                 (VirtualMap<?, ?> virtualMap) -> virtualMap.registerMetrics(metrics));
-                        schemaStateChangeListener.schemaAddStateChange(stateName, NewStateType.VIRTUAL_MAP);
                     }
                 });
 

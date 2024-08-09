@@ -120,6 +120,10 @@ message TransactionResult {
      *       with this transaction</li>
      *   <li>Any transfers caused by the creation of threshold records</li>
      * </ul>
+     * <p>
+     * This transfer list is exposed in the Mirror Node API (MAPI) and in use
+     * by clients of the MAPI. Additionally, there are some transfers that
+     * are mingled with transactions and only split out here.
      */
     proto.TransferList transfer_list = 7;
 
@@ -159,7 +163,7 @@ message TransactionResult {
      * A congestion pricing multiplier.
      * <p>
      * This SHALL be the multiplier that is applied to the transaction
-     *fees charged for this transaction.
+     * fees charged for this transaction.
      */
     uint64 congestion_pricing_multiplier = 11;
 }

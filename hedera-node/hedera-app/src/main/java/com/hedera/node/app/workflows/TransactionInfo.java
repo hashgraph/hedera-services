@@ -54,14 +54,16 @@ public record TransactionInfo(
         @Nullable AccountID payerID,
         @NonNull SignatureMap signatureMap,
         @NonNull Bytes signedBytes,
-        @NonNull HederaFunctionality functionality) {
+        @NonNull HederaFunctionality functionality,
+        @Nullable Bytes serializedTransaction) {
 
     public TransactionInfo(
             @NonNull Transaction transaction,
             @NonNull TransactionBody txBody,
             @NonNull SignatureMap signatureMap,
             @NonNull Bytes signedBytes,
-            @NonNull HederaFunctionality functionality) {
+            @NonNull HederaFunctionality functionality,
+            @Nullable Bytes serializedTransaction) {
         this(
                 transaction,
                 txBody,
@@ -69,7 +71,8 @@ public record TransactionInfo(
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
                 signatureMap,
                 signedBytes,
-                functionality);
+                functionality,
+                serializedTransaction);
     }
 
     public static TransactionInfo from(
@@ -87,6 +90,6 @@ public record TransactionInfo(
             }
         }
         return new TransactionInfo(
-                transaction, txBody, transactionId, payerId, signatureMap, signedBytes, functionality);
+                transaction, txBody, transactionId, payerId, signatureMap, signedBytes, functionality, null);
     }
 }

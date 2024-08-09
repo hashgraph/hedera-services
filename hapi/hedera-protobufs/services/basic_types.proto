@@ -70,7 +70,7 @@ message RealmID {
  * A specific hash algorithm.
  *
  * We did not reuse Record Stream `HashAlgorithm` here because in all cases,
- * currently, this will be `SHA_384` and if that is the default value then
+ * currently, this will be `SHA2_384` and if that is the default value then
  * we can save space by not serializing it, whereas `HASH_ALGORITHM_UNKNOWN`
  * is the default for Record Stream `HashAlgorithm`.
  *

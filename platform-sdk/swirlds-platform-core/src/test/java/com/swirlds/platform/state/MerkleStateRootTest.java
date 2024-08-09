@@ -905,6 +905,10 @@ class MerkleStateRootTest extends MerkleTestBase {
         void setUp() {
             given(kvListener.stateTypes()).willReturn(EnumSet.of(MAP));
             given(nonKvListener.stateTypes()).willReturn(EnumSet.of(QUEUE, SINGLETON));
+            given(kvListener.stateIdFor(FIRST_SERVICE, FRUIT_STATE_KEY)).willReturn(FRUIT_STATE_ID);
+            given(kvListener.stateIdFor(FIRST_SERVICE, ANIMAL_STATE_KEY)).willReturn(ANIMAL_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, COUNTRY_STATE_KEY)).willReturn(COUNTRY_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, STEAM_STATE_KEY)).willReturn(STEAM_STATE_ID);
 
             setupAnimalMerkleMap();
             setupFruitVirtualMap();
@@ -943,13 +947,13 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             ((CommittableWritableStates) states).commit();
 
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), E_KEY, EGGPLANT);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), C_KEY);
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), A_KEY, AARDVARK);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), C_KEY);
-            verify(nonKvListener).singletonUpdateChange(computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY), ESTONIA);
-            verify(nonKvListener).queuePushChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY), BIOLOGY);
-            verify(nonKvListener).queuePopChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY));
+            verify(kvListener).mapUpdateChange(FRUIT_STATE_ID, E_KEY, EGGPLANT);
+            verify(kvListener).mapDeleteChange(FRUIT_STATE_ID, C_KEY);
+            verify(kvListener).mapUpdateChange(ANIMAL_STATE_ID, A_KEY, AARDVARK);
+            verify(kvListener).mapDeleteChange(ANIMAL_STATE_ID, C_KEY);
+            verify(nonKvListener).singletonUpdateChange(COUNTRY_STATE_ID, ESTONIA);
+            verify(nonKvListener).queuePushChange(STEAM_STATE_ID, BIOLOGY);
+            verify(nonKvListener).queuePopChange(STEAM_STATE_ID);
 
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(nonKvListener);

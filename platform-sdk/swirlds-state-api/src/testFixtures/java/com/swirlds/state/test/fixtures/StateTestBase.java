@@ -27,6 +27,10 @@ public class StateTestBase extends TestBase {
     protected static final String UNKNOWN_STATE_KEY = "BOGUS_STATE_KEY";
     protected static final String UNKNOWN_KEY = "BOGUS_KEY";
 
+    protected static final int FRUIT_STATE_ID = 123;
+    protected static final int ANIMAL_STATE_ID = 234;
+    protected static final int COUNTRY_STATE_ID = 345;
+    protected static final int STEAM_STATE_ID = 456;
     protected static final String FRUIT_STATE_KEY = "FRUIT";
     protected static final String ANIMAL_STATE_KEY = "ANIMAL";
     protected static final String SPACE_STATE_KEY = "SPACE";

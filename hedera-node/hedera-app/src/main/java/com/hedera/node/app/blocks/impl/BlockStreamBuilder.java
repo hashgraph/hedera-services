@@ -29,11 +29,9 @@ import com.hedera.hapi.block.stream.output.CreateContractOutput;
 import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
-import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.SubmitMessageOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
@@ -56,8 +54,10 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -82,6 +82,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
@@ -135,9 +136,14 @@ public class BlockStreamBuilder
                 ContractOperationStreamBuilder,
                 TokenAccountWipeStreamBuilder,
                 CryptoUpdateStreamBuilder,
-                NodeCreateStreamBuilder {
+                NodeCreateStreamBuilder,
+                TokenAirdropStreamBuilder {
     // base transaction data
     private Transaction transaction;
+
+    @Nullable
+    private Bytes serializedTransaction;
+
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -147,6 +153,7 @@ public class BlockStreamBuilder
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
+    private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
@@ -214,13 +221,17 @@ public class BlockStreamBuilder
 
     /**
      * Builds the list of block items.
+     *
      * @return the list of block items
      */
     public List<BlockItem> build() {
         final var blockItems = new ArrayList<BlockItem>();
 
-        final var transactionBlockItem =
-                BlockItem.newBuilder().transaction(transaction()).build();
+        final var transactionBlockItem = BlockItem.newBuilder()
+                .eventTransaction(EventTransaction.newBuilder()
+                        .applicationTransaction(getSerializedTransaction())
+                        .build())
+                .build();
         blockItems.add(transactionBlockItem);
 
         final var resultBlockItem = getTransactionResultBlockItem();
@@ -319,7 +330,9 @@ public class BlockStreamBuilder
         return transactionSidecarRecords;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public ReversingBehavior reversingBehavior() {
@@ -338,7 +351,10 @@ public class BlockStreamBuilder
 
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
-    /**{@inheritDoc}*/
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
@@ -349,7 +365,10 @@ public class BlockStreamBuilder
                 .build());
         return this;
     }
-    /**{@inheritDoc}*/
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder consensusTimestamp(@NonNull final Instant now) {
@@ -361,7 +380,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder transaction(@NonNull final Transaction transaction) {
@@ -369,7 +390,15 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    @Override
+    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
+        this.serializedTransaction = serializedTransaction;
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
@@ -377,14 +406,18 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public TransactionID transactionID() {
         return transactionID;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
@@ -392,7 +425,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public BlockStreamBuilder syncBodyIdFromRecordId() {
@@ -404,7 +439,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder memo(@NonNull final String memo) {
@@ -415,20 +452,26 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public Transaction transaction() {
         return transaction;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long transactionFee() {
         return transactionFee;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public BlockStreamBuilder transactionFee(final long transactionFee) {
@@ -450,7 +493,9 @@ public class BlockStreamBuilder
         return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
@@ -461,7 +506,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
@@ -472,14 +519,18 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public TransferList transferList() {
         return transferList;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
@@ -488,7 +539,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
@@ -498,13 +551,17 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<TokenTransferList> tokenTransferLists() {
         return tokenTransferLists;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
@@ -512,7 +569,16 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    @Override
+    public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
@@ -521,7 +587,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
@@ -533,7 +601,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     public BlockStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
@@ -541,7 +611,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
@@ -552,7 +624,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
@@ -563,7 +637,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder entropyNumber(final int num) {
@@ -572,7 +648,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
@@ -582,7 +660,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
@@ -599,7 +679,9 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
@@ -608,26 +690,34 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public ResponseCodeEnum status() {
         return status;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean hasContractResult() {
         return this.contractFunctionResult != null;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getGasUsedForContractTxn() {
         return this.contractFunctionResult.gasUsed();
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
@@ -635,7 +725,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
@@ -643,7 +735,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
@@ -651,7 +745,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
@@ -661,7 +757,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
@@ -671,7 +769,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
@@ -679,7 +779,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
@@ -687,7 +789,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
@@ -695,17 +799,19 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
         // TOD0: Need to confirm what the value should be
-        transactionOutputBuilder.submitMessage(
-                new SubmitMessageOutput(RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER));
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
@@ -714,13 +820,17 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TokenID tokenID() {
         return tokenID;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder nodeID(long nodeId) {
@@ -728,20 +838,26 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getNewTotalSupply() {
         return newTotalSupply;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
@@ -749,7 +865,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
@@ -757,7 +875,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
@@ -766,7 +886,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public List<Long> serialNumbers() {
@@ -775,7 +897,10 @@ public class BlockStreamBuilder
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
-    /**{@inheritDoc}*/
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractStateChanges(
@@ -785,7 +910,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractActions(
@@ -795,7 +922,9 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractBytecode(
@@ -807,7 +936,9 @@ public class BlockStreamBuilder
 
     // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
@@ -816,33 +947,44 @@ public class BlockStreamBuilder
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNumberOfDeletedAccounts() {
         return deletedAccountBeneficiaries.size();
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
         return deletedAccountBeneficiaries.get(deletedAccountID);
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
     }
-    /**{@inheritDoc}*/
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public TransactionBody transactionBody() {
         return inProgressBody();
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     private TransactionBody inProgressBody() {
         try {
             final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
@@ -853,21 +995,27 @@ public class BlockStreamBuilder
         }
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public HandleContext.TransactionCategory category() {
         return category;
     }
 
-    /**{@inheritDoc}*/
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void nullOutSideEffectFields() {
         serialNumbers.clear();
@@ -887,7 +1035,6 @@ public class BlockStreamBuilder
         transactionResultBuilder.status(ResponseCodeEnum.OK);
         transactionResultBuilder.parentConsensusTimestamp(Timestamp.DEFAULT);
 
-        transactionOutputBuilder.submitMessage((SubmitMessageOutput) null);
         transactionOutputBuilder.cryptoTransfer((CryptoTransferOutput) null);
         transactionOutputBuilder.utilPrng((UtilPrngOutput) null);
         transactionOutputBuilder.contractCall((CallContractOutput) null);
@@ -895,5 +1042,9 @@ public class BlockStreamBuilder
         transactionOutputBuilder.contractCreate((CreateContractOutput) null);
         transactionOutputBuilder.createSchedule((CreateScheduleOutput) null);
         transactionOutputBuilder.signSchedule((SignScheduleOutput) null);
+    }
+
+    private Bytes getSerializedTransaction() {
+        return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);
     }
 }

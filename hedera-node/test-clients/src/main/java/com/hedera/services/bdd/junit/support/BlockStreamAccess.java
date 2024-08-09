@@ -29,6 +29,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -131,10 +132,11 @@ public enum BlockStreamAccess {
             @NonNull final Function<MapChangeKey, K> deleteFn,
             @NonNull final Function<MapUpdateChange, Map.Entry<K, V>> updateFn) {
         final Map<K, V> upToDate = new HashMap<>();
+        final var stateId = StateUtils.stateIdentifierOf(stateName);
         blocks.forEach(block -> block.items().stream()
                 .filter(BlockItem::hasStateChanges)
                 .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
-                .filter(change -> change.stateName().equals(stateName))
+                .filter(change -> change.stateId() == stateId)
                 .forEach(change -> {
                     if (change.hasMapDelete()) {
                         final var removedKey =

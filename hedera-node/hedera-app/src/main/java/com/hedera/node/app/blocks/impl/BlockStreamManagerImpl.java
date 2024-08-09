@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
-import static com.hedera.node.app.blocks.RoundStateChangeListener.singletonUpdateChangeValueFor;
-import static com.hedera.node.app.blocks.impl.HashUtils.appendHash;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
+import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -27,8 +28,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
-import com.hedera.hapi.block.stream.BlockHeader;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -40,7 +41,6 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.RoundStateChangeListener;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.config.ConfigProvider;
@@ -141,7 +141,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
         outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
         pendingItems.add(BlockItem.newBuilder()
-                .header(BlockHeader.newBuilder()
+                .blockHeader(BlockHeader.newBuilder()
                         .number(blockNumber)
                         .previousBlockHash(previousBlockHash)
                         .hashAlgorithm(SHA2_384)
@@ -176,7 +176,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
                         .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
                         .stateChanges(StateChange.newBuilder()
-                                .stateName(BlockStreamService.NAME + "." + BLOCK_STREAM_INFO_KEY)
+                                .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
                                 .singletonUpdate(
                                         new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
                                 .build())
@@ -295,16 +295,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             for (int i = 0, n = scheduledWork.size(); i < n; i++) {
                 final var item = scheduledWork.get(i);
                 final var serializedItem = serializedItems.get(i);
-                final var kind = item.items().kind();
+                final var kind = item.item().kind();
                 switch (kind) {
-                    case START_EVENT, TRANSACTION, SYSTEM_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
+                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
                     case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
                             serializedItem);
                     default -> {
                         // Other items are not part of the input/output trees
                     }
                 }
-                if (kind == BlockItem.ItemsOneOfType.TRANSACTION_RESULT) {
+                if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
                     runningHashManager.nextResult(serializedItem);
                 }
                 writer.writeItem(serializedItem);
@@ -377,7 +377,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             nMinus1HashFuture = hashFuture;
             hashFuture = hashFuture.thenCombineAsync(
                     supplyAsync(() -> noThrowSha384HashOf(bytes.toByteArray()), executor),
-                    HashUtils::combine,
+                    BlockImplUtils::combine,
                     executor);
         }
     }

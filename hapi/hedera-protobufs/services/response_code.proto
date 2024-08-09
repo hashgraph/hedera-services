@@ -1536,8 +1536,8 @@ enum ResponseCodeEnum {
     TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY = 360;
 
     /**
-     * The transaction attempted to the use an empty List of `PendingAirdropId`.
-     */
+    * The transaction attempted to the use an empty List of `PendingAirdropId`.
+    */
     EMPTY_PENDING_AIRDROP_ID_LIST = 361;
 
     /**
