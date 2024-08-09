@@ -167,6 +167,12 @@ jobs:
           HOME: /x
         with:
           version: v25.0.5
+          daemon-config: |
+            {
+              "registry-mirrors": [
+                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+              ]
+            }
 
       - name: Configure Default Docker Context
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -190,6 +196,7 @@ jobs:
         with:
           version: v0.15.1
           driver-opts: network=host
+          buildkitd-config: /etc/docker/buildkitd.toml
 
       - name: Setup Local Docker Registry
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -378,6 +385,12 @@ jobs:
           HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
         with:
           version: v25.0.5
+          daemon-config: |
+            {
+              "registry-mirrors": [
+                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+              ]
+            }
 
       - name: Configure Default Docker Context
         env:
@@ -400,6 +413,7 @@ jobs:
         with:
           version: v0.15.1
           driver-opts: network=host
+          buildkitd-config: /etc/docker/buildkitd.toml
 
       - name: Setup Local Docker Registry
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
