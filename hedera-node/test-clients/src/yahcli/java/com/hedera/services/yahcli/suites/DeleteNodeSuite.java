@@ -16,19 +16,16 @@
 
 package com.hedera.services.yahcli.suites;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,76 +34,43 @@ import org.junit.jupiter.api.DynamicTest;
 public class DeleteNodeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DeleteNodeSuite.class);
 
-    public static String NOVELTY = "novel";
-
     private final Map<String, String> specConfig;
-    private final String nodeId;
-    private final int numBusyRetries;
+    private final long nodeId;
 
+    @Nullable
+    private final String adminKeyLoc;
 
     public DeleteNodeSuite(
-            final Map<String, String> specConfig,
-            final String nodeId,
-            final String novelTarget,
-            final int numBusyRetries) {
+            @NonNull final Map<String, String> specConfig, final long nodeId, @Nullable final String adminKeyLoc) {
         this.specConfig = specConfig;
         this.nodeId = nodeId;
-        this.numBusyRetries = numBusyRetries;
+        this.adminKeyLoc = adminKeyLoc;
     }
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(doCreate());
+        return List.of(doDelete());
     }
 
-    final Stream<DynamicTest> doCreate() {
-        final var newKey = "newKey";
-        final var success = new AtomicBoolean(false);
-        return HapiSpec.customHapiSpec("DoDelete")
+    final Stream<DynamicTest> doDelete() {
+        final var adminKey = "adminKey";
+        return HapiSpec.customHapiSpec("DeleteNode")
                 .withProperties(specConfig)
-                .given(UtilVerbs.newKeyNamed(newKey)
-                        .shape(SigControl.ED25519_ON)
-                        .exportingTo(novelTarget, novelPass)
-                        .includingEd25519Mnemonic())
-                .when(UtilVerbs.withOpContext((spec, opLog) -> {
-                    int attemptNo = 1;
-                    do {
-                        System.out.print("Deletion attempt #" + attemptNo + "...");
-                        final var deletion = TxnVerbs.nodeDelete(nodeId)
-                                .noLogging();
-                        CustomSpecAssert.allRunFor(spec, deletion);
-                        if (deletion.getActualPrecheck() == OK) {
-                            System.out.println("SUCCESS");
-                            success.set(true);
-                            break;
-                        } else {
-                            final var retriesLeft = numBusyRetries - attemptNo + 1;
-                            System.out.println("BUSY"
-                                    + (retriesLeft > 0
-                                            ? ", retrying " + retriesLeft + " more times"
-                                            : " again, giving up"));
-                        }
-                    } while (attemptNo++ <= numBusyRetries);
-                }))
-                .then(UtilVerbs.withOpContext((spec, opLog) -> {
-                    if (success.get()) {
-                        final var locs = new String[] {
-                            novelTarget, novelTarget.replace(".pem", ".pass"), novelTarget.replace(".pem", ".words"),
-                        };
-//                        final var accountId = "account" + createdNo.get();
-//                        for (final var loc : locs) {
-//                            try (final var fin = Files.newInputStream(Paths.get(loc))) {
-//                                fin.transferTo(Files.newOutputStream(Paths.get(loc.replace(NOVELTY, accountId))));
-//                            }
-//                            new File(loc).delete();
-//                        }
-                    }
-                }));
+                .given(adminKeyLoc == null ? noOp() : keyFromFile(adminKey, adminKeyLoc))
+                .when()
+                .then(nodeDelete("" + nodeId).signedBy(availableSigners()));
+    }
+
+    private String[] availableSigners() {
+        if (adminKeyLoc == null) {
+            return new String[] {DEFAULT_PAYER};
+        } else {
+            return new String[] {DEFAULT_PAYER, "adminKey"};
+        }
     }
 
     @Override
     protected Logger getResultsLogger() {
         return log;
     }
-
 }

@@ -16,15 +16,11 @@
 
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.node.HapiNodeUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -36,40 +32,11 @@ public class UpdateNodeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateNodeSuite.class);
 
     private final Map<String, String> specConfig;
-    private final String nodeId;
-    private final String accountId;
-    private final String description;
-    private final List<ServiceEndpoint> gossipEndPoints;
-    private final List<ServiceEndpoint> serviceEndpoints;
-    private final byte[] gossipCaCertificate;
-    private final byte[] serviceGrpcCertificateHash;
-    private final List<Key> adminKeys;
-    private final String novelTarget;
-    private final int numBusyRetrie;
+    private final long nodeId;
 
-    public UpdateNodeSuite(
-            final Map<String, String> specConfig,
-            final String nodeId,
-            final String accountId,
-            final String description,
-            final List<ServiceEndpoint> gossipEndPoints,
-            final List<ServiceEndpoint> serviceEndpoints,
-            final byte[] gossipCaCertificate,
-            final byte[] serviceGrpcCertificateHash,
-            final List<Key> adminKeys,
-            final String novelTarget,
-            final int numBusyRetries) {
-        this.specConfig = specConfig;
+    public UpdateNodeSuite(@NonNull final Map<String, String> specConfig, final long nodeId) {
+        this.specConfig = requireNonNull(specConfig);
         this.nodeId = nodeId;
-        this.accountId = accountId;
-        this.description = description;
-        this.gossipEndPoints = gossipEndPoints;
-        this.serviceEndpoints = serviceEndpoints;
-        this.gossipCaCertificate = gossipCaCertificate;
-        this.serviceGrpcCertificateHash = serviceGrpcCertificateHash;
-        this.adminKeys = adminKeys;
-        this.novelTarget = novelTarget;
-        this.numBusyRetrie = numBusyRetries;
     }
 
     @Override
@@ -78,20 +45,11 @@ public class UpdateNodeSuite extends HapiSuite {
     }
 
     final Stream<DynamicTest> doUpdate() {
-        Key newList = Key.newBuilder()
-                .setKeyList(KeyList.newBuilder().addAllKeys(keys))
-                .build();
-        HapiTxnOp<?> update = new HapiNodeUpdate(HapiSuite.DEFAULT_SHARD_REALM + targetAccount)
-                .signedBy(HapiSuite.DEFAULT_PAYER)
-                .protoKey(newList)
-                .blankMemo()
-                .entityMemo(memo);
-
-        return HapiSpec.customHapiSpec("DoUpdate")
+        return HapiSpec.customHapiSpec("UpdateNode")
                 .withProperties(specConfig)
                 .given()
                 .when()
-                .then(update);
+                .then();
     }
 
     @Override

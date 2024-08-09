@@ -16,13 +16,18 @@
 
 package com.hedera.services.yahcli.suites;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.node.HapiNodeUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -34,62 +39,81 @@ public class CreateNodeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateNodeSuite.class);
 
     private final Map<String, String> specConfig;
-    private final String nodeId;
-    private final String accountId;
+    private final AccountID accountId;
     private final String description;
-    private final List<ServiceEndpoint> gossipEndPoints;
+    private final String adminKeyLoc;
+
+    @Nullable
+    private final String feeAccountKeyLoc;
+
+    private final List<ServiceEndpoint> gossipEndpoints;
     private final List<ServiceEndpoint> serviceEndpoints;
     private final byte[] gossipCaCertificate;
-    private final byte[] serviceGrpcCertificateHash;
-    private final List<Key> adminKeys;
-    private final String novelTarget;
-    private final int numBusyRetrie;
+    private final byte[] grpcCertificateHash;
+
+    @Nullable
+    private Long createdId;
 
     public CreateNodeSuite(
-            final Map<String, String> specConfig,
-            final String nodeId,
-            final String accountId,
-            final String description,
-            final List<ServiceEndpoint> gossipEndPoints,
-            final List<ServiceEndpoint> serviceEndpoints,
-            final byte[] gossipCaCertificate,
-            final byte[] serviceGrpcCertificateHash,
-            final List<Key> adminKeys,
-            final String novelTarget,
-            final int numBusyRetries) {
-        this.specConfig = specConfig;
-        this.nodeId = nodeId;
-        this.accountId = accountId;
-        this.description = description;
-        this.gossipEndPoints = gossipEndPoints;
-        this.serviceEndpoints = serviceEndpoints;
-        this.gossipCaCertificate = gossipCaCertificate;
-        this.serviceGrpcCertificateHash = serviceGrpcCertificateHash;
-        this.adminKeys = adminKeys;
-        this.novelTarget = novelTarget;
-        this.numBusyRetrie = numBusyRetries;
+            @NonNull final Map<String, String> specConfig,
+            @NonNull final AccountID accountId,
+            @NonNull final String description,
+            @NonNull final List<ServiceEndpoint> gossipEndpoints,
+            @NonNull final List<ServiceEndpoint> serviceEndpoints,
+            @NonNull final byte[] gossipCaCertificate,
+            @NonNull final byte[] grpcCertificateHash,
+            @NonNull final String adminKeyLoc,
+            @Nullable final String feeAccountKeyLoc) {
+        this.specConfig = requireNonNull(specConfig);
+        this.accountId = requireNonNull(accountId);
+        this.description = requireNonNull(description);
+        this.gossipEndpoints = requireNonNull(gossipEndpoints);
+        this.serviceEndpoints = requireNonNull(serviceEndpoints);
+        this.gossipCaCertificate = requireNonNull(gossipCaCertificate);
+        this.grpcCertificateHash = requireNonNull(grpcCertificateHash);
+        this.adminKeyLoc = requireNonNull(adminKeyLoc);
+        this.feeAccountKeyLoc = feeAccountKeyLoc;
+    }
+
+    public long createdIdOrThrow() {
+        return requireNonNull(createdId);
     }
 
     @Override
     public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(doUpdate());
+        return List.of(createNode());
     }
 
-    final Stream<DynamicTest> doUpdate() {
-        Key newList = Key.newBuilder()
-                .setKeyList(KeyList.newBuilder().addAllKeys(keys))
-                .build();
-        HapiTxnOp<?> update = new HapiNodeUpdate(HapiSuite.DEFAULT_SHARD_REALM + targetAccount)
-                .signedBy(HapiSuite.DEFAULT_PAYER)
-                .protoKey(newList)
-                .blankMemo()
-                .entityMemo(memo);
-
-        return HapiSpec.customHapiSpec("DoUpdate")
+    final Stream<DynamicTest> createNode() {
+        final var adminKey = "adminKey";
+        final var feeAccountKey = "feeAccountKey";
+        return HapiSpec.customHapiSpec("CreateNode")
                 .withProperties(specConfig)
-                .given()
+                .given(
+                        keyFromFile(adminKey, adminKeyLoc).yahcliLogged(),
+                        feeAccountKeyLoc == null
+                                ? noOp()
+                                : keyFromFile(feeAccountKey, feeAccountKeyLoc).yahcliLogged())
                 .when()
-                .then(update);
+                .then(nodeCreate("node")
+                        .signedBy(availableSigners())
+                        .accountId(accountId)
+                        .description(description)
+                        .gossipEndpoint(fromPbj(gossipEndpoints))
+                        .serviceEndpoint(fromPbj(serviceEndpoints))
+                        .gossipCaCertificate(gossipCaCertificate)
+                        .grpcCertificateHash(grpcCertificateHash)
+                        .adminKey(adminKey)
+                        .advertisingCreation()
+                        .exposingCreatedIdTo(createdId -> this.createdId = createdId));
+    }
+
+    private String[] availableSigners() {
+        if (feeAccountKeyLoc == null) {
+            return new String[] {DEFAULT_PAYER, "adminKey"};
+        } else {
+            return new String[] {DEFAULT_PAYER, "adminKey", "feeAccountKey"};
+        }
     }
 
     @Override
