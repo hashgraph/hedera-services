@@ -39,7 +39,6 @@ public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTra
                 recordBuilder.prngNumber(entropy.as());
             }
         }
-        recordBuilder.consensusTimestamp(stateChanges.consensusTimestamp());
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),

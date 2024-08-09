@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -73,17 +72,13 @@ class UtilPrngTranslatorTest {
         when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
         final Bytes bytes = Bytes.fromHex("badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada");
         when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_BYTES, bytes));
-        final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
-        when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
 
         // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
         // Assert
-        TransactionRecord expectedRecord = TransactionRecord.newBuilder()
-                .prngBytes(bytes)
-                .consensusTimestamp(timestamp)
-                .build();
+        TransactionRecord expectedRecord =
+                TransactionRecord.newBuilder().prngBytes(bytes).build();
 
         assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
@@ -100,17 +95,13 @@ class UtilPrngTranslatorTest {
         when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
         final int number = 42;
         when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER, number));
-        final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
-        when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
 
         // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
         // Assert
-        TransactionRecord expectedRecord = TransactionRecord.newBuilder()
-                .prngNumber(number)
-                .consensusTimestamp(timestamp)
-                .build();
+        TransactionRecord expectedRecord =
+                TransactionRecord.newBuilder().prngNumber(number).build();
 
         assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
@@ -124,15 +115,12 @@ class UtilPrngTranslatorTest {
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(false);
-        final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
-        when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
 
         // Act
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
         // Assert
-        TransactionRecord expectedRecord =
-                TransactionRecord.newBuilder().consensusTimestamp(timestamp).build();
+        TransactionRecord expectedRecord = TransactionRecord.DEFAULT;
 
         assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
