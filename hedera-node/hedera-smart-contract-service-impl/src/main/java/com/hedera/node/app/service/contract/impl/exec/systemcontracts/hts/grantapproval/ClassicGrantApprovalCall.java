@@ -31,7 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -60,7 +60,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         }
         final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var status = recordBuilder.status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != SUCCESS) {

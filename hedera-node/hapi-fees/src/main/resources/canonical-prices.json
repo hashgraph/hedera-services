@@ -16,7 +16,7 @@
 	"TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES": 0.002
   },
   "TokenAirdrop": {
-    "DEFAULT": 0.001
+    "DEFAULT": 0.1
   },
   "CryptoDelete": {
 	"DEFAULT": 0.005

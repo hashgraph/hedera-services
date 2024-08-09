@@ -52,9 +52,9 @@ import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -102,13 +102,13 @@ class EthereumTransactionHandlerTest {
     private TransactionComponent.Factory factory;
 
     @Mock
-    private EthereumTransactionRecordBuilder recordBuilder;
+    private EthereumTransactionStreamBuilder recordBuilder;
 
     @Mock
-    private ContractCallRecordBuilder callRecordBuilder;
+    private ContractCallStreamBuilder callRecordBuilder;
 
     @Mock
-    private ContractCreateRecordBuilder createRecordBuilder;
+    private ContractCreateStreamBuilder createRecordBuilder;
 
     @Mock
     private HandleContext.SavepointStack stack;
@@ -185,8 +185,8 @@ class EthereumTransactionHandlerTest {
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         setUpTransactionProcessing();
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
-        given(stack.getBaseBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCallStreamBuilder.class)).willReturn(callRecordBuilder);
         givenSenderAccount();
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
@@ -207,13 +207,25 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
+    void setsEthHashOnThrottledContext() {
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
+        given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
+                .willReturn(recordBuilder);
+
+        assertDoesNotThrow(() -> subject.handleThrottled(handleContext));
+    }
+
+    @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         setUpTransactionProcessing();
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
-        given(stack.getBaseBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCreateStreamBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);

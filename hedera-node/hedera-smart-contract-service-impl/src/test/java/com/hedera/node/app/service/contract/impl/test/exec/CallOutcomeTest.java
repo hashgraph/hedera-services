@@ -31,8 +31,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -46,10 +46,10 @@ class CallOutcomeTest {
     private RootProxyWorldUpdater updater;
 
     @Mock
-    private ContractCallRecordBuilder contractCallRecordBuilder;
+    private ContractCallStreamBuilder contractCallRecordBuilder;
 
     @Mock
-    private ContractCreateRecordBuilder contractCreateRecordBuilder;
+    private ContractCreateStreamBuilder contractCreateRecordBuilder;
 
     @Test
     void doesNotSetAbortCallResultIfNotRequested() {

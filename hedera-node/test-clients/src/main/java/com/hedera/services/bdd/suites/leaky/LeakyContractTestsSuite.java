@@ -1620,7 +1620,8 @@ public class LeakyContractTestsSuite {
                         .sending(depositAmount),
                 getAccountInfo(RELAYER)
                         .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged());
+                        .logged(),
+                uploadDefaultFeeSchedules(GENESIS));
     }
 
     @Order(38)
