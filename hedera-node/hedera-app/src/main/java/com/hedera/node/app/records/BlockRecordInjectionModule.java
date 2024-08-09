@@ -83,7 +83,7 @@ public abstract class BlockRecordInjectionModule {
         if (merkleState == null) {
             throw new IllegalStateException("Merkle state is null");
         }
-        return new BlockRecordManagerImpl(configProvider, merkleState, streamFileProducer, recordCache);
+        return new BlockRecordManagerImpl(configProvider, merkleState, streamFileProducer);
     }
 
     @Provides

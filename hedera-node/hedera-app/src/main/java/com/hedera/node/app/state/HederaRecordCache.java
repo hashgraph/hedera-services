@@ -17,13 +17,13 @@
 package com.hedera.node.app.state;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.config.data.HederaConfig;
 import com.hederahashgraph.api.proto.java.TransactionReceiptEntries;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -98,7 +98,7 @@ public interface HederaRecordCache extends RecordCache {
      * @param state The state to commit the transaction receipts to
      * @param consensusNow The current consensus time
      */
-    void commitRoundReceipts(@NonNull State state, @NonNull Timestamp consensusNow);
+    void commitRoundReceipts(@NonNull State state, @NonNull Instant consensusNow);
 
     /** The possible results of a duplicate check */
     enum DuplicateCheckResult {

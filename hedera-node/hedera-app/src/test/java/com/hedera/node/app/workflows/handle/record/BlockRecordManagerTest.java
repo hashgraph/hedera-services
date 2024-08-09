@@ -28,10 +28,7 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStream
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -49,8 +46,6 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
@@ -96,7 +91,6 @@ final class BlockRecordManagerTest extends AppTestBase {
 
     private BlockRecordFormat blockRecordFormat;
     private BlockRecordWriterFactory blockRecordWriterFactory;
-    private HederaRecordCache recordCache;
 
     @BeforeEach
     void setUpEach() throws Exception {
@@ -131,7 +125,6 @@ final class BlockRecordManagerTest extends AppTestBase {
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
                 app.configProvider(), app.networkInfo().selfNodeInfo(), SIGNER, fs);
-        recordCache = mock(RecordCacheImpl.class);
     }
 
     @AfterEach
@@ -185,7 +178,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, recordCache)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -242,7 +235,6 @@ final class BlockRecordManagerTest extends AppTestBase {
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
                 STARTING_BLOCK);
-        verify(recordCache, times(259)).commitRoundReceipts(any(), any());
     }
 
     @Test
@@ -274,7 +266,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, recordCache)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -427,8 +419,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), recordCache);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
@@ -438,8 +430,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsNotSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), recordCache);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));

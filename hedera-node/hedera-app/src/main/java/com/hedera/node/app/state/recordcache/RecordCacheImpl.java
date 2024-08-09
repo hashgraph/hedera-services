@@ -18,7 +18,6 @@ package com.hedera.node.app.state.recordcache;
 
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
-import static com.hedera.hapi.util.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema.TXN_RECEIPT_QUEUE;
 import static java.util.Collections.emptyList;
@@ -44,6 +43,7 @@ import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
@@ -220,17 +220,15 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     @Override
-    public void commitRoundReceipts(@NonNull final State state, @NonNull final Timestamp consensusNow) {
+    public void commitRoundReceipts(@NonNull final State state, @NonNull final Instant consensusNow) {
         requireNonNull(state);
         requireNonNull(consensusNow);
-        // Looks at all the receipts in the queue and if the youngest entry's transaction valid start is before 120secs
-        // of current block time, purges those from the queue.
         final var states = state.getWritableStates(RecordCacheService.NAME);
         final var queue = states.<TransactionReceiptEntries>getQueue(TXN_RECEIPT_QUEUE);
-        removeExpiredReceipts(queue, consensusNow);
-
-        queue.add(new TransactionReceiptEntries(new ArrayList<>(transactionReceipts)));
-
+        purgeExpiredReceiptEntries(queue, consensusNow);
+        if (!transactionReceipts.isEmpty()) {
+            queue.add(new TransactionReceiptEntries(new ArrayList<>(transactionReceipts)));
+        }
         if (states instanceof CommittableWritableStates committable) {
             committable.commit();
         }
@@ -294,21 +292,23 @@ public class RecordCacheImpl implements HederaRecordCache {
     /**
      * Removes all expired {@link TransactionID}s from the cache.
      */
-    private void removeExpiredReceipts(
+    private void purgeExpiredReceiptEntries(
             @NonNull final WritableQueueState<TransactionReceiptEntries> queue,
-            @NonNull final Timestamp consensusTimestamp) {
+            @NonNull final Instant consensusTimestamp) {
         // Compute the earliest valid start timestamp that is still within the max transaction duration window.
         final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        final var earliestValidStart = minus(consensusTimestamp, config.transactionMaxValidDuration());
+        final var earliestValidStart = new Timestamp(
+                consensusTimestamp.getEpochSecond() - config.transactionMaxValidDuration(),
+                consensusTimestamp.getNano());
         // Loop in order and expunge the entry if the youngest TransactionReceiptEntry is expired
         do {
-            final var receiptsList = queue.peek();
-            if (receiptsList != null) {
-                if (receiptsList.entries().isEmpty()) {
+            final var roundReceipts = queue.peek();
+            if (roundReceipts != null) {
+                if (roundReceipts.entries().isEmpty()) {
                     queue.poll();
                     continue;
                 }
-                final var latestReceipt = receiptsList.entries().stream()
+                final var latestReceipt = roundReceipts.entries().stream()
                         .filter(TransactionReceiptEntry::hasTransactionId)
                         .max(TRANSACTION_VALID_START_COMPARATOR)
                         .get();
@@ -318,7 +318,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                     // Remove from the histories.  Note that all transactions are added to this map
                     // keyed to the "user transaction" ID, so removing the entry here removes both
                     // "parent" and "child" transaction records associated with that ID.
-                    for (final var e : receiptsList.entries()) {
+                    for (final var e : roundReceipts.entries()) {
                         final var txId = e.transactionIdOrThrow();
                         histories.remove(txId);
                         // Remove from the payer to transaction index

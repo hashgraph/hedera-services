@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -87,8 +86,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private boolean eventRecoveryCompleted = false;
 
-    private final HederaRecordCache recordCache;
-
     /**
      * Construct BlockRecordManager
      *
@@ -100,12 +97,10 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     public BlockRecordManagerImpl(
             @NonNull final ConfigProvider configProvider,
             @NonNull final State state,
-            @NonNull final BlockRecordStreamProducer streamFileProducer,
-            @NonNull final HederaRecordCache recordCache) {
+            @NonNull final BlockRecordStreamProducer streamFileProducer) {
         requireNonNull(state);
         requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
-        this.recordCache = requireNonNull(recordCache);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
         // write any new records to stream
@@ -280,7 +275,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 existingRunningHashes.nMinus3RunningHash()));
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-        recordCache.commitRoundReceipts(state, blockRecordInfoState.get().consTimeOfLastHandledTxn());
     }
 
     // ========================================================================================================
