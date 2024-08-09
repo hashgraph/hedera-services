@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -52,10 +53,12 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
@@ -421,6 +424,32 @@ public class TokenAirdropTest {
                             validateChargedUsd("second", 0.001, 10),
                             // assert the account balance
                             getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+        }
+
+        @HapiTest
+        @DisplayName("that is alias with 0 free maxAutoAssociations")
+        final Stream<DynamicTest> autoCreateWithNftFallBackFeeFails() {
+            final var validAlias = "validAlias";
+            return defaultHapiSpec("should go in pending state")
+                    .given(newKeyNamed(validAlias))
+                    .when(
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAlias))
+                                    .payingWith(OWNER)
+                                    .signedBy(OWNER, validAlias),
+                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)),
+                            cryptoUpdateAliased(validAlias)
+                                    .maxAutomaticAssociations(1)
+                                    .signedBy(validAlias, DEFAULT_PAYER))
+                    .then(
+                            tokenAirdrop(moveFungibleTokensTo(validAlias))
+                                    .payingWith(OWNER)
+                                    .via("aliasAirdrop"),
+                            getTxnRecord("aliasAirdrop")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(
+                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAlias)))),
+                            getAccountBalance(validAlias).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
     }
 
@@ -1506,7 +1535,8 @@ public class TokenAirdropTest {
                                 ByteString.copyFromUtf8("f"),
                                 ByteString.copyFromUtf8("g"),
                                 ByteString.copyFromUtf8("h"),
-                                ByteString.copyFromUtf8("duplicateNFTHandleTokenAirdrop"))),
+                                ByteString.copyFromUtf8("duplicateNFTHandleTokenAirdrop"),
+                                ByteString.copyFromUtf8("ten"))),
 
                 // all kind of receivers
                 cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
