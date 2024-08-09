@@ -60,6 +60,7 @@ public class TokenClaimAirdropTest {
         return defaultHapiSpec("should transfer fungible tokens")
                 .given(
                         overriding("tokens.airdrops.enabled", "true"),
+                        overriding("tokens.airdrops.claim.enabled", "true"),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(OWNER_2).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(RECEIVER).balance(0L),

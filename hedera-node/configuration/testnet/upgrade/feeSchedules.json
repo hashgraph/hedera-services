@@ -1904,6 +1904,52 @@
             } ]
         }
     }, {
+            "transactionFeeSchedule": {
+                "hederaFunctionality": "TokenClaimAirdrop",
+                "fees": [
+                    {
+                        "subType": "DEFAULT",
+                        "nodedata": {
+                            "constant": 7983519,
+                            "bpt": 12763,
+                            "vpt": 31908136,
+                            "rbh": 9,
+                            "sbh": 1,
+                            "gas": 85,
+                            "bpr": 12763,
+                            "sbpr": 319,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "networkdata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "servicedata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        }
+                    }
+                ]
+            }
+        },
+        {
         "transactionFeeSchedule" : {
             "hederaFunctionality" : "TokenGrantKycToAccount",
             "fees" : [ {
@@ -5353,6 +5399,52 @@
             } ]
         }
     }, {
+            "transactionFeeSchedule": {
+                "hederaFunctionality": "TokenClaimAirdrop",
+                "fees": [
+                    {
+                        "subType": "DEFAULT",
+                        "nodedata": {
+                            "constant": 7983519,
+                            "bpt": 12763,
+                            "vpt": 31908136,
+                            "rbh": 9,
+                            "sbh": 1,
+                            "gas": 85,
+                            "bpr": 12763,
+                            "sbpr": 319,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "networkdata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "servicedata": {
+                            "constant": 159670382,
+                            "bpt": 255265,
+                            "vpt": 638162730,
+                            "rbh": 170,
+                            "sbh": 13,
+                            "gas": 1702,
+                            "bpr": 255265,
+                            "sbpr": 6382,
+                            "min": 0,
+                            "max": 1000000000000000
+                        }
+                    }
+                ]
+            }
+        },
+        {
         "transactionFeeSchedule" : {
             "hederaFunctionality" : "TokenGrantKycToAccount",
             "fees" : [ {
