@@ -165,6 +165,106 @@ connections from all peers in all rosters associated with rounds that have not e
 As with all other modules using rosters, Gossip must have a deterministic understanding of which roster applies to
 which round. It will receive this information from Hashgraph in the form of round metadata.
 
+### Event Intake
+
+The Event Intake System is responsible for receiving events, validating them, and emitting them in *topological order*.
+
+#### Validation
+
+One of the core responsibilities of Event Intake is to validate the events it has received. While this document does
+not specify the validation pipeline, it will define some of the primary steps involved in validation, so as to motivate
+the purpose of this module. That is, the following description is non-normative, but important for understanding the
+context within which this module operates.
+
+Event Intake receives events from gossip, or from the Event Creator module (i.e. a "self-event"). An "event" is actually
+a wrapper around the base protobuf event type (`EventCore`) that includes the core event data along with metadata that
+is not represented in protobuf or transmitted through gossip. One field populated in the metadata will be the byte[]
+that represents the protobuf-serialized form of the `EventCore`. Since gossip read this from the wire, there is no work
+to produce this `byte[]`, and since the `byte[]` will be needed for Gossip, we need to keep it anyway. But we will also
+hash this `byte[]` to produce the event hash, and store this hash in the metadata.
+
+After hashing, Event Intake will deduplicate events. It has a hash->event map allowing it to cheaply verify whether the
+event is a duplicate. If it is, the duplicate is discarded. Otherwise, the event is checked for "syntactic" correctness.
+For example, are all required fields populated, etc. While the Gossip system has already checked to ensure the payload
+of the event (its transactions) are limited in size and count, Event Intake will also check this as a safety measure in
+the event of bugs (if this check fails here, a noisy log statement should be produced, since this should never happen).
+
+If an event is valid, then we finally check the signature. Since validation and deduplication and hashing are
+significantly less expensive than signature verification, we wait on signature verification until the other steps are
+completed. The operating principle is that we want to fail fast and limit work for further stages in the pipeline.
+
+If an event has a very old birth-round that is expired, it is dropped. If a node sends a large number of expired events,
+it may end up being disciplined (the exact rules around this will be defined in subsequent design docs for the
+Event Intake module).
+
+#### Self Events
+
+Events are not only given to the event intake system through gossip. Internal events are also fed to the event intake
+system. These internal events **may** bypass some steps in the pipeline. For example, internal self-events (those
+events created by the node itself) do not need validation. Likewise, when replaying events from the pre-consensus
+recording system, those checks are not needed (since they have already been proved valid and are in topological order).
+
+#### Peer Discipline
+
+During the validation process, if an event is invalid, it is rejected, and this information is passed to the Bad Node
+module so the offending node may be disciplined. Note that the node to be disciplined will be the node that sent this
+bad event to us, not the origin node. This information (which node sent the event) must be captured by Gossip and
+passed to Event Intake as part of the event metadata.
+
+#### Topological Ordering
+
+Events are buffered if necessary to ensure that each parent event has been emitted from the Event Intake before any
+child events. A simple map (the same used for deduplication) can be used here. Given some event, for each parent, look
+up the parent by its hash. If each parent is found in the map, then emit the event. Otherwise, remember the event so
+when the missing parent is received, the child may be emitted. The current implementation uses what is known as the
+"orphan buffer" for this purpose.
+
+Since Event Intake will also maintain some buffers, it needs to know about the progression of the hashgraph,
+so it can evict old events. In this case, the "orphan buffer" holds events until either the parent events have
+arrived, or the events expired due to the advancement of the "non-ancient event window" and the event is
+dropped from the buffer. This document does not prescribe the existence of the orphan buffer or the method by which
+events are sorted and emitted in topological order, but it does describe a method by which old events can be dropped.
+
+#### Emitting Events
+
+When the Event Intake module emits valid, topologically sorted events, it sends them to:
+- The Event Creator module, so it may have information on which events are available to be built on top of as
+  "other parents"
+- The Execution layer as a "pre-handle" event
+- The Pre-consensus Recording module, so the event can be made durable prior to being added to the hashgraph or gossiped
+
+The call to each of these systems is "fire and forget". Specifically, there is no guarantee to Execution that it will
+definitely see an event via `pre-handle` prior to seeing it in `handle`. Technically, Consensus always calls
+`pre-handle` first, but that thread may be parked arbitrarily long by the system and the `handle` thread may actually
+execute first. This is extremely unlikely, but must be defended against in the Execution layer.
+
+Writing the event durably before gossiping it is essential for self-events to prevent branching. However, to simplify
+the understanding of the system, all events will be made durable before gossiping. All events must also be made
+durable before being sent to the Hashgraph.
+
+#### Roster Changes
+
+Since Event Intake must validate events, and since event validation requires knowing the roster (to verify the event
+source is in the roster, and the gossip source is in the roster, and the signature of the event creator is correct),
+Event Intake must know about changes to the roster. As with Gossip, it is imperative that Event Intake maintain a
+history of rosters, so it can support peers that are farther behind in consensus than it is.
+
+### Pre-Consensus Recording Module
+
+The Pre-Consensus Recording module is responsible for recording ordered, valid events which have not yet come to
+consensus. This is critical for minimizing data loss if catastrophic network failure occurs. This module received
+simplification by finding methods that durably persist events fast enough that it can be used inline. That is, each
+event is persisted before it is gossiped, and before it is added to the Hashgraph. The delay introduced by this module
+**must** be minimized to keep gossip latency minimal and increase the event/sec throughput of the system as a whole.
+
+This system is further simplified by defining its storage as a cyclic buffer. For example, it may have a large file on
+disk, and maintain a "head" and "tail" pointer into that file. Then, as new events need to be persisted, it simply
+writes them in at the "tail" position and moves forward. As it reaches the end of the file, it loops back to the start.
+In this way, it is able to have a fixed buffer, large enough for disaster recovery, but without requiring any feedback
+loops from Execution to indicate when data may be purged. Typically, this would be configured to be some value several
+multiples in size larger than the state saving timeframe and maximum event/sec rate, so as to provide a solid guarantee
+of data availability.
+
 ### Public API
 
 There are no changes to the public API as a result of this design.
