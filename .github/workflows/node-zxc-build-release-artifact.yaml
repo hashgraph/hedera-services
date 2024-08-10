@@ -456,6 +456,7 @@ jobs:
         with:
           version: v0.15.1
           driver-opts: network=host
+          buildkitd-config: /etc/docker/buildkitd.toml
 
       - name: Setup Local Docker Registry
         if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}
