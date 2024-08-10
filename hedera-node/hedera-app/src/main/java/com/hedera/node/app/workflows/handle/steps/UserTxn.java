@@ -54,13 +54,13 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.TransactionType;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -104,7 +104,7 @@ public record UserTxn(
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
 
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
@@ -123,7 +123,7 @@ public record UserTxn(
                 consensusConfig.handleMaxFollowingRecords());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
-                handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
+                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var tokenContext =
                 new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);

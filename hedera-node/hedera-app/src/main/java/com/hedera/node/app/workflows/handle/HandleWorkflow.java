@@ -513,6 +513,6 @@ public class HandleWorkflow {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
-                this);
+                preHandleWorkflow);
     }
 }
