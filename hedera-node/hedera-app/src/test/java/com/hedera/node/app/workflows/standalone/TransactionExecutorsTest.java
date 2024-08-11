@@ -77,6 +77,8 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -88,6 +90,7 @@ import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
+import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -107,30 +110,45 @@ class TransactionExecutorsTest {
             ContractID.newBuilder().contractNum(1002).build();
     private static final com.esaulpaugh.headlong.abi.Function PICK_FUNCTION =
             new com.esaulpaugh.headlong.abi.Function("pick()", "(uint32)");
+    private static final String EXPECTED_TRACE_START =
+            "{\"pc\":0,\"op\":96,\"gas\":\"0x13458\",\"gasCost\":\"0x3\",\"memSize\":0,\"depth\":1,\"refund\":0,\"opName\":\"PUSH1\"}";
 
     @Mock
     private SignatureVerifier signatureVerifier;
 
     @Test
     void executesTransactionsAsExpected() {
+        // Construct a full implementation of the consensus node State API with all genesis accounts and files
         final var state = genesisState();
-        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, Map.of());
 
-        final var uploadOutput = executor.execute(fileCreateMultipurposeInitcode(), Instant.EPOCH);
+        // Get a standalone executor based on this state, with an override to allow slightly longer memos
+        final var executor =
+                TRANSACTION_EXECUTORS.newExecutor(state, Map.of("hedera.transaction.maxMemoUtf8Bytes", "101"));
+
+        // Execute a FileCreate that uploads the initcode for the Multipurpose.sol contract
+        final var uploadOutput = executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH);
         final var uploadReceipt = uploadOutput.getFirst().transactionRecord().receiptOrThrow();
         assertThat(uploadReceipt.fileIDOrThrow()).isEqualTo(EXPECTED_INITCODE_ID);
 
-        final var creationOutput = executor.execute(contractCreateMultipurpose(), Instant.EPOCH);
+        // Execute a ContractCreate that creates a Multipurpose contract instance
+        final var creationOutput = executor.execute(createMultipurposeContract(), Instant.EPOCH);
         final var creationReceipt =
                 creationOutput.getFirst().transactionRecord().receiptOrThrow();
         assertThat(creationReceipt.contractIDOrThrow()).isEqualTo(EXPECTED_CONTRACT_ID);
 
-        final var callOutput = executor.execute(contractCallMultipurposePickFunction(), Instant.EPOCH);
+        // Now execute a ContractCall against the contract, with an extra StandardJsonTracer whose output we
+        // capture in a StringWriter for later inspection
+        final var stringWriter = new StringWriter();
+        final var printWriter = new PrintWriter(stringWriter);
+        final var addOnTracer = new StandardJsonTracer(printWriter, false, false, false, false);
+        final var callOutput = executor.execute(contractCallMultipurposePickFunction(), Instant.EPOCH, addOnTracer);
         final var callRecord = callOutput.getFirst().transactionRecord();
         final var callResult = callRecord.contractCallResultOrThrow().contractCallResult();
         final long luckyNumber =
                 PICK_FUNCTION.getOutputs().decode(callResult.toByteArray()).get(0);
         assertThat(luckyNumber).isEqualTo(EXPECTED_LUCKY_NUMBER);
+        printWriter.flush();
+        assertThat(stringWriter.toString()).startsWith(EXPECTED_TRACE_START);
     }
 
     private TransactionBody contractCallMultipurposePickFunction() {
@@ -144,7 +162,7 @@ class TransactionExecutorsTest {
                 .build();
     }
 
-    private TransactionBody contractCreateMultipurpose() {
+    private TransactionBody createMultipurposeContract() {
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
         return newBodyBuilder()
@@ -156,7 +174,7 @@ class TransactionExecutorsTest {
                 .build();
     }
 
-    private TransactionBody fileCreateMultipurposeInitcode() {
+    private TransactionBody uploadMultipurposeInitcode() {
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
         return newBodyBuilder()
@@ -176,6 +194,8 @@ class TransactionExecutorsTest {
                         .transactionValidStart(new Timestamp(0, 0))
                         .accountID(TREASURY_ID)
                         .build())
+                .memo(
+                        "This memo is 101 characters long, which with default settings would die with the status MEMO_TOO_LONG")
                 .nodeAccountID(NODE_ACCOUNT_ID)
                 .transactionValidDuration(new Duration(minValidDuration));
     }

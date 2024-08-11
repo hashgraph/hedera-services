@@ -32,13 +32,17 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * A factory for creating {@link TransactionExecutor} instances.
  */
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
+
+    private static final ThreadLocal<List<OperationTracer>> OPERATION_TRACERS = ThreadLocal.withInitial(List::of);
 
     /**
      * Creates a new {@link TransactionExecutor} based on the given {@link State} and properties.
@@ -55,6 +59,7 @@ public enum TransactionExecutors {
         executor.stateNetworkInfo().initFrom(state);
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
+            OPERATION_TRACERS.set(List.of(operationTracers));
             executor.dispatchProcessor().processDispatch(dispatch);
             return dispatch.stack().buildStreamItems(consensusNow);
         };
@@ -70,7 +75,7 @@ public enum TransactionExecutors {
                         new SignatureVerifierImpl(CryptographyHolder.get())));
         return new ExecutorModule(
                 new FileServiceImpl(),
-                new ContractServiceImpl(appContext),
+                new ContractServiceImpl(appContext, OPERATION_TRACERS::get),
                 new ConfigProviderImpl(false, null, properties),
                 new BootstrapConfigProviderImpl());
     }
