@@ -60,8 +60,8 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.node.app;
     requires com.hedera.node.app.spi;
+    requires com.hedera.node.app;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
