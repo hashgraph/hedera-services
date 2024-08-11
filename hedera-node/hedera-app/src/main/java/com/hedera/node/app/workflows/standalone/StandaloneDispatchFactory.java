@@ -17,12 +17,15 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.HandleWorkflow.initializeBuilderInfo;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.NO_OP_KEY_VERIFIER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -154,7 +157,8 @@ public class StandaloneDispatchFactory {
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
-        final var baseBuilder = stack.getBaseBuilder(StreamBuilder.class);
+        final var baseBuilder = initializeBuilderInfo(
+                stack.getBaseBuilder(StreamBuilder.class), txnInfo, exchangeRateManager.exchangeRates());
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
         final var blockRecordInfo = BlockRecordInfoImpl.from(state);
@@ -205,7 +209,11 @@ public class StandaloneDispatchFactory {
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {
-        final var transaction = Transaction.newBuilder().body(transactionBody).build();
+        final var signedTransaction =
+                new SignedTransaction(TransactionBody.PROTOBUF.toBytes(transactionBody), SignatureMap.DEFAULT);
+        final var transaction = Transaction.newBuilder()
+                .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(signedTransaction))
+                .build();
         final var transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         final var consensusTransaction = new TransactionWrapper(EventTransaction.newBuilder()
                 .applicationTransaction(transactionBytes)

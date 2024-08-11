@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes;
+package com.hedera.node.app.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
-import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
-import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -66,7 +63,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
         }
 
         final AtomicLong nextEntityNum =
-                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity());
+                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
                 .filter(service ->

@@ -32,6 +32,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -60,16 +61,16 @@ public class SimulatedNetworkInfo implements NetworkInfo {
         this.configProvider = requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.ledgerId = config.getConfigData(LedgerConfig.class).id();
+        this.selfNodeInfo = simulatedSelfNodeInfo(config);
+    }
+
+    public static SelfNodeInfo simulatedSelfNodeInfo(@NonNull final Configuration config) {
         final var versionConfig = config.getConfigData(VersionConfig.class);
         final var version = new HederaSoftwareVersion(
                 versionConfig.hapiVersion(),
                 versionConfig.servicesVersion(),
                 config.getConfigData(HederaConfig.class).configVersion());
-        // Transaction execution only uses SelfNodeInfo to detect when to reclaim ingest throttle capacity on failed
-        // transactions; this doesn't matter in a standalone context, so we just define a dummy self node info here,
-        // setting the actual version for completeness
-        this.selfNodeInfo =
-                new SelfNodeInfoImpl(0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, version, "");
+        return new SelfNodeInfoImpl(0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, version, "");
     }
 
     public void initFrom(@NonNull final State state) {
