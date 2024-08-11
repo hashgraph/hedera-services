@@ -24,6 +24,7 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -49,9 +50,8 @@ public enum TransactionExecutors {
                 .executorModule(newExecutorModule(properties))
                 .metrics(new NoOpMetrics())
                 .build();
-        executor.executionInitializer().initFrom(state);
-        executor.workingStateAccessor().setState(state);
-        executor.simulatedNetworkInfo().initFrom(state);
+        executor.initializer().accept(state);
+        executor.stateNetworkInfo().initFrom(state);
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             executor.dispatchProcessor().processDispatch(dispatch);

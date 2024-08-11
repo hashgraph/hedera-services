@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone;
+package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
@@ -32,72 +32,103 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
+import dagger.Module;
+import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import javax.inject.Inject;
+import java.util.function.Consumer;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Initializes state-dependent infrastructure based on a given {@link State}.
- */
-@Singleton
-public class ExecutionInitializer {
-    private static final Logger log = LogManager.getLogger(ExecutionInitializer.class);
+@Module
+public class ExecutorModule {
+    private static final Logger log = LogManager.getLogger(ExecutorModule.class);
 
-    private final FeeManager feeManager;
-    private final ExchangeRateManager exchangeRateManager;
-    private final ThrottleServiceManager throttleServiceManager;
+    private final FileServiceImpl fileService;
+    private final ContractServiceImpl contractService;
     private final ConfigProviderImpl configProvider;
     private final BootstrapConfigProviderImpl bootstrapConfigProvider;
-    private final FileServiceImpl fileService;
 
-    @Inject
-    public ExecutionInitializer(
+    public ExecutorModule(
+            @NonNull final FileServiceImpl fileService,
+            @NonNull final ContractServiceImpl contractService,
+            @NonNull final ConfigProviderImpl configProvider,
+            @NonNull final BootstrapConfigProviderImpl bootstrapConfigProvider) {
+        this.fileService = requireNonNull(fileService);
+        this.contractService = requireNonNull(contractService);
+        this.configProvider = requireNonNull(configProvider);
+        this.bootstrapConfigProvider = requireNonNull(bootstrapConfigProvider);
+    }
+
+    @Provides
+    @Singleton
+    public FileServiceImpl provideFileService() {
+        return fileService;
+    }
+
+    @Provides
+    @Singleton
+    public ContractServiceImpl provideContractService() {
+        return contractService;
+    }
+
+    @Provides
+    @Singleton
+    public ConfigProviderImpl provideConfigProviderImpl() {
+        return configProvider;
+    }
+
+    @Provides
+    @Singleton
+    public ConfigProvider provideConfigProvider() {
+        return configProvider;
+    }
+
+    @Provides
+    @Singleton
+    public BootstrapConfigProviderImpl provideBootstrapConfigProviderImpl() {
+        return bootstrapConfigProvider;
+    }
+
+    @Provides
+    @Singleton
+    public Consumer<State> executorInit(
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final ConfigProviderImpl configProvider,
-            @NonNull final BootstrapConfigProviderImpl bootstrapConfigProvider,
-            @NonNull final FileServiceImpl fileService) {
-        this.feeManager = requireNonNull(feeManager);
-        this.exchangeRateManager = requireNonNull(exchangeRateManager);
-        this.throttleServiceManager = requireNonNull(throttleServiceManager);
-        this.configProvider = requireNonNull(configProvider);
-        this.bootstrapConfigProvider = bootstrapConfigProvider;
-        this.fileService = requireNonNull(fileService);
+            @NonNull final WorkingStateAccessor workingStateAccessor) {
+        return state -> {
+            if (hasHandledGenesisTxn(state)) {
+                initializeExchangeRateManager(state, exchangeRateManager);
+                initializeFeeManager(state, feeManager);
+                observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+                throttleServiceManager.init(state, throttleDefinitionsFrom(state));
+            } else {
+                final var schema = fileService.fileSchema();
+                final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
+                exchangeRateManager.init(state, schema.genesisExchangeRates(bootstrapConfig));
+                feeManager.update(schema.genesisFeeSchedules(bootstrapConfig));
+                throttleServiceManager.init(state, schema.genesisThrottleDefinitions(bootstrapConfig));
+            }
+            workingStateAccessor.setState(state);
+        };
     }
 
-    /*
-     * Initializes state-dependent infrastructure based on a given {@link State}.
-     * @param state the {@link State} to initialize from
-     */
-    public void initFrom(@NonNull final State state) {
-        if (hasHandledGenesisTxn(state)) {
-            initializeExchangeRateManager(state);
-            initializeFeeManager(state);
-            observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
-            throttleServiceManager.init(state, throttleDefinitionsFrom(state));
-        } else {
-            final var schema = fileService.fileSchema();
-            final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
-            exchangeRateManager.init(state, schema.genesisExchangeRates(bootstrapConfig));
-            feeManager.update(schema.genesisFeeSchedules(bootstrapConfig));
-            throttleServiceManager.init(state, schema.genesisThrottleDefinitions(bootstrapConfig));
-        }
-    }
-
-    private void initializeExchangeRateManager(@NonNull final State state) {
+    private void initializeExchangeRateManager(
+            @NonNull final State state, @NonNull final ExchangeRateManager exchangeRateManager) {
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
         final var file = requireNonNull(
@@ -105,7 +136,7 @@ public class ExecutionInitializer {
         exchangeRateManager.init(state, file.contents());
     }
 
-    private void initializeFeeManager(@NonNull final State state) {
+    private void initializeFeeManager(@NonNull final State state, @NonNull final FeeManager feeManager) {
         log.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();

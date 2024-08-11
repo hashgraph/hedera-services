@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone;
+package com.hedera.node.app.workflows.standalone.impl;
 
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.State;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.util.function.Consumer;
 import javax.inject.Singleton;
 
+/**
+ * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StateNetworkInfo}, and
+ * {@link DispatchProcessor} instances needed to execute standalone transactions against a {@link State}.
+ */
 @Singleton
 @Component(
         modules = {
@@ -52,13 +59,13 @@ public interface ExecutorComponent {
         ExecutorComponent build();
     }
 
+    Consumer<State> initializer();
+
     DispatchProcessor dispatchProcessor();
 
     WorkingStateAccessor workingStateAccessor();
 
-    ExecutionInitializer executionInitializer();
-
-    SimulatedNetworkInfo simulatedNetworkInfo();
+    StateNetworkInfo stateNetworkInfo();
 
     StandaloneDispatchFactory standaloneDispatchFactory();
 }

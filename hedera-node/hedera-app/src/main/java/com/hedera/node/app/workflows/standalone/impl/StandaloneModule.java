@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone;
+package com.hedera.node.app.workflows.standalone.impl;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
@@ -38,7 +38,7 @@ import javax.inject.Singleton;
 public interface StandaloneModule {
     @Binds
     @Singleton
-    NetworkInfo bindNetworkInfo(@NonNull SimulatedNetworkInfo simulatedNetworkInfo);
+    NetworkInfo bindNetworkInfo(@NonNull StateNetworkInfo simulatedNetworkInfo);
 
     @Binds
     @Singleton

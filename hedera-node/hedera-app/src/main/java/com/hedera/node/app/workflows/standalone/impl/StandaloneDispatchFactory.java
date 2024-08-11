@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone;
+package com.hedera.node.app.workflows.standalone.impl;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.initializeBuilderInfo;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.NO_OP_KEY_VERIFIER;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
@@ -73,21 +74,12 @@ import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Constructs a {@link Dispatch} appropriate for a standalone transaction executor that does not want to enforce
+ * normal signing requirements but simply execute one or more transactions.
+ */
 @Singleton
 public class StandaloneDispatchFactory {
-    private static final PreHandleResult UNUSABLE_PRE_HANDLE_RESULT = new PreHandleResult(
-            null,
-            null,
-            PreHandleResult.Status.UNKNOWN_FAILURE,
-            ResponseCodeEnum.OK,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            -1);
-
     private final FeeManager feeManager;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
@@ -132,6 +124,16 @@ public class StandaloneDispatchFactory {
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
+    /**
+     * Constructs a new {@link Dispatch} for the given transaction body, state, and consensus time. When the
+     * dispatch is processed with the {@link DispatchProcessor}, its side effects will be committed to the
+     * {@link State} provided.
+     *
+     * @param state the state to use
+     * @param transactionBody the transaction body to use
+     * @param consensusNow the consensus time to use
+     * @return a new dispatch
+     */
     public Dispatch newDispatch(
             @NonNull final State state,
             @NonNull final TransactionBody transactionBody,
@@ -218,11 +220,15 @@ public class StandaloneDispatchFactory {
         final var consensusTransaction = new TransactionWrapper(EventTransaction.newBuilder()
                 .applicationTransaction(transactionBytes)
                 .build());
-        consensusTransaction.setMetadata(UNUSABLE_PRE_HANDLE_RESULT);
+        consensusTransaction.setMetadata(temporaryPreHandleResult());
         return consensusTransaction;
     }
 
     private NodeInfo creatorInfoFor(@NonNull final TransactionBody transactionBody) {
         return new NodeInfoImpl(0, transactionBody.nodeAccountIDOrThrow(), 0, "", -1, "", -1, "", "", Bytes.EMPTY, "");
+    }
+
+    private PreHandleResult temporaryPreHandleResult() {
+        return new PreHandleResult(null, null, UNKNOWN_FAILURE, OK, null, null, null, null, null, null, -1);
     }
 }

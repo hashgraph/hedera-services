@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone;
+package com.hedera.node.app.workflows.standalone.impl;
 
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.util.FileUtilities.getFileContent;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -45,9 +46,20 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A {@link NetworkInfo} implementation that gets network information from the {@link FilesConfig#nodeDetails()}
+ * file in a {@link State}. This lets a standalone executor handle transactions that make staking elections.
+ * <p>
+ * If the executor is to handle such transactions as if on a live network with this state, the node details file
+ * must be present in the state and reflect the network's active address book.
+ * <p>
+ * The {@link NetworkInfo#selfNodeInfo()} implementation, however, returns a {@link SelfNodeInfo} that is a complete
+ * mock other than the software version, since the self-identity of the node executing a transaction clearly cannot
+ * change <i>how</i> the transaction is executed.
+ */
 @Singleton
-public class SimulatedNetworkInfo implements NetworkInfo {
-    private static final Logger log = LogManager.getLogger(SimulatedNetworkInfo.class);
+public class StateNetworkInfo implements NetworkInfo {
+    private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
 
     private final Bytes ledgerId;
     private final ConfigProvider configProvider;
@@ -57,22 +69,21 @@ public class SimulatedNetworkInfo implements NetworkInfo {
     private List<NodeInfo> nodeInfos;
 
     @Inject
-    public SimulatedNetworkInfo(@NonNull final ConfigProvider configProvider) {
+    public StateNetworkInfo(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.ledgerId = config.getConfigData(LedgerConfig.class).id();
-        this.selfNodeInfo = simulatedSelfNodeInfo(config);
+        this.selfNodeInfo = mockSelfNodeInfo(config);
     }
 
-    public static SelfNodeInfo simulatedSelfNodeInfo(@NonNull final Configuration config) {
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        final var version = new HederaSoftwareVersion(
-                versionConfig.hapiVersion(),
-                versionConfig.servicesVersion(),
-                config.getConfigData(HederaConfig.class).configVersion());
-        return new SelfNodeInfoImpl(0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, version, "");
-    }
-
+    /**
+     * Initializes this instance from {@link FilesConfig#nodeDetails()} file in the given state.
+     * <p>
+     * If the file is missing or cannot be parsed, no staking election will be treated as valid,
+     * and staking transactions will not be executed as on any live network (which necessarily
+     * has at least some nodes).
+     * @param state the state to use
+     */
     public void initFrom(@NonNull final State state) {
         requireNonNull(state);
         final var config = configProvider.getConfiguration();
@@ -85,17 +96,18 @@ public class SimulatedNetworkInfo implements NetworkInfo {
                             address.nodeId(),
                             address.nodeAccountIdOrThrow(),
                             address.stake(),
-                            "<N/A>",
+                            "",
                             -1,
-                            "<N/A>",
+                            "",
                             -1,
                             address.rsaPubKey(),
                             address.description(),
                             Bytes.EMPTY,
-                            "<N/A>"))
+                            ""))
                     .toList();
         } catch (ParseException e) {
-            log.warn("Failed to parse node details, will not be able to execute staking-aware transactions", e);
+            log.warn("Failed to parse node details", e);
+            nodeInfos = emptyList();
         }
     }
 
@@ -132,6 +144,21 @@ public class SimulatedNetworkInfo implements NetworkInfo {
     }
 
     private @NonNull List<NodeInfo> nodeInfosOrThrow() {
-        return requireNonNull(nodeInfos, "No node details available, cannot simulate staking-aware transactions");
+        return requireNonNull(nodeInfos, "Not initialized");
+    }
+
+    /**
+     * Returns a {@link SelfNodeInfo} that is a complete mock other than the software version present in the
+     * given configuration.
+     * @param config the configuration to use
+     * @return a mock self node info
+     */
+    private static SelfNodeInfo mockSelfNodeInfo(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
+        final var version = new HederaSoftwareVersion(
+                versionConfig.hapiVersion(),
+                versionConfig.servicesVersion(),
+                config.getConfigData(HederaConfig.class).configVersion());
+        return new SelfNodeInfoImpl(0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, version, "");
     }
 }
