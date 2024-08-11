@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
-import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,13 +35,13 @@ public interface TransactionExecutor {
      * instances will be given to the EVM. If it is not a contract operation, the operation tracers will be ignored.
      * <p>
      * Returns one or more {@link SingleTransactionRecord} instances from executing the transaction.
-     * @param transaction the HAPI transaction to execute
-     * @param consensusTime the consensus time at which the transaction is to be executed
+     * @param transactionBody the HAPI transaction body to execute
+     * @param consensusNow the consensus time at which the transaction is to be executed
      * @param operationTracers the Besu {@link OperationTracer} instances to use for contract operations
      * @return one or more {@link SingleTransactionRecord}s for the executed transaction
      */
     List<SingleTransactionRecord> execute(
-            @NonNull Transaction transaction,
-            @NonNull Instant consensusTime,
+            @NonNull TransactionBody transactionBody,
+            @NonNull Instant consensusNow,
             @NonNull OperationTracer... operationTracers);
 }

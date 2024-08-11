@@ -41,7 +41,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -103,7 +102,6 @@ public record UserTxn(
             // @Singleton
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
 
         final TransactionType type;
@@ -125,8 +123,7 @@ public record UserTxn(
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext =
-                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
@@ -171,7 +168,6 @@ public record UserTxn(
      * @param authorizer the authorizer to use
      * @param networkInfo the network information
      * @param feeManager the fee manager
-     * @param recordCache the record cache
      * @param dispatchProcessor the dispatch processor
      * @param blockRecordManager the block record manager
      * @param serviceScopeLookup the service scope lookup
@@ -188,7 +184,6 @@ public record UserTxn(
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -235,7 +230,6 @@ public record UserTxn(
                 stack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,

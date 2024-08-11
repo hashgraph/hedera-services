@@ -52,8 +52,8 @@ import org.apache.logging.log4j.Logger;
  * Initializes state-dependent infrastructure based on a given {@link State}.
  */
 @Singleton
-public class InfrastructureInitializer {
-    private static final Logger log = LogManager.getLogger(InfrastructureInitializer.class);
+public class ExecutionInitializer {
+    private static final Logger log = LogManager.getLogger(ExecutionInitializer.class);
 
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
@@ -63,7 +63,7 @@ public class InfrastructureInitializer {
     private final FileServiceImpl fileService;
 
     @Inject
-    public InfrastructureInitializer(
+    public ExecutionInitializer(
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
@@ -82,7 +82,7 @@ public class InfrastructureInitializer {
      * Initializes state-dependent infrastructure based on a given {@link State}.
      * @param state the {@link State} to initialize from
      */
-    public void initializeFrom(@NonNull final State state) {
+    public void initFrom(@NonNull final State state) {
         if (hasHandledGenesisTxn(state)) {
             initializeExchangeRateManager(state);
             initializeFeeManager(state);

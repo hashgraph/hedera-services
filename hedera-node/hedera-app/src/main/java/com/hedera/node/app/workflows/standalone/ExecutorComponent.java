@@ -16,14 +16,31 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.services.ServicesInjectionModule;
+import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.workflows.handle.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
 import javax.inject.Singleton;
 
 @Singleton
-@Component(modules = {StandaloneModule.class, ThrottleServiceModule.class, ExecutorModule.class})
+@Component(
+        modules = {
+            StandaloneModule.class,
+            HandleWorkflowModule.class,
+            AuthorizerInjectionModule.class,
+            PreHandleWorkflowInjectionModule.class,
+            ServicesInjectionModule.class,
+            HederaStateInjectionModule.class,
+            ThrottleServiceModule.class,
+            ExecutorModule.class
+        })
 public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
@@ -35,5 +52,13 @@ public interface ExecutorComponent {
         ExecutorComponent build();
     }
 
-    InfrastructureInitializer infrastructureInitializer();
+    DispatchProcessor dispatchProcessor();
+
+    WorkingStateAccessor workingStateAccessor();
+
+    ExecutionInitializer executionInitializer();
+
+    SimulatedNetworkInfo simulatedNetworkInfo();
+
+    StandaloneDispatchFactory standaloneDispatchFactory();
 }

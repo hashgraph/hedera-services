@@ -16,13 +16,26 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema.TXN_RECORD_QUEUE;
+import static java.util.Collections.emptyIterator;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +43,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ExecutorComponentTest {
+    @Mock
+    private State state;
+
+    @Mock
+    private ReadableStates readableStates;
+
+    @Mock
+    private EthereumTransactionHandler ethereumTransactionHandler;
+
+    @Mock
+    private ContractHandlers contractHandlers;
+
+    @Mock
+    private ReadableQueueState<TransactionRecordEntry> receiptQueue;
+
     @Mock
     private Metrics metrics;
 
@@ -47,6 +75,13 @@ class ExecutorComponentTest {
 
     @Test
     void constructsObjectRoots() {
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
+        given(state.getReadableStates(RecordCacheService.NAME)).willReturn(readableStates);
+        given(readableStates.<TransactionRecordEntry>getQueue(TXN_RECORD_QUEUE)).willReturn(receiptQueue);
+        given(receiptQueue.iterator()).willReturn(emptyIterator());
+        given(contractService.handlers()).willReturn(contractHandlers);
+        given(contractHandlers.ethereumTransactionHandler()).willReturn(ethereumTransactionHandler);
+
         final var executorModule =
                 new ExecutorModule(fileService, contractService, configProvider, bootstrapConfigProvider);
         final var subject = DaggerExecutorComponent.builder()
@@ -54,6 +89,9 @@ class ExecutorComponentTest {
                 .executorModule(executorModule)
                 .build();
 
-        assertNotNull(subject.infrastructureInitializer());
+        assertDoesNotThrow(subject::executionInitializer);
+        requireNonNull(subject.workingStateAccessor()).setState(state);
+        assertDoesNotThrow(subject::standaloneDispatchFactory);
+        assertDoesNotThrow(subject::dispatchProcessor);
     }
 }

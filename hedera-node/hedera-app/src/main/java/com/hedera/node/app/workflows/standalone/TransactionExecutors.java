@@ -26,6 +26,7 @@ import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -44,12 +45,21 @@ public enum TransactionExecutors {
      * @return a new {@link TransactionExecutor}
      */
     public TransactionExecutor newExecutor(@NonNull final State state, @NonNull final Map<String, String> properties) {
-        return (transaction, consensusTime, operationTracers) -> {
-            throw new AssertionError("Not implemented");
+        final var executor = DaggerExecutorComponent.builder()
+                .executorModule(newExecutorModule(properties))
+                .metrics(new NoOpMetrics())
+                .build();
+        executor.executionInitializer().initFrom(state);
+        executor.workingStateAccessor().setState(state);
+        executor.simulatedNetworkInfo().initFrom(state);
+        return (transactionBody, consensusNow, operationTracers) -> {
+            final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
+            executor.dispatchProcessor().processDispatch(dispatch);
+            return dispatch.stack().buildStreamItems(consensusNow);
         };
     }
 
-    private ExecutorModule executorModuleFrom(@NonNull final Map<String, String> properties) {
+    private ExecutorModule newExecutorModule(@NonNull final Map<String, String> properties) {
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),

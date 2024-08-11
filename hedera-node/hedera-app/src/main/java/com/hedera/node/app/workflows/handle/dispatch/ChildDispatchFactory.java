@@ -40,7 +40,6 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -51,7 +50,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -94,15 +93,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildDispatchFactory {
-    private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
+    public static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
 
     private final TransactionDispatcher dispatcher;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
     private final FeeManager feeManager;
-    private final RecordCache recordCache;
     private final DispatchProcessor dispatchProcessor;
-    private final BlockRecordManager blockRecordManager;
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
@@ -113,9 +110,7 @@ public class ChildDispatchFactory {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager) {
@@ -123,9 +118,7 @@ public class ChildDispatchFactory {
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.feeManager = requireNonNull(feeManager);
-        this.recordCache = requireNonNull(recordCache);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.blockRecordManager = requireNonNull(blockRecordManager);
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
@@ -135,19 +128,20 @@ public class ChildDispatchFactory {
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction. This method also computes a pre-handle result for the child transaction.
      *
-     * @param txBody               the transaction body
-     * @param callback             the key verifier for child dispatch
-     * @param syntheticPayerId     the synthetic payer id
-     * @param category             the transaction category
-     * @param customizer           the externalized record customizer
-     * @param reversingBehavior    the reversing behavior
-     * @param config               the configuration
-     * @param stack                the savepoint stack
+     * @param txBody the transaction body
+     * @param callback the key verifier for child dispatch
+     * @param syntheticPayerId the synthetic payer id
+     * @param category the transaction category
+     * @param customizer the externalized record customizer
+     * @param reversingBehavior the reversing behavior
+     * @param config the configuration
+     * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
-     * @param creatorInfo          the node info of the creator
-     * @param platformState        the platform state
-     * @param topLevelFunction     the top level functionality
-     * @param consensusNow         the consensus time
+     * @param creatorInfo the node info of the creator
+     * @param platformState the platform state
+     * @param topLevelFunction the top level functionality
+     * @param consensusNow the consensus time
+     * @param blockRecordInfo the block record info
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
@@ -165,7 +159,8 @@ public class ChildDispatchFactory {
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            @NonNull final BlockRecordInfo blockRecordInfo) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
@@ -188,9 +183,8 @@ public class ChildDispatchFactory {
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
-                blockRecordManager,
+                blockRecordInfo,
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager,
@@ -217,9 +211,8 @@ public class ChildDispatchFactory {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -242,7 +235,7 @@ public class ChildDispatchFactory {
                 txnInfo,
                 config,
                 authorizer,
-                blockRecordManager,
+                blockRecordInfo,
                 priceCalculator,
                 feeManager,
                 storeFactory,
@@ -255,7 +248,6 @@ public class ChildDispatchFactory {
                 childStack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 this,
                 dispatchProcessor,
@@ -265,8 +257,7 @@ public class ChildDispatchFactory {
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (RecordStreamBuilder) builder);
-        final var childTokenContext =
-                new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
+        final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
         return new RecordDispatch(
                 builder,
                 config,
