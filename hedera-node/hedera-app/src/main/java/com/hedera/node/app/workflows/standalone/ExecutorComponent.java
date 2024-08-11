@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.standalone.impl;
+package com.hedera.node.app.workflows.standalone;
 
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.services.ServicesInjectionModule;
@@ -25,6 +25,9 @@ import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
+import com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory;
+import com.hedera.node.app.workflows.standalone.impl.StandaloneModule;
+import com.hedera.node.app.workflows.standalone.impl.StateNetworkInfo;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import dagger.BindsInstance;
