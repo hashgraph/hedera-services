@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.standalone;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.state.HederaStateInjectionModule;
-import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -65,8 +64,6 @@ public interface ExecutorComponent {
     Consumer<State> initializer();
 
     DispatchProcessor dispatchProcessor();
-
-    WorkingStateAccessor workingStateAccessor();
 
     StateNetworkInfo stateNetworkInfo();
 

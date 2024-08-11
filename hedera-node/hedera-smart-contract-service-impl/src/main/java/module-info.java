@@ -12,6 +12,7 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
+    requires transitive java.annotation;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;

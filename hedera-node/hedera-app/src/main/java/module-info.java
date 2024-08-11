@@ -24,6 +24,7 @@ module com.hedera.node.app {
     requires transitive dagger;
     requires transitive io.grpc.stub;
     requires transitive javax.inject;
+    requires transitive org.hyperledger.besu.evm;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.addressbook;
@@ -48,7 +49,6 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires org.hyperledger.besu.evm;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
