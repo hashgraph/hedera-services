@@ -32,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHan
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.workflows.ExecutorModule;
+import com.hedera.node.app.workflows.standalone.impl.DaggerExecutorComponent;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;

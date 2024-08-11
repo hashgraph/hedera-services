@@ -20,8 +20,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
-import com.hedera.node.app.components.QueryInjectionComponent;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
@@ -32,8 +30,6 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -43,24 +39,26 @@ import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
 import java.time.InstantSource;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -80,17 +78,17 @@ import javax.inject.Singleton;
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
             PlatformModule.class,
-            ThrottleServiceModule.class
+            ThrottleServiceModule.class,
+            ExecutorModule.class,
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();
 
-    /* Needed by ServicesState */
-    Provider<QueryInjectionComponent.Factory> queryComponentFactory();
-
     Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
+
+    Consumer<State> initializer();
 
     RecordCache recordCache();
 
@@ -126,6 +124,7 @@ public interface HederaInjectionComponent {
 
     @Component.Builder
     interface Builder {
+        Builder executorModule(ExecutorModule executorModule);
 
         @BindsInstance
         Builder servicesRegistry(ServicesRegistry registry);
@@ -143,12 +142,6 @@ public interface HederaInjectionComponent {
         Builder self(final SelfNodeInfo self);
 
         @BindsInstance
-        Builder configProvider(ConfigProvider configProvider);
-
-        @BindsInstance
-        Builder configProviderImpl(ConfigProviderImpl configProviderImpl);
-
-        @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
         @BindsInstance
@@ -156,12 +149,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
-
-        @BindsInstance
-        Builder contractServiceImpl(ContractServiceImpl contractService);
-
-        @BindsInstance
-        Builder fileServiceImpl(FileServiceImpl fileService);
 
         @BindsInstance
         Builder softwareVersion(SemanticVersion softwareVersion);

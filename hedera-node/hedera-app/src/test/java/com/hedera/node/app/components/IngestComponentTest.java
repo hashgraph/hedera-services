@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -37,6 +38,7 @@ import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -96,20 +98,22 @@ class IngestComponentTest {
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
+        final var executorModule = new ExecutorModule(
+                new FileServiceImpl(),
+                new ContractServiceImpl(appContext),
+                configProvider,
+                new BootstrapConfigProviderImpl());
         app = DaggerHederaInjectionComponent.builder()
+                .executorModule(executorModule)
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .configProvider(configProvider)
-                .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
-                .contractServiceImpl(new ContractServiceImpl(appContext))
-                .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
                 .build();
 

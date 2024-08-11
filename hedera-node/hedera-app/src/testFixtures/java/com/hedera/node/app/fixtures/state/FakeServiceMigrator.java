@@ -62,7 +62,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with FakeServicesRegistry instances");
         }
 
-        final AtomicLong nextEntityNum =
+        final AtomicLong prevEntityNum =
                 new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
@@ -80,7 +80,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 networkInfo,
                 config,
                 sharedValues,
-                nextEntityNum);
+                prevEntityNum);
         registry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
                 .forEach(registration -> {
@@ -94,13 +94,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             networkInfo,
                             config,
                             sharedValues,
-                            nextEntityNum);
+                            prevEntityNum);
                 });
         final var entityIdWritableStates = fakeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE);
         if (!(entityIdWritableStates instanceof MapWritableStates mapWritableStates)) {
             throw new IllegalArgumentException("Can only be used with MapWritableStates instances");
         }
-        mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(nextEntityNum.get()));
+        mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(prevEntityNum.get()));
         mapWritableStates.commit();
     }
 }

@@ -68,6 +68,7 @@ module com.hedera.node.app {
             com.hedera.node.services.cli,
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.dispatcher;
+    exports com.hedera.node.app.workflows.standalone;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.signature to
