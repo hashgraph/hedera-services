@@ -399,15 +399,14 @@ PlatformBuilder withOverrideRoster(@NonNull final Roster overrideRoster);
 
 The App will decide a network transplant sequence based on the following heuristics:
 
-Network Transplant process == Override Roster AND State provided.
+Network Transplant process == Override Roster AND State provided AND Upgrade.
 
-When both an Override Roster and State are provided, it signifies a network transplant mode. The node will discard
-any existing candidate roster present in the state, rotate the active roster to the previous roster, and adopt the
-provided Override Roster as the new Active Roster. This way, the provided network state and Override Roster are
-adopted. There will be new code required to create the Override Roster and pass it to the platform via
-the `PlatformBuilder` if
-the network is intended to be in a Transplant mode. The Services team will be responsible for implementing this,
-although the details are yet to be defined.
+When both an Override Roster and State are provided, as well as a network upgrade flag set, it signifies a network
+transplant mode. The node will discard any existing candidate roster present in the state, rotate the active roster
+to the previous roster, and adopt the provided Override Roster as the new Active Roster. This way, the provided
+network state and Override Roster are adopted. There will be new code required to create the Override Roster and
+pass it to the platform via the `PlatformBuilder` if the network is intended to be in a Transplant mode.
+The Services team will be responsible for implementing this, although the details are yet to be defined.
 
 #### Genesis Network process
 
