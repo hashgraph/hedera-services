@@ -360,8 +360,16 @@ The logic to determine whether to invoke this method could be determined by some
 
 An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network using
 a specific state, with a specific set of nodes, such as during a Network Transplant Process. A common example of
-this is Mainnet State being transplanted into a testing network. Provided an existing State and an `Override Roster`,
-the platform will adopt that roster.
+this is Mainnet State being transplanted into a testing network.
+
+A quick note on PCES. The software version is used to determine which roster (active or previous) should be used to
+validate the signatures of events in the PCES. If the PCES event version is less than the current software version,
+it indicates that the event was signed with the old roster, and hence, the old roster is used for validation. If the
+PCES event version matches the current software version, the active roster is used. This behavior will be
+maintained until Birth Rounds or Dynamic Address Book is implemented.
+
+Therefore, Provided an existing State, an `Override Roster` and a network upgrade (which could be a simple
+config-only upgrade if a software version upgrade isn't required), the platform will adopt the provided Override Roster.
 
 The next round number for this network will continue from the last round number in the provided state.
 The trigger for adopting the `Override Roster` will be the presence of an Override Roster at start-up with a State
