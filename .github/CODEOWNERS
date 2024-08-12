@@ -10,6 +10,12 @@
 /example-apps/**/module-info.java               @hashgraph/platform-base @hashgraph/devops-ci
 /example-apps/swirlds-platform-base-example/    @hashgraph/platform-base
 
+#############################
+##### Hedera Protobufs  #####
+#############################
+/hapi/hedera-protobufs/*                         @hashgraph/hedera-services @hashgraph/mirror-node
+/hapi/hedera-protobufs/platform/                 @hashgraph/platform-hashgraph
+/hapi/hedera-protobufs/mirror/                   @hashgraph/mirror-node
 
 #########################
 ##### Hedera Node  ######
