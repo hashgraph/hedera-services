@@ -78,7 +78,7 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
-        @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "true") @NetworkProperty
+        @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractUpdateNFTsMetadataEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
