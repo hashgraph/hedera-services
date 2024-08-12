@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,13 +50,13 @@ public class Erc20TransfersTranslator extends AbstractCallTranslator<HtsCallAtte
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         // We will match the transferFrom() selector shared by ERC-20 and ERC-721 if the token is missing
         return attempt.isTokenRedirect()
-                && selectorsInclude(attempt.selector())
+                && attempt.isSelector(ERC_20_TRANSFER, ERC_20_TRANSFER_FROM)
                 && attempt.redirectTokenType() != NON_FUNGIBLE_UNIQUE;
     }
 
     @Override
     public @Nullable Call callFrom(@NonNull final HtsCallAttempt attempt) {
-        if (isErc20Transfer(attempt.selector())) {
+        if (attempt.isSelector(ERC_20_TRANSFER)) {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER.decodeCall(
                     attempt.input().toArrayUnsafe());
             return callFrom(null, call.get(0), call.get(1), attempt, false);
@@ -86,17 +85,5 @@ public class Erc20TransfersTranslator extends AbstractCallTranslator<HtsCallAtte
                 attempt.addressIdConverter(),
                 requiresApproval,
                 SPECIAL_REWARD_RECEIVERS);
-    }
-
-    private boolean selectorsInclude(@NonNull final byte[] selector) {
-        return isErc20Transfer(selector) || isErc20TransferFrom(selector);
-    }
-
-    private boolean isErc20Transfer(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ERC_20_TRANSFER.selector());
-    }
-
-    private boolean isErc20TransferFrom(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ERC_20_TRANSFER_FROM.selector());
     }
 }
