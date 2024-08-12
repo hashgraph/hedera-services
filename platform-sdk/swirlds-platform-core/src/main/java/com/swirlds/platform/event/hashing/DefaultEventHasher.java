@@ -47,11 +47,11 @@ public class DefaultEventHasher implements EventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        if (hashingMode == EventHashingMode.NEW ||
-                (hashingMode == EventHashingMode.MIGRATE
-                        && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion,
-                        event.getSoftwareVersion())
-                        == 0)) {
+        if (hashingMode == EventHashingMode.NEW
+                || (hashingMode == EventHashingMode.MIGRATE
+                        && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                        currentSoftwareVersion, event.getSoftwareVersion())
+                                == 0)) {
             new PbjHasher().hashEvent(event);
             return event;
         }

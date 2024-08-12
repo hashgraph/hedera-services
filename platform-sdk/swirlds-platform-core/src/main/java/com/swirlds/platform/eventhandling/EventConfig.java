@@ -62,7 +62,7 @@ public record EventConfig(
     /**
      * Specifies the mode of event hashing
      */
-    public enum EventHashingMode{
+    public enum EventHashingMode {
         /**
          * Legacy event hashing based on SelfSerializable
          */

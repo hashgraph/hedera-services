@@ -177,7 +177,8 @@ public class TipsetEventCreator implements EventCreator {
                         .getConfigData(EventConfig.class)
                         .eventHashindMode()) {
                     case OLD -> new StatefulEventHasher();
-                    // if event hashing is set to migrate, we will use the new event hashing algorithm for new events
+                        // if event hashing is set to migrate, we will use the new event hashing algorithm for new
+                        // events
                     case MIGRATE, NEW -> new PbjHasher();
                 };
     }
