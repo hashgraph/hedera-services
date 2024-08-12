@@ -174,20 +174,30 @@ public class HandleWorkflow {
     public void handleRound(
             @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
-        final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        recordCache.resetRoundReceipts();
+        try {
+            handleEvents(state, platformState, round);
+        } finally {
+            // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
+            // to the state so these transactions cannot be replayed in future rounds
+            recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
+        }
+    }
+
+    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+        final var userTransactionsHandled = new AtomicBoolean(false);
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
+                    // We were given an event for a node that does not exist in the address book and was not from
+                    // a strictly earlier software upgrade. This will be logged as a warning, as this should never
+                    // happen, and we will skip the event. The platform should guarantee that we never receive an event
+                    // that isn't associated with the address book, and every node in the address book must have an
+                    // account ID, since you cannot delete an account belonging to a node, and you cannot change the
+                    // address book non-deterministically.
                     logger.warn(
                             "Received event (version {} vs current {}) from node {} which is not in the address book",
                             com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
