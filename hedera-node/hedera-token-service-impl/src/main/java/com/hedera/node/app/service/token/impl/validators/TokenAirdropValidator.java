@@ -25,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -194,8 +193,9 @@ public class TokenAirdropValidator {
             final TokenID tokenId,
             final AccountAmount senderAmount,
             final ReadableTokenRelationStore tokenRelStore) {
-        final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
-        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        // validate association and account frozen
+        final var tokenRel = getIfUsable(senderAccount.accountIdOrThrow(), tokenId, tokenRelStore);
+
         if (senderAmount.isApproval()) {
             final var tokenAllowances = senderAccount.tokenAllowances();
             var haveExistingAllowance = false;
@@ -221,8 +221,9 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableNftStore nftStore) {
-        final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
-        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        // validate association and account frozen
+        getIfUsable(senderAccount.accountIdOrThrow(), tokenId, tokenRelStore);
+
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
 
