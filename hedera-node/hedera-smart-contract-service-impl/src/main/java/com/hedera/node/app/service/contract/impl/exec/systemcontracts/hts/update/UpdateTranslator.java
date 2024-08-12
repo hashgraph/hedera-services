@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -61,9 +60,8 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())
-                || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())
-                || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
+        return attempt.isSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_V1, TOKEN_UPDATE_INFO_FUNCTION_V2, TOKEN_UPDATE_INFO_FUNCTION_V3);
     }
 
     @Override
@@ -81,9 +79,9 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())) {
+        if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V1)) {
             return decoder.decodeTokenUpdateV1(attempt);
-        } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
+        } else if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V2)) {
             return decoder.decodeTokenUpdateV2(attempt);
         } else {
             return decoder.decodeTokenUpdateV3(attempt);
