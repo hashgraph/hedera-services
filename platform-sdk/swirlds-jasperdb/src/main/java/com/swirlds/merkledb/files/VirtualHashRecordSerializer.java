@@ -17,9 +17,9 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.virtualmap.datasource.VirtualHashBytes.FIELD_HASHRECORD_HASH;
+import static com.swirlds.virtualmap.datasource.VirtualHashBytes.FIELD_HASHRECORD_PATH;
 
-import com.hedera.pbj.runtime.FieldDefinition;
-import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -27,8 +27,8 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.serialize.BaseSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -49,11 +49,6 @@ import java.io.IOException;
  * </pre>>
  */
 public final class VirtualHashRecordSerializer implements BaseSerializer<VirtualHashRecord> {
-
-    private static final FieldDefinition FIELD_HASHRECORD_PATH =
-            new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
-    private static final FieldDefinition FIELD_HASHRECORD_HASH =
-            new FieldDefinition("hash", FieldType.BYTES, false, true, false, 2);
 
     /**
      * The digest type to use for Virtual hashes, if this is changed then serialized version need

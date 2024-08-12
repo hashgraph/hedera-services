@@ -18,32 +18,33 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.INVALID_VALUE;
 
-import com.swirlds.virtualmap.VirtualKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Objects;
 
 /**
  * A simple linked-list of "mutations" for a bucket.
- *
- * @param <K>
  *     The key.
  */
-class BucketMutation<K extends VirtualKey> {
+class BucketMutation {
 
-    private final K key;
+    private final Bytes keyBytes;
+    private final int keyHashCode;
     // If old value is HDHM.INVALID_VALUE, it means the old value should not be checked
     private long oldValue;
     private long value;
-    private BucketMutation<K> next;
+    private BucketMutation next;
 
-    BucketMutation(final K key, final long value) {
-        this.key = Objects.requireNonNull(key);
+    BucketMutation(final Bytes keyBytes, final int keyHashCode, final long value) {
+        this.keyBytes = Objects.requireNonNull(keyBytes);
+        this.keyHashCode = keyHashCode;
         this.value = value;
         this.oldValue = INVALID_VALUE;
         this.next = null;
     }
 
-    BucketMutation(final K key, final long oldValue, final long value) {
-        this.key = Objects.requireNonNull(key);
+    BucketMutation(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
+        this.keyBytes = Objects.requireNonNull(keyBytes);
+        this.keyHashCode = keyHashCode;
         this.value = value;
         this.oldValue = oldValue;
         this.next = null;
@@ -52,31 +53,33 @@ class BucketMutation<K extends VirtualKey> {
     /**
      * To be called on the "head" of the list, updates an existing mutation
      * with the same key or creates a new mutation at the end of the list.
-     * @param key
+     * @param keyBytes
      * 		The key (cannot be null)
      * @param value
      * 		The value (cannot be null)
      */
-    void put(final K key, final long value) {
-        BucketMutation<K> mutation = this;
+    void put(final Bytes keyBytes, final int keyHashCode, final long value) {
+        BucketMutation mutation = this;
         while (true) {
-            if (mutation.key.equals(key)) {
+            if (mutation.keyBytes.equals(keyBytes)) {
+                assert (keyHashCode == 0) || (mutation.keyHashCode == keyHashCode);
                 mutation.value = value;
                 mutation.oldValue = INVALID_VALUE;
                 return;
             } else if (mutation.next != null) {
                 mutation = mutation.next;
             } else {
-                mutation.next = new BucketMutation<>(key, value);
+                mutation.next = new BucketMutation(keyBytes, keyHashCode, value);
                 return;
             }
         }
     }
 
-    void putIfEqual(final K key, final long oldValue, final long value) {
-        BucketMutation<K> mutation = this;
+    void putIfEqual(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
+        BucketMutation mutation = this;
         while (true) {
-            if (mutation.key.equals(key)) {
+            if (mutation.keyBytes.equals(keyBytes)) {
+                assert (keyHashCode == 0) || (mutation.keyHashCode == keyHashCode);
                 if (mutation.value == oldValue) {
                     mutation.value = value;
                 }
@@ -84,7 +87,7 @@ class BucketMutation<K extends VirtualKey> {
             } else if (mutation.next != null) {
                 mutation = mutation.next;
             } else {
-                mutation.next = new BucketMutation<>(key, oldValue, value);
+                mutation.next = new BucketMutation(keyBytes, keyHashCode, oldValue, value);
                 return;
             }
         }
@@ -97,7 +100,7 @@ class BucketMutation<K extends VirtualKey> {
      */
     int size() {
         int size = 1;
-        BucketMutation<K> mutation = next;
+        BucketMutation mutation = next;
         while (mutation != null) {
             size++;
             mutation = mutation.next;
@@ -116,7 +119,7 @@ class BucketMutation<K extends VirtualKey> {
     }
 
     // For testing purposes
-    BucketMutation<K> getNext() {
+    BucketMutation getNext() {
         return next;
     }
 
@@ -125,20 +128,18 @@ class BucketMutation<K extends VirtualKey> {
      * @param consumer
      * 		The callback. Cannot be null.
      */
-    void forEachKeyValue(MutationCallback<K> consumer) {
-        BucketMutation<K> mutation = this;
+    void forEachKeyValue(MutationCallback consumer) {
+        BucketMutation mutation = this;
         while (mutation != null) {
-            consumer.accept(mutation.key, mutation.oldValue, mutation.value);
+            consumer.accept(mutation.keyBytes, mutation.keyHashCode, mutation.oldValue, mutation.value);
             mutation = mutation.next;
         }
     }
 
     /**
      * A simple callback for {@link BucketMutation#forEachKeyValue(MutationCallback)}.
-     * @param <K>
-     *     The key.
      */
-    interface MutationCallback<K extends VirtualKey> {
-        void accept(final K key, final long oldValue, final long value);
+    interface MutationCallback {
+        void accept(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value);
     }
 }

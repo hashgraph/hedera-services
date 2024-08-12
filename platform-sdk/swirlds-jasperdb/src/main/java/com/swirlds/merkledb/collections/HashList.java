@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,7 +52,7 @@ public interface HashList extends Closeable {
      * 		if the index is less than 0, or if the index is greater than
      * 		the {@link #capacity()}.
      */
-    Hash get(long index) throws IOException;
+    Bytes get(long index) throws IOException;
 
     /**
      * Put a {@link Hash} at the given index.
@@ -64,7 +65,7 @@ public interface HashList extends Closeable {
      * 		if the index is less than 0, or if the index is greater than
      * 		the {@link #capacity()}.
      */
-    void put(long index, Hash hash);
+    void put(long index, Bytes hash);
 
     /**
      * Get the maximum capacity of this data structure.

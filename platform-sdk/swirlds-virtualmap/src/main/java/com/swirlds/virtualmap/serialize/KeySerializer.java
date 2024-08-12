@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb.serialize;
+package com.swirlds.virtualmap.serialize;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;

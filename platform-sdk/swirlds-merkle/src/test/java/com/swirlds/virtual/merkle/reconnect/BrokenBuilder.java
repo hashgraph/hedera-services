@@ -18,18 +18,16 @@ package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtual.merkle.TestKey;
-import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, TestValue> {
+public final class BrokenBuilder implements VirtualDataSourceBuilder {
 
     private static final long CLASS_ID = 0x5a79654cd0f96dd0L;
 
-    VirtualDataSourceBuilder<TestKey, TestValue> delegate;
+    VirtualDataSourceBuilder delegate;
 
     volatile int numCallsBeforeThrow = Integer.MAX_VALUE;
     volatile int numTimesToBreak = 0;
@@ -41,7 +39,7 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, Te
 
     public BrokenBuilder() {}
 
-    public BrokenBuilder(VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
+    public BrokenBuilder(VirtualDataSourceBuilder delegate) {
         this.delegate = delegate;
     }
 
@@ -79,14 +77,13 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, Te
     }
 
     @Override
-    public BreakableDataSource copy(
-            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
+    public BreakableDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
         final var breakableSnapshot = (BreakableDataSource) snapshotMe;
         return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
     }
 
     @Override
-    public void snapshot(final Path to, final VirtualDataSource<TestKey, TestValue> snapshotMe) {
+    public void snapshot(final Path to, final VirtualDataSource snapshotMe) {
         final var breakableSnapshot = (BreakableDataSource) snapshotMe;
         delegate.snapshot(to, breakableSnapshot.delegate);
     }

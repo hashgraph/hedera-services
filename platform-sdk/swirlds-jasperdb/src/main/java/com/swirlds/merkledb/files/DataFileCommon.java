@@ -57,7 +57,6 @@ import sun.misc.Unsafe;
  * Common static content for data files. As much as possible is package protected but some is used
  * outside.
  */
-@SuppressWarnings("rawtypes")
 public final class DataFileCommon {
 
     private static final Logger logger = LogManager.getLogger(DataFileCommon.class);
@@ -238,11 +237,11 @@ public final class DataFileCommon {
             final String storeName,
             final LongList index,
             final Set<Integer> newFileIndexes,
-            final List<DataFileReader<D>> fileList,
+            final List<DataFileReader> fileList,
             final KeyRange validKeyRange) {
         final SortedSet<Integer> validFileIds = new TreeSet<>();
         int newestFileIndex = 0;
-        for (final DataFileReader<D> file : fileList) {
+        for (final DataFileReader file : fileList) {
             final int fileIndex = file.getMetadata().getIndex();
             validFileIds.add(fileIndex);
             if (fileIndex > newestFileIndex) {
@@ -310,9 +309,9 @@ public final class DataFileCommon {
      * @param fileReaders collection of paths to files
      * @return total number of bytes take for all the files in fileReaders
      */
-    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> fileReaders) {
+    public static long getSizeOfFiles(final Iterable<? extends DataFileReader> fileReaders) {
         long totalSize = 0;
-        for (final DataFileReader<?> dataFileReader : fileReaders) {
+        for (final DataFileReader dataFileReader : fileReaders) {
             totalSize += dataFileReader.getSize();
         }
         return totalSize;
@@ -358,11 +357,11 @@ public final class DataFileCommon {
     public static void logCompactStats(
             final String storeName,
             final double tookMillis,
-            final Collection<? extends DataFileReader<?>> filesToMerge,
+            final Collection<? extends DataFileReader> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
             int targetCompactionLevel,
-            final DataFileCollection<?> fileCollection)
+            final DataFileCollection fileCollection)
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);

@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.virtualmap.VirtualKey;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
@@ -47,22 +46,22 @@ import java.util.function.Function;
  * an array of buckets with fast concurrent read/write access from multiple
  * threads.
  */
-public class ReusableBucketPool<K extends VirtualKey> {
+public class ReusableBucketPool {
 
     /** Default number of reusable buckets in this pool */
     private static final int DEFAULT_POOL_SIZE = 64;
 
     /** Buckets */
-    private final ConcurrentLinkedDeque<Bucket<K>> buckets;
+    private final ConcurrentLinkedDeque<Bucket> buckets;
 
-    private final Function<ReusableBucketPool<K>, Bucket<K>> newBucketSupplier;
+    private final Function<ReusableBucketPool, Bucket> newBucketSupplier;
 
     /**
      * Creates a new reusable bucket pool of the default size.
      *
      * @param bucketSupplier To create new buckets
      */
-    public ReusableBucketPool(final Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
+    public ReusableBucketPool(final Function<ReusableBucketPool, Bucket> bucketSupplier) {
         this(DEFAULT_POOL_SIZE, bucketSupplier);
     }
 
@@ -71,7 +70,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
      *
      * @param bucketSupplier To create new buckets
      */
-    public ReusableBucketPool(final int size, Function<ReusableBucketPool<K>, Bucket<K>> bucketSupplier) {
+    public ReusableBucketPool(final int size, Function<ReusableBucketPool, Bucket> bucketSupplier) {
         this.newBucketSupplier = bucketSupplier;
         buckets = new ConcurrentLinkedDeque<>();
         for (int i = 0; i < size; i++) {
@@ -86,8 +85,8 @@ public class ReusableBucketPool<K extends VirtualKey> {
      * @return A bucket that can be used for reads / writes until it's released back
      * to the pool
      */
-    public Bucket<K> getBucket() {
-        Bucket<K> bucket = buckets.pollLast();
+    public Bucket getBucket() {
+        Bucket bucket = buckets.pollLast();
         if (bucket == null) {
             bucket = newBucketSupplier.apply(this);
         }
@@ -101,7 +100,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
      *
      * @param bucket A bucket to release to this pool
      */
-    public void releaseBucket(final Bucket<K> bucket) {
+    public void releaseBucket(final Bucket bucket) {
         buckets.offerLast(bucket);
     }
 }

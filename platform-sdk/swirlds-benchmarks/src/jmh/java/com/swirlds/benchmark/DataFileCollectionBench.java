@@ -16,6 +16,7 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -52,19 +53,15 @@ public class DataFileCollectionBench extends BaseBench {
         final LongListOffHeap index = new LongListOffHeap();
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
+        final BenchmarkRecordSerializer serializer = new BenchmarkRecordSerializer();
         final var store =
-                new DataFileCollection<BenchmarkRecord>(
-                        dbConfig,
-                        getTestDir(),
-                        storeName,
-                        null,
-                        new BenchmarkRecordSerializer(),
-                        (dataLocation, dataValue) -> {}) {
+                new DataFileCollection(dbConfig, getTestDir(), storeName, null, (dataLocation, dataValue) -> {}) {
                     BenchmarkRecord read(long dataLocation) throws IOException {
-                        return readDataItem(dataLocation);
+                        final BufferedData recordData = readDataItem(dataLocation);
+                        return recordData != null ? serializer.deserialize(recordData) : null;
                     }
                 };
-        final var compactor = new DataFileCompactor<>(dbConfig, storeName, store, index, null, null, null, null);
+        final var compactor = new DataFileCompactor(dbConfig, storeName, store, index, null, null, null, null);
         System.out.println();
 
         // Write files
@@ -75,7 +72,7 @@ public class DataFileCollectionBench extends BaseBench {
             for (int j = 0; j < numRecords; ++j) {
                 long id = nextAscKey();
                 BenchmarkRecord record = new BenchmarkRecord(id, nextValue());
-                index.put(id, store.storeDataItem(record));
+                index.put(id, store.storeDataItem(record::serialize, BenchmarkRecord.getSerializedSize()));
                 if (verify) map[(int) id] = record;
             }
             store.endWriting(0, maxKey).setFileCompleted();
@@ -84,7 +81,7 @@ public class DataFileCollectionBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final List<DataFileReader<BenchmarkRecord>> filesToMerge = store.getAllCompletedFiles();
+        final List<DataFileReader> filesToMerge = store.getAllCompletedFiles();
         compactor.compact();
         System.out.println(
                 "Merged " + filesToMerge.size() + " files in " + (System.currentTimeMillis() - start) + "ms");

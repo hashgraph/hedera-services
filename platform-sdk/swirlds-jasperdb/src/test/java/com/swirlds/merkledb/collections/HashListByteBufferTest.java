@@ -176,16 +176,18 @@ class HashListByteBufferTest {
         final Hash hash = hash(123);
         // Negative is no good
         assertThrows(
-                IndexOutOfBoundsException.class, () -> hashList.put(-1, hash), "Negative indices shouldn't be allowed");
+                IndexOutOfBoundsException.class,
+                () -> hashList.put(-1, hash.getBytes()),
+                "Negative indices shouldn't be allowed");
         // Max of 1,000 hashes, but I'm going for index 1000, which would hold the 1001st hash. So out of bounds.
         assertThrows(
                 IndexOutOfBoundsException.class,
-                () -> hashList.put(10 * 100, hash),
+                () -> hashList.put(10 * 100, hash.getBytes()),
                 "Size should not be a valid index");
         // Clearly out of bounds.
         assertThrows(
                 IndexOutOfBoundsException.class,
-                () -> hashList.put((10 * 100) + 1, hash),
+                () -> hashList.put((10 * 100) + 1, hash.getBytes()),
                 "Out-of-bounds indexes shouldn't be allowed");
         // close
         hashList.close();
@@ -197,8 +199,8 @@ class HashListByteBufferTest {
     void putAtEndOfRange(final boolean offHeap) throws IOException {
         final HashList hashList = createHashList(10, 100, offHeap);
         final Hash hash = hash(93);
-        hashList.put(93, hash);
-        assertEquals(hash, hashList.get(93), "Hash put at fixed index should be gettable from same index");
+        hashList.put(93, hash.getBytes());
+        assertEquals(hash.getBytes(), hashList.get(93), "Hash put at fixed index should be gettable from same index");
         // close
         hashList.close();
     }
@@ -214,7 +216,7 @@ class HashListByteBufferTest {
         // Write from multiple threads concurrently, but not to the same indexes
         IntStream.range(0, LARGE_MAX_HASHES).parallel().forEach(index -> {
             final Hash hash = hash(index);
-            hashList.put(index, hash);
+            hashList.put(index, hash.getBytes());
         });
 
         // Read from multiple threads concurrently, but not to the same indexes.
@@ -222,7 +224,7 @@ class HashListByteBufferTest {
             final Hash hash = hash(index);
 
             try {
-                assertEquals(hash, hashList.get(index), () -> "Wrong hash read from index " + index);
+                assertEquals(hash.getBytes(), hashList.get(index), () -> "Wrong hash read from index " + index);
             } catch (Exception e) {
                 fail("Getting a hash from valid index " + index + " failed", e);
             }
@@ -243,11 +245,11 @@ class HashListByteBufferTest {
         HashList hashList = createHashList(20, 100, true);
         for (int i = 0; i < 95; i++) {
             final Hash hash = hash(i);
-            hashList.put(i, hash);
+            hashList.put(i, hash.getBytes());
         }
         // check all data
         for (int i = 0; i < 95; i++) {
-            assertEquals(hash(i), hashList.get(i), "Unexpected value for hashList.get(" + i + ")");
+            assertEquals(hash(i).getBytes(), hashList.get(i), "Unexpected value for hashList.get(" + i + ")");
         }
         // write hash list to the file
         hashList.writeToFile(file);
@@ -261,7 +263,7 @@ class HashListByteBufferTest {
         assertEquals(hashList.maxHashes(), hashList2.maxHashes(), "Unexpected value for hashList2.maxHashes()");
         assertEquals(hashList.size(), hashList2.size(), "Unexpected value for hashList2.size()");
         for (int i = 0; i < 95; i++) {
-            assertEquals(hash(i), hashList2.get(i), "Unpected value for hashList2.get(" + i + ")");
+            assertEquals(hash(i).getBytes(), hashList2.get(i), "Unpected value for hashList2.get(" + i + ")");
         }
         // delete file as we are done with it
         Files.delete(file);

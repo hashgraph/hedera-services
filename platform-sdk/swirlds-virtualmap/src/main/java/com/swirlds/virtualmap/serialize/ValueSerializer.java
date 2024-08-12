@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb.serialize;
+package com.swirlds.virtualmap.serialize;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

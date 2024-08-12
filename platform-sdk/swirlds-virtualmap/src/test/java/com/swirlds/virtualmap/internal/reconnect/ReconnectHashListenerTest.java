@@ -21,18 +21,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashBytes;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,14 +57,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ReconnectHashListenerTest {
+
     private static final Cryptography CRYPTO = CryptographyHolder.get();
+
+    private static final KeySerializer<TestKey> keySerializer = new TestKeySerializer();
+    private static final ValueSerializer<TestValue> valueSerializer = new TestValueSerializer();
 
     @Test
     @DisplayName("Null datasource throws")
     void nullDataSourceThrows() {
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener<TestKey, TestValue>(1, 1, null, null),
+                () -> new ReconnectHashListener<TestKey, TestValue>(1, 1, keySerializer, valueSerializer, null, null),
                 "A null data source should produce an NPE");
     }
 
@@ -75,10 +85,11 @@ class ReconnectHashListenerTest {
     }) // Invalid (both should be equal only if == 1
     @DisplayName("Illegal first and last leaf path combinations throw")
     void badLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource<TestKey, TestValue> ds = new InMemoryBuilder().build("badLeafPaths", true);
+        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", true);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ReconnectHashListener<>(firstLeafPath, lastLeafPath, ds, null),
+                () -> new ReconnectHashListener<>(
+                        firstLeafPath, lastLeafPath, keySerializer, valueSerializer, ds, null),
                 "Should have thrown IllegalArgumentException");
     }
 
@@ -86,9 +97,9 @@ class ReconnectHashListenerTest {
     @CsvSource({"-1, -1", " 1,  1", " 1,  2", " 4,  8"})
     @DisplayName("Valid configurations create an instance")
     void goodLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource<TestKey, TestValue> ds = new InMemoryBuilder().build("goodLeafPaths", true);
+        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true);
         try {
-            new ReconnectHashListener<>(firstLeafPath, lastLeafPath, ds, null);
+            new ReconnectHashListener<>(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, ds, null);
         } catch (Exception e) {
             fail("Should have been able to create the instance", e);
         }
@@ -106,37 +117,38 @@ class ReconnectHashListenerTest {
 
         // 100 leaves would have firstLeafPath = 99, lastLeafPath = 198
         final long last = size + size;
-        final ReconnectHashListener<TestKey, TestValue> listener = new ReconnectHashListener<>(size, last, ds, remover);
+        final ReconnectHashListener<TestKey, TestValue> listener =
+                new ReconnectHashListener<>(size, last, keySerializer, valueSerializer, ds, remover);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         hasher.hash(
                 this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
 
         // Now validate that everything showed up the data source in ordered chunks
-        final TreeSet<VirtualHashRecord> allInternalRecords =
-                new TreeSet<>(Comparator.comparingLong(VirtualHashRecord::path));
-        for (List<VirtualHashRecord> internalRecords : ds.internalRecords) {
+        final TreeSet<VirtualHashBytes> allInternalRecords =
+                new TreeSet<>(Comparator.comparingLong(VirtualHashBytes::path));
+        for (List<VirtualHashBytes> internalRecords : ds.internalRecords) {
             allInternalRecords.addAll(internalRecords);
         }
 
         assertEquals(size + size, allInternalRecords.size(), "Some internal records were not written!");
         long expected = 0;
-        for (VirtualHashRecord rec : allInternalRecords) {
+        for (VirtualHashBytes rec : allInternalRecords) {
             final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
         }
 
-        final TreeSet<VirtualLeafRecord<TestKey, TestValue>> allLeafRecords =
-                new TreeSet<>(Comparator.comparingLong(VirtualLeafRecord::getPath));
+        final TreeSet<VirtualLeafBytes> allLeafRecords =
+                new TreeSet<>(Comparator.comparingLong(VirtualLeafBytes::path));
 
-        for (List<VirtualLeafRecord<TestKey, TestValue>> leafRecords : ds.leafRecords) {
+        for (List<VirtualLeafBytes> leafRecords : ds.leafRecords) {
             allLeafRecords.addAll(leafRecords);
         }
 
         assertEquals(size, allLeafRecords.size(), "Some leaf records were not written!");
         expected = size;
-        for (VirtualLeafRecord<TestKey, TestValue> rec : allLeafRecords) {
-            final long path = rec.getPath();
+        for (VirtualLeafBytes rec : allLeafRecords) {
+            final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
         }
@@ -150,13 +162,14 @@ class ReconnectHashListenerTest {
         return CRYPTO.digestSync(("" + path).getBytes(StandardCharsets.UTF_8));
     }
 
-    private static final class VirtualDataSourceSpy implements VirtualDataSource<TestKey, TestValue> {
-        private final VirtualDataSource<TestKey, TestValue> delegate;
+    private static final class VirtualDataSourceSpy implements VirtualDataSource {
 
-        private final List<List<VirtualHashRecord>> internalRecords = new ArrayList<>();
-        private final List<List<VirtualLeafRecord<TestKey, TestValue>>> leafRecords = new ArrayList<>();
+        private final VirtualDataSource delegate;
 
-        VirtualDataSourceSpy(VirtualDataSource<TestKey, TestValue> delegate) {
+        private final List<List<VirtualHashBytes>> internalRecords = new ArrayList<>();
+        private final List<List<VirtualLeafBytes>> leafRecords = new ArrayList<>();
+
+        VirtualDataSourceSpy(VirtualDataSource delegate) {
             this.delegate = delegate;
         }
 
@@ -169,9 +182,9 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
             final var ir = pathHashRecordsToUpdate.toList();
@@ -186,9 +199,9 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete)
                 throws IOException {
 
             saveRecords(
@@ -201,18 +214,18 @@ class ReconnectHashListenerTest {
         }
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
-            return delegate.loadLeafRecord(key);
+        public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
+            return delegate.loadLeafRecord(key, keyHashCode);
         }
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final long path) throws IOException {
+        public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
             return delegate.loadLeafRecord(path);
         }
 
         @Override
-        public long findKey(final TestKey key) throws IOException {
-            return delegate.findKey(key);
+        public long findKey(final Bytes key, final int keyHashCode) throws IOException {
+            return delegate.findKey(key, keyHashCode);
         }
 
         @Override
@@ -229,7 +242,7 @@ class ReconnectHashListenerTest {
          * {@inheritDoc}
          */
         @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
+        public void copyStatisticsFrom(final VirtualDataSource that) {
             // this database has no statistics
         }
 
@@ -239,14 +252,6 @@ class ReconnectHashListenerTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
         }
 
         @Override
@@ -267,6 +272,18 @@ class ReconnectHashListenerTest {
         @Override
         public void stopAndDisableBackgroundCompaction() {
             // no op
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public KeySerializer getKeySerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public ValueSerializer getValueSerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
         }
     }
 }

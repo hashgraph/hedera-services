@@ -30,7 +30,7 @@ class HashToolsTest {
     void constructsExpectedBuffer() {
         final Hash hash = MerkleDbTestUtils.hash(123);
 
-        final ByteBuffer buffer = HashTools.hashToByteBuffer(hash);
+        final ByteBuffer buffer = HashTools.hashToByteBuffer(hash.getBytes());
 
         assertArrayEquals(hash.copyToByteArray(), buffer.array(), "Hash digest should match created buffer");
     }
@@ -40,7 +40,7 @@ class HashToolsTest {
         final Hash hash = MerkleDbTestUtils.hash(123);
         final ByteBuffer buffer = ByteBuffer.allocate(48);
 
-        HashTools.hashToByteBuffer(hash, buffer);
+        HashTools.hashToByteBuffer(hash.getBytes(), buffer);
 
         assertArrayEquals(hash.copyToByteArray(), buffer.array(), "Hash digest should matched filled buffer");
     }

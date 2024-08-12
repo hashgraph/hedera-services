@@ -31,13 +31,16 @@ import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Assertions;
 
@@ -51,10 +54,13 @@ import org.junit.jupiter.api.Assertions;
  */
 public abstract class VirtualMapReconnectBenchBase {
 
+    private static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
+    private static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
+
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
-    protected VirtualDataSourceBuilder<TestKey, TestValue> teacherBuilder;
-    protected VirtualDataSourceBuilder<TestKey, TestValue> learnerBuilder;
+    protected VirtualDataSourceBuilder teacherBuilder;
+    protected VirtualDataSourceBuilder learnerBuilder;
 
     protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
             // This is lower than the default, helps test that is supposed to fail to finish faster.
@@ -63,15 +69,15 @@ public abstract class VirtualMapReconnectBenchBase {
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
+    protected VirtualDataSourceBuilder createBuilder() {
         return new InMemoryBuilder();
     }
 
     protected void setupEach() {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
-        teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder);
+        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder);
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -82,7 +88,6 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));

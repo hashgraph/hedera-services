@@ -17,8 +17,6 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import java.nio.file.Path;
 
 /**
@@ -26,16 +24,11 @@ import java.nio.file.Path;
  * to every {@link com.swirlds.virtualmap.VirtualMap} and used to get a reference to underlying
  * virtual data source.
  *
- * Virtual data source builder configuration is not a part of this interface. For example, some
+ * <p>Virtual data source builder configuration is not a part of this interface. For example, some
  * implementations that store data on disk may have "storage directory" config, which is used,
  * together with requested data source labels, to build full data source disk paths.
- *
- * @param <K>
- * 		The key
- * @param <V>
- * 		The value
  */
-public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends VirtualValue> extends SelfSerializable {
+public interface VirtualDataSourceBuilder extends SelfSerializable {
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
@@ -50,14 +43,14 @@ public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends Virtua
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
-    VirtualDataSource<K, V> build(String label, final boolean withDbCompactionEnabled);
+    VirtualDataSource build(String label, final boolean withDbCompactionEnabled);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating
      * a snapshot of the given data source. The new data source doesn't have background file
      * compaction enabled.
      *
-     * This method is used when a virtual map copy is created during reconnects. When a copy is
+     * <p>This method is used when a virtual map copy is created during reconnects. When a copy is
      * created on the teacher side, the original data source is preserved as active, i.e. used
      * to handle transactions. When this method is used on the learner side, it behaves in the
      * opposite way: the copied data source becomes active, while the original data source isn't
@@ -70,7 +63,7 @@ public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends Virtua
      * @return
      * 		An opened {@link VirtualDataSource}
      */
-    VirtualDataSource<K, V> copy(VirtualDataSource<K, V> snapshotMe, boolean makeCopyActive);
+    VirtualDataSource copy(VirtualDataSource snapshotMe, boolean makeCopyActive);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating
@@ -78,21 +71,21 @@ public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends Virtua
      * {@code null}, the snapshot is taken into an unspecified, usually temp, folder. The new data
      * source doesn't have background file compaction enabled.
      *
-     * This method is used when a virtual map is written to disk during state serialization.
+     * <p>This method is used when a virtual map is written to disk during state serialization.
      *
      * @param destination
      * 		The base path into which to snapshot the database. Can be null
      * @param snapshotMe
      * 		The dataSource to invoke snapshot on. Cannot be null
      */
-    void snapshot(Path destination, VirtualDataSource<K, V> snapshotMe);
+    void snapshot(Path destination, VirtualDataSource snapshotMe);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
      * the given label by copying all the database files from the given path into the new
      * database directory and then opening that database.
      *
-     * This method is used when a virtual map is deserialized from a state snapshot.
+     * <p>This method is used when a virtual map is deserialized from a state snapshot.
      * for details.
      *
      * @param label
@@ -102,5 +95,5 @@ public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends Virtua
      * @return
      * 		An opened {@link VirtualDataSource}
      */
-    VirtualDataSource<K, V> restore(String label, Path source);
+    VirtualDataSource restore(String label, Path source);
 }

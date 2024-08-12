@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.LongListHeap;
 import java.util.Arrays;
 
@@ -45,7 +46,7 @@ public class DataFileCollectionTestUtils {
     }
 
     static void checkData(
-            final DataFileCollection<long[]> fileCollection,
+            final DataFileCollection fileCollection,
             final LongListHeap storedOffsets,
             final FilesTestType testType,
             final int fromIndex,
@@ -55,26 +56,30 @@ public class DataFileCollectionTestUtils {
         for (int i = fromIndex; i < toIndexExclusive; i++) {
             // test read with index
             final long fi = i;
-            final long[] dataItem2 = assertDoesNotThrow(
+            final BufferedData dataItem = assertDoesNotThrow(
                     () -> fileCollection.readDataItemUsingIndex(storedOffsets, fi), "Read should not a exception.");
-            checkDataItem(testType, valueAddition, dataItem2, i);
+            checkDataItem(testType, valueAddition, dataItem, i);
         }
     }
 
     static void checkDataItem(
-            FilesTestType testType, final int valueAddition, final long[] dataItem, final int expectedKey) {
+            FilesTestType testType, final int valueAddition, final BufferedData dataItem, final int expectedKey) {
         assertNotNull(dataItem, "dataItem should not be null");
         switch (testType) {
             default:
             case fixed:
-                assertEquals(2, dataItem.length, "unexpected length"); // size
-                assertEquals(expectedKey, dataItem[0], "unexpected key"); // key
-                assertEquals(expectedKey + valueAddition, dataItem[1], "unexpected value"); // value
+                assertEquals(2 * Long.BYTES, dataItem.remaining(), "unexpected length"); // size
+                assertEquals(expectedKey, dataItem.readLong(), "unexpected key"); // key
+                assertEquals(expectedKey + valueAddition, dataItem.readLong(), "unexpected value"); // value
                 break;
             case variable:
+                final long[] dataItemLongs = new long[Math.toIntExact(dataItem.remaining() / Long.BYTES)];
+                for (int i = 0; i < dataItemLongs.length; i++) {
+                    dataItemLongs[i] = dataItem.readLong();
+                }
                 assertEquals(
                         Arrays.toString(getVariableSizeDataForI(expectedKey, valueAddition)),
-                        Arrays.toString(dataItem),
+                        Arrays.toString(dataItemLongs),
                         "unexpected dataItem value");
                 break;
         }

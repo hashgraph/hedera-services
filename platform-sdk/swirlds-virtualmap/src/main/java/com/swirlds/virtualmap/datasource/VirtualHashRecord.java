@@ -24,7 +24,12 @@ import com.swirlds.common.crypto.Hash;
  * @param hash the hash of the node
  */
 public record VirtualHashRecord(long path, Hash hash) {
+
     public VirtualHashRecord(long path) {
         this(path, null);
+    }
+
+    public VirtualHashBytes toBytes() {
+        return new VirtualHashBytes(path, hash.getBytes());
     }
 }

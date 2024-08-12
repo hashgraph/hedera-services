@@ -29,8 +29,12 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.IOException;
 import java.util.List;
@@ -159,6 +163,8 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.getState().setFirstLeafPath(6);
         root.getState().setLastLeafPath(12);
+        final KeySerializer<TestKey> keySerializer = new TestKeySerializer();
+        final ValueSerializer<TestValue> valueSerializer = new TestValueSerializer();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = List.of(
                 new VirtualLeafRecord<>(6, D_KEY, DATE),
                 new VirtualLeafRecord<>(7, A_KEY, APPLE),
@@ -167,7 +173,13 @@ class VirtualInternalNodeTest extends VirtualTestBase {
                 new VirtualLeafRecord<>(10, F_KEY, FIG),
                 new VirtualLeafRecord<>(11, G_KEY, GRAPE),
                 new VirtualLeafRecord<>(12, B_KEY, BANANA));
-        root.getDataSource().saveRecords(6, 12, leaves.stream().map(this::hash), leaves.stream(), Stream.empty());
+        root.getDataSource()
+                .saveRecords(
+                        6,
+                        12,
+                        leaves.stream().map(this::hash).map(VirtualHashRecord::toBytes),
+                        leaves.stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        Stream.empty());
 
         VirtualHashRecord virtualHashRecord = new VirtualHashRecord(2, null);
         VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);

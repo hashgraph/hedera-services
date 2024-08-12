@@ -24,19 +24,26 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashBytes;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -48,6 +55,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class RecordAccessorImplTest {
+
     private static final int MAX_PATH = 12;
     private static final Cryptography CRYPTO = CryptographyHolder.get();
 
@@ -61,6 +69,9 @@ public class RecordAccessorImplTest {
     private static final long DELETED_LEAF_PATH = 12;
     private static final long BOGUS_LEAF_PATH = 22;
 
+    private static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
+    private static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
+
     private BreakableDataSource dataSource;
     private RecordAccessorImpl<TestKey, TestValue> records;
     private RecordAccessorImpl<TestKey, TestValue> mutableRecords;
@@ -70,7 +81,7 @@ public class RecordAccessorImplTest {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
         VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
         dataSource = new BreakableDataSource();
-        records = new RecordAccessorImpl<>(state, cache, dataSource);
+        records = new RecordAccessorImpl<>(state, cache, KEY_SERIALIZER, VALUE_SERIALIZER, dataSource);
 
         // Prepopulate the database with some records
         final VirtualHashRecord root = internal(0);
@@ -90,8 +101,9 @@ public class RecordAccessorImplTest {
         dataSource.saveRecords(
                 6,
                 12,
-                Stream.of(root, left, right, leftLeft, leftRight, rightLeft),
-                Stream.of(firstLeaf, secondLeaf, thirdLeaf, fourthLeaf, fifthLeaf, sixthLeaf, seventhLeaf),
+                Stream.of(root, left, right, leftLeft, leftRight, rightLeft).map(VirtualHashRecord::toBytes),
+                Stream.of(firstLeaf, secondLeaf, thirdLeaf, fourthLeaf, fifthLeaf, sixthLeaf, seventhLeaf)
+                        .map(r -> r.toBytes(KEY_SERIALIZER, VALUE_SERIALIZER)),
                 Stream.empty());
 
         // Prepopulate the cache with some of those records. Some will be deleted, some will be modified, some will
@@ -108,7 +120,7 @@ public class RecordAccessorImplTest {
         cache.deleteLeaf(seventhLeafGone);
         cache.deleteHash(DELETED_INTERNAL_PATH);
         cache.deleteHash(OLD_DELETED_INTERNAL_PATH);
-        mutableRecords = new RecordAccessorImpl<>(state, cache.copy(), dataSource);
+        mutableRecords = new RecordAccessorImpl<>(state, cache.copy(), KEY_SERIALIZER, VALUE_SERIALIZER, dataSource);
         cache.prepareForHashing();
         cache.putHash(rootChanged);
         cache.putHash(rightChanged);
@@ -143,8 +155,7 @@ public class RecordAccessorImplTest {
     void findHashOnDiskReturns() {
         final var hash = records.findHash(UNCHANGED_INTERNAL_PATH);
         assertNotNull(hash, "Did not find record");
-        assertSame(
-                hash, records.findHash(UNCHANGED_INTERNAL_PATH), "Found the same instance on disk? Shouldn't happen!");
+        assertEquals(hash, records.findHash(UNCHANGED_INTERNAL_PATH), "Did not find the same hash on disk");
     }
 
     @Test
@@ -294,22 +305,23 @@ public class RecordAccessorImplTest {
         assertEquals(key, record.getKey());
     }
 
-    private static final class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
-        private final InMemoryDataSource<TestKey, TestValue> delegate = new InMemoryBuilder().build("delegate", true);
+    private static final class BreakableDataSource implements VirtualDataSource {
+
+        private final InMemoryDataSource delegate = new InMemoryBuilder().build("delegate", true);
         boolean throwExceptionOnLoadLeafRecordByKey = false;
         boolean throwExceptionOnLoadLeafRecordByPath = false;
         boolean throwExceptionOnLoadHashByPath = false;
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
+        public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
             if (throwExceptionOnLoadLeafRecordByKey) {
                 throw new IOException("Thrown by loadLeafRecord by key");
             }
-            return delegate.loadLeafRecord(key);
+            return delegate.loadLeafRecord(key, keyHashCode);
         }
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final long path) throws IOException {
+        public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
             if (throwExceptionOnLoadLeafRecordByPath) {
                 throw new IOException("Thrown by loadLeafRecord by path");
             }
@@ -317,8 +329,8 @@ public class RecordAccessorImplTest {
         }
 
         @Override
-        public long findKey(final TestKey key) throws IOException {
-            return delegate.findKey(key);
+        public long findKey(final Bytes key, final int keyHashCode) throws IOException {
+            return delegate.findKey(key, keyHashCode);
         }
 
         @Override
@@ -333,9 +345,9 @@ public class RecordAccessorImplTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
             delegate.saveRecords(
@@ -361,7 +373,7 @@ public class RecordAccessorImplTest {
          * {@inheritDoc}
          */
         @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
+        public void copyStatisticsFrom(final VirtualDataSource that) {
             // this database has no statistics
         }
 
@@ -371,14 +383,6 @@ public class RecordAccessorImplTest {
         @Override
         public void registerMetrics(final Metrics metrics) {
             // this database has no statistics
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
         }
 
         @Override
@@ -399,6 +403,18 @@ public class RecordAccessorImplTest {
         @Override
         public void stopAndDisableBackgroundCompaction() {
             delegate.stopAndDisableBackgroundCompaction();
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public KeySerializer getKeySerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public ValueSerializer getValueSerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
         }
     }
 

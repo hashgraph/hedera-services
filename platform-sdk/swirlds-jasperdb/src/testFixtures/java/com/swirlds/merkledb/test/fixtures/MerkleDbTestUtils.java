@@ -318,8 +318,7 @@ public class MerkleDbTestUtils {
     /**
      * Extract a statistic from the data source. Not very efficient, but good enough for a unit test.
      */
-    public static Metric getMetric(
-            final Metrics metrics, final VirtualDataSource<?, ?> dataSource, final String pattern) {
+    public static Metric getMetric(final Metrics metrics, final VirtualDataSource dataSource, final String pattern) {
         return getMetric(metrics, dataSource, pattern, false);
     }
 
@@ -328,7 +327,7 @@ public class MerkleDbTestUtils {
      */
     public static Metric getMetric(
             final Metrics metrics,
-            final VirtualDataSource<?, ?> dataSource,
+            final VirtualDataSource dataSource,
             final String pattern,
             final boolean mayNotExist) {
         dataSource.registerMetrics(metrics);

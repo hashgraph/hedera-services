@@ -46,7 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
     @Override
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
+    protected VirtualDataSourceBuilder createBuilder() {
         return new InMemoryBuilder();
     }
 

@@ -42,7 +42,7 @@ class VirtualMerkleLeafHasherTest {
     static Path storeDir;
     static SmartContractByteCodeMapKeySerializer keySerializer;
     static SmartContractByteCodeMapValueSerializer valueSerializer;
-    static MerkleDbDataSourceBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> dataSourceBuilder;
+    static MerkleDbDataSourceBuilder dataSourceBuilder;
 
     @BeforeAll
     static void beforeAll() {
@@ -50,26 +50,22 @@ class VirtualMerkleLeafHasherTest {
             storeDir = Files.createTempDirectory("VirtualMerkleLeafHasherTest2");
             MerkleDb.setDefaultPath(storeDir);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
 
         keySerializer = new SmartContractByteCodeMapKeySerializer();
         valueSerializer = new SmartContractByteCodeMapValueSerializer();
-        final MerkleDbTableConfig<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> tableConfig =
-                new MerkleDbTableConfig<>(
-                                (short) 1, DigestType.SHA_384,
-                                (short) 1, keySerializer,
-                                (short) 1, valueSerializer)
-                        .maxNumberOfKeys(50_000_000)
-                        .hashesRamToDiskThreshold(0)
-                        .preferDiskIndices(false);
-        dataSourceBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                .maxNumberOfKeys(50_000_000)
+                .hashesRamToDiskThreshold(0)
+                .preferDiskIndices(false);
+        dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     @Test
     void checkSimpleHashing2() throws IOException, InterruptedException {
         VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> virtualMap =
-                new VirtualMap<>("test2", dataSourceBuilder);
+                new VirtualMap<>("test2", keySerializer, valueSerializer, dataSourceBuilder);
 
         final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> hasher =
                 new VirtualMerkleLeafHasher<>(virtualMap);
@@ -105,7 +101,7 @@ class VirtualMerkleLeafHasherTest {
     @Test
     void checkSimpleHashing3() throws IOException, InterruptedException {
         VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> virtualMap =
-                new VirtualMap<>("test3", dataSourceBuilder);
+                new VirtualMap<>("test3", keySerializer, valueSerializer, dataSourceBuilder);
 
         final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> hasher =
                 new VirtualMerkleLeafHasher<>(virtualMap);
@@ -146,7 +142,7 @@ class VirtualMerkleLeafHasherTest {
     @Test
     void checkSimpleHashing4() throws IOException, InterruptedException {
         VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> virtualMap =
-                new VirtualMap<>("test4", dataSourceBuilder);
+                new VirtualMap<>("test4", keySerializer, valueSerializer, dataSourceBuilder);
 
         final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> hasher =
                 new VirtualMerkleLeafHasher<>(virtualMap);

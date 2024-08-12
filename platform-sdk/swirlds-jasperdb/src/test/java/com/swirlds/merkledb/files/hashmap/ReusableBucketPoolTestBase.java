@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -32,8 +32,7 @@ import org.junit.jupiter.api.Test;
 
 abstract class ReusableBucketPoolTestBase {
 
-    protected abstract ReusableBucketPool<ExampleLongKeyFixedSize> createPool(
-            final int size, final KeySerializer<ExampleLongKeyFixedSize> keySerializer);
+    protected abstract ReusableBucketPool createPool(final int size);
 
     final AtomicReference<Throwable> error = new AtomicReference<>();
     Thread.UncaughtExceptionHandler originalHandler;
@@ -58,14 +57,14 @@ abstract class ReusableBucketPoolTestBase {
     @DisplayName("Basic get / release bucket")
     void basicGetRelease() {
         final KeySerializer<ExampleLongKeyFixedSize> serializer = new ExampleLongKeyFixedSize.Serializer();
-        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = createPool(2, serializer);
-        final Bucket<ExampleLongKeyFixedSize> bucket1 = pool.getBucket();
+        final ReusableBucketPool pool = createPool(2);
+        final Bucket bucket1 = pool.getBucket();
         Assertions.assertNotNull(bucket1);
-        final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
+        final Bucket bucket2 = pool.getBucket();
         Assertions.assertNotNull(bucket2);
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
-        final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+        final Bucket bucket3 = pool.getBucket();
         Assertions.assertNotNull(bucket3);
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
     }
@@ -73,21 +72,20 @@ abstract class ReusableBucketPoolTestBase {
     @Test
     @DisplayName("Multiple gets when pool is empty")
     void multipleBlockingGets() {
-        final KeySerializer<ExampleLongKeyFixedSize> serializer = new ExampleLongKeyFixedSize.Serializer();
-        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = createPool(0, serializer);
-        final Bucket<ExampleLongKeyFixedSize> bucket1 = pool.getBucket();
+        final ReusableBucketPool pool = createPool(0);
+        final Bucket bucket1 = pool.getBucket();
         Assertions.assertNotNull(bucket1);
-        final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
+        final Bucket bucket2 = pool.getBucket();
         Assertions.assertNotNull(bucket2);
         final Set<Thread> threads = new HashSet<>();
         threads.add(new Thread(() -> {
-            final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+            final Bucket bucket3 = pool.getBucket();
             Assertions.assertNotNull(bucket3);
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
         }));
         threads.add(new Thread(() -> {
-            final Bucket<ExampleLongKeyFixedSize> bucket4 = pool.getBucket();
+            final Bucket bucket4 = pool.getBucket();
             Assertions.assertNotNull(bucket4);
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket4));
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
@@ -103,17 +101,16 @@ abstract class ReusableBucketPoolTestBase {
     @Test
     @DisplayName("Chained release / get calls")
     void chainedReleasesGets() {
-        final KeySerializer<ExampleLongKeyFixedSize> serializer = new ExampleLongKeyFixedSize.Serializer();
-        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = createPool(2, serializer);
-        final Bucket<ExampleLongKeyFixedSize> bucket1 = pool.getBucket();
+        final ReusableBucketPool pool = createPool(2);
+        final Bucket bucket1 = pool.getBucket();
         Assertions.assertNotNull(bucket1);
-        final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
+        final Bucket bucket2 = pool.getBucket();
         Assertions.assertNotNull(bucket2);
         final Set<Thread> threads = new HashSet<>();
         // Create a few threads that will all wait until there is a bucket available
         for (int i = 0; i < 4; i++) {
             final Thread t = new Thread(() -> {
-                final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+                final Bucket bucket3 = pool.getBucket();
                 Assertions.assertNotNull(bucket3);
                 Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
             });

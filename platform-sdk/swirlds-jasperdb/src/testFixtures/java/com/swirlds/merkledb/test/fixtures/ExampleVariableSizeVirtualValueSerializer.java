@@ -18,8 +18,8 @@ package com.swirlds.merkledb.test.fixtures;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.BaseSerializer;
-import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.virtualmap.serialize.BaseSerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 
 public final class ExampleVariableSizeVirtualValueSerializer
         implements ValueSerializer<ExampleVariableSizeVirtualValue> {

@@ -47,34 +47,26 @@ public class VirtualMerkleTransactionHandlerTest {
         final long maximumNumberOfKeyValuePairsCreation = 28750;
         final SmartContractMapKeySerializer keySerializer = new SmartContractMapKeySerializer();
         final SmartContractMapValueSerializer valueSerializer = new SmartContractMapValueSerializer();
-        final MerkleDbTableConfig<SmartContractMapKey, SmartContractMapValue> tableConfig = new MerkleDbTableConfig<>(
-                        (short) 1, DigestType.SHA_384,
-                        (short) 1, keySerializer,
-                        (short) 1, valueSerializer)
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                 .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
-        final MerkleDbDataSourceBuilder<SmartContractMapKey, SmartContractMapValue> dataSourceBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
 
-        smartContract = new VirtualMap<>("smartContracts", dataSourceBuilder);
+        smartContract = new VirtualMap<>("smartContracts", keySerializer, valueSerializer, dataSourceBuilder);
 
         final long totalSmartContractCreations = 23;
 
         final SmartContractByteCodeMapKeySerializer keySerializer2 = new SmartContractByteCodeMapKeySerializer();
         final SmartContractByteCodeMapValueSerializer valueSerializer2 = new SmartContractByteCodeMapValueSerializer();
-        final MerkleDbTableConfig<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> tableConfig2 =
-                new MerkleDbTableConfig<>(
-                                (short) 1, DigestType.SHA_384,
-                                (short) 1, keySerializer2,
-                                (short) 1, valueSerializer2)
-                        .maxNumberOfKeys(totalSmartContractCreations)
-                        .hashesRamToDiskThreshold(0)
-                        .preferDiskIndices(false);
-        final MerkleDbDataSourceBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> dataSourceBuilder2 =
-                new MerkleDbDataSourceBuilder<>(tableConfig2);
+        final MerkleDbTableConfig tableConfig2 = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                .maxNumberOfKeys(totalSmartContractCreations)
+                .hashesRamToDiskThreshold(0)
+                .preferDiskIndices(false);
+        final MerkleDbDataSourceBuilder dataSourceBuilder2 = new MerkleDbDataSourceBuilder(tableConfig2);
 
-        smartContractByteCodeVM = new VirtualMap<>("smartContractByteCode", dataSourceBuilder2);
+        smartContractByteCodeVM =
+                new VirtualMap<>("smartContractByteCode", keySerializer2, valueSerializer2, dataSourceBuilder2);
     }
 
     private VirtualMerkleTransaction buildCreateSmartContractTransaction(

@@ -27,9 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
@@ -80,7 +81,7 @@ class CompactionInterruptTest {
     boolean startMergeThenInterruptImpl() throws IOException, InterruptedException {
         final Path storeDir = tmpFileDir.resolve("startMergeThenInterruptImpl");
         String tableName = "mergeThenInterrupt";
-        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
+        final MerkleDbDataSource dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
@@ -125,7 +126,7 @@ class CompactionInterruptTest {
     boolean startMergeWhileSnapshottingThenInterruptImpl(int delayMs) throws IOException, InterruptedException {
         final Path storeDir = tmpFileDir.resolve("startMergeWhileSnapshottingThenInterruptImpl");
         String tableName = "mergeWhileSnapshotting";
-        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
+        final MerkleDbDataSource dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
@@ -202,19 +203,25 @@ class CompactionInterruptTest {
         assertEventuallyTrue(hashStoreDiskFuture::isCancelled, Duration.ofMillis(10), message);
     }
 
-    private void createData(final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource)
-            throws IOException {
+    private void createData(final MerkleDbDataSource dataSource) throws IOException {
         final int count = COUNT / 10;
         for (int batch = 0; batch < 10; batch++) {
             final int start = batch * count;
             final int end = start + count;
             final int lastLeafPath = (COUNT + end) - 1;
+            final KeySerializer keySerializer =
+                    TestType.variable_variable.dataType().getKeySerializer();
+            final ValueSerializer valueSerializer =
+                    TestType.variable_variable.dataType().getValueSerializer();
             dataSource.saveRecords(
                     COUNT,
                     lastLeafPath,
-                    IntStream.range(start, end).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                    IntStream.range(start, end)
+                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
+                            .map(VirtualHashRecord::toBytes),
                     IntStream.range(COUNT + start, COUNT + end)
-                            .mapToObj(i -> TestType.variable_variable.dataType().createVirtualLeafRecord(i)),
+                            .mapToObj(i -> TestType.variable_variable.dataType().createVirtualLeafRecord(i))
+                            .map(r -> r.toBytes(keySerializer, valueSerializer)),
                     Stream.empty());
         }
     }

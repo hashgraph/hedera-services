@@ -22,6 +22,8 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import com.swirlds.virtualmap.internal.merkle.AbstractHashListener;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.util.stream.Stream;
 
 /**
@@ -67,9 +69,11 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
     public ReconnectHashListener(
             final long firstLeafPath,
             final long lastLeafPath,
-            final VirtualDataSource<K, V> dataSource,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final VirtualDataSource dataSource,
             final ReconnectNodeRemover<K, V> nodeRemover) {
-        super(firstLeafPath, lastLeafPath, dataSource);
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
         this.nodeRemover = nodeRemover;
     }
 

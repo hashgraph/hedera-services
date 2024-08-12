@@ -37,6 +37,8 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualStateAccessorImpl;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -179,12 +181,16 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * @param dataSourceBuilder
      * 		The data source builder. Must not be null.
      */
-    public VirtualMap(final String label, final VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
+    public VirtualMap(
+            final String label,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final VirtualDataSourceBuilder dataSourceBuilder) {
         this();
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(Objects.requireNonNull(label)));
         setChild(
                 ChildIndices.VIRTUAL_ROOT_CHILD_INDEX,
-                new VirtualRootNode<>(Objects.requireNonNull(dataSourceBuilder)));
+                new VirtualRootNode<>(keySerializer, valueSerializer, Objects.requireNonNull(dataSourceBuilder)));
     }
 
     /**
@@ -193,7 +199,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * @param source
      * 		must not be null.
      */
-    private VirtualMap(VirtualMap<K, V> source) {
+    private VirtualMap(final VirtualMap<K, V> source) {
         this();
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, source.getState().copy());
         setChild(ChildIndices.VIRTUAL_ROOT_CHILD_INDEX, source.getRoot().copy());
@@ -204,7 +210,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      *
      * @return A non-null reference to the data source.
      */
-    public VirtualDataSource<K, V> getDataSource() {
+    public VirtualDataSource getDataSource() {
         return root.getDataSource();
     }
 

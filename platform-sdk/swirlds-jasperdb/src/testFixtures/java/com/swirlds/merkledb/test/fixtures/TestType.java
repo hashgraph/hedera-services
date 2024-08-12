@@ -32,13 +32,13 @@ import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,7 +47,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Supports parameterized testing of {@link MerkleDbDataSource} with
  * both fixed- and variable-size data.
  *
- * Used with JUnit's 'org.junit.jupiter.params.provider.EnumSource' annotation.
+ * <p>Used with JUnit's 'org.junit.jupiter.params.provider.EnumSource' annotation.
  */
 public enum TestType {
 
@@ -212,7 +212,7 @@ public enum TestType {
             return (keySerializer.getSerializedSize() != Long.BYTES);
         }
 
-        public MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> createDataSource(
+        public MerkleDbDataSource createDataSource(
                 final Path dbPath,
                 final String name,
                 final int size,
@@ -221,22 +221,17 @@ public enum TestType {
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
-            final MerkleDbTableConfig<? extends VirtualKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
-                    new MerkleDbTableConfig<>(
-                                    (short) 1, DigestType.SHA_384,
-                                    (short) keySerializer.getCurrentDataVersion(), keySerializer,
-                                    (short) valueSerializer.getCurrentDataVersion(), valueSerializer)
-                            .preferDiskIndices(preferDiskBasedIndexes)
-                            .maxNumberOfKeys(size * 10L)
-                            .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-            MerkleDbDataSource dataSource =
-                    database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
+            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                    .preferDiskIndices(preferDiskBasedIndexes)
+                    .maxNumberOfKeys(size * 10L)
+                    .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
+            MerkleDbDataSource dataSource = database.createDataSource(name, tableConfig, enableMerging);
             dataSource.registerMetrics(getMetrics());
             return dataSource;
         }
 
-        public MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> getDataSource(
-                final Path dbPath, final String name, final boolean enableMerging) throws IOException {
+        public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
+                throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
             return database.getDataSource(name, enableMerging);
         }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 public final class TestValue implements VirtualValue {
+
     private String s;
     public boolean readOnly = false;
     private boolean released = false;
@@ -45,6 +46,10 @@ public final class TestValue implements VirtualValue {
     @Override
     public int getVersion() {
         return 1;
+    }
+
+    String getValue() {
+        return s;
     }
 
     public void setValue(String s) {

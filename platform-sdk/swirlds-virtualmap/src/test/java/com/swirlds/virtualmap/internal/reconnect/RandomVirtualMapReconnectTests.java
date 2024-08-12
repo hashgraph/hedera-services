@@ -51,13 +51,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Tag(TIMING_SENSITIVE)
 @DisplayName("Random VirtualMap Tests")
 class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
+
     // used to convert between key as long to key as String
     public static final int LETTER_COUNT = 26;
     public static final String LETTERS = "abcdefghijklmnopqrstuvwxyz";
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
     @Override
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
+    protected VirtualDataSourceBuilder createBuilder() {
         return new InMemoryBuilder();
     }
 

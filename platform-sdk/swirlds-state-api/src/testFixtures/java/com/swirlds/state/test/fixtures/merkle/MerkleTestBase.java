@@ -49,6 +49,8 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -295,18 +297,16 @@ public class MerkleTestBase extends StateTestBase {
             long valueSerializerClassId,
             long valueClassId,
             Codec<String> valueCodec) {
-        final var merkleDbTableConfig = new MerkleDbTableConfig<>(
-                (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
-                new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec),
-                (short) 1,
-                new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec));
+        final KeySerializer<OnDiskKey<String>> keySerializer =
+                new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec);
+        final ValueSerializer<OnDiskValue<String>> valueSerializer =
+                new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec);
+        final var merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);
-        final var builder = new MerkleDbDataSourceBuilder<>(virtualDbPath, merkleDbTableConfig);
-        return new VirtualMap<>(label, builder);
+        final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig);
+        return new VirtualMap<>(label, keySerializer, valueSerializer, builder);
     }
 
     /** A convenience method for creating {@link SemanticVersion}. */

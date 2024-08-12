@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,10 +39,9 @@ import java.util.Objects;
  *
  * <p>It is designed to be used from a single thread.
  *
- * @param <D> data item type
  * @see DataFileReader for definition of file structure
  */
-public final class DataFileIterator<D> implements AutoCloseable {
+public final class DataFileIterator implements AutoCloseable {
 
     /** Input stream this iterator is reading from */
     private final BufferedInputStream inputStream;
@@ -53,8 +51,6 @@ public final class DataFileIterator<D> implements AutoCloseable {
     private final DataFileMetadata metadata;
     /** The path to the file we are iterating over */
     private final Path path;
-    /** The serializer used for reading data from the file */
-    private final BaseSerializer<D> dataItemSerializer;
 
     /** Buffer that is reused for reading each data item */
     private BufferedData dataItemBuffer;
@@ -76,15 +72,10 @@ public final class DataFileIterator<D> implements AutoCloseable {
      * @throws IOException
      * 		if there was a problem creating a new InputStream on the file at path
      */
-    public DataFileIterator(
-            final MerkleDbConfig dbConfig,
-            final Path path,
-            final DataFileMetadata metadata,
-            final BaseSerializer<D> dataItemSerializer)
+    public DataFileIterator(final MerkleDbConfig dbConfig, final Path path, final DataFileMetadata metadata)
             throws IOException {
         this.path = path;
         this.metadata = metadata;
-        this.dataItemSerializer = dataItemSerializer;
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), dbConfig.iteratorInputBufferBytes());
         this.in = new ReadableStreamingData(inputStream);
@@ -166,8 +157,8 @@ public final class DataFileIterator<D> implements AutoCloseable {
      * @return buffer containing the key and value data. This will return null if the iterator has
      * 		been closed, or if the iterator is in the before-first or after-last states.
      */
-    public D getDataItemData() {
-        return dataItemSerializer.deserialize(dataItemBuffer);
+    public BufferedData getDataItemData() {
+        return dataItemBuffer;
     }
 
     /**
@@ -202,7 +193,7 @@ public final class DataFileIterator<D> implements AutoCloseable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final DataFileIterator<?> that = (DataFileIterator<?>) o;
+        final DataFileIterator that = (DataFileIterator) o;
         return path.equals(that.getPath()) && metadata.equals(that.getMetadata());
     }
 

@@ -27,8 +27,7 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * }
  * </pre>
  */
-public sealed class Bucket<K extends VirtualKey> implements Closeable permits ParsedBucket {
+public sealed class Bucket implements Closeable permits ParsedBucket {
 
     private static final Logger logger = LogManager.getLogger(Bucket.class);
 
@@ -92,14 +91,11 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     private static final int METADATA_SIZE =
             ProtoWriterTools.sizeOfTag(FIELD_BUCKET_INDEX, ProtoConstants.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
 
-    /** Key serializer */
-    protected final KeySerializer<K> keySerializer;
-
     /**
      * Bucket pool this bucket is managed by, optional. If not null, the bucket is
      * released back to the pool on close.
      */
-    protected final ReusableBucketPool<K> bucketPool;
+    protected final ReusableBucketPool bucketPool;
 
     private BufferedData bucketData;
 
@@ -109,20 +105,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     /**
      * Create a new bucket with the default size.
-     *
-     * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    protected Bucket(final KeySerializer<K> keySerializer) {
-        this(keySerializer, null);
+    protected Bucket() {
+        this(null);
     }
 
     /**
      * Create a new bucket with the default size.
-     *
-     * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    protected Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
-        this.keySerializer = keySerializer;
+    protected Bucket(final ReusableBucketPool bucketPool) {
         this.bucketPool = bucketPool;
         this.bucketData = BufferedData.allocate(METADATA_SIZE);
         clear();
@@ -159,10 +150,6 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         bucketIndexFieldOffset = 0;
         setBucketIndex(0);
         entryCount = 0;
-    }
-
-    public KeySerializer<K> getKeySerializer() {
-        return keySerializer;
     }
 
     /** Get the index for this bucket */
@@ -212,7 +199,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @return the stored value for given key or notFoundValue if nothing is stored for the key
      * @throws IOException If there was a problem reading the value from file
      */
-    public long findValue(final int keyHashCode, final K key, final long notFoundValue) throws IOException {
+    public long findValue(final int keyHashCode, final Bytes key, final long notFoundValue) throws IOException {
         final FindResult result = findEntry(keyHashCode, key);
         if (result.found()) {
             // yay! we found it
@@ -229,8 +216,8 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * @param value the entry value, this can also be special
      *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
-    public final void putValue(final K key, final long value) {
-        putValue(key, INVALID_VALUE, value);
+    public final void putValue(final Bytes key, final int keyHashCode, final long value) {
+        putValue(key, keyHashCode, INVALID_VALUE, value);
     }
 
     /**
@@ -239,14 +226,14 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * is no existing value for the key, the value is not added.
      *
      * @param key the entry key
+     * @param keyHashCode the key hash code
      * @param oldValue the value to check the existing value against, if {@code checkOldValue} is true. If
      *                 {@code checkOldValue} is false, this old value is ignored
      * @param value the entry value, this can also be special
      *     HalfDiskHashMap.INVALID_VALUE to mean delete
      */
-    public void putValue(final K key, final long oldValue, final long value) {
+    public void putValue(final Bytes key, final int keyHashCode, final long oldValue, final long value) {
         final boolean needCheckOldValue = oldValue != INVALID_VALUE;
-        final int keyHashCode = key.hashCode();
         final FindResult result = findEntry(keyHashCode, key);
         if (value == INVALID_VALUE) {
             if (result.found()) {
@@ -291,9 +278,9 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         }
     }
 
-    private void writeNewEntry(final int hashCode, final long value, final K key) {
+    private void writeNewEntry(final int hashCode, final long value, final Bytes key) {
         final long entryOffset = bucketData.limit();
-        final int keySize = keySerializer.getSerializedSize(key);
+        final int keySize = Math.toIntExact(key.length());
         final int entrySize =
                 ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
                         + Integer.BYTES
@@ -308,8 +295,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
             out.writeInt(hashCode);
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
             out.writeLong(value);
-            ProtoWriterTools.writeDelimited(
-                    out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> keySerializer.serialize(key, t));
+            ProtoWriterTools.writeDelimited(out, FIELD_BUCKETENTRY_KEYBYTES, keySize, t -> t.writeBytes(key));
         });
     }
 
@@ -354,7 +340,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     // =================================================================================================================
     // Private API
 
-    private FindResult findEntry(final int keyHashCode, final K key) {
+    private FindResult findEntry(final int keyHashCode, final Bytes key) {
         bucketData.resetPosition();
         while (bucketData.hasRemaining()) {
             final long fieldOffset = bucketData.position();
@@ -396,9 +382,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
                         if ((entryValueOffset == -1) || (entryKeyBytesOffset == -1)) {
                             logger.warn(MERKLE_DB.getMarker(), "Broken bucket entry");
                         } else {
-                            bucketData.position(entryKeyBytesOffset);
-                            bucketData.limit(entryKeyBytesOffset + entryKeyBytesSize);
-                            if (keySerializer.equals(bucketData, key)) {
+                            if (keyEquals(entryKeyBytesOffset, entryKeyBytesSize, key)) {
                                 return new FindResult(
                                         true,
                                         fieldOffset,
@@ -417,6 +401,15 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
             }
         }
         return FindResult.NOT_FOUND;
+    }
+
+    private boolean keyEquals(final long pos, final int size, final Bytes key) {
+        for (int i = 0; i < size; i++) {
+            if (bucketData.getByte(pos + i) != key.getByte(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** toString for debugging */

@@ -24,7 +24,6 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -70,10 +69,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *     repeated bytes items = 11;
  * }
  * </pre>
- *
- * @param <D> Data item type
  */
-public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
+public final class DataFileReader implements AutoCloseable, Comparable<DataFileReader>, IndexedObject {
 
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
@@ -112,8 +109,6 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     private final Path path;
     /** The metadata for this file read from the footer */
     private final DataFileMetadata metadata;
-    /** Serializer for converting raw data to/from data items */
-    private final BaseSerializer<D> dataItemSerializer;
     /** A flag for if the underlying file is fully written and ready to be compacted. */
     private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
 
@@ -129,11 +124,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      *
      * @param dbConfig MerkleDb config
      * @param path the path to the data file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
      */
-    public DataFileReader(final MerkleDbConfig dbConfig, final Path path, final BaseSerializer<D> dataItemSerializer)
-            throws IOException {
-        this(dbConfig, path, dataItemSerializer, new DataFileMetadata(path));
+    public DataFileReader(final MerkleDbConfig dbConfig, final Path path) throws IOException {
+        this(dbConfig, path, new DataFileMetadata(path));
     }
 
     /**
@@ -141,14 +134,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      *
      * @param dbConfig MerkleDb config
      * @param path the path to the data file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param metadata the file's metadata to save loading from file
      */
-    public DataFileReader(
-            final MerkleDbConfig dbConfig,
-            final Path path,
-            final BaseSerializer<D> dataItemSerializer,
-            final DataFileMetadata metadata)
+    public DataFileReader(final MerkleDbConfig dbConfig, final Path path, final DataFileMetadata metadata)
             throws IOException {
         this.dbConfig = dbConfig;
         maxFileChannels = dbConfig.maxFileChannelsPerFileReader();
@@ -160,7 +148,6 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         }
         this.path = path;
         this.metadata = metadata;
-        this.dataItemSerializer = dataItemSerializer;
         openNewFileChannel(0);
     }
 
@@ -224,34 +211,19 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * @return new data item iterator
      * @throws IOException if there was a problem creating a new DataFileIterator
      */
-    public DataFileIterator<D> createIterator() throws IOException {
-        return new DataFileIterator<>(dbConfig, path, metadata, dataItemSerializer);
+    public DataFileIterator createIterator() throws IOException {
+        return new DataFileIterator(dbConfig, path, metadata);
     }
 
     /**
-     * Read data item from file at dataLocation and deserialize it to a Java object.
+     * Read data item from file at dataLocation.
      *
      * @param dataLocation data item location, which combines data file index and offset in the file
      * @return deserialized data item
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
-    public D readDataItem(final long dataLocation) throws IOException {
-        final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-        final BufferedData data = read(byteOffset);
-        return data != null ? dataItemSerializer.deserialize(data) : null;
-    }
-
-    /**
-     * Read data item bytes from file at dataLocation.
-     *
-     * @param dataLocation the file index combined with the offset for the starting block of the
-     *     data in the file
-     * @return data item bytes
-     * @throws IOException if there was a problem reading from data file
-     * @throws ClosedChannelException if the data file was closed
-     */
-    public BufferedData readDataItemBytes(final long dataLocation) throws IOException {
+    public BufferedData readDataItem(final long dataLocation) throws IOException {
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         return read(byteOffset);
     }
@@ -267,7 +239,6 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     }
 
     /** Equals for use when comparing in collections, based on matching file paths */
-    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(final Object o) {
         if (this == o) {

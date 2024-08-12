@@ -51,8 +51,7 @@ public class HalfDiskMapBench extends BaseBench {
         Arrays.fill(map, INVALID_PATH);
 
         final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
-        final var store = new HalfDiskHashMap<>(
-                dbConfig, maxKey, new BenchmarkKeySerializer(), getTestDir(), storeName, null, false);
+        final var store = new HalfDiskHashMap(dbConfig, maxKey, getTestDir(), storeName, null, false);
         final var dataFileCompactor = new DataFileCompactor(
                 dbConfig,
                 storeName,
@@ -65,6 +64,7 @@ public class HalfDiskMapBench extends BaseBench {
         System.out.println();
 
         // Write files
+        final BenchmarkKeySerializer keySerializer = new BenchmarkKeySerializer();
         long start = System.currentTimeMillis();
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
@@ -73,7 +73,7 @@ public class HalfDiskMapBench extends BaseBench {
                 long id = nextAscKey();
                 BenchmarkKey key = new BenchmarkKey(id);
                 long value = nextValue();
-                store.put(key, value);
+                store.put(keySerializer.toBytes(key), key.hashCode(), value);
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -89,7 +89,8 @@ public class HalfDiskMapBench extends BaseBench {
         if (verify) {
             start = System.currentTimeMillis();
             for (int id = 0; id < map.length; ++id) {
-                long value = store.get(new BenchmarkKey(id), INVALID_PATH);
+                final BenchmarkKey key = new BenchmarkKey(id);
+                long value = store.get(keySerializer.toBytes(key), key.hashCode(), INVALID_PATH);
                 if (value != map[id]) {
                     throw new RuntimeException("Bad value");
                 }

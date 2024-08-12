@@ -21,6 +21,8 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.util.stream.Stream;
 
 /**
@@ -64,8 +66,12 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
      * 		The data source. Cannot be null.
      */
     public FullLeafRehashHashListener(
-            final long firstLeafPath, final long lastLeafPath, final VirtualDataSource<K, V> dataSource) {
-        super(firstLeafPath, lastLeafPath, dataSource);
+            final long firstLeafPath,
+            final long lastLeafPath,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final VirtualDataSource dataSource) {
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
     }
 
     /**
