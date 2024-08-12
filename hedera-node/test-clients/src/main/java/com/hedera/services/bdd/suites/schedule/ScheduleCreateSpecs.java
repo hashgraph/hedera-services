@@ -20,8 +20,12 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDE
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.adjustment;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -108,6 +112,34 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class ScheduleCreateSpecs {
+    @HapiTest
+    final Stream<DynamicTest> scheduledAutoCreationWithCustomPayerHasExpectedRecords() {
+        final var customPayer = "customPayer";
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                cryptoCreate(customPayer).payingWith(PAYER).balance(20 * ONE_HBAR),
+                scheduleCreate(
+                                "autoCreationWithCustomPayer",
+                                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HBAR)))
+                        .designatingPayer(customPayer)
+                        .payingWith(PAYER)
+                        .via("autoCreationWithCustomPayer")
+                        .fee(ONE_HBAR),
+                scheduleSign("autoCreationWithCustomPayer")
+                        .payingWith(customPayer)
+                        .via("signTxn"),
+                getTxnRecord("signTxn")
+                        .andAllChildRecords()
+                        .hasPriority(recordWith()
+                                .transfers(including(
+                                        adjustment("0.0.3", 25768),
+                                        adjustment("0.0.98", 391354),
+                                        adjustment("0.0.800", 48919),
+                                        adjustment("0.0.801", 48919),
+                                        adjustment(customPayer, -514960)))));
+    }
+
     @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")

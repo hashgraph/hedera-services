@@ -16,13 +16,18 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -33,16 +38,25 @@ import java.util.function.Consumer;
 public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implements FinalizeContext {
     private final Instant consensusNow;
     private final Configuration configuration;
+    private final HederaFunctionality functionality;
+    private final HandleContext.TransactionCategory category;
+    private final RecordListBuilder recordListBuilder;
 
     public TriggeredFinalizeContext(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Instant consensusNow,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final RecordListBuilder recordListBuilder) {
         super(configuration, readableStoreFactory, writableStoreFactory, recordBuilder);
-        this.consensusNow = Objects.requireNonNull(consensusNow);
-        this.configuration = Objects.requireNonNull(configuration);
+        this.consensusNow = requireNonNull(consensusNow);
+        this.configuration = requireNonNull(configuration);
+        this.functionality = requireNonNull(functionality);
+        this.category = requireNonNull(category);
+        this.recordListBuilder = requireNonNull(recordListBuilder);
     }
 
     @NonNull
@@ -59,14 +73,30 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        // Since this is only used for a scheduled dispatch, we should not deduct any changes from this transaction
-        // So always return false.
-        return false;
+        // There is a single case in 0.52 where a child dispatch can itself have a logical child with non-zero
+        // balance adjustments---a scheduled crypto transfer that triggers an auto-account creation
+        if (category == SCHEDULED && functionality == CRYPTO_TRANSFER) {
+            final var precedingBuilders = recordListBuilder.precedingRecordBuilders();
+            return precedingBuilders.stream()
+                    .anyMatch(
+                            builder -> !builder.transferList().accountAmounts().isEmpty());
+        } else {
+            return false;
+        }
     }
 
     @Override
-    public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
-        // No-op, as contract operations cannot be scheduled at this time
+    public <T> void forEachChildRecord(
+            @NonNull final Class<T> recordBuilderClass, @NonNull final Consumer<T> consumer) {
+        requireNonNull(recordBuilderClass);
+        requireNonNull(consumer);
+        if (category == SCHEDULED && functionality == CRYPTO_TRANSFER) {
+            final var precedingBuilders = recordListBuilder.precedingRecordBuilders();
+            precedingBuilders.stream()
+                    .filter(builder -> !builder.transferList().accountAmounts().isEmpty())
+                    .map(recordBuilderClass::cast)
+                    .forEach(consumer);
+        }
     }
 
     @Override

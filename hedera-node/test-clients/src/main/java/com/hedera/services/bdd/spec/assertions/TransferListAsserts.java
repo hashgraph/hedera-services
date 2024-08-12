@@ -24,8 +24,10 @@ import static java.util.stream.Collectors.toSet;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -64,6 +66,15 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
     @SafeVarargs
     public static TransferListAsserts including(Function<HapiSpec, TransferList>... providers) {
         return new ExplicitTransferAsserts(Arrays.asList(providers));
+    }
+
+    public static Function<HapiSpec, TransferList> adjustment(@NonNull final String account, final long amount) {
+        return spec -> TransferList.newBuilder()
+                .addAccountAmounts(AccountAmount.newBuilder()
+                        .setAccountID(asId(account, spec))
+                        .setAmount(amount)
+                        .build())
+                .build();
     }
 
     public static TransferListAsserts includingDeduction(LongSupplier from, long amount) {
