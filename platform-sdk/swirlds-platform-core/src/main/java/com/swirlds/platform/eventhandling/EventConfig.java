@@ -34,9 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
  * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
- * @param migrateEventHashing               if true then use the new event hashing algorithm for new events, events
- *                                          created by previous software versions will still need to be hashed using the
- *                                          old algorithm.
+ * @param eventHashindMode                  specifies the mode of event hashing
  */
 @ConfigData("event")
 public record EventConfig(
@@ -47,7 +45,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
         @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
-        @ConfigProperty(defaultValue = "true") boolean migrateEventHashing) {
+        @ConfigProperty(defaultValue = "MIGRATE") EventHashingMode eventHashindMode) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold
@@ -59,5 +57,24 @@ public record EventConfig(
         } else {
             return AncientMode.GENERATION_THRESHOLD;
         }
+    }
+
+    /**
+     * Specifies the mode of event hashing
+     */
+    public enum EventHashingMode{
+        /**
+         * Legacy event hashing based on SelfSerializable
+         */
+        OLD,
+        /**
+         * Checks the software version and uses the new event hashing algorithm for new events
+         * and old algorithm for events created by previous software versions
+         */
+        MIGRATE,
+        /**
+         * Always use the new event hashing algorithm based on PBJ
+         */
+        NEW
     }
 }

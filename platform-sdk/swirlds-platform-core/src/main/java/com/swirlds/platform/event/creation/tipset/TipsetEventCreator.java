@@ -171,12 +171,15 @@ public class TipsetEventCreator implements EventCreator {
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
-        this.eventHasher = platformContext
+        this.eventHasher =
+                switch (platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .migrateEventHashing()
-                ? new PbjHasher()
-                : new StatefulEventHasher();
+                        .eventHashindMode()) {
+                    case OLD -> new StatefulEventHasher();
+                    // if event hashing is set to migrate, we will use the new event hashing algorithm for new events
+                    case MIGRATE, NEW -> new PbjHasher();
+                };
     }
 
     /**
