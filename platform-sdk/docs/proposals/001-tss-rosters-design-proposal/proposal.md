@@ -315,7 +315,7 @@ The current startup procedure will be altered as follows:
   AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
 
 The current network Transplant procedure is manual. DevOps get given a State and `config.txt` file on disk. This is
-then followed by a software-only upgrade to adopt the `config.txt` file using that state. This will change to the
+then followed by a config-only upgrade to adopt the `config.txt` file using that state. This will change to the
 use of a Genesis Roster or Override Roster. The new startup sequence will be determined by the presence of a Genesis
 Roster, State, or Override Roster as described in the following sections.
 
