@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class UpdateNFTsMetadataTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -46,7 +45,7 @@ public class UpdateNFTsMetadataTranslator extends AbstractCallTranslator<HtsCall
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return attempt.configuration().getConfigData(ContractsConfig.class).systemContractUpdateNFTsMetadataEnabled()
-                && Arrays.equals(attempt.selector(), UPDATE_NFTs_METADATA.selector());
+                && attempt.isSelector(UPDATE_NFTs_METADATA);
     }
 
     @Override
