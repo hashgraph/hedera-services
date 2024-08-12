@@ -282,7 +282,10 @@ public class ChildDispatchFactory {
                         new WritableStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
                         recordBuilder,
                         consensusNow,
-                        config),
+                        config,
+                        txnInfo.functionality(),
+                        category,
+                        recordListBuilder),
                 recordListBuilder,
                 platformState,
                 preHandleResult);
