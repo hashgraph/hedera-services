@@ -72,7 +72,8 @@ class UpdateNFTsMetadataTranslatorTest {
     @Test
     void matchesUpdateNFTsMetadataTest() {
         given(attempt.configuration()).willReturn(getTestConfiguration(true));
-        given(attempt.selector()).willReturn(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA.selector());
+        given(attempt.isSelector(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA))
+                .willReturn(true);
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
