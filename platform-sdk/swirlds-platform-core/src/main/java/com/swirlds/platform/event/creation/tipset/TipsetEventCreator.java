@@ -175,7 +175,7 @@ public class TipsetEventCreator implements EventCreator {
                 switch (platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .eventHashindMode()) {
+                        .eventHashingMode()) {
                     case OLD -> new StatefulEventHasher();
                         // if event hashing is set to migrate, we will use the new event hashing algorithm for new
                         // events

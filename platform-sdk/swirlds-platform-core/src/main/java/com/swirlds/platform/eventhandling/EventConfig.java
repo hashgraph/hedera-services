@@ -34,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
  * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
- * @param eventHashindMode                  specifies the mode of event hashing
+ * @param eventHashingMode                  specifies the mode of event hashing
  */
 @ConfigData("event")
 public record EventConfig(
@@ -45,7 +45,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
         @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
-        @ConfigProperty(defaultValue = "MIGRATE") EventHashingMode eventHashindMode) {
+        @ConfigProperty(defaultValue = "MIGRATE") EventHashingMode eventHashingMode) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

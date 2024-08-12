@@ -263,7 +263,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext()
                             .getConfiguration()
                             .getConfigData(EventConfig.class)
-                            .eventHashindMode());
+                            .eventHashingMode());
         }
         return eventHasher;
     }
