@@ -30,12 +30,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingNFTAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -135,5 +137,32 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN_2)),
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
+    }
+
+    @HapiTest
+    @DisplayName("Claim frozen token airdrop")
+    final Stream<DynamicTest> claimFrozenToken() {
+        final var tokenFreezeKey = "freezeKey";
+        return defaultHapiSpec("should fail - ACCOUNT_FROZEN_FOR_TOKEN")
+                .given(
+                        newKeyNamed(tokenFreezeKey),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .treasury(OWNER)
+                                .freezeKey(tokenFreezeKey)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(1000L))
+                .when(
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                                .payingWith(OWNER),
+                        tokenFreeze(FUNGIBLE_TOKEN, OWNER))
+                .then(
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
+                                .payingWith(RECEIVER)
+                                .feeUsd(0.001)
+                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0));
     }
 }
