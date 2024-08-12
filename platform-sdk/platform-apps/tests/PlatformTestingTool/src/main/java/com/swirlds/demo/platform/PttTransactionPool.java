@@ -329,7 +329,6 @@ public class PttTransactionPool implements FastCopyable {
                 payloadPair = fcmTransactionPool.getTransaction(invalidSig);
                 if (payloadPair != null) {
                     payload = payloadPair.left();
-                    logger.info(MARKER, "Generated FCM transaction type {}", payloadPair.middle());
                 }
             }
             // payloadPair still null indicates it's the turn to generate virtual merkle transaction
