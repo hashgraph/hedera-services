@@ -21,20 +21,43 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import java.time.InstantSource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ContractServiceImplTest {
     private final InstantSource instantSource = InstantSource.system();
 
-    private final ContractServiceImpl subject = new ContractServiceImpl(instantSource);
+    @Mock
+    private AppContext appContext;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
+    private ContractServiceImpl subject;
+
+    @BeforeEach
+    void setUp() {
+        // given
+        when(appContext.instantSource()).thenReturn(instantSource);
+        when(appContext.signatureVerifier()).thenReturn(signatureVerifier);
+
+        subject = new ContractServiceImpl(appContext);
+    }
 
     @Test
     void handlersAreAvailable() {

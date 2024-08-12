@@ -25,7 +25,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -44,7 +43,7 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return Arrays.equals(attempt.selector(), NON_FUNGIBLE_TOKEN_INFO.selector());
+        return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO);
     }
 
     /**

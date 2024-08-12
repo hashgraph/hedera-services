@@ -24,7 +24,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -40,7 +39,7 @@ public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> 
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_TYPE.selector());
+        return attempt.isSelector(TOKEN_TYPE);
     }
 
     /**
