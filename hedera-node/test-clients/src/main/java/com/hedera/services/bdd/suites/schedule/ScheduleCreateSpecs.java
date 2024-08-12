@@ -141,28 +141,6 @@ public class ScheduleCreateSpecs {
     }
 
     @HapiTest
-    final Stream<DynamicTest> scheduledTransferWithCustomPayerHasExpectedRecords() {
-        final var customPayer = "customPayer";
-        return hapiTest(
-                cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
-                cryptoCreate(customPayer).payingWith(PAYER).balance(20 * ONE_HBAR),
-                scheduleCreate(
-                                "transferWithCustomPayer",
-                                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, FUNDING, ONE_HBAR)))
-                        .designatingPayer(customPayer)
-                        .payingWith(PAYER)
-                        .via("transferWithCustomPayer")
-                        .fee(ONE_HBAR),
-                getScheduleInfo("transferWithCustomPayer")
-                        .hasPayerAccountID(customPayer)
-                        .logged(),
-                scheduleSign("transferWithCustomPayer").payingWith(customPayer).via("signTxn"),
-                getScheduleInfo("transferWithCustomPayer").logged(),
-                getTxnRecord("signTxn").andAllChildRecords().logged(),
-                getTxnRecord("transferWithCustomPayer").scheduled().logged());
-    }
-
-    @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(
