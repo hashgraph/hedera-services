@@ -34,6 +34,10 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
+/**
+ * A {@link OperationTracer} that delegates just the relevant callbacks to a {@link EvmActionTracer}, and all
+ * {@link OperationTracer} callbacks to a list of "add on" tracers.
+ */
 public class AddOnEvmActionTracer implements ActionSidecarContentTracer {
     private final EvmActionTracer evmActionTracer;
     private final List<OperationTracer> addOnTracers;

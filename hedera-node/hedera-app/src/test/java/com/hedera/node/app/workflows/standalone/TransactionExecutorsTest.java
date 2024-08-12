@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
@@ -71,6 +72,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
@@ -96,6 +98,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Tests the ability to execute transactions against a standalone state by,
+ * <ol>
+ *   <li>Constructing a {@link FakeState} that fully implements the {@link State} API, with {@link WritableStates}
+ *   that are all {@link CommittableWritableStates}; and hence accumulate changes as multiple transactions are
+ *   executed.</li>
+ *   <li>Executing a {@link HederaFunctionality#FILE_CREATE} to upload some contract initcode.</li>
+ *   <li>Executing a {@link HederaFunctionality#CONTRACT_CREATE} to create an instance of the contract.</li>
+ *   <li>Executing a {@link HederaFunctionality#CONTRACT_CALL} to call a function on the contract, and capturing
+ *   the output of a {@link StandardJsonTracer} that is passed in as an extra argument.</li>
+ * </ol>
+ */
 @ExtendWith(MockitoExtension.class)
 class TransactionExecutorsTest {
     private static final long GAS = 100_000L;

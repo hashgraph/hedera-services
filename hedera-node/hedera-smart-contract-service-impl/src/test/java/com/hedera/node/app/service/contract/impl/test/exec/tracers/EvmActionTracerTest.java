@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec;
+package com.hedera.node.app.service.contract.impl.test.exec.tracers;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static org.junit.jupiter.api.Assertions.assertSame;
