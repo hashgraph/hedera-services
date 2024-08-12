@@ -20,6 +20,8 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
@@ -30,6 +32,8 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -39,7 +43,7 @@ import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
-import com.hedera.node.app.workflows.ExecutorModule;
+import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -79,7 +83,7 @@ import javax.inject.Singleton;
             BlockRecordInjectionModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class,
-            ExecutorModule.class,
+            FacilityInitModule.class,
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();
@@ -124,7 +128,17 @@ public interface HederaInjectionComponent {
 
     @Component.Builder
     interface Builder {
-        Builder executorModule(ExecutorModule executorModule);
+        @BindsInstance
+        Builder fileServiceImpl(FileServiceImpl fileService);
+
+        @BindsInstance
+        Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder configProviderImpl(ConfigProviderImpl configProvider);
+
+        @BindsInstance
+        Builder bootstrapConfigProviderImpl(BootstrapConfigProviderImpl bootstrapConfigProvider);
 
         @BindsInstance
         Builder servicesRegistry(ServicesRegistry registry);

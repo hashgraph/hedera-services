@@ -32,7 +32,6 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -43,6 +42,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,69 +53,43 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Module that provides initialization for the state-dependent facilities used to execute transactions.
+ * These include the fees, exchange rates, and throttling facilities; as well as the {@link WorkingStateAccessor}.
+ */
 @Module
-public class ExecutorModule {
-    private static final Logger log = LogManager.getLogger(ExecutorModule.class);
+public interface FacilityInitModule {
+    Logger log = LogManager.getLogger(FacilityInitModule.class);
 
-    private final FileServiceImpl fileService;
-    private final ContractServiceImpl contractService;
-    private final ConfigProviderImpl configProvider;
-    private final BootstrapConfigProviderImpl bootstrapConfigProvider;
+    @Binds
+    @Singleton
+    ConfigProvider bindConfigProvider(@NonNull ConfigProviderImpl configProvider);
 
-    public ExecutorModule(
-            @NonNull final FileServiceImpl fileService,
-            @NonNull final ContractServiceImpl contractService,
-            @NonNull final ConfigProviderImpl configProvider,
-            @NonNull final BootstrapConfigProviderImpl bootstrapConfigProvider) {
-        this.fileService = requireNonNull(fileService);
-        this.contractService = requireNonNull(contractService);
-        this.configProvider = requireNonNull(configProvider);
-        this.bootstrapConfigProvider = requireNonNull(bootstrapConfigProvider);
-    }
-
+    /**
+     * Provides the initialization for the state-dependent facilities used to execute transactions.
+     *
+     * @param feeManager the {@link FeeManager} to initialize
+     * @param exchangeRateManager the {@link ExchangeRateManager} to initialize
+     * @param throttleServiceManager the {@link ThrottleServiceManager} to initialize
+     * @param workingStateAccessor the {@link WorkingStateAccessor} to update with the working state
+     * @return the initialization function
+     */
     @Provides
     @Singleton
-    public FileServiceImpl provideFileService() {
-        return fileService;
-    }
-
-    @Provides
-    @Singleton
-    public ContractServiceImpl provideContractService() {
-        return contractService;
-    }
-
-    @Provides
-    @Singleton
-    public ConfigProviderImpl provideConfigProviderImpl() {
-        return configProvider;
-    }
-
-    @Provides
-    @Singleton
-    public ConfigProvider provideConfigProvider() {
-        return configProvider;
-    }
-
-    @Provides
-    @Singleton
-    public BootstrapConfigProviderImpl provideBootstrapConfigProviderImpl() {
-        return bootstrapConfigProvider;
-    }
-
-    @Provides
-    @Singleton
-    public Consumer<State> executorInit(
+    static Consumer<State> initFacilities(
             @NonNull final FeeManager feeManager,
+            @NonNull final FileServiceImpl fileService,
+            @NonNull final ConfigProviderImpl configProvider,
+            @NonNull final BootstrapConfigProviderImpl bootstrapConfigProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final WorkingStateAccessor workingStateAccessor) {
         return state -> {
             if (hasHandledGenesisTxn(state)) {
-                initializeExchangeRateManager(state, exchangeRateManager);
-                initializeFeeManager(state, feeManager);
+                initializeExchangeRateManager(state, configProvider, exchangeRateManager);
+                initializeFeeManager(state, configProvider, feeManager);
                 observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
-                throttleServiceManager.init(state, throttleDefinitionsFrom(state));
+                throttleServiceManager.init(state, throttleDefinitionsFrom(state, configProvider));
             } else {
                 final var schema = fileService.fileSchema();
                 final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
@@ -127,21 +101,28 @@ public class ExecutorModule {
         };
     }
 
-    private void initializeExchangeRateManager(
-            @NonNull final State state, @NonNull final ExchangeRateManager exchangeRateManager) {
+    private static void initializeExchangeRateManager(
+            @NonNull final State state,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
         final var file = requireNonNull(
-                getFileFromStorage(state, fileNum), "The initialized state had no exchange rates file 0.0." + fileNum);
+                getFileFromStorage(state, configProvider, fileNum),
+                "The initialized state had no exchange rates file 0.0." + fileNum);
         exchangeRateManager.init(state, file.contents());
     }
 
-    private void initializeFeeManager(@NonNull final State state, @NonNull final FeeManager feeManager) {
+    private static void initializeFeeManager(
+            @NonNull final State state,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final FeeManager feeManager) {
         log.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
         final var file = requireNonNull(
-                getFileFromStorage(state, fileNum), "The initialized state had no fee schedule file 0.0." + fileNum);
+                getFileFromStorage(state, configProvider, fileNum),
+                "The initialized state had no fee schedule file 0.0." + fileNum);
         final var status = feeManager.update(file.contents());
         if (status != SUCCESS) {
             // (FUTURE) Ideally this would be a fatal error, but unlike the exchange rates file, it
@@ -151,7 +132,7 @@ public class ExecutorModule {
         }
     }
 
-    private boolean hasHandledGenesisTxn(@NonNull final State state) {
+    private static boolean hasHandledGenesisTxn(@NonNull final State state) {
         final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
                 .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                 .get();
@@ -160,7 +141,8 @@ public class ExecutorModule {
                 .orElse(EPOCH));
     }
 
-    private @Nullable File getFileFromStorage(@NonNull final State state, final long fileNum) {
+    private static @Nullable File getFileFromStorage(
+            @NonNull final State state, @NonNull final ConfigProvider configProvider, final long fileNum) {
         final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
@@ -171,7 +153,8 @@ public class ExecutorModule {
         return readableFileStore.getFileLeaf(fileId);
     }
 
-    private Bytes throttleDefinitionsFrom(@NonNull final State state) {
+    private static Bytes throttleDefinitionsFrom(
+            @NonNull final State state, @NonNull final ConfigProvider configProvider) {
         final var config = configProvider.getConfiguration();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         final var throttleDefinitionsId = createFileID(filesConfig.throttleDefinitions(), config);

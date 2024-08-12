@@ -24,7 +24,6 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
-import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -50,10 +49,7 @@ public enum TransactionExecutors {
      * @return a new {@link TransactionExecutor}
      */
     public TransactionExecutor newExecutor(@NonNull final State state, @NonNull final Map<String, String> properties) {
-        final var executor = DaggerExecutorComponent.builder()
-                .executorModule(newExecutorModule(properties))
-                .metrics(new NoOpMetrics())
-                .build();
+        final var executor = newExecutorComponent(properties);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
         return (transactionBody, consensusNow, operationTracers) -> {
@@ -64,18 +60,23 @@ public enum TransactionExecutors {
         };
     }
 
-    private ExecutorModule newExecutorModule(@NonNull final Map<String, String> properties) {
-        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+    private ExecutorComponent newExecutorComponent(@NonNull final Map<String, String> properties) {
+        final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
-                        bootstrapConfig.getConfigData(HederaConfig.class),
+                        bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
-        return new ExecutorModule(
-                new FileServiceImpl(),
-                new ContractServiceImpl(appContext, OPERATION_TRACERS::get),
-                new ConfigProviderImpl(false, null, properties),
-                new BootstrapConfigProviderImpl());
+        final var contractService = new ContractServiceImpl(appContext, OPERATION_TRACERS::get);
+        final var fileService = new FileServiceImpl();
+        final var configProvider = new ConfigProviderImpl(false, null, properties);
+        return DaggerExecutorComponent.builder()
+                .configProviderImpl(configProvider)
+                .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .fileServiceImpl(fileService)
+                .contractServiceImpl(contractService)
+                .metrics(new NoOpMetrics())
+                .build();
     }
 }

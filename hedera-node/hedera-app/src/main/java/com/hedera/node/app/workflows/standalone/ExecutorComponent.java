@@ -17,10 +17,14 @@
 package com.hedera.node.app.workflows.standalone;
 
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
-import com.hedera.node.app.workflows.ExecutorModule;
+import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
@@ -48,15 +52,25 @@ import javax.inject.Singleton;
             ServicesInjectionModule.class,
             HederaStateInjectionModule.class,
             ThrottleServiceModule.class,
-            ExecutorModule.class
+            FacilityInitModule.class
         })
 public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
         @BindsInstance
-        Builder metrics(Metrics metrics);
+        Builder fileServiceImpl(FileServiceImpl fileService);
 
-        Builder executorModule(ExecutorModule executorModule);
+        @BindsInstance
+        Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder configProviderImpl(ConfigProviderImpl configProvider);
+
+        @BindsInstance
+        Builder bootstrapConfigProviderImpl(BootstrapConfigProviderImpl bootstrapConfigProvider);
+
+        @BindsInstance
+        Builder metrics(Metrics metrics);
 
         ExecutorComponent build();
     }

@@ -61,7 +61,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.ExecutorModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -695,11 +694,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
         }
-        final var executorModule =
-                new ExecutorModule(fileServiceImpl, contractServiceImpl, configProvider, bootstrapConfigProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
-                .executorModule(executorModule)
+                .configProviderImpl(configProvider)
+                .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .fileServiceImpl(fileServiceImpl)
+                .contractServiceImpl(contractServiceImpl)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
                 .self(extractSelfNodeInfo(platform, version))
