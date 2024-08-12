@@ -4,20 +4,10 @@
 	"insertSeq": true,
 	"variedSize": false,
 	"_comment": "payload type TYPE_RANDOM_BYTES for random bytes",
-	"type": "TYPE_RANDOM_BYTES",
+	"type":  "TYPE_FCM_VIRTUAL_MIX",
+	"ratioOfFCMTransaction": 0.5,
 	"payloadByteSize": 100,
-	"maxByteSize": 100,
-	"distribution": {
-	  "sizeDistribution": [
-		100
-	  ],
-	  "ratioDistribution": [
-		100
-	  ],
-	  "typeDistribution": [
-		"TYPE_FCM_TEST"
-	  ]
-	}
+	"maxByteSize": 100
   },
   "submitConfig": {
 	"_comment0": [
@@ -37,6 +27,36 @@
 	"pauseSeconds": 30,
 	"allowRunSubmit": true,
 	"C2CDelayThreshold": 6
+  },
+  "virtualMerkleConfig": {
+	"samplingProbability": 1,
+	"assorted": false,
+	"sequential": [
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 2000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 1000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 20000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 2000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 1000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 20000
+	  }
+	]
   },
   "fcmConfig": {
 	"sequentialTest": true,
