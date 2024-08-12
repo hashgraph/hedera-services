@@ -112,7 +112,8 @@ class HandleSystemContractOperationsTest {
                         eq(CryptoTransferStreamBuilder.class),
                         captor.capture(),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(CHILD));
+                        eq(CHILD),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
         final var test = captor.getValue();
         assertTrue(test.test(TestHelpers.A_CONTRACT_KEY));
         assertTrue(test.test(AN_ED25519_KEY));

@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -94,7 +95,11 @@ public class AutoAccountCreator {
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(), CryptoCreateStreamBuilder.class, null, handleContext.payer());
+                syntheticCreation.build(),
+                CryptoCreateStreamBuilder.class,
+                null,
+                handleContext.payer(),
+                AT_CONSENSUS_AND_INGEST);
         childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.

@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
@@ -36,6 +37,7 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -78,10 +80,14 @@ public class DispatchUsageManager {
      * @throws ThrottleException if the dispatch should be throttled
      */
     public void screenForCapacity(@NonNull final Dispatch dispatch) throws ThrottleException {
-        if (isContractOperation(dispatch)) {
-            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+        if (isConsensusThrottled(dispatch)) {
+            final var isThrottled =
+                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                 throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
+            } else if (isThrottled
+                    && !CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality())) {
+                throw new ThrottleException(THROTTLED_AT_CONSENSUS);
             }
         }
     }
@@ -103,7 +109,7 @@ public class DispatchUsageManager {
                 // in only one place; for now we have already tracked utilization for contract operations
                 // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
                 final var function = dispatch.txnInfo().functionality();
-                if (!CONTRACT_OPERATIONS.contains(function)) {
+                if (!CONTRACT_OPERATIONS.contains(function) && !isConsensusThrottled(dispatch)) {
                     networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
                 } else {
                     leakUnusedGas(dispatch);
@@ -218,8 +224,8 @@ public class DispatchUsageManager {
      * @param dispatch the dispatch
      * @return true if the dispatch is a contract operation, false otherwise
      */
-    public static boolean isContractOperation(@NonNull Dispatch dispatch) {
-        return CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality());
+    public static boolean isConsensusThrottled(@NonNull Dispatch dispatch) {
+        return dispatch.throttleStrategy() != HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
     }
 
     /**

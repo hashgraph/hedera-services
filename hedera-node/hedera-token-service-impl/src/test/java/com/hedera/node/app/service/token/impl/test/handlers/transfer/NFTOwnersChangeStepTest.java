@@ -43,6 +43,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeS
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
@@ -57,7 +58,8 @@ class NFTOwnersChangeStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);

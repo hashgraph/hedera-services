@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
@@ -370,7 +371,8 @@ public class HandleHederaOperations implements HederaOperations {
                 context.payer(),
                 isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(number, bodyToExternalize));
+                        : contractBodyCustomizerFor(number, bodyToExternalize),
+                ONLY_AT_INGEST);
         if (recordBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure

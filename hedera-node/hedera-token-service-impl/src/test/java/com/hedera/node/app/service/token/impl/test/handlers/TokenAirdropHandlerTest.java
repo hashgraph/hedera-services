@@ -51,6 +51,7 @@ import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
@@ -333,7 +334,11 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId)))
+                        any(),
+                        eq(TokenAirdropStreamBuilder.class),
+                        eq(null),
+                        eq(payerId),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();

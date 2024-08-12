@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -336,7 +338,8 @@ abstract class AbstractScheduleHandler {
                     ScheduleStreamBuilder.class,
                     assistant,
                     scheduleToExecute.payerAccountId(),
-                    TransactionCategory.SCHEDULED);
+                    TransactionCategory.SCHEDULED,
+                    AT_CONSENSUS_AND_INGEST);
             // If the child failed, we would prefer to fail with the same result.
             //     We do not fail, however, at least mono service code does not.
             //     We succeed and the record of the child transaction is failed.

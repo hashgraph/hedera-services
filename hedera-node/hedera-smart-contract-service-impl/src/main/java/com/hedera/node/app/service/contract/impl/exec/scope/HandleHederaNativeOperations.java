@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -114,7 +115,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer());
+                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer(), AT_CONSENSUS_AND_INGEST);
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
             return childRecordBuilder.status();

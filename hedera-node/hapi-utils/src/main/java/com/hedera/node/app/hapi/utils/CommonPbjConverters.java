@@ -705,6 +705,7 @@ public class CommonPbjConverters {
             case EMPTY_PENDING_AIRDROP_ID_LIST -> ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
             case PENDING_AIRDROP_ID_REPEATED -> ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
             case MAX_PENDING_AIRDROP_ID_EXCEEDED -> ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+            case THROTTLED_AT_CONSENSUS -> ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

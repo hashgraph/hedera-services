@@ -148,6 +148,7 @@ public class ChildDispatchFactory {
      * @param platformState        the platform state
      * @param topLevelFunction     the top level functionality
      * @param consensusNow         the consensus time
+     * @param throttleStrategy     the throttle strategy
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
@@ -165,7 +166,8 @@ public class ChildDispatchFactory {
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            @NonNull final HandleContext.ThrottleStrategy throttleStrategy) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
@@ -194,7 +196,8 @@ public class ChildDispatchFactory {
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager,
-                dispatcher);
+                dispatcher,
+                throttleStrategy);
     }
 
     private RecordDispatch newChildDispatch(
@@ -223,7 +226,8 @@ public class ChildDispatchFactory {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HandleContext.ThrottleStrategy throttleStrategy) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack);
         final var writableStoreFactory = new WritableStoreFactory(
                 childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
@@ -285,7 +289,8 @@ public class ChildDispatchFactory {
                 category,
                 childTokenContext,
                 platformState,
-                preHandleResult);
+                preHandleResult,
+                throttleStrategy);
     }
 
     private static Fees computeChildFees(

@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -580,16 +581,31 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                            null,
+                            StreamBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            CHILD,
+                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() ->
-                            subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+            assertThatThrownBy(() -> subject.dispatchChildTransaction(
+                            txBody,
+                            null,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            CHILD,
+                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+                            null,
+                            StreamBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            NOOP_RECORD_CUSTOMIZER,
+                            ONLY_AT_INGEST))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER, ONLY_AT_INGEST))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -598,13 +614,19 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD)),
+                            txBody,
+                            StreamBuilder.class,
+                            VERIFIER_CALLBACK,
+                            ALICE.accountID(),
+                            CHILD,
+                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             txBody,
                             StreamBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID(),
-                            (ignore) -> Transaction.DEFAULT)));
+                            (ignore) -> Transaction.DEFAULT,
+                            ONLY_AT_INGEST)));
         }
 
         @ParameterizedTest
@@ -670,7 +692,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchRemovablePrecedingTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
+                    txBody,
+                    StreamBuilder.class,
+                    VERIFIER_CALLBACK,
+                    ALICE.accountID(),
+                    HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -695,7 +721,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatchChildTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
+                    txBody,
+                    StreamBuilder.class,
+                    VERIFIER_CALLBACK,
+                    ALICE.accountID(),
+                    SCHEDULED,
+                    HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -769,7 +800,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                        any()))
+                        any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()

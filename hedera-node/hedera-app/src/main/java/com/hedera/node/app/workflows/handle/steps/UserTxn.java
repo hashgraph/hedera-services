@@ -42,6 +42,7 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -260,7 +261,8 @@ public record UserTxn(
                 USER,
                 tokenContextImpl,
                 platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
     }
 
     /**

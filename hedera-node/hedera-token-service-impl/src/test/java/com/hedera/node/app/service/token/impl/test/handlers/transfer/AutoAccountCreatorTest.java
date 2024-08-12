@@ -31,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AutoAccountCreator;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -76,7 +77,11 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathECKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(payerId),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -107,7 +112,11 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathEDKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(payerId),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -139,7 +148,11 @@ class AutoAccountCreatorTest extends StepsBase {
         accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(payerId),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

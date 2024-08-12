@@ -56,10 +56,11 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public void trackTxn(
+    public boolean trackTxn(
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) {
-        backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
+        final var shouldThrottle = backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
         congestionMultipliers.updateMultiplier(consensusTime);
+        return shouldThrottle;
     }
 
     @Override

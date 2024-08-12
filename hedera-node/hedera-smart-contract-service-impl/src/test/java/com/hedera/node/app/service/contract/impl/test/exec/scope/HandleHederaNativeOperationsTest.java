@@ -183,7 +183,11 @@ class HandleHederaNativeOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         when(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -201,7 +205,11 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

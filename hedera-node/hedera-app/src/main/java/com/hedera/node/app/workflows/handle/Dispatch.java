@@ -205,4 +205,6 @@ public interface Dispatch {
      * @return the pre-handle result
      */
     PreHandleResult preHandleResult();
+
+    HandleContext.ThrottleStrategy throttleStrategy();
 }
