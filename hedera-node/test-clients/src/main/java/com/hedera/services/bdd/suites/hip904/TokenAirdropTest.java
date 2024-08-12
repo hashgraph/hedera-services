@@ -428,7 +428,7 @@ public class TokenAirdropTest {
 
         @HapiTest
         @DisplayName("that is alias with 0 free maxAutoAssociations")
-        final Stream<DynamicTest> autoCreateWithNftFallBackFeeFails() {
+        final Stream<DynamicTest> airdropToAliasWithNoFreeSlots() {
             final var validAlias = "validAlias";
             return defaultHapiSpec("should go in pending state")
                     .given(newKeyNamed(validAlias))
