@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
@@ -97,7 +98,8 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
             requireNonNull(account);
             Key key = account.key();
             validateTruePreCheck(key != null, KEY_NOT_PROVIDED);
-            context.requireKey(key);
+            // requireKeyOrThrow also will set hollow accounts for finalization
+            context.requireKeyOrThrow(receiverId, INVALID_ACCOUNT_ID);
         }
     }
 
