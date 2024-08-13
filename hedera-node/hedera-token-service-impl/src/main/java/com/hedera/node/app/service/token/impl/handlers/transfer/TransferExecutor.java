@@ -81,8 +81,8 @@ public class TransferExecutor {
 
     /**
      * Pre-handle for airdrop transaction, that ignore receiver sign required check. Because airdrops to
-     * receiver with signature required, should result in a pending airdrop or failed transaction depending
-     * on association.
+     * receiver with signature required, should result in a pending airdrop or crypto transfer transaction depending
+     * on association and signature.
      * @param context handle context
      * @param op transaction body
      * @throws PreCheckException if any error occurs during the process
@@ -340,7 +340,7 @@ public class TransferExecutor {
      * @param ctx                      The context we gather signing keys into
      * @param accountStore             The account store to use to look up accounts
      * @param hbarTransfer             Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
-     * @param receiverSigRequiredCheck
+     * @param receiverSigRequiredCheck Whether to check for receiver signature during pre-handle (we skip it if the transaction is airdrop)
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
