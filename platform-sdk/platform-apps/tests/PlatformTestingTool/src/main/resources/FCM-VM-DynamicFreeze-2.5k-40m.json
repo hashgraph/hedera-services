@@ -7,7 +7,18 @@
 	"type": "TYPE_FCM_VIRTUAL_MIX",
 	"ratioOfFCMTransaction": 0.5,
 	"payloadByteSize": 100,
-	"maxByteSize": 100
+	"maxByteSize": 100,
+	"distribution": {
+	  "sizeDistribution": [
+		100
+	  ],
+	  "ratioDistribution": [
+		100
+	  ],
+	  "typeDistribution": [
+		"TYPE_FCM_TEST"
+	  ]
+	}
   },
   "submitConfig": {
 	"_comment0": [
