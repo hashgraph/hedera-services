@@ -148,21 +148,18 @@ is fixed in number of rounds, then it will work.
 
 #### Peer Discipline
 
-If a peer is misbehaving, the Gossip module will notify the Bad Node module that one of its peers is misbehaving. For
+If a peer is misbehaving, the Gossip module will notify the Sheriff module that one of its peers is misbehaving. For
 example, if a peer is not responding to requests, even after repeated attempts to reconnect with it, it may be "bad".
 Or if the peer is sending events that exceed an acceptable rate, or exceed an acceptable side, then it is "bad". Or if
 the events it sends cannot be parsed, or are signed incorrectly, or in other ways fail validation, then it is "bad".
-There may be additional rules by the Gossip module or others (such as the Hashgraph module detecting forking) that could
-lead to a peer being marked as "bad".
+There may be additional rules by the Gossip module or others (such as Event Intake detecting forking) that could lead to
+a peer being marked as "bad". A "bad" node may be dishonest, or it may be broken. The two cases are indistinguishable,
+so all such nodes are treated equally.
 
-If the Bad Node module decides that the peer should be penalized, then it will instruct the Gossip module to "shun" that
-peer. "Shunning" is a unilateral behavior that one node can take towards another, where it terminates the connection and
-refuses to work further with that node. If the Bad Node module decides to welcome a peer back into the fold, it can
-instruct the Gossip module to "welcome" the peer back.
-
-There are many potential inputs to the Bad Node module, and therefore, the decision to shun or welcome a node is
-**not** made by the Gossip module, but rather, the Gossip module must let the Bad Node module know of peer
-misbehavior, and the Gossip module must be able to shun and welcome peers on demand.
+If the Sheriff decides that the peer should be penalized, then it will instruct the Gossip module to "shun" that peer.
+"Shunning" is a unilateral behavior that one node can take towards another, where it terminates the connection and
+refuses to work further with that node. If the Sheriff decides to welcome a peer back into the fold, it can instruct the
+Gossip module to "welcome" the peer back.
 
 #### Falling Behind
 
@@ -226,7 +223,7 @@ checks are not needed (since they have already been proved valid and are in topo
 
 #### Peer Discipline
 
-During the validation process, if an event is invalid, it is rejected, and this information is passed to the Bad Node
+During the validation process, if an event is invalid, it is rejected, and this information is passed to the Sheriff
 module so the offending node may be disciplined. Note that the node to be disciplined will be the node that sent this
 bad event to us, not the origin node. This information (which node sent the event) must be captured by Gossip and
 passed to Event Intake as part of the event metadata.
@@ -257,6 +254,15 @@ the same events. The generation will be part of the event metadata, **not** part
 in the part of the event that is gossiped).
 
 Event Intake is responsible for assigning generations to events.
+
+#### Fork Detection
+
+The Event Intake module inspects events to determine whether any given event creator is "forking" the hashgraph. A
+"fork" happens when two or more different events from the same creator have the same "self-event" parent. Any node
+that forks (known affectionately as a "Dirty Rotten Forker") will be reported to the Sheriff. Forking is a sign of
+either a dishonest node, or a seriously broken node. In either case, it may be subject to "shunning", and will be
+reported to the Execution layer for further observation and, if required, action (such as canceling rewards for
+stakers to that node).
 
 #### Persistence
 
@@ -316,7 +322,109 @@ We will pass the full round info (metadata + events) to all listeners, and they 
 #### Roster Changes
 
 When the roster changes, the Hashgraph algorithm must be made aware. It needs roster information to be able to come
-to consensus.
+to consensus. While several modules must respond to roster changes, it is the Hashgraph module that "owns" the roster.
+Each round has an associated roster -- the roster that was used to come to consensus on that round. While the
+Hashgraph owns the roster, it does not _determine_ the roster, this happens in the Execution layer.
+
+At runtime, there is a service in Execution that exposes to the world API for adding nodes to, or removing nodes from,
+the address book. At some point in time, Execution will decide the time is right to construct a new consensus roster,
+and pass that roster to the consensus system. **This must be deterministic**. Each node in the network must assign the
+same roster to the same rounds. However, Consensus and Execution run in completely different threads, and possibly,
+in different processes.
+
+With this architecture, we introduce a new concept into `EventCore`. `EventCore` has a `payload`, which is a `byte[]`
+that the Execution layer can use to carry whatever payload is meaningful to it. The consensus layer needs an analogous
+section of the `EventCore` into which messages particular to Consensus can be placed. This section will be called
+`repeated control_messages`. A `ControlMessage` is a protobuf message used to control, in some way, the consensus
+system.
+
+TODO: I'm seriously thinking of having "system_transactions" and "user_transactions" instead of "control_messages" and
+"payload".
+
+`ControlMessage` has a one-of, among which is `RosterChangeMessage`. This message will have the new roster, and be
+signed by the network as a whole. Each honest node will submit a `RosterChangeMessage`, and the Hashgraph module will
+recognize these messages. When it encounters the **first** such message for a given roster in a round that has come to
+consensus, the very next round will use that new activated roster.
+
+### Event Creator Module
+
+Every node in the network participating in consensus is permitted to create events to gossip to peers. These events
+are used both for transmitting user transactions, and as the basis of the hashgraph algorithm for "gossiping about
+gossip". Therefore, the Event Creator has two main responsibilities:
+
+1. Create events with "other parent(s)" so as to help the hashgraph progress consensus
+2. Fill events with transactions to be sent to the network through Gossip
+
+#### Creating Events
+
+The Event Creator is configured with a `maximum_event_creation_frequency`, measured in events/sec. This is a network
+wide setting. If any node creates events more rapidly than this setting, then the node will be reported to the Sheriff.
+An event is not necessarily created at this frequency, but will be created at no more than this frequency.
+
+When it is time to potentially create an event, the Event Creator will determine whether it *should* create the event.
+It may consider whether there are any transactions to send, or whether creating an event will help advance the
+hashgraph. It may decide that creating the event would be bad for the network, and veto such creation. Or it may decide
+that creating the event should be permitted.
+
+If the event is to be created, the Event Creator will decide which nodes to select as "other parents". Today, we have
+exactly one "other parent" per event, but multiple "other parents" is shown to effectively reduce latency and network
+traffic. While the implementation of Event Creator may choose to support only a single "other parent", the module is
+designed and intended to support multiple "other parents".
+
+TODO: How do we apply network settings!!!! It must be similar to the roster changes, it must be done in consensus and
+reported through the "round" mechanism. Because network settings are handled in Execution, but communicated back to
+Consensus. OR, whatever mechanism we settle on for communication of rounds, must also apply to config changes.
+
+#### Filling Events
+
+Events form a large amount of the network traffic between nodes. Each event has some overhead in terms of metadata,
+such as the hashes of the parent events and cryptographic signatures. Thus, for bandwidth and scalability reasons, it is
+more desirable to have fewer, large events rather than many small events. On the other hand, events should be created
+frequently enough to reduce the overall latency experienced by a transaction. The Event Creator is designed so as to
+find the optimal balance between event creation frequency and size. The particular algorithm that does so (the Tipset
+algorithm, or "Enhanced Other Parent Selection" algorithm) is not defined here, but can be found in the design
+documentation for Event Creator.
+
+When new transactions are created, they are buffered here in the Event Creator until the next possible event is
+available. If the event creator cannot accept additional transactions (i.e. there is a backlog too great for it), then
+it can refuse and return an error to the Execution layer, which will then be responsible for either retrying later, or
+indicating to the client that it is busy and the client should retry later.
+
+Newly created events are sent to Event Intake, which then validates them, assigns generations, durably persists them,
+etc., before sending them out through Gossip and so forth.
+
+#### Stale Events
+
+The Event Creator needs to know about the state of the hashgraph for several reasons. If it uses the Tipset algorithm,
+then it needs a way to evict events from its internal caches that are ancient. And it needs to report "stale" events
+to the Execution layer. A stale event is an event that became ancient without ever coming to consensus. If the
+Event Creator determines that an event has become stale, then it will notify the Execution layer. Execution may look at
+each transaction within the event, and decide that some transactions (such as those that have expired or will soon
+expire) should be dropped while others (such as those not close to expiration) should be resubmitted in the next event.
+
+TODO: Why is stale event detection here? It could literally be anywhere, or be a separate module. It doesn't seem
+related to event creation at all, and therefore, shouldn't be part of this module.
+
+### Sheriff Module
+
+When misbehavior is found for a node, it is reported to the Sheriff. This module keeps track of the different types of
+misbehavior each node is accused of, and uses this information to determine whether to "shun" or "welcome" a node. It
+also sends this information to the Execution layer, so it may record misbehavior in state, if it so chooses, or publish
+misbehavior to other nodes in the network, allowing the network as a whole to observe and report dishonest or broken
+nodes.
+
+A node may "shun" another node, by refusing to talk with it via Gossip. If a node were to be shunned by all its
+gossip peers, then it has been effectively removed from the network, as it can no longer submit events that will be
+spread through the network, and will therefore not contribute to consensus. Should a malicious node attempt to attack
+its peers, if those peers discover this attack and simply shun the node, then taking no other action, the malicious
+node is prevented from causing further harm to the network.
+
+It may be that a node is misbehaving due to a bug, or environmental issue, rather than due to malicious intent. For
+example, a broken node with network trouble may attempt to create many connections, as each prior connection having
+failed for some reason. But it could also be malicious intent. Unable to tell the difference, the Sheriff may decide to
+shun the node for some time period, and then "welcome" it back by allowing it to form connections again. It is up to
+the Sheriff's algorithms to decide on the correct response to different behaviors. These algorithms are not defined
+here, but will be defined within the Sheriff's design documentation.
 
 ### Public API
 
