@@ -36,6 +36,7 @@ import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,7 +72,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new TokenCancelAirdropHandler();
+        subject = new TokenCancelAirdropHandler(new PendingAirdropUpdater());
     }
 
     @SuppressWarnings("DataFlowIssue")

@@ -18,8 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -54,6 +54,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -103,7 +104,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
 
     @BeforeEach
     public void setup() {
-        subject = new TokenCancelAirdropHandler();
+        subject = new TokenCancelAirdropHandler(new PendingAirdropUpdater());
         testConfig = HederaTestConfigBuilder.create()
                 .withValue("tokens.airdrops.cancel.enabled", true)
                 .getOrCreateConfig();
@@ -184,7 +185,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         // Assert
-        assertEquals(INVALID_TRANSACTION_BODY, response.getStatus());
+        assertEquals(INVALID_PENDING_AIRDROP_ID, response.getStatus());
     }
 
     @Test
@@ -201,6 +202,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
                 .tokenCancelAirdrop(tokenCancelAirdrop(true))
                 .build();
         when(handleContext.body()).thenReturn(transactionBody);
+        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
 
         // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -268,6 +270,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         // Empty nft store
         readableNftStore = newReadableStoreWithNfts();
         when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
+        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
 
         // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));

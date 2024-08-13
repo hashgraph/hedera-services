@@ -16,15 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_HAS_NO_AIRDROPS_TO_CANCEL;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -67,10 +69,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCancelAirdropHandler extends BaseTokenHandler implements TransactionHandler {
+    private final PendingAirdropUpdater pendingAirdropUpdater;
 
     @Inject
-    public TokenCancelAirdropHandler() {
+    public TokenCancelAirdropHandler(final PendingAirdropUpdater pendingAirdropUpdater) {
         // Exists for injection
+        this.pendingAirdropUpdater = pendingAirdropUpdater;
     }
 
     @Override
@@ -102,10 +106,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             throws PreCheckException {
         final var senderAccount = accountStore.getAliasedAccountById(senderId);
         validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
-
         // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.key();
-        context.requireKey(key);
+        validateTruePreCheck(senderAccount.key() != null, ACCOUNT_IS_IMMUTABLE);
+        context.requireKey(senderAccount.key());
     }
 
     @Override
@@ -148,16 +151,20 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var pendingAirdropIds = op.pendingAirdrops();
         final var payer = context.payer();
         final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-        validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
+        validateTrue(payerAccount.hasHeadPendingAirdropId(), SENDER_HAS_NO_AIRDROPS_TO_CANCEL);
 
-        validatePendingAirdropIds(context, pendingAirdropIds, payer, accountStore, airdropStore);
-        new PendingAirdropUpdater(airdropStore, accountStore).removePendingAirdrops(op.pendingAirdrops());
+        validateAirdropIdsToCancel(context, pendingAirdropIds, payer, accountStore, airdropStore);
+        pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), airdropStore, accountStore);
     }
 
     /**
      * Using the configuration to validate if the body valid
      */
-    private static void configValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
+    private void configValidation(
+            @NonNull final Configuration configuration, @NonNull final TokenCancelAirdropTransactionBody op) {
+        requireNonNull(configuration);
+        requireNonNull(op);
+
         var tokensConfig = configuration.getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
         validateFalse(
@@ -166,19 +173,30 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     }
 
     /**
-     * Validating the list of PendingAirdropId
+     * Validates the list of pending airdrop IDs to cancel.
+     * @param context The handle context.
+     * @param pendingAirdropIds The list of pending airdrop IDs to cancel.
+     * @param payerId The account ID of the payer.
+     * @param accountStore The account store.
+     * @param airdropStore The airdrop store.
      */
-    private static void validatePendingAirdropIds(
-            HandleContext context,
-            List<PendingAirdropId> pendingAirdropIds,
-            AccountID payer,
-            WritableAccountStore accountStore,
-            WritableAirdropStore airdropStore) {
+    private void validateAirdropIdsToCancel(
+            @NonNull final HandleContext context,
+            @NonNull final List<PendingAirdropId> pendingAirdropIds,
+            @NonNull final AccountID payerId,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableAirdropStore airdropStore) {
+        requireNonNull(context);
+        requireNonNull(pendingAirdropIds);
+        requireNonNull(payerId);
+        requireNonNull(accountStore);
+        requireNonNull(airdropStore);
+
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
 
-        for (var pendingAirdropId : pendingAirdropIds) {
-            validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
+        for (final var pendingAirdropId : pendingAirdropIds) {
+            validateTrue(payerId.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
             if (pendingAirdropId.hasFungibleTokenType()) {
                 getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
             } else {
@@ -187,9 +205,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             }
             getIfUsable(
                     pendingAirdropId.senderIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-            getIfUsable(
-                    pendingAirdropId.receiverIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
+            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_PENDING_AIRDROP_ID);
         }
     }
 
@@ -198,10 +214,10 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        feeCalculator.resetUsage();
 
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
+        return feeCalculator
                 .addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1))
                 .calculate();
     }
