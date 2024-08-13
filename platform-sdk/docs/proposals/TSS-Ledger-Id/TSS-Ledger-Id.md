@@ -562,13 +562,45 @@ message LedgerId {
   bytes ledger_signature = 3;
 
   /**
-   * A map of node RSA signatures.
-   * This is a map from node ids to the _RSA_ node signatures on the ledger id.
+   * The signatures from nodes in the active roster signing the new ledger id.
+   * These signatures establish a chain of trust from the network to the new ledger id. 
    * <p>
    * This value MUST be present when the ledger signature of a previous ledger id is absent.
    */
-  map<uint64, bytes> node_signatures = 4;
+  RosterSignatures roster_signatures = 4;
 }
+
+/**
+ * A collection of signatures from nodes in a roster. 
+ */
+message RosterSignatures {
+  /**
+   * A roster hash for the roster that the node signatures are from. 
+   */
+  bytes roster_hash = 1;
+  
+  /**
+   * A list of node signatures on the same message where all node ids in the NodeSignature objects are from the
+   * roster that the roster_hash represents.
+   */
+  repeated NodeSignature node_signatures = 2;
+}
+
+/**
+ * A pair of a _RSA_ signature and the node id of the node that created the signature.
+ */
+message NodeSignature {
+  /**
+   * The node id of the node that created the _RSA_ signature.
+   */
+  uint64 node_id = 1;
+  
+  /**
+   * The bytes of an _RSA_ signature.
+   */
+  bytes node_signature = 2;
+}
+
 ```
 
 ##### TSS Data Maps
@@ -663,8 +695,8 @@ The following startup sequence on new networks is modified from existing practic
       that
       it is ready to adopt the key material.
    6. When a node detects that a threshold number of pre-genesis nodes on the network are ready to adopt the key
-      material, the node will add the key material and ledger id to a copy of the genesis state and restart the
-      platform.
+      material, the node will add the key material and ledger id to a copy of the genesis state, save the state to disk, 
+      and restart the platform.
 5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
    building a new hashgraph, working towards consensus on round 1. It will then be in post-genesis mode.
 6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node must provide the pre-genesis node a
@@ -814,8 +846,9 @@ Inputs:
 3. If there existed a previous active roster and the candidate roster is different from the new active roster, log an
    error.
 4. Set the new active roster
-5. If the active roster has private shares set, and there exists a candidate roster,
-   then `createTssMessageTransactions`.
+5. If the active roster has private shares set, and there exists a candidate roster, then log an error indicating 
+   something unexpected occurred and `createTssMessageTransactions` to key the candidate roster from the new active 
+   roster. 
 
 `On Candidate Roster`:
 
