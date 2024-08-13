@@ -17,11 +17,11 @@ design document defines the next iteration of the consensus node architecture, e
 ## Purpose and Context
 
 Much of the motivation for this design can come down to paying down technical debt and simplifying the overall design.
-While the current design is full of amazing high quality solutions to various problems, the overall system is more
-complex than necessary, leading to hard-to-find or predict bugs, performance problems, or liveness (stability) issues
-while under load. In addition, the separation of the "platform" and "services" in the consensus node is somewhat
-arbitrary, based on and abstract concept of what the "platform" was long before Hedera was even created. This work is
-also necessary to prepare for more autonomous node operation, and community nodes.
+While the current design is full of amazing high quality solutions to various problems, it is also more complex than
+necessary, leading to hard-to-find or predict bugs, performance problems, or liveness (stability) issues while under
+load. In addition, the separation of the "platform" and "services" in the consensus node is somewhat arbitrary, based
+on an abstract concept of what the "platform" was long before Hedera was even created. This work is also necessary to
+prepare for more autonomous node operation, and community nodes.
 
 Principally:
 1. This design defines several high-level modules, made up of internal "components". Whereas the current implementation
@@ -41,10 +41,10 @@ Principally:
    as managing the merkle tree, making fast copies of it, hashing it, etc. These responsibilities will be merged into
    the `HandleWorkflow`, dramatically simplifying the interface and boundary between "consensus"/"platform" and
    "execution"/"services".
-6. Backpressure, or dealing with a system under stress, will be radically redesigned based on [PID](https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller)
-   controller logic, and known as "dynamic throttles". The key concept is that we primarily throttle using information
-   from _the entire network_, rather than throttling only based on information available to the Consensus module like we
-   do today.
+6. Backpressure, or dealing with a system under stress, will be radically redesigned based on
+   [PID](https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller) controller logic,
+   and known as "dynamic throttles". The key concept is that we primarily throttle using information from _the entire
+   network_, rather than throttling only based on information available to the Consensus module like we do today.
 
 The purpose of this document is not to describe the implementation details of each of the different modules. Nor does
 it go into great detail about the design of the execution layer (which is primarily documented elsewhere). Instead,
@@ -90,9 +90,9 @@ witnesses of the round it wants to start from. It is by using this `initialize` 
 a Consensus instance that starts from genesis, or from a particular round.
 
 Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus, and create a complete new one,
-and `initialize` it appropriately with information from the starting round, after having downloaded and initializing
-itself with the correct round. Reconnect therefore is the responsibility of Execution. Consensus does not have to
-consider reconnect at all.
+and `initialize` it appropriately with information from the starting round, after having downloaded data and
+initializing itself with the correct round. Reconnect therefore is the responsibility of Execution. Consensus does not
+have to consider reconnect at all.
 
 ### Gossip
 
@@ -120,18 +120,40 @@ them to Event Intake, but it is not required to do so.
 
 Honest nodes will **only** send valid events in *topological order* to peers. A peer may still receive events out of
 order, because different events may arrive from different peers at different times. To support topological ordering,
-events received by Gossip are not retained by Gossip, they are simply passed directly to Event Intake, which among
-verification tasks, also orders events in topological order. The events are then recorded durably with the
-Pre-Consensus Recording module, when then sends these events to the Gossip module to be sent out. This loop is
-intentional, with the assumption that the additional latency in this loop will be relatively short (on the order of
-microseconds).
+events received by Gossip are not retained by Gossip, they are simply passed directly to Event Intake, which after
+verification, also orders events in topological order and recorded durably to disk, and then send back to the Gossip
+module to be sent out to its gossip peers.
+
+**The key design principle here is that a node will only send valid events through gossip**. If invalid events are
+ever received, you may know the node that sent them to you is dishonest. Validating events increases latency at each
+"hop", but allows us to identify dishonest gossip peers and discipline them accordingly.
+
+During execution, for all nodes that are online and able to keep up, events are received "live" and processed
+immediately and re-gossiped. However, if a node is offline and then comes back online, or is starting back up after
+reconnect, it may be missing events. In this case, the node will need to ask its peers for any events it is missing.
+
+For this reason, every honest node needs to buffer some events, so when its peer asks it for events, it is able to
+give them. Events can be "non-ancient", "ancient", or "expired". Although the definition for these is subject to
+configuration, we will here use some example values. Non-ancient events are those events that are either not yet
+in a consensus round, or are in one of the last 26 consensus rounds. Expired events are those that are in a round
+that is older than the last most recent 500 consensus rounds. And ancient events are those that are in a round between
+26 and 500.
+
+The Gossip module must cache all non-expired events. Note that it must be a fixed number of rounds that defines
+"expired", because otherwise it is possible for a quiescent network to never recover (see the documentation for
+the tipset algorithm, and other-parent selection, for specifics on why this is true). This number must also be large
+enough in case rounds/sec increases dramatically, because reconnect requires a certain amount of time (not rounds) for
+catchup. As long as this number is large enough to meet th requirements regardless of the rounds/sec, and as long as it
+is fixed in number of rounds, then it will work.
 
 #### Peer Discipline
 
 If a peer is misbehaving, the Gossip module will notify the Bad Node module that one of its peers is misbehaving. For
 example, if a peer is not responding to requests, even after repeated attempts to reconnect with it, it may be "bad".
 Or if the peer is sending events that exceed an acceptable rate, or exceed an acceptable side, then it is "bad". Or if
-the events it sends cannot be parsed, then it is "bad". The Gossip module design may define arbitrary additional 
+the events it sends cannot be parsed, or are signed incorrectly, or in other ways fail validation, then it is "bad".
+There may be additional rules by the Gossip module or others (such as the Hashgraph module detecting forking) that could
+lead to a peer being marked as "bad".
 
 If the Bad Node module decides that the peer should be penalized, then it will instruct the Gossip module to "shun" that
 peer. "Shunning" is a unilateral behavior that one node can take towards another, where it terminates the connection and
@@ -149,7 +171,7 @@ perhaps the node is so far behind that none of its peers are able to supply any 
 to operate, and must reconnect. Gossip will make a call through the Consensus module interface to notify Execution that
 gossip is "down". Execution will then initiate reconnect.
 
-Fundamentally, Execution is responsible for reconnect, but it cannot differentiate from a quiescent network or a
+Fundamentally, Execution is responsible for reconnect, but it cannot differentiate between a quiescent network or a
 behind node just by looking at the lack of rounds coming from Consensus. So Consensus **must** tell Execution if it
 knows that it cannot proceed in creating rounds because the node itself is bad, vs. a quiescent network which is
 able to create rounds (if there were any transactions).
@@ -157,17 +179,15 @@ able to create rounds (if there were any transactions).
 #### Roster Changes
 
 At runtime, it is possible that the roster will change dynamically (as happens with the dynamic address book feature).
-Roster changes at the gossip level influences which peers the module will work with. Because different peers may be
-at different points in consensus time, it may be that Alice has a newer roster than this node does, or Bob may have an
-older roster. Bob still needs to be able to gossip, even if he is behind. So each node will need to be able to honor
-connections from all peers in all rosters associated with rounds that have not expired.
-
-As with all other modules using rosters, Gossip must have a deterministic understanding of which roster applies to
-which round. It will receive this information from Hashgraph in the form of round metadata.
+Roster changes at the gossip level may influence which peers the module will work with. As with all other modules using
+rosters, Gossip may need a deterministic understanding of which roster applies to which round. It will receive this
+information from Hashgraph in the form of round metadata.
 
 ### Event Intake
 
 The Event Intake System is responsible for receiving events, validating them, and emitting them in *topological order*.
+It also makes sure they are durably persisted before emission so as to add resilience to the node in case of certain
+catastrophic failure scenarios.
 
 #### Validation
 
@@ -199,10 +219,10 @@ Event Intake module).
 
 #### Self Events
 
-Events are not only given to the event intake system through gossip. Internal events are also fed to the event intake
-system. These internal events **may** bypass some steps in the pipeline. For example, internal self-events (those
-events created by the node itself) do not need validation. Likewise, when replaying events from the pre-consensus
-recording system, those checks are not needed (since they have already been proved valid and are in topological order).
+Events are not only given to the Event Intake system through gossip. Internal events are also fed to Event Intake.
+These internal events **may** bypass some steps in the pipeline. For example, internal self-events (those events created
+by the node itself) do not need validation. Likewise, when replaying events from the pre-consensus event buffer, those
+checks are not needed (since they have already been proved valid and are in topological order).
 
 #### Peer Discipline
 
@@ -213,11 +233,11 @@ passed to Event Intake as part of the event metadata.
 
 #### Topological Ordering
 
-Events are buffered if necessary to ensure that each parent event has been emitted from the Event Intake before any
-child events. A simple map (the same used for deduplication) can be used here. Given some event, for each parent, look
-up the parent by its hash. If each parent is found in the map, then emit the event. Otherwise, remember the event so
-when the missing parent is received, the child may be emitted. The current implementation uses what is known as the
-"orphan buffer" for this purpose.
+Events are buffered if necessary to ensure that each parent event has been emitted from Event Intake before any child
+events. A simple map (the same used for deduplication) can be used here. Given some event, for each parent, look up the
+parent by its hash. If each parent is found in the map, then emit the event. Otherwise, remember the event so when the
+missing parent is received, the child may be emitted. The current implementation uses what is known as the "orphan
+buffer" for this purpose.
 
 Since Event Intake will also maintain some buffers, it needs to know about the progression of the hashgraph,
 so it can evict old events. In this case, the "orphan buffer" holds events until either the parent events have
@@ -225,45 +245,78 @@ arrived, or the events expired due to the advancement of the "non-ancient event 
 dropped from the buffer. This document does not prescribe the existence of the orphan buffer or the method by which
 events are sorted and emitted in topological order, but it does describe a method by which old events can be dropped.
 
+#### Assigning Generations
+
+Several algorithms, including the hashgraph consensus algorithm and the tipset algorithm, require events to be part of
+a "generation". We use what is known as "local generation". Each node, when it starts, assigns "1" as the generation
+of the first event it encounters per event creator. So the first event from Alice is generation 1, as is the first event
+from Bob, but the second event from Alice is in generation 2. This resets each time the consensus module is restarted
+(node restart, upgrade, reconnect, etc.). The absolute numbers for the generations are not important, but their
+relative values are critical. Generations always increase by 1. Different nodes may assign different generations to
+the same events. The generation will be part of the event metadata, **not** part of `EventCore` (that is, it is not
+in the part of the event that is gossiped).
+
+Event Intake is responsible for assigning generations to events.
+
+#### Persistence
+
+Event Intake is also responsible to durably persist pre-consensus events **before** they are emitted, but after they
+have been ordered. This has been previously called the "Pre-Consensus Event Stream", or PCES, but this name pre-supposes
+a particular implementation. The current implementation requires coordination between the PCES and the Hashgraph
+component to know when to flush, and the PCES needs to know when rounds are signed so it knows when to prune files
+from the PCES.
+
+Instead, the PCES will be implemented as a single large cyclic buffer. As valid, ordered events are made available,
+they will be written to the head of this buffer, and **only then** emitted from Event Intake. The buffer will be large
+enough so the node can recover from a saved state + buffered pre-consensus events. Typically, this would be configured
+to be some value several multiples in size larger than the state saving timeframe and maximum event/sec rate, so as to
+provide a solid guarantee of data availability.By using a sufficiently large circular buffer, there is no need to
+coordinate with the Hashgraph module or the Execution layer.
+
+(NOTE: The actual implementation of persistence is to be defined in subsequent design documents).
+
 #### Emitting Events
 
 When the Event Intake module emits valid, topologically sorted events, it sends them to:
-- The Event Creator module, so it may have information on which events are available to be built on top of as
-  "other parents"
+- The Gossip module, to be sent to gossip peers
+- The Event Creator module, for "other parent" selection
 - The Execution layer as a "pre-handle" event
-- The Pre-consensus Recording module, so the event can be made durable prior to being added to the hashgraph or gossiped
+- The Hashgraph module for consensus
 
 The call to each of these systems is "fire and forget". Specifically, there is no guarantee to Execution that it will
 definitely see an event via `pre-handle` prior to seeing it in `handle`. Technically, Consensus always calls
 `pre-handle` first, but that thread may be parked arbitrarily long by the system and the `handle` thread may actually
 execute first. This is extremely unlikely, but must be defended against in the Execution layer.
 
-Writing the event durably before gossiping it is essential for self-events to prevent branching. However, to simplify
-the understanding of the system, all events will be made durable before gossiping. All events must also be made
-durable before being sent to the Hashgraph.
+It is essential for events to be durably persisted before being sent to the Hashgraph, and self-events must be
+persisted before being gossiped. While it may not be necessary for all code paths to have durable pre-consensus events
+before they can handle them, to simplify the understanding of the system, we simply make all events durable before
+distributing them. This leads to a nice, clean, simple understanding that, during reply, the entire system will
+behave predictably.
 
 #### Roster Changes
 
 Since Event Intake must validate events, and since event validation requires knowing the roster (to verify the event
 source is in the roster, and the gossip source is in the roster, and the signature of the event creator is correct),
-Event Intake must know about changes to the roster. As with Gossip, it is imperative that Event Intake maintain a
-history of rosters, so it can support peers that are farther behind in consensus than it is.
+Event Intake must know about changes to the roster. It is imperative that Event Intake maintain a history of rosters,
+so it can support peers that are farther behind in consensus than it is.
 
-### Pre-Consensus Recording Module
+### Hashgraph Module
 
-The Pre-Consensus Recording module is responsible for recording ordered, valid events which have not yet come to
-consensus. This is critical for minimizing data loss if catastrophic network failure occurs. This module received
-simplification by finding methods that durably persist events fast enough that it can be used inline. That is, each
-event is persisted before it is gossiped, and before it is added to the Hashgraph. The delay introduced by this module
-**must** be minimized to keep gossip latency minimal and increase the event/sec throughput of the system as a whole.
+The Hashgraph module orders events into rounds, and assigns timestamps to events. It is given ordered, persisted
+events from Event Intake. Sometimes when an event is added, it turns out to be the last event that was needed to cause
+an entire "round" of events to come to consensus. When this happens, the Hashgraph module emits a `round`. The round
+includes metadata about the round (the list of witnesses, the round number, the new ancient-round number, etc.) along
+with the events that were included in the round, in order, with their consensus-assigned timestamps.
 
-This system is further simplified by defining its storage as a cyclic buffer. For example, it may have a large file on
-disk, and maintain a "head" and "tail" pointer into that file. Then, as new events need to be persisted, it simply
-writes them in at the "tail" position and moves forward. As it reaches the end of the file, it loops back to the start.
-In this way, it is able to have a fixed buffer, large enough for disaster recovery, but without requiring any feedback
-loops from Execution to indicate when data may be purged. Typically, this would be configured to be some value several
-multiples in size larger than the state saving timeframe and maximum event/sec rate, so as to provide a solid guarantee
-of data availability.
+Rounds are immutable. They are sent "fire and forget" style from the Hashgraph module to other modules that require
+them. Some modules only really need the metadata, or a part of the metadata. Others require the actual round data.
+We will pass the full round info (metadata + events) to all listeners, and they can pull from it what they need.
+
+#### Roster Changes
+
+When the roster changes, the Hashgraph algorithm must be made aware. It needs roster information to be able to come
+to consensus.
 
 ### Public API
 
