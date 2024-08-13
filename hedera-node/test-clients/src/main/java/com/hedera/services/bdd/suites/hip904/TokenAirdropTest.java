@@ -458,7 +458,7 @@ public class TokenAirdropTest {
             private static final String RECEIVER_WITH_SIG_REQUIRED = "receiver_sig_required";
 
             @HapiTest
-            @DisplayName("and no free slots")
+            @DisplayName("signed and no free slots")
             final Stream<DynamicTest> receiverSigInPending() {
 
                 return defaultHapiSpec("should go to pending state")
@@ -467,6 +467,7 @@ public class TokenAirdropTest {
                                 .maxAutomaticTokenAssociations(0))
                         .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
                                 .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
                                 .via("sigTxn"))
                         .then(
                                 getTxnRecord("sigTxn")
@@ -480,25 +481,25 @@ public class TokenAirdropTest {
             }
 
             @HapiTest
-            @DisplayName("and with free slots")
+            @DisplayName("signed and with free slots")
             final Stream<DynamicTest> receiverSigInPendingFreeSlots() {
 
-                return defaultHapiSpec("should go to pending state")
+                return defaultHapiSpec("should result in successful transfer")
                         .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
                                 .receiverSigRequired(true)
                                 .maxAutomaticTokenAssociations(5))
                         .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
                                 .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
                                 .via("sigTxn"))
                         .then(
                                 getTxnRecord("sigTxn")
                                         // assert transfers
                                         .hasPriority(recordWith()
-                                                .pendingAirdrops(
-                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
-                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                                .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
                                 // assert balances
-                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
             }
 
             @HapiTest
