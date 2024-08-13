@@ -44,6 +44,7 @@ tasks.register("githubVersionSummary") {
     inputs.property("version", productVersion)
 
     if (!providers.environmentVariable("GITHUB_STEP_SUMMARY").isPresent) {
+        // Do not throw an exception if running the `gradlew tasks` task
         if (!project.gradle.startParameter.taskNames.contains("tasks")) {
             throw IllegalArgumentException(
                 "This task may only be run in a Github Actions CI environment! " +
@@ -116,6 +117,7 @@ tasks.register("versionAsSpecified") {
     inputs.property("newVersion", providers.gradleProperty("newVersion").orNull)
 
     if (inputs.properties["newVersion"] == null) {
+        // Do not throw an exception if running the `gradlew tasks` task
         if (!project.gradle.startParameter.taskNames.contains("tasks")) {
             throw IllegalArgumentException(
                 "No newVersion property provided! " +
