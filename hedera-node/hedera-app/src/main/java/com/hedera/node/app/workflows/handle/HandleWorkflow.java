@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
@@ -45,7 +45,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -57,7 +57,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
@@ -174,27 +174,37 @@ public class HandleWorkflow {
     public void handleRound(
             @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
-        final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        recordCache.resetRoundReceipts();
+        try {
+            handleEvents(state, platformState, round);
+        } finally {
+            // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
+            // to the state so these transactions cannot be replayed in future rounds
+            recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
+        }
+    }
+
+    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+        final var userTransactionsHandled = new AtomicBoolean(false);
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
+                    // We were given an event for a node that does not exist in the address book and was not from
+                    // a strictly earlier software upgrade. This will be logged as a warning, as this should never
+                    // happen, and we will skip the event. The platform should guarantee that we never receive an event
+                    // that isn't associated with the address book, and every node in the address book must have an
+                    // account ID, since you cannot delete an account belonging to a node, and you cannot change the
+                    // address book non-deterministically.
                     logger.warn(
                             "Received event (version {} vs current {}) from node {} which is not in the address book",
                             com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
                             com.hedera.hapi.util.HapiUtils.toString(version),
                             event.getCreatorId());
                 }
-                return;
+                continue;
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
@@ -353,7 +363,7 @@ public class HandleWorkflow {
      */
     private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
-        final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
@@ -419,8 +429,8 @@ public class HandleWorkflow {
      * @param txnInfo the transaction information
      * @return the initialized base builder
      */
-    private SingleTransactionRecordBuilder initializeBuilderInfo(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    private StreamBuilder initializeBuilderInfo(
+            @NonNull final StreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
         final var transaction = txnInfo.transaction();
         // If the transaction uses the legacy body bytes field instead of explicitly
         // setting its signed bytes, the record will have the hash of its bytes as

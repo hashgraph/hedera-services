@@ -135,7 +135,7 @@ public class UnsignedEvent extends AbstractHashable {
             @NonNull final List<EventDescriptorWrapper> otherParents,
             final long birthRound,
             @NonNull final Instant timeCreated,
-            @NonNull final List<OneOf<TransactionOneOfType>> transactions) {
+            @NonNull final List<EventTransaction> transactions) {
         Objects.requireNonNull(transactions, "The transactions must not be null");
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
@@ -146,8 +146,7 @@ public class UnsignedEvent extends AbstractHashable {
         this.allParents = createAllParentsList();
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
 
-        this.eventTransactions =
-                transactions.stream().map(EventTransaction::new).toList();
+        this.eventTransactions = Objects.requireNonNull(transactions, "transactions must not be null");
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
@@ -268,7 +267,7 @@ public class UnsignedEvent extends AbstractHashable {
 
         final Instant timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        final List<OneOf<TransactionOneOfType>> transactionList = new ArrayList<>();
+        final List<EventTransaction> transactionList = new ArrayList<>();
         final int transactionSize = in.readInt();
         if (transactionSize > 0) {
             in.readBoolean(); // allSameClass
@@ -277,13 +276,15 @@ public class UnsignedEvent extends AbstractHashable {
             final long classId = in.readLong();
             final int classVersion = in.readInt();
             if (classId == APPLICATION_TRANSACTION_CLASS_ID) {
-                transactionList.add(new OneOf<>(
+                final OneOf<TransactionOneOfType> oneOf = new OneOf<>(
                         TransactionOneOfType.APPLICATION_TRANSACTION,
-                        deserializeApplicationTransaction(in, classVersion)));
+                        deserializeApplicationTransaction(in, classVersion));
+                transactionList.add(new EventTransaction(oneOf));
             } else if (classId == STATE_SIGNATURE_CLASS_ID) {
-                transactionList.add(new OneOf<>(
+                final OneOf<TransactionOneOfType> oneOf = new OneOf<>(
                         TransactionOneOfType.STATE_SIGNATURE_TRANSACTION,
-                        deserializeStateSignatureTransaction(in, classVersion)));
+                        deserializeStateSignatureTransaction(in, classVersion));
+                transactionList.add(new EventTransaction(oneOf));
             } else {
                 throw new IOException("Unknown classId: " + classId);
             }

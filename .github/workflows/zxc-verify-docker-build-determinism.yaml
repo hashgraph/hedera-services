@@ -161,7 +161,7 @@ jobs:
           containerd-version: v1.7.2
 
       - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         env:
           HOME: /x
@@ -170,7 +170,7 @@ jobs:
           daemon-config: |
             {
               "registry-mirrors": [
-                "https://artifacts.swirldslabs.io/central-docker-external/"
+                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
               ]
             }
 
@@ -196,6 +196,7 @@ jobs:
         with:
           version: v0.15.1
           driver-opts: network=host
+          buildkitd-config: /etc/docker/buildkitd.toml
 
       - name: Setup Local Docker Registry
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -379,7 +380,7 @@ jobs:
           containerd-version: v1.7.2
 
       - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
         env:
           HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
         with:
@@ -387,7 +388,7 @@ jobs:
           daemon-config: |
             {
               "registry-mirrors": [
-                "https://artifacts.swirldslabs.io/central-docker-external/"
+                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
               ]
             }
 
@@ -412,6 +413,7 @@ jobs:
         with:
           version: v0.15.1
           driver-opts: network=host
+          buildkitd-config: /etc/docker/buildkitd.toml
 
       - name: Setup Local Docker Registry
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest

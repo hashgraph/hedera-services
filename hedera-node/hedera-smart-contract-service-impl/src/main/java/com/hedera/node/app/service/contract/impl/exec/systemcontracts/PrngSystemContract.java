@@ -34,7 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.AbstractProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -126,7 +126,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
             updater.enhancement()
                     .systemOperations()
-                    .dispatch(synthBody(), key -> Decision.INVALID, senderId, ContractCallRecordBuilder.class)
+                    .dispatch(synthBody(), key -> Decision.INVALID, senderId, ContractCallStreamBuilder.class)
                     .contractCallResult(data)
                     .entropyBytes(tuweniToPbjBytes(randomNum));
         }

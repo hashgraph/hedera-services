@@ -55,6 +55,8 @@ public class HgcaaLogValidator {
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
                 List.of("not in the address book"),
                 List.of("Specified TLS cert", "doesn't exist"),
+                // Stopping an embedded node can interrupt signature verification of background traffic
+                List.of("Interrupted while waiting for signature verification"),
                 List.of("Could not start TLS server, will continue without it"),
                 List.of("Properties file", "does not exist and won't be used as configuration source"),
                 List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"));
