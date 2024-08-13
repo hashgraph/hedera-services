@@ -44,10 +44,12 @@ tasks.register("githubVersionSummary") {
     inputs.property("version", productVersion)
 
     if (!providers.environmentVariable("GITHUB_STEP_SUMMARY").isPresent) {
-        throw IllegalArgumentException(
-            "This task may only be run in a Github Actions CI environment! " +
-                "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
-        )
+        if (!project.gradle.startParameter.taskNames.contains("tasks")) {
+            throw IllegalArgumentException(
+                "This task may only be run in a Github Actions CI environment! " +
+                        "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
+            )
+        }
     }
     outputs.file(providers.environmentVariable("GITHUB_STEP_SUMMARY"))
 
@@ -114,10 +116,12 @@ tasks.register("versionAsSpecified") {
     inputs.property("newVersion", providers.gradleProperty("newVersion").orNull)
 
     if (inputs.properties["newVersion"] == null) {
-        throw IllegalArgumentException(
-            "No newVersion property provided! " +
-                "Please add the parameter -PnewVersion=<version> when running this task."
-        )
+        if (!project.gradle.startParameter.taskNames.contains("tasks")) {
+            throw IllegalArgumentException(
+                "No newVersion property provided! " +
+                        "Please add the parameter -PnewVersion=<version> when running this task."
+            )
+        }
     }
     outputs.file(layout.projectDirectory.versionTxt())
 
