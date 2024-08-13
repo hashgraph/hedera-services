@@ -82,7 +82,6 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         // Transform the expected transaction records into the required format
         final var expectedTxnRecs = transformExpectedRecords(data);
 
-        // TODO: Which state changes should be passed in? (This is obviously wrong, but to get it to compile..)
         final var actual = translateAll(inputs);
 
         final var maxDiffs = 1000;
@@ -180,21 +179,33 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         private BlocksParser() {}
 
         BlocksData parseBlocks(@NonNull final List<Block> blocks) throws ParseException {
-            for (var block : blocks) {
+            for (final var block : blocks) {
                 final var items = block.items();
 
-                if (!items.stream().anyMatch(item -> item.hasEventTransaction())) {
-                    continue;
+                // A new block is starting, so any (non-empty) transaction that was in progress needs to be built
+                if (!builder.isEmpty()) {
+                    final var SingleTransactionBlockItems = builder.build();
+                    blockTxns.add(SingleTransactionBlockItems);
                 }
-
+                builder = new SingleTransactionBlockItems.Builder();
                 for (final var item : items) {
                     if (item.hasEventHeader()) {
-                        // build and reassign
-                        final var SingleTransactionBlockItems = builder.build();
-                        blockTxns.add(SingleTransactionBlockItems);
-                        builder = new SingleTransactionBlockItems.Builder();
+                        // Since transactions can only be inside of events, and a new event header is the next item,
+                        // the last transaction can't have anything else in it, and needs to be built
+                        if (!builder.isEmpty()) {
+                            final var SingleTransactionBlockItems = builder.build();
+                            blockTxns.add(SingleTransactionBlockItems);
+                            builder = new SingleTransactionBlockItems.Builder();
+                        }
                     }
                     if (item.hasEventTransaction()) {
+                        // A new transaction has started, so we need to build the previous one (if it isn't empty)
+                        if (!builder.isEmpty()) {
+                            final var SingleTransactionBlockItems = builder.build();
+                            blockTxns.add(SingleTransactionBlockItems);
+                            builder = new SingleTransactionBlockItems.Builder();
+                        }
+
                         final var submittedTxnBytes = item.eventTransaction().applicationTransactionOrElse(Bytes.EMPTY);
                         if (!(Objects.equals(submittedTxnBytes, Bytes.EMPTY))) {
                             final var submittedTxn = Transaction.PROTOBUF.parse(submittedTxnBytes);
@@ -208,9 +219,13 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                         final var stateChanges = item.stateChanges();
                         allStateChanges.add(stateChanges);
 
-                        final var SingleTransactionBlockItems = builder.build();
-                        blockTxns.add(SingleTransactionBlockItems);
-                        builder = new SingleTransactionBlockItems.Builder();
+                        // Now that we have the state changes, there's nothing else that can be part
+                        // of a single transaction, so we build the transaction and reset the builder
+                        if (!builder.isEmpty()) {
+                            final var SingleTransactionBlockItems = builder.build();
+                            blockTxns.add(SingleTransactionBlockItems);
+                            builder = new SingleTransactionBlockItems.Builder();
+                        }
                     }
                 }
             }
