@@ -92,7 +92,8 @@ class UtilPrngTranslatorTest {
         when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
         when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
-        when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_BYTES, Bytes.EMPTY));
+        when(mockUtilPrngOutput.entropy())
+                .thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_BYTES, Bytes.EMPTY));
 
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
