@@ -52,6 +52,14 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
 ## Architecture
 
+### Diagrams
+
+|              Current              |                Proposal                |
+|-----------------------------------|----------------------------------------|
+| ![Current](architecture-0.53.svg) | ![Proposal](architecture-proposal.svg) |
+
+### Java classes
+
 `VirtualDataSource` interface is changed to work with bytes:
 
 * `loadLeafRecord()` now returns a `VirtualLeafBytes` (was: `VirtualLeafRecord`)
