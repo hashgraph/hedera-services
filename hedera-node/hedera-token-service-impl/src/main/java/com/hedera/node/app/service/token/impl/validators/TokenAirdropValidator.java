@@ -98,7 +98,7 @@ public class TokenAirdropValidator {
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+            validateTrue(tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore), INVALID_TRANSACTION);
             // process fungible token transfers if any.
             // PureChecks validates there is only one debit, so findFirst should return one item
             if (!xfers.transfers().isEmpty()) {
@@ -132,19 +132,12 @@ public class TokenAirdropValidator {
         }
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+    private boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+        if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             for (var fee : feeMeta.customFees()) {
-                if (fee.hasFractionalFee()
-                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
-                    return false;
-                }
-            }
-        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasRoyaltyFee()) {
+                if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
                     return false;
                 }
             }
