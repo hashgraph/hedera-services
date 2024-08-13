@@ -18,8 +18,6 @@ package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.eventhandling;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

@@ -173,8 +173,7 @@ public class TipsetEventCreator implements EventCreator {
 
         this.eventHasher = HashingMigrationUtils.getUnsignedEventHasher(
                 platformContext.getConfiguration().getConfigData(EventConfig.class),
-                softwareVersion.getPbjSemanticVersion()
-        );
+                softwareVersion.getPbjSemanticVersion());
     }
 
     /**

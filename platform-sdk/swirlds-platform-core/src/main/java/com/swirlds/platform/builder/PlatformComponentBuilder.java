@@ -259,12 +259,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher(
-                    HashingMigrationUtils.convertMigrationVersion(
-                            blocks.platformContext()
-                                    .getConfiguration()
-                                    .getConfigData(EventConfig.class)
-                    ));
+            eventHasher = new DefaultEventHasher(HashingMigrationUtils.convertMigrationVersion(
+                    blocks.platformContext().getConfiguration().getConfigData(EventConfig.class)));
         }
         return eventHasher;
     }
