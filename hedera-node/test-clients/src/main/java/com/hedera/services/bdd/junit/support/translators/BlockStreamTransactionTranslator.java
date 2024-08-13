@@ -78,7 +78,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         // We don't require txnWrapper.output() to be non-null since not all txns have an output
 
         try {
-            parseTransaction(txnWrapper.txn(), recordBuilder, receiptBuilder);
+            parseTransaction(txnWrapper.txn(), recordBuilder);
             parseTransactionResult(txnWrapper.result(), recordBuilder, receiptBuilder);
             parseTransactionOutput(txnWrapper.output(), recordBuilder, receiptBuilder);
         } catch (NoSuchAlgorithmException | InvalidProtocolBufferException e) {
@@ -131,18 +131,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     }
 
     private TransactionRecord.Builder parseTransaction(
-            final Transaction txn,
-            final TransactionRecord.Builder recordBuilder,
-            final TransactionReceipt.Builder receiptBuilder)
-            throws NoSuchAlgorithmException {
-        TransactionID transactionID;
+            final Transaction txn, final TransactionRecord.Builder recordBuilder) throws NoSuchAlgorithmException {
         if (txn.body() != null) {
-            transactionID = pbjToProto(
+            final var transactionID = pbjToProto(
                     txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class);
             recordBuilder.setTransactionID(transactionID).setMemo(txn.body().memo());
         } else {
             final var parts = TransactionParts.from(fromPbj(txn));
-            transactionID = parts.body().getTransactionID();
+            final var transactionID = parts.body().getTransactionID();
             recordBuilder.setTransactionID(transactionID);
 
             String memo = parts.body().getMemo();
@@ -158,8 +154,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var txnBytes = toBytesForHash(txn);
         final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
         recordBuilder.setTransactionHash(toByteString(hash));
-
-        receiptBuilder.setAccountID(transactionID.getAccountID());
 
         return recordBuilder;
     }
