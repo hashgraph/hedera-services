@@ -152,7 +152,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         validatePendingAirdropIds(context, pendingAirdropIds, payer, accountStore, airdropStore);
         deleteAccountAirdropsFromAccount(pendingAirdropIds, airdropStore, payerAccount, accountStore);
-        updateAccountsNumberOfPendingAirdrops(payerAccount, pendingAirdropIds.size(), accountStore);
+        updateAccountsNumberOfPendingAirdrops(payerAccount.accountId(), pendingAirdropIds.size(), accountStore);
         deletePendingAirdropsFromStore(pendingAirdropIds, airdropStore);
     }
 
@@ -200,7 +200,8 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
             // Update the account to point to the new head if the current one is being cancelled
             if (pendingAirdropsToCancel.equals(payerAccount.headPendingAirdropId())) {
-                final var updatedPayer = payerAccount
+                final var updatedPayer = accountStore
+                        .getForModify(payerAccount.accountId())
                         .copyBuilder()
                         .headPendingAirdropId(accountAirdropToCancel.nextAirdrop())
                         .build();
@@ -231,7 +232,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     }
 
     private static void updateAccountsNumberOfPendingAirdrops(
-            Account payerAccount, int canceledPendingAirdropsSize, WritableAccountStore accountStore) {
+            AccountID payerAccountId, int canceledPendingAirdropsSize, WritableAccountStore accountStore) {
+        final var payerAccount = requireNonNull(accountStore.getAccountById(payerAccountId));
+
         var newNumberPendingAirdrops = payerAccount.numberPendingAirdrops() - canceledPendingAirdropsSize;
         final var updatedAccount = payerAccount
                 .copyBuilder()
