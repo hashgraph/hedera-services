@@ -51,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
-import static com.hederahashgraph.api.proto.java.TokenType.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -204,17 +203,17 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 createFT(FUNGIBLE_TOKEN_9, OWNER, 1000L),
                 createFT(FUNGIBLE_TOKEN_10, OWNER, 1000L),
                 createFT(FUNGIBLE_TOKEN_11, OWNER, 1000L),
-                moveFT(FUNGIBLE_TOKEN, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_2, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_3, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_4, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_5, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_6, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_7, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_8, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_9, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_10, OWNER, RECEIVER, 20),
-                moveFT(FUNGIBLE_TOKEN_11, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_2, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_3, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_4, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_5, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_6, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_7, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_8, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_9, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_10, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_11, OWNER, RECEIVER, 20),
                 tokenClaimAirdrop(
                                 pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
                                 pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_2),
@@ -345,7 +344,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 .initialSupply(amount);
     }
 
-    private HapiTokenAirdrop moveFT(String tokenName, String sender, String receiver, int amountToMove) {
+    private HapiTokenAirdrop airdropFT(String tokenName, String sender, String receiver, int amountToMove) {
         return tokenAirdrop(moving(amountToMove, tokenName).between(sender, receiver))
                 .payingWith(sender);
     }
