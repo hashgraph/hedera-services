@@ -75,7 +75,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIVER_SIG_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -503,39 +502,74 @@ public class TokenAirdropTest {
             }
 
             @HapiTest
-            @DisplayName("and is associated")
-            final Stream<DynamicTest> receiverSigIsAssociatedFails() {
+            @DisplayName("and is associated and signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociated() {
 
-                return defaultHapiSpec("should fail - RECEIVER_SIG_REQUIRED")
-                        .given(
-                                cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
-                                        .receiverSigRequired(true)
-                                        .maxAutomaticTokenAssociations(5),
-                                tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
-                        .when()
-                        .then(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
-                                .payingWith(OWNER)
-                                .via("sigTxn")
-                                .hasKnownStatus(RECEIVER_SIG_REQUIRED));
+                return defaultHapiSpec("should result in successful transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .tokenTransfers(includingFungibleMovement(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+            }
+
+            @HapiTest
+            @DisplayName("and is associated but not signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociatedButNotSigned() {
+
+                return defaultHapiSpec("should result in pending transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
             }
 
             @HapiTest
             @DisplayName("multiple tokens with one associated")
             final Stream<DynamicTest> multipleTokensOneAssociated() {
 
-                return defaultHapiSpec("should fail - RECEIVER_SIG_REQUIRED")
+                return defaultHapiSpec("should transfer one token and keep the other in pending state")
                         .given(
                                 tokenCreate("FT_B").treasury(OWNER).initialSupply(500),
                                 cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
                                         .receiverSigRequired(true)
                                         .maxAutomaticTokenAssociations(0))
                         .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, "FT_B"))
-                        .then(tokenAirdrop(
-                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_SIG_REQUIRED),
-                                        moving(10, "FT_B").between(OWNER, RECEIVER_WITH_SIG_REQUIRED))
-                                .payingWith(OWNER)
-                                .via("sigTxn")
-                                .hasKnownStatus(RECEIVER_SIG_REQUIRED));
+                        .then(
+                                tokenAirdrop(
+                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_SIG_REQUIRED),
+                                                moving(10, "FT_B").between(OWNER, RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER, RECEIVER_WITH_SIG_REQUIRED)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(
+                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))
+                                                .tokenTransfers(includingFungibleMovement(moving(10, "FT_B")
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance("FT_B", 10));
             }
         }
     }
@@ -552,25 +586,6 @@ public class TokenAirdropTest {
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
             lifecycle.doAdhoc(setUpTokensWithCustomFees(1_000_000L, hbarFee, htsFee));
-        }
-
-        @HapiTest
-        @DisplayName("FT with fractional fee and receiverSigRequired")
-        final Stream<DynamicTest> tokenWithCustomFeeAndSignedByReceiver() {
-            final var receiverWithSigRequired = "receiverWithSigRequired";
-
-            return defaultHapiSpec("should go to pending state")
-                    .given(
-                            cryptoCreate(receiverWithSigRequired)
-                                    .receiverSigRequired(true)
-                                    .maxAutomaticTokenAssociations(0),
-                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE))
-                    .when(cryptoTransfer(
-                            moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
-                    .then(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE).between(OWNER, receiverWithSigRequired))
-                            .payingWith(OWNER)
-                            .signedBy(OWNER, receiverWithSigRequired)
-                            .via("txn"));
         }
 
         @HapiTest

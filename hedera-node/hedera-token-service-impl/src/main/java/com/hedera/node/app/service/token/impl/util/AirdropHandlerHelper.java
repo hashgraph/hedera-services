@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIVER_SIG_REQUIRED;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
@@ -39,7 +38,6 @@ import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -71,7 +69,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link AccountAmount} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(HandleContext, Account, TokenRelation)}
      *
      * @param context {@link HandleContext} used to obtain state stores
      * @param tokenId token id
@@ -101,7 +99,7 @@ public class AirdropHandlerHelper {
             var isPendingAirdrop = false;
             if (aa.amount() > 0) {
                 validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
-                isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+                isPendingAirdrop = isPendingAirdrop(context, account, tokenRel);
             }
 
             if (isPendingAirdrop) {
@@ -125,7 +123,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link NftTransfer} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(HandleContext, Account, TokenRelation)}
      *
      * @param context context
      * @param tokenId token id
@@ -153,7 +151,7 @@ public class AirdropHandlerHelper {
             var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             var tokenRel = tokenRelStore.get(receiverId, tokenId);
-            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+            var isPendingAirdrop = isPendingAirdrop(context, account, tokenRel);
 
             if (isPendingAirdrop) {
                 pendingNftList.add(nftTransfer);
@@ -180,21 +178,25 @@ public class AirdropHandlerHelper {
      * @param tokenRelation token relation
      * @return if airdrop of given token to given receiver should be added to the airdrop pending state
      */
-    private static boolean isPendingAirdrop(@NonNull Account receiver, @Nullable TokenRelation tokenRelation) {
-        // check if we have existing association or free auto associations slots or unlimited auto associations
-        if (tokenRelation != null) {
-            if (receiver.receiverSigRequired()) {
-                throw new HandleException(RECEIVER_SIG_REQUIRED);
+    private static boolean isPendingAirdrop(
+            @NonNull final HandleContext context,
+            @NonNull final Account receiver,
+            @Nullable final TokenRelation tokenRelation) {
+        if (receiver.receiverSigRequired()) {
+            var sigVerification = context.keyVerifier().verificationFor(requireNonNull(receiver.key()));
+            if (sigVerification.failed()) {
+                return true;
             }
-            return false;
-        } else if (receiver.receiverSigRequired()) {
-            // If the receiver signature is required and the receiver is not associated to the token
-            // we create a pending airdrop record
-            return true;
-        } else if (receiver.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
-            return false;
+            if (tokenRelation == null && isAutoAssociationLimitReached(receiver)) {
+                return true;
+            }
+            return tokenRelation == null;
         } else {
-            return receiver.usedAutoAssociations() == receiver.maxAutoAssociations();
+            if (tokenRelation != null) {
+                return false;
+            } else {
+                return isAutoAssociationLimitReached(receiver);
+            }
         }
     }
 
@@ -286,5 +288,10 @@ public class AirdropHandlerHelper {
             return false;
         }
         return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
+    }
+
+    private static boolean isAutoAssociationLimitReached(@NonNull final Account receiver) {
+        return receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
+                && receiver.maxAutoAssociations() != UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }

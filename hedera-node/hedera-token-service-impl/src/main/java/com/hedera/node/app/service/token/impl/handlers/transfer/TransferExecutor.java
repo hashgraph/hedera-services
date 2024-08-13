@@ -387,8 +387,12 @@ public class TransferExecutor {
                         ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
                     }
 
-                } else if (isCredit && receiverSigRequiredCheck && account.receiverSigRequired()) {
-                    ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
+                } else if (isCredit && account.receiverSigRequired()) {
+                    if (receiverSigRequiredCheck) {
+                        ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
+                    } else if (account.key() != null) {
+                        ctx.optionalKey(account.key());
+                    }
                 }
             } else if (hbarTransfer) {
                 // It is possible for the transfer to be valid even if the account is not found. For example, we
