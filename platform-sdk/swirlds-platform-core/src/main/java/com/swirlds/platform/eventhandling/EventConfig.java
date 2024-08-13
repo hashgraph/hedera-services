@@ -36,7 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
  * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
- * @param migrateEventHashing               if true then use the new event hashing algorithm for new events, events
+ * @param hashingMigrationVersion               if true then use the new event hashing algorithm for new events, events
  *                                          created by previous software versions will still need to be hashed using the
  *                                          old algorithm.
  */
@@ -49,18 +49,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
         @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
-        @ConfigProperty(defaultValue = DISABLED_MIGRATION_STRING) SemanticVersion migrateEventHashing) {
-
-    public static final String DISABLED_MIGRATION_STRING = "0.0.0";
-    public static final SemanticVersion DISABLED_MIGRATION = SemanticVersion.newBuilder().major(0).minor(0).patch(0).build();
-
-
-    public boolean useNewEventHashing(final SemanticVersion currentSoftwareVersion) {
-        if(migrateEventHashing.equals(DISABLED_MIGRATION)){
-            return false;
-        }
-        return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, migrateEventHashing) >= 0;
-    }
+        @ConfigProperty(defaultValue = "") String hashingMigrationVersion) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

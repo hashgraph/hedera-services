@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * An implementation of {@link EventHasher} that is stateful and thus not safe to use by multiple threads concurrently.
  */
-public class StatefulEventHasher implements EventHasher, UnsignedEventHasher {
+public class StatefulEventHasher implements CombinedEventHasher {
     private final HashingOutputStream hashingOutputStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
     private final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(hashingOutputStream);
 

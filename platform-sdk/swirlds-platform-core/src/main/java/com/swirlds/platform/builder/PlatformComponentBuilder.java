@@ -43,6 +43,7 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.hashing.HashingMigrationUtils;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -260,9 +261,11 @@ public class PlatformComponentBuilder {
         if (eventHasher == null) {
             eventHasher = new DefaultEventHasher(
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.platformContext()
-                            .getConfiguration()
-                            .getConfigData(EventConfig.class));
+                    HashingMigrationUtils.convertMigrationVersion(
+                            blocks.platformContext()
+                                    .getConfiguration()
+                                    .getConfigData(EventConfig.class)
+                    ));
         }
         return eventHasher;
     }

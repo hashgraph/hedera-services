@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -35,8 +34,7 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.hashing.PbjHasher;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.HashingMigrationUtils;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -173,12 +171,10 @@ public class TipsetEventCreator implements EventCreator {
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
-        this.eventHasher = platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .useNewEventHashing(softwareVersion.getPbjSemanticVersion())
-                ? new PbjHasher()
-                : new StatefulEventHasher();
+        this.eventHasher = HashingMigrationUtils.getEventHasher(
+                platformContext.getConfiguration().getConfigData(EventConfig.class),
+                softwareVersion.getPbjSemanticVersion()
+        );
     }
 
     /**
