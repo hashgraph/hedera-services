@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -86,28 +85,22 @@ public class PendingAirdropUpdater {
             @NonNull final WritableAirdropStore pendingAirdropStore,
             @NonNull final WritableAccountStore accountStore) {
         final var senderId = airdropId.senderIdOrThrow();
-        final var airdrop = updatedAirdrops.containsKey(airdropId)
-                ? updatedAirdrops.get(airdropId)
-                : pendingAirdropStore.getForModify(airdropId);
+        final var airdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, airdropId);
         validateTrue(airdrop != null, INVALID_PENDING_AIRDROP_ID);
 
         // update pending airdrops links
         final var prevAirdropId = airdrop.previousAirdrop();
         final var nextAirdropId = airdrop.nextAirdrop();
         if (prevAirdropId != null) {
-            final var prevAccountAirdrop = updatedAirdrops.containsKey(prevAirdropId)
-                    ? updatedAirdrops.get(prevAirdropId)
-                    : pendingAirdropStore.getForModify(prevAirdropId);
-            validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
+            final var prevAccountAirdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, prevAirdropId);
+            validateTrue(prevAccountAirdrop != null, INVALID_PENDING_AIRDROP_ID);
             final var prevAirdropToUpdate =
                     prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
             updatedAirdrops.put(prevAirdropId, prevAirdropToUpdate);
         }
         if (nextAirdropId != null) {
-            final var nextAccountAirdrop = updatedAirdrops.containsKey(nextAirdropId)
-                    ? updatedAirdrops.get(nextAirdropId)
-                    : pendingAirdropStore.getForModify(nextAirdropId);
-            validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
+            final var nextAccountAirdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, nextAirdropId);
+            validateTrue(nextAccountAirdrop != null, INVALID_PENDING_AIRDROP_ID);
             final var nextAirdropToUpdate = nextAccountAirdrop
                     .copyBuilder()
                     .previousAirdrop(prevAirdropId)
@@ -125,5 +118,14 @@ public class PendingAirdropUpdater {
             updatedSender.headPendingAirdropId(airdrop.nextAirdrop());
         }
         updatedSenders.put(senderAccount.accountId(), updatedSender.build());
+    }
+
+    private AccountPendingAirdrop getPendingAirdrop(
+            final @NonNull Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops,
+            final @NonNull WritableAirdropStore pendingAirdropStore,
+            final PendingAirdropId prevAirdropId) {
+        return updatedAirdrops.containsKey(prevAirdropId)
+                ? updatedAirdrops.get(prevAirdropId)
+                : pendingAirdropStore.getForModify(prevAirdropId);
     }
 }
