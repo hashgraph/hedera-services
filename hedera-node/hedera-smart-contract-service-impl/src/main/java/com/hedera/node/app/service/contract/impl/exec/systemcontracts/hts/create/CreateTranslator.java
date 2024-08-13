@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -129,21 +128,17 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector())
-                || Arrays.equals(
-                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector())
-                || Arrays.equals(
-                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector())
-                || Arrays.equals(
-                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.selector());
+        return attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V1, CREATE_FUNGIBLE_TOKEN_V2, CREATE_FUNGIBLE_TOKEN_V3)
+                || attempt.isSelector(
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1,
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2,
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3)
+                || attempt.isSelector(
+                        CREATE_NON_FUNGIBLE_TOKEN_V1, CREATE_NON_FUNGIBLE_TOKEN_V2, CREATE_NON_FUNGIBLE_TOKEN_V3)
+                || attempt.isSelector(
+                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1,
+                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2,
+                        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3);
     }
 
     @Override
@@ -163,33 +158,31 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         final var nativeOperations = attempt.nativeOperations();
         final var addressIdConverter = attempt.addressIdConverter();
 
-        if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())) {
+        if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V1)) {
             return decoder.decodeCreateFungibleTokenV1(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())) {
+        } else if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V2)) {
             return decoder.decodeCreateFungibleTokenV2(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector())) {
+        } else if (attempt.isSelector(CREATE_FUNGIBLE_TOKEN_V3)) {
             return decoder.decodeCreateFungibleTokenV3(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector())) {
+        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1)) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV1(
                     inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector())) {
+        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2)) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV2(
                     inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector())) {
+        } else if (attempt.isSelector(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3)) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV3(
                     inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector())) {
+        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V1)) {
             return decoder.decodeCreateNonFungibleV1(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector())) {
+        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V2)) {
             return decoder.decodeCreateNonFungibleV2(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector())) {
+        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_V3)) {
             return decoder.decodeCreateNonFungibleV3(inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(
-                attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector())) {
+        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1)) {
             return decoder.decodeCreateNonFungibleWithCustomFeesV1(
                     inputBytes, senderId, nativeOperations, addressIdConverter);
-        } else if (Arrays.equals(
-                attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector())) {
+        } else if (attempt.isSelector(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2)) {
             return decoder.decodeCreateNonFungibleWithCustomFeesV2(
                     inputBytes, senderId, nativeOperations, addressIdConverter);
         } else {
