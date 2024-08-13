@@ -187,17 +187,8 @@ public class AirdropHandlerHelper {
             if (sigVerification.failed()) {
                 return true;
             }
-            if (tokenRelation == null && isAutoAssociationLimitReached(receiver)) {
-                return true;
-            }
-            return tokenRelation == null;
-        } else {
-            if (tokenRelation != null) {
-                return false;
-            } else {
-                return isAutoAssociationLimitReached(receiver);
-            }
         }
+        return tokenRelation == null && isAutoAssociationLimitReached(receiver);
     }
 
     /**
