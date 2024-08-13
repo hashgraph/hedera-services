@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,6 +48,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -177,9 +178,12 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(presentCreatorId.id())).willReturn(mock(NodeInfo.class));
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
+        given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
 
         subject.handleRound(state, platformState, round);
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
+        verify(recordCache).resetRoundReceipts();
+        verify(recordCache).commitRoundReceipts(any(), any());
     }
 }
