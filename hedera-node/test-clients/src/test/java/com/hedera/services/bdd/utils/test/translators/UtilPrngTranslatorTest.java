@@ -86,6 +86,27 @@ class UtilPrngTranslatorTest {
     }
 
     @Test
+    void testTranslateWithEmptyBytes() {
+        // When
+        when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
+        when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
+        when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
+        when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
+        when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_BYTES, Bytes.EMPTY));
+
+        SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
+
+        // Then
+        TransactionRecord expectedRecord =
+                TransactionRecord.newBuilder().prngBytes(Bytes.EMPTY).build();
+
+        assertEquals(mockTransaction, result.transaction());
+        assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), List.of());
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    @Test
     void testTranslateWithPrngNumber() {
         // When
         when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
@@ -93,6 +114,28 @@ class UtilPrngTranslatorTest {
         when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
         when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
         final int number = 42;
+        when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER, number));
+
+        SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
+
+        // Then
+        TransactionRecord expectedRecord =
+                TransactionRecord.newBuilder().prngNumber(number).build();
+
+        assertEquals(mockTransaction, result.transaction());
+        assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), List.of());
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    @Test
+    void testTranslateWithPrngNumber0() {
+        // When
+        when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
+        when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
+        when(mockTransactionBlockItems.output().hasUtilPrng()).thenReturn(true);
+        when(mockTransactionBlockItems.output().utilPrng()).thenReturn(mockUtilPrngOutput);
+        final int number = 0;
         when(mockUtilPrngOutput.entropy()).thenReturn(new OneOf<>(UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER, number));
 
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
