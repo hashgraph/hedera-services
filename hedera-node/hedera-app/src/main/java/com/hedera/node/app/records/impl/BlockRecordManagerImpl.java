@@ -18,6 +18,7 @@ package com.hedera.node.app.records.impl;
 
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -97,7 +98,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final State state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
-
         requireNonNull(state);
         requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
@@ -115,7 +115,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // NOTE: State migration happens BEFORE dagger initialization, and this object is managed by dagger. So we are
         // guaranteed that the state exists PRIOR to this call.
         final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
 
@@ -236,7 +236,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
     private void putLastBlockInfo(@NonNull final State state) {
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         blockInfoState.put(lastBlockInfo);
     }
 
@@ -265,6 +265,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState =
                 states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY);
+        final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         runningHashesState.put(new RunningHashes(
@@ -371,7 +372,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
         // Update the latest block info in state
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         blockInfoState.put(newBlockInfo);
         // Commit the changes. We don't ever want to roll back when advancing the consensus clock
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();

@@ -155,7 +155,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasTreasury() && isHapiCallOrNonZeroTreasuryAccount(txn.hasTransactionID(), op)) {
             final var existingTreasury = token.treasuryAccountIdOrThrow();
             final var newTreasury = op.treasuryOrThrow();
-            final var newTreasuryAccount = getIfUsable(
+            var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             final var newTreasuryRel = tokenRelStore.get(newTreasury, tokenId);
             // If there is no treasury relationship, then we need to create one if auto associations are available.
@@ -164,6 +164,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
+                newTreasuryAccount = requireNonNull(accountStore.getForModify(newTreasury));
             }
             // Treasury can be modified when it owns NFTs when the property "tokens.nfts.useTreasuryWildcards"
             // is enabled.
