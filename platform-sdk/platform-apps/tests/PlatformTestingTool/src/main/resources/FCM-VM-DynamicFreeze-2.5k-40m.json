@@ -21,7 +21,7 @@
 	  "5,  C2C_LATENCY"
 	],
 	"systemMetric": "TRANS_PER_SECOND_PER_NODE",
-	"metricThreshold": 2500.0,
+	"metricThreshold": 100.0,
 	"_comment1": "pause after submit defined amount of transactions",
 	"pauseAfter": 0,
 	"pauseSeconds": 30,
