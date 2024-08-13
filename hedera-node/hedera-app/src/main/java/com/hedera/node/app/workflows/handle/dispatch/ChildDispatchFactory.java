@@ -75,6 +75,7 @@ import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
@@ -169,7 +170,9 @@ public class ChildDispatchFactory {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
-        final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
+        final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
+        final var childStack =
+                SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
         final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,

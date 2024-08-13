@@ -43,6 +43,7 @@ import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -100,6 +101,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 AutoRenewConfig.class,
                 BalancesConfig.class,
                 BlockRecordStreamConfig.class,
+                BlockStreamConfig.class,
                 BootstrapConfig.class,
                 CacheConfig.class,
                 ConsensusConfig.class,
