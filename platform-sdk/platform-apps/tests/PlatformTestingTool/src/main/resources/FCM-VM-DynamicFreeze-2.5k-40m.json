@@ -7,18 +7,7 @@
 	"type": "TYPE_FCM_VIRTUAL_MIX",
 	"ratioOfFCMTransaction": 0.5,
 	"payloadByteSize": 100,
-	"maxByteSize": 100,
-	"distribution": {
-	  "sizeDistribution": [
-		100
-	  ],
-	  "ratioDistribution": [
-		100
-	  ],
-	  "typeDistribution": [
-		"TYPE_FCM_TEST"
-	  ]
-	}
+	"maxByteSize": 100
   },
   "submitConfig": {
 	"_comment0": [
@@ -32,7 +21,7 @@
 	  "5,  C2C_LATENCY"
 	],
 	"systemMetric": "TRANS_PER_SECOND_PER_NODE",
-	"metricThreshold": 100.0,
+	"metricThreshold": 2500.0,
 	"_comment1": "pause after submit defined amount of transactions",
 	"pauseAfter": 0,
 	"pauseSeconds": 30,

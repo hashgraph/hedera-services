@@ -4,20 +4,10 @@
 	"insertSeq": true,
 	"variedSize": false,
 	"_comment": "payload type TYPE_RANDOM_BYTES for random bytes",
-	"type": "TYPE_RANDOM_BYTES",
+	"type": "TYPE_FCM_VIRTUAL_MIX",
+	"ratioOfFCMTransaction": 0.5,
 	"payloadByteSize": 100,
-	"maxByteSize": 100,
-	"distribution": {
-	  "sizeDistribution": [
-		100
-	  ],
-	  "ratioDistribution": [
-		100
-	  ],
-	  "typeDistribution": [
-		"TYPE_FCM_TEST"
-	  ]
-	}
+	"maxByteSize": 100
   },
   "submitConfig": {
 	"_comment0": [
@@ -38,18 +28,48 @@
 	"allowRunSubmit": true,
 	"C2CDelayThreshold": 6
   },
+  "virtualMerkleConfig": {
+	"samplingProbability": 1,
+	"assorted": false,
+	"sequential": [
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 20000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 10000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 200000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 20000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 10000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 200000
+	  }
+	]
+  },
   "fcmConfig": {
 	"sequentialTest": true,
 	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmoutn, sequentialSize, this override typeDistribution defined in payloadConfig",
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 100000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 1100000,
+		"sequentialAmount": 100000,
 		"sequentialSize": 100
 	  }
 	]
