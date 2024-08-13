@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -33,6 +35,7 @@ import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockStreamTransactionTranslator;
 import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
 import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.utils.RcDiff;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +51,24 @@ import org.junit.jupiter.api.Assertions;
 public class TransactionRecordParityValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
 
+    public static final Factory FACTORY = new Factory() {
+        @NonNull
+        @Override
+        public TransactionRecordParityValidator create(@NonNull final HapiSpec spec) {
+            return newValidatorFor(spec);
+        }
+
+        @Override
+        public boolean appliesTo(@NonNull HapiSpec spec) {
+            // Embedded networks don't have saved states or a Merkle tree to validate hashes against
+            return spec.targetNetworkOrThrow().type() == SUBPROCESS_NETWORK;
+        }
+    };
+
+    private static TransactionRecordParityValidator newValidatorFor(HapiSpec spec) {
+        return new TransactionRecordParityValidator();
+    }
+
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
         // Parse the input blocks
@@ -62,6 +83,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         // Transform the expected transaction records into the required format
         final var expectedTxnRecs = transformExpectedRecords(data);
 
+        // TODO: Which state changes should be passed in? (This is obviously wrong, but to get it to compile..)
         final var actual = translateAll(inputs);
 
         final var maxDiffs = 10;
@@ -97,10 +119,11 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         }
     }
 
-    private List<RecordStreamEntry> translateAll(final BlocksData blocksData) {
+    private List<RecordStreamEntry> translateAll(final BlocksData inputs) {
         // Translate each block transaction into a SingleTransactionRecord instance
-        final var singleTxnRecs =
-                TRANSACTION_RECORD_TRANSLATOR.translateAll(blocksData.txns(), blocksData.allStateChanges());
+        List<SingleTransactionRecord> singleTxnRecs =
+                TRANSACTION_RECORD_TRANSLATOR.translateAll(inputs.txns(), inputs.allStateChanges());
+
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()
                 .map(txnRecord -> {
@@ -159,33 +182,17 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         private BlocksParser() {}
 
         BlocksData parseBlocks(@NonNull final List<Block> blocks) throws ParseException {
-            for (final var block : blocks) {
+            for (var block : blocks) {
                 final var items = block.items();
 
-                // A new block is starting, so any (non-empty) transaction that was in progress needs to be built
-                if (!builder.isEmpty()) {
-                    final var SingleTransactionBlockItems = builder.build();
-                    blockTxns.add(SingleTransactionBlockItems);
-                }
-                builder = new SingleTransactionBlockItems.Builder();
                 for (final var item : items) {
                     if (item.hasEventHeader()) {
-                        // Since transactions can only be inside of events, and a new event header is the next item,
-                        // the last transaction can't have anything else in it, and needs to be built
-                        if (!builder.isEmpty()) {
-                            final var SingleTransactionBlockItems = builder.build();
-                            blockTxns.add(SingleTransactionBlockItems);
-                            builder = new SingleTransactionBlockItems.Builder();
-                        }
+                        // build and reassign
+                        final var SingleTransactionBlockItems = builder.build();
+                        blockTxns.add(SingleTransactionBlockItems);
+                        builder = new SingleTransactionBlockItems.Builder();
                     }
                     if (item.hasEventTransaction()) {
-                        // A new transaction has started, so we need to build the previous one (if it isn't empty)
-                        if (!builder.isEmpty()) {
-                            final var SingleTransactionBlockItems = builder.build();
-                            blockTxns.add(SingleTransactionBlockItems);
-                            builder = new SingleTransactionBlockItems.Builder();
-                        }
-
                         final var submittedTxnBytes = item.eventTransaction().applicationTransactionOrElse(Bytes.EMPTY);
                         if (!(Objects.equals(submittedTxnBytes, Bytes.EMPTY))) {
                             final var submittedTxn = Transaction.PROTOBUF.parse(submittedTxnBytes);
@@ -199,13 +206,9 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                         final var stateChanges = item.stateChanges();
                         allStateChanges.add(stateChanges);
 
-                        // Now that we have the state changes, there's nothing else that can be part
-                        // of a single transaction, so we build the transaction and reset the builder
-                        if (!builder.isEmpty()) {
-                            final var SingleTransactionBlockItems = builder.build();
-                            blockTxns.add(SingleTransactionBlockItems);
-                            builder = new SingleTransactionBlockItems.Builder();
-                        }
+                        final var SingleTransactionBlockItems = builder.build();
+                        blockTxns.add(SingleTransactionBlockItems);
+                        builder = new SingleTransactionBlockItems.Builder();
                     }
                 }
             }

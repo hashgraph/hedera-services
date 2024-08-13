@@ -38,6 +38,7 @@ import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
+import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,7 +72,7 @@ public class StreamValidationOp extends UtilOp {
             new TokenReconciliationValidator());
 
     private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES =
-            List.of(StateChangesValidator.FACTORY);
+            List.of(TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY);
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {

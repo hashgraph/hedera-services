@@ -30,6 +30,8 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -37,6 +39,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -82,20 +85,22 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var singleTxnRecord =
                 switch (txnType) {
-                    case CONTRACT_CREATE_INSTANCE -> new ContractCreateTranslator()
-                            .translate(txnWrapper, stateChanges);
-                    case UNSET -> throw new IllegalArgumentException("Transaction type not set");
+                    case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
-                            TransactionRecord.newBuilder().build(),
+                            com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
+                                    .build(),
                             List.of(),
                             new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
-        final var txnRecord = singleTxnRecord.transactionRecord();
-        final var recordBuilder = txnRecord.copyBuilder();
+        final var txnRecord = pbjToProto(
+                singleTxnRecord.transactionRecord(),
+                com.hedera.hapi.node.transaction.TransactionRecord.class,
+                com.hederahashgraph.api.proto.java.TransactionRecord.class);
+        final var recordBuilder = txnRecord.toBuilder();
         final var receiptBuilder =
-                txnRecord.hasReceipt() ? txnRecord.receipt().copyBuilder() : TransactionReceipt.newBuilder();
+                txnRecord.hasReceipt() ? txnRecord.getReceipt().toBuilder() : TransactionReceipt.newBuilder();
 
         Objects.requireNonNull(txnWrapper.txn(), "transaction must not be null");
         Objects.requireNonNull(txnWrapper.result(), "transaction result must not be null");
