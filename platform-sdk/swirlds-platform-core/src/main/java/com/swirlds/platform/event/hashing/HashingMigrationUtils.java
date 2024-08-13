@@ -8,7 +8,8 @@ import com.swirlds.state.spi.HapiUtils;
 public class HashingMigrationUtils {
     private static final SemanticVersionConverter converter = new SemanticVersionConverter();
 
-    public static CombinedEventHasher getEventHasher(final EventConfig eventConfig,
+    public static UnsignedEventHasher getUnsignedEventHasher(
+            final EventConfig eventConfig,
             final SemanticVersion currentSoftwareVersion) {
         return getEventHasher(
                 convertMigrationVersion(eventConfig),
@@ -26,13 +27,21 @@ public class HashingMigrationUtils {
     }
 
     public static CombinedEventHasher getEventHasher(final SemanticVersion migrationVersion,
-            final SemanticVersion currentSoftwareVersion) {
+            final SemanticVersion eventVersion) {
         if (migrationVersion == null) {
             // no migration version set, use the old event hashing algorithm
             return new StatefulEventHasher();
         }
-        return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, migrationVersion) >= 0
-                ? new PbjHasher()
-                : new StatefulEventHasher();
+        return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(eventVersion, migrationVersion) > 0
+                ? new StatefulEventHasher()
+                : new PbjHasher();
+    }
+
+    public static void tellMe(final SemanticVersion migrationVersion,
+            final SemanticVersion currentSoftwareVersion){
+        System.out.printf("Current version%n %s %n", currentSoftwareVersion);
+        System.out.printf("Migration version%n %s %n", migrationVersion);
+        System.out.printf("Comparison%n %d %n",
+                HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, migrationVersion));
     }
 }

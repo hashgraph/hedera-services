@@ -171,7 +171,7 @@ public class TipsetEventCreator implements EventCreator {
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
-        this.eventHasher = HashingMigrationUtils.getEventHasher(
+        this.eventHasher = HashingMigrationUtils.getUnsignedEventHasher(
                 platformContext.getConfiguration().getConfigData(EventConfig.class),
                 softwareVersion.getPbjSemanticVersion()
         );

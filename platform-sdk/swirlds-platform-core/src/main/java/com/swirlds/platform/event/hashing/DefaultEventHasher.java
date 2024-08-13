@@ -27,19 +27,15 @@ import java.util.Objects;
  * Default implementation of the {@link EventHasher}.
  */
 public class DefaultEventHasher implements EventHasher {
-    private final SemanticVersion currentSoftwareVersion;
     private final SemanticVersion migrationVersion;
 
     /**
      * Constructs a new {@link DefaultEventHasher} with the given {@link SemanticVersion} and migration flag.
      *
-     * @param currentSoftwareVersion the current software version
      * @param migrationVersion    if true then use the new event hashing algorithm for new events, events created by
      *                               previous software versions will still need to be hashed using the old algorithm.
      */
-    public DefaultEventHasher(
-            @NonNull final SemanticVersion currentSoftwareVersion, final SemanticVersion migrationVersion) {
-        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
+    public DefaultEventHasher(final SemanticVersion migrationVersion) {
         this.migrationVersion = migrationVersion;
     }
 
@@ -47,7 +43,7 @@ public class DefaultEventHasher implements EventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        return HashingMigrationUtils.getEventHasher(migrationVersion, currentSoftwareVersion)
+        return HashingMigrationUtils.getEventHasher(migrationVersion, event.getSoftwareVersion())
                 .hashEvent(event);
     }
 }
