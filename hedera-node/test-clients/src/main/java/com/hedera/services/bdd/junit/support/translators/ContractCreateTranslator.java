@@ -39,7 +39,6 @@ public class ContractCreateTranslator implements TransactionRecordTranslator<Sin
                     .contractCreateResult(contractCreateResult)
                     .evmAddress(contractCreateResult.evmAddress());
         }
-        recordBuilder.consensusTimestamp(stateChanges.consensusTimestamp());
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),
