@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
 import static com.hedera.node.app.blocks.NaiveStreamingTreeHasher.hashNaively;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -108,7 +109,7 @@ public class HashingBenchmark {
         final var stateChanges = new StateChange[numStateChanges];
         for (int i = 0; i < numStateChanges; i++) {
             stateChanges[i] = StateChange.newBuilder()
-                    .stateName("TokenService.ACCOUNTS")
+                    .stateId(STATE_ID_ACCOUNTS.protoOrdinal())
                     .mapUpdate(MapUpdateChange.newBuilder()
                             .key(MapChangeKey.newBuilder()
                                     .accountIdKey(AccountID.newBuilder()

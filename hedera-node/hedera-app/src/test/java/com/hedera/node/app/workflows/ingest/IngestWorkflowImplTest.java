@@ -141,7 +141,8 @@ class IngestWorkflowImplTest extends AppTestBase {
                 transactionBody,
                 SignatureMap.newBuilder().build(),
                 randomBytes(100), // Not used in this test, so random bytes is OK
-                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC,
+                null);
         when(ingestChecker.runAllChecks(state, transaction, configuration)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with

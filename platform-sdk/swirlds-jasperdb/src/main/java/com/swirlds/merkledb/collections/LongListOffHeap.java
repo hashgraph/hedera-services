@@ -115,16 +115,11 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
     }
 
     /**
-     * Clean up all the direct buffers reserved for chunks
+     * Cleans up the direct buffers reserved for the chunk.
      */
     @Override
-    protected void onClose() {
-        for (int i = 0; i < chunkList.length(); i++) {
-            final ByteBuffer directBuffer = chunkList.get(i);
-            if (directBuffer != null) {
-                UNSAFE.invokeCleaner(directBuffer);
-            }
-        }
+    protected void closeChunk(@NonNull final ByteBuffer directBuffer) {
+        UNSAFE.invokeCleaner(directBuffer);
     }
 
     /** {@inheritDoc} */

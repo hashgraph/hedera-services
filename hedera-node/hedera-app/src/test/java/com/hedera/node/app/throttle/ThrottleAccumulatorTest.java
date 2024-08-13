@@ -2225,7 +2225,8 @@ class ThrottleAccumulatorTest {
                 PAYER_ID,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                SCHEDULE_CREATE);
+                SCHEDULE_CREATE,
+                null);
     }
 
     private TransactionInfo scheduleSign(ScheduleID scheduleID) {
@@ -2242,7 +2243,8 @@ class ThrottleAccumulatorTest {
                 PAYER_ID,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                SCHEDULE_SIGN);
+                SCHEDULE_SIGN,
+                null);
     }
 
     private ThrottleDefinitions getThrottleDefs(String testResource) throws IOException, ParseException {

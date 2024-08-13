@@ -12,7 +12,7 @@
  */
 syntax = "proto3";
 
-package com.hedera.hapi.block.stream;
+package com.hedera.hapi.block.stream.output;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -30,11 +30,12 @@ package com.hedera.hapi.block.stream;
  * limitations under the License.
  */
 
-option java_package = "com.hedera.hapi.block.stream.protoc";
-// <<<pbj.java_package = "com.hedera.hapi.block.stream">>> This comment is special code for setting PBJ Compiler java package
+option java_package = "com.hedera.hapi.block.stream.output.protoc";
+// <<<pbj.java_package = "com.hedera.hapi.block.stream.output">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 import "basic_types.proto";
+import "timestamp.proto";
 
 /**
  * A Block Header.
@@ -138,11 +139,19 @@ message BlockHeader {
     bytes previous_block_hash = 4;
 
     /**
+     * A consensus timestamp for the start of this block.
+     * <p>
+     * This SHALL be the timestamp assigned by the hashgraph consensus
+     * algorithm to the first transaction of this block.
+     */
+    proto.Timestamp first_transaction_consensus_time = 5;
+
+    /**
      * A hash algorithm used for this block, including the block proof.
      * <p>
      * This SHOULD always be `SHA2_384`, currently.
      */
-    proto.BlockHashAlgorithm hash_algorithm = 5;
+    proto.BlockHashAlgorithm hash_algorithm = 6;
 
     /**
      * A version for the network address book.<br/>
@@ -152,5 +161,5 @@ message BlockHeader {
      * This MUST be the version of the address book that signed this
      * block.
      */
-    proto.SemanticVersion address_book_version = 6;
+    proto.SemanticVersion address_book_version = 7;
 }

@@ -214,6 +214,12 @@ message Account {
      * pending airdrop, and SHALL be empty otherwise.
      */
     PendingAirdropId head_pending_airdrop_id = 34;
+
+    /**
+     * The number of pending airdrops owned by the account. This number is used to collect rent
+     * for the account.
+     */
+    uint64 number_pending_airdrops = 35;
 }
 
 /**

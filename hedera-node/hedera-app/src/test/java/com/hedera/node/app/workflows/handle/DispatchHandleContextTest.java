@@ -167,7 +167,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
 
     @Mock
     private AppKeyVerifier verifier;
@@ -279,7 +279,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.newBuilder().body(txBody).build(),
+            txBody,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER,
+            null);
 
     @BeforeEach
     void setup() {
@@ -739,7 +744,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
+                Transaction.newBuilder().body(txBody).build(),
+                txBody,
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                function,
+                null);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,

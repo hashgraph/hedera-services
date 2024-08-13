@@ -58,7 +58,8 @@ message GossipEvent {
   bytes signature = 2;
 
   /**
-   * The event transaction.<br/>
+   * The event transaction.
+   * <p>
    * This field MAY contain zero transactions.<br/>
    * This field MUST NOT exceed `maxTransactionCountPerEvent` entries, initially `245760`.<br/>
    * This total size of this field MUST NOT exceed `maxTransactionBytesPerEvent`, initially `245760` bytes.

@@ -16,14 +16,10 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * A logical transaction wrapper for the block items produced for/by processing a single
@@ -34,60 +30,19 @@ import java.util.Objects;
  * @param output the output (if any) of processing the user transaction
  */
 public record SingleTransactionBlockItems(
-        @NonNull Transaction txn, @NonNull TransactionResult result, @Nullable TransactionOutput output) {
-
-    /**
-     * The input block items should be exactly the block items produced for/by processing a
-     * single transaction, with the following expected order:
-     * <ol>
-     *     <li>Index 0: BlockItem.Transaction</li>
-     *     <li>Index 1: BlockItem.TransactionResult</li>
-     *     <li>Index 2: BlockItem.TransactionOutput (if applicable)</li>
-     * </ol>
-     *
-     * @param items The block items representing a single transaction
-     * @return A logical transaction wrapper for the block items
-     */
-    public static SingleTransactionBlockItems asSingleTransaction(@NonNull final List<BlockItem> items) {
-        final var builder = new Builder();
-        final var txnItem = items.get(0);
-        if (!txnItem.hasTransaction()) {
-            throw new IllegalArgumentException("Expected a transaction item!");
-        }
-        // The nullable warnings here aren't warranted since we check for `hasTransaction()` above.
-        // Similarly for the other fields
-        //noinspection DataFlowIssue
-        builder.txn(txnItem.transaction());
-
-        final var resultItem = items.get(1);
-        if (!resultItem.hasTransactionResult()) {
-            throw new IllegalArgumentException("Expected a transaction result item!");
-        }
-        //noinspection DataFlowIssue
-        builder.result(resultItem.transactionResult());
-
-        if (items.size() > 2) {
-            final var maybeOutput = items.get(2);
-            if (!maybeOutput.hasTransactionOutput()) {
-                throw new IllegalArgumentException("Expected a transaction output item!");
-            }
-            builder.output(maybeOutput.transactionOutput());
-        }
-
-        return builder.build();
-    }
+        @Nullable Transaction txn, @Nullable TransactionResult result, @Nullable TransactionOutput output) {
 
     public static class Builder {
         private Transaction txn;
         private TransactionResult result;
         private TransactionOutput output;
 
-        public Builder txn(@NonNull final Transaction txn) {
+        public Builder txn(@Nullable final Transaction txn) {
             this.txn = txn;
             return this;
         }
 
-        public Builder result(@NonNull final TransactionResult result) {
+        public Builder result(@Nullable final TransactionResult result) {
             this.result = result;
             return this;
         }
@@ -98,15 +53,20 @@ public record SingleTransactionBlockItems(
         }
 
         /**
-         * Builds the logical transaction wrapper for the block items. Note that, as annotated,
-         * the {@link Transaction} and {@link TransactionResult} fields are required.
+         * Builds the logical transaction wrapper for the block items.
+         *
          * @return the built object
-         * @throws NullPointerException if either the transaction or result fields are null
          */
         public SingleTransactionBlockItems build() {
-            Objects.requireNonNull(txn, "transaction is required");
-            Objects.requireNonNull(result, "result is required");
             return new SingleTransactionBlockItems(txn, result, output);
+        }
+
+        /**
+         * Determines if the builder has any non-null components
+         * @return true if all components are null, false otherwise
+         */
+        public boolean isEmpty() {
+            return txn == null && result == null && output == null;
         }
     }
 }

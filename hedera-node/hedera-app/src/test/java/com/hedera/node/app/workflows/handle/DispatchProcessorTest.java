@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -60,6 +61,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -68,7 +70,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -111,14 +112,19 @@ class DispatchProcessorTest {
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
     private static final TransactionInfo SYS_DEL_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_DELETE);
-    private static final TransactionInfo SYS_UNDEL_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE);
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_DELETE, null);
+    private static final TransactionInfo SYS_UNDEL_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE, null);
     private static final TransactionInfo CONTRACT_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
+    private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
+
+    @Mock
+    private EthereumTransactionHandler ethereumTransactionHandler;
 
     @Mock
     private Authorizer authorizer;
@@ -149,9 +155,6 @@ class DispatchProcessorTest {
 
     @Mock
     private TransactionDispatcher dispatcher;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
     private Dispatch dispatch;
@@ -189,7 +192,8 @@ class DispatchProcessorTest {
                 platformStateUpdates,
                 dispatchUsageManager,
                 exchangeRateManager,
-                dispatcher);
+                dispatcher,
+                ethereumTransactionHandler);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
@@ -421,6 +425,31 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        assertFinished();
+    }
+
+    @Test
+    void consGasExhaustedForEthTxnDoesExtraWork() throws DispatchUsageManager.ThrottleException {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.handleContext()).willReturn(context);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatchValidator.validationReportFor(dispatch)).willReturn(successReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(ETH_TXN_INFO);
+        givenAuthorization(ETH_TXN_INFO);
+        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+                .when(dispatchUsageManager)
+                .screenForCapacity(dispatch);
+        given(dispatch.txnCategory()).willReturn(USER);
+
+        subject.processDispatch(dispatch);
+
+        verifyTrackedFeePayments();
+        verify(dispatcher, never()).dispatchHandle(context);
+        verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        verify(ethereumTransactionHandler).handleThrottled(context);
         assertFinished();
     }
 
