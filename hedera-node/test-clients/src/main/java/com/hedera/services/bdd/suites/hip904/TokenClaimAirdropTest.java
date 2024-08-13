@@ -198,12 +198,18 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                 moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
                         .payingWith(OWNER),
+                // signed by account not referenced as receiver id
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
+                        .feeUsd(0.001)
+                        .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                // has multiple receivers
                 tokenClaimAirdrop(
                                 pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN),
                                 pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .feeUsd(0.001)
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(INVALID_SIGNATURE));
+                        .hasKnownStatus(INVALID_TRANSACTION_BODY));
     }
 
     @HapiTest

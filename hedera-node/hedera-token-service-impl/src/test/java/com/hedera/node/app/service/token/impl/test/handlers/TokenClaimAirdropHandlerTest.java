@@ -137,7 +137,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .pendingAirdrops(pendingAirdropIds)
                 .build());
         final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(txn));
-        assertEquals(ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS, msg.responseCode());
+        assertEquals(ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED, msg.responseCode());
     }
 
     @Test

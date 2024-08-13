@@ -50,12 +50,19 @@ public class PendingAirdropUpdater {
         this.accountStore = accountStore;
     }
 
+    /**
+     * Removes provided pending airdrops from the state.
+     * Updates sender accounts ({@code headPendingAirdropId()} and {@code numberPendingAirdrops()}).
+     * Update neighbour pending airdrops linked list pointers ({@code previousAirdrop()} and {@code nextAirdrop()}).
+     *
+     * @param airdropsToRemove list of PendingAirdropId to be removed
+     */
     public void removePendingAirdrops(@NonNull final List<PendingAirdropId> airdropsToRemove) {
         final Map<AccountID, Account> updatedSenders = new HashMap<>();
         final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops = new HashMap<>();
         // calculate state changes
         for (PendingAirdropId id : airdropsToRemove) {
-            removePendingAirdropAndUpdateStores(id, updatedSenders, updatedAirdrops);
+            computeRemovalResults(id, updatedSenders, updatedAirdrops);
         }
 
         // commit updates
@@ -64,29 +71,29 @@ public class PendingAirdropUpdater {
         airdropsToRemove.forEach(pendingAirdropStore::remove);
     }
 
-    private void removePendingAirdropAndUpdateStores(
+    /**
+     *  Compute updates needed to be commited, after removing a single pending airdrop.
+     *  It populates maps {@code updatedSenders} and {@code updatedAirdrops} with updated entities, ready
+     *  to be persisted in the state.
+     *
+     * <p>
+     *  <b>Note:</b> this method don't persist any state changes.
+     *
+     * @param airdropId pending airdrop to remove
+     * @param updatedSenders map containing previous changes of the senders accounts
+     * @param updatedAirdrops map containing previous changes of the pending airdrops
+     */
+    private void computeRemovalResults(
             final PendingAirdropId airdropId,
             final Map<AccountID, Account> updatedSenders,
             final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops) {
 
         final var senderId = airdropId.senderIdOrThrow();
-        var senderAccount = updatedSenders.containsKey(senderId)
-                ? updatedSenders.get(senderId)
-                : requireNonNull(accountStore.getAccountById(senderId));
 
         final var airdrop = updatedAirdrops.containsKey(airdropId)
                 ? updatedAirdrops.get(airdropId)
                 : pendingAirdropStore.getForModify(airdropId);
         validateTrue(airdrop != null, INVALID_TRANSACTION_BODY);
-
-        // updated sender's head of pending airdrops
-        if (airdropId.equals(senderAccount.headPendingAirdropId())) {
-            final var updatedSender = senderAccount
-                    .copyBuilder()
-                    .headPendingAirdropId(airdrop.nextAirdrop())
-                    .build();
-            updatedSenders.put(updatedSender.accountId(), updatedSender);
-        }
 
         // update pending airdrops links
         final var prevAirdropId = airdrop.previousAirdrop();
@@ -112,14 +119,15 @@ public class PendingAirdropUpdater {
             updatedAirdrops.put(nextAirdropId, nextAirdropToUpdate);
         }
 
-        // decrement the number of pending airdrops
-        senderAccount = updatedSenders.containsKey(senderId)
+        // update sender
+        var senderAccount = updatedSenders.containsKey(senderId)
                 ? updatedSenders.get(senderId)
                 : requireNonNull(accountStore.getAccountById(senderId));
-        var updatedSenderAccount = senderAccount
-                .copyBuilder()
-                .numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1)
-                .build();
-        updatedSenders.put(updatedSenderAccount.accountId(), updatedSenderAccount);
+        final var updatedSender =
+                senderAccount.copyBuilder().numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1);
+        if (airdropId.equals(senderAccount.headPendingAirdropId())) {
+            updatedSender.headPendingAirdropId(airdrop.nextAirdrop());
+        }
+        updatedSenders.put(senderAccount.accountId(), updatedSender.build());
     }
 }
