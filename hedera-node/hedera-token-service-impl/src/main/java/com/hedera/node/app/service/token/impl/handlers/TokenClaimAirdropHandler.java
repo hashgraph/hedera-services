@@ -153,7 +153,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
             // validate existence and custom fees
             validateTrue(pendingAirdropStore.exists(airdrop), INVALID_TRANSACTION_BODY);
-            validateTrue(validator.tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+            validateTrue(validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore), INVALID_TRANSACTION);
 
             // build transfer lists
             final var senderId = airdrop.senderIdOrThrow();
