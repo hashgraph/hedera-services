@@ -337,6 +337,7 @@ public class PttTransactionPool implements FastCopyable {
                 payloadPair = virtualMerkleTransactionPool.getTransaction();
                 if (payloadPair != null) {
                     payload = payloadPair.left();
+                    logger.info(MARKER, "Generated VM transaction type {}", payloadPair.middle());
                 } else {
                     logger.info(MARKER, "Generated enough virtual merkle test for sequential mode");
                 }

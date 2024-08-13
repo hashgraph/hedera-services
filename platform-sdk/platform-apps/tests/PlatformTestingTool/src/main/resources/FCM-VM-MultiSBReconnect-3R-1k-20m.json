@@ -60,41 +60,26 @@
   },
   "fcmConfig": {
 	"sequentialTest": true,
-	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmoutn, sequentialSize, this override typeDistribution defined in payloadConfig",
+	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmount, sequentialSize, this override typeDistribution defined in payloadConfig",
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 20000,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "SAVE_EXPECTED_MAP",
-		"sequentialAmount": 1,
+		"sequentialAmount": 100000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_UPDATE",
-		"sequentialAmount": 20000,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "SAVE_EXPECTED_MAP",
-		"sequentialAmount": 1,
+		"sequentialAmount": 400000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 20000,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "SAVE_EXPECTED_MAP",
-		"sequentialAmount": 1,
+		"sequentialAmount": 1800000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_DELETE",
-		"sequentialAmount": 15000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  }
 	]
