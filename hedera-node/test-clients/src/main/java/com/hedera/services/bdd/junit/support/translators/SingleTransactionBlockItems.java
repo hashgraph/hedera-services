@@ -60,5 +60,13 @@ public record SingleTransactionBlockItems(
         public SingleTransactionBlockItems build() {
             return new SingleTransactionBlockItems(txn, result, output);
         }
+
+        /**
+         * Determines if the builder has any non-null components
+         * @return true if all components are null, false otherwise
+         */
+        public boolean isEmpty() {
+            return txn == null && result == null && output == null;
+        }
     }
 }

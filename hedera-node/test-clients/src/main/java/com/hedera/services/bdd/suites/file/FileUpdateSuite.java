@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -70,6 +72,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
@@ -409,12 +413,15 @@ public class FileUpdateSuite {
 
         return hapiTest(
                 overriding("contracts.maxGasPerSec", gasToOffer + ""),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                 uploadInitCode(contract),
                 contractCreate(contract),
-                contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.valueOf(4))
+                ethereumCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.valueOf(4))
+                        .gasLimit(gasToOffer)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(civilian)
-                        .gas(gasToOffer)
                         .via(unrefundedTxn),
                 usableTxnIdNamed(refundedTxn).payerId(civilian),
                 contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
@@ -422,9 +429,10 @@ public class FileUpdateSuite {
                         .gas(gasToOffer)
                         .hasAnyStatusAtAll()
                         .deferStatusResolution(),
-                uncheckedSubmit(contractCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .signedBy(civilian)
-                                .gas(gasToOffer)
+                uncheckedSubmit(ethereumCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(4))
+                                .gasLimit(gasToOffer)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(civilian)
                                 .txnId(refundedTxn))
                         .payingWith(GENESIS),
                 sleepFor(6_000L),
@@ -438,6 +446,8 @@ public class FileUpdateSuite {
                         log.info("Latency allowed gas throttle bucket to drain" + " completely");
                     } else {
                         assertEquals(CONSENSUS_GAS_EXHAUSTED, status);
+                        final var hash = refundedOp.getResponseRecord().getEthereumHash();
+                        assertEquals(32, hash.size(), "Expected a 32-byte hash");
                         final var origFee = unrefundedOp.getResponseRecord().getTransactionFee();
                         final var feeSansRefund = refundedOp.getResponseRecord().getTransactionFee();
                         assertTrue(

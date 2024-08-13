@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -35,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -71,6 +73,7 @@ public class DispatchProcessor {
     private final DispatchUsageManager dispatchUsageManager;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
+    private final EthereumTransactionHandler ethereumTransactionHandler;
 
     @Inject
     public DispatchProcessor(
@@ -81,7 +84,8 @@ public class DispatchProcessor {
             @NonNull final PlatformStateUpdates platformStateUpdates,
             @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -90,6 +94,7 @@ public class DispatchProcessor {
         this.dispatchUsageManager = requireNonNull(dispatchUsageManager);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
+        this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
     }
 
     /**
@@ -156,7 +161,11 @@ public class DispatchProcessor {
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
             return USER_TRANSACTION;
         } catch (final ThrottleException e) {
-            return nonHandleWorkDone(dispatch, validationResult, e.getStatus());
+            final var workDone = nonHandleWorkDone(dispatch, validationResult, e.getStatus());
+            if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
+                ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
+            }
+            return workDone;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
             return nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);

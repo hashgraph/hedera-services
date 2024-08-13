@@ -30,6 +30,7 @@ import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -47,9 +48,11 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.bouncycastle.jcajce.provider.digest.SHA384;
 
 /**
  * Converts a block stream transaction into a {@link TransactionRecord}. We can then use the converted
@@ -97,16 +100,22 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var receiptBuilder =
                 txnRecord.hasReceipt() ? txnRecord.getReceipt().toBuilder() : TransactionReceipt.newBuilder();
 
-        parseTransaction(txnWrapper.txn(), recordBuilder);
+        Objects.requireNonNull(txnWrapper.txn(), "transaction must not be null");
+        Objects.requireNonNull(txnWrapper.result(), "transaction result must not be null");
+        // We don't require txnWrapper.output() to be non-null since not all txns have an output
 
         try {
+            parseTransaction(txnWrapper.txn(), recordBuilder, receiptBuilder);
             parseTransactionResult(txnWrapper.result(), recordBuilder, receiptBuilder);
             parseTransactionOutput(txnWrapper.output(), recordBuilder, receiptBuilder);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException | InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Unparseable transaction given", e);
         }
 
         // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
+        // (Near) FUTURE: parse state changes via specific transaction type parser classes
+
+        recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
                 txnWrapper.txn(),
                 protoToPbj(recordBuilder.build(), com.hedera.hapi.node.transaction.TransactionRecord.class),
@@ -133,15 +142,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     public List<SingleTransactionRecord> translateAll(
             @NonNull final List<SingleTransactionBlockItems> transactions,
             @NonNull final List<StateChanges> stateChanges) {
-        // TODO: this implementation probably isn't correct, specifically since we're passing in _all_ state changes
-        // on each call to `translate`, which is likely not what we want. How do we compute the correct subset of state
-        // changes for each transaction?
         return transactions.stream()
+                // Filter out any objects that weren't parsed correctly (if t.txn() is null, that transaction definitely
+                // wasn't parsed correctly)
                 .filter(t -> t.txn() != null)
                 .map(txn -> {
                     final var consensusTimestamp = txn.result().consensusTimestamp();
                     final var matchingTimestampChanges = stateChanges.stream()
-                            .filter(sc -> Objects.equals(consensusTimestamp, sc.consensusTimestamp()))
+                            .filter(stateChange -> Objects.equals(consensusTimestamp, stateChange.consensusTimestamp()))
                             .toList();
                     final var matchingChanges =
                             matchingTimestampChanges.isEmpty() ? null : matchingTimestampChanges.getFirst();
@@ -151,17 +159,59 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     }
 
     private TransactionRecord.Builder parseTransaction(
-            final Transaction txn, final TransactionRecord.Builder recordBuilder) {
+            final Transaction txn,
+            final TransactionRecord.Builder recordBuilder,
+            final TransactionReceipt.Builder receiptBuilder)
+            throws NoSuchAlgorithmException {
+        TransactionID transactionID;
         if (txn.body() != null) {
-            recordBuilder
-                    .setTransactionID(pbjToProto(
-                            txn.body().transactionID(),
-                            com.hedera.hapi.node.base.TransactionID.class,
-                            TransactionID.class))
-                    .setMemo(txn.body().memo());
+            transactionID = pbjToProto(
+                    txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class);
+            recordBuilder.setTransactionID(transactionID).setMemo(txn.body().memo());
+        } else {
+            final var parts = TransactionParts.from(fromPbj(txn));
+            transactionID = parts.body().getTransactionID();
+            recordBuilder.setTransactionID(transactionID);
+
+            String memo = parts.body().getMemo();
+            if (memo == null || memo.isEmpty()) {
+                final var memoBytes = parts.body().getMemoBytes();
+                if (memoBytes != null && !memoBytes.isEmpty()) {
+                    memo = parts.body().getMemoBytes().toString();
+                }
+            }
+            recordBuilder.setMemo(memo);
         }
 
+        final var txnBytes = toBytesForHash(txn);
+        final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
+        recordBuilder.setTransactionHash(toByteString(hash));
+
+        receiptBuilder.setAccountID(transactionID.getAccountID());
+
         return recordBuilder;
+    }
+
+    /**
+     * Converts a {@link Transaction} into a sequence of bytes, specifically for the
+     * transaction hash that appears in the {@link TransactionRecord}.
+     * @param txn the transaction to convert
+     * @return the bytes of the transaction
+     */
+    private Bytes toBytesForHash(final Transaction txn) {
+        return txn.signedTransactionBytes().length() > 0
+                ? txn.signedTransactionBytes()
+                : Transaction.PROTOBUF.toBytes(txn);
+    }
+
+    /**
+     * Hashes the bytes of a transaction using SHA-384.
+     * @param bytes the bytes to hash
+     * @return the hashed bytes
+     * @throws NoSuchAlgorithmException if the SHA-384 algorithm is not available
+     */
+    private Bytes hashTxn(final Bytes bytes) throws NoSuchAlgorithmException {
+        return Bytes.wrap(SHA384.Digest.getInstance("SHA-384").digest(bytes.toByteArray()));
     }
 
     private TransactionRecord.Builder parseTransactionResult(
@@ -183,11 +233,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             recordBuilder.addPaidStakingRewards(proto);
         }
 
-        if (txnResult.transferList() != null) {
-            final var transferList = TransferList.parseFrom(com.hedera.hapi.node.base.TransferList.PROTOBUF
+        final var transferList = txnResult.transferList();
+        if (transferList != null) {
+            final var translatedTransferList = TransferList.parseFrom(com.hedera.hapi.node.base.TransferList.PROTOBUF
                     .toBytes(txnResult.transferList())
                     .toByteArray());
-            recordBuilder.setTransferList(transferList);
+            recordBuilder.setTransferList(translatedTransferList);
+        } else {
+            recordBuilder.setTransferList(TransferList.getDefaultInstance());
         }
 
         final var tokenTransferLists = txnResult.tokenTransferLists();
