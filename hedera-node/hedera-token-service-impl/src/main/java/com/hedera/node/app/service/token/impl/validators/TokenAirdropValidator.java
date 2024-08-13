@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
@@ -134,9 +135,11 @@ public class TokenAirdropValidator {
     private boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
-        for (var fee : feeMeta.customFees()) {
-            if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
-                return false;
+        if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            for (var fee : feeMeta.customFees()) {
+                if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
+                    return false;
+                }
             }
         }
         return true;
