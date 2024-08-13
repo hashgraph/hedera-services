@@ -50,6 +50,8 @@ public record TokensConfig(
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "maxPendingAllowedAirdrops", defaultValue = "20000000") @NetworkProperty
                 long maxPendingAllowedAirdrops,
+        @ConfigProperty(value = "maxAllowedAirdropTransfersPerTx", defaultValue = "10") @NetworkProperty
+                long maxAllowedAirdropTransfersPerTx,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled,
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
