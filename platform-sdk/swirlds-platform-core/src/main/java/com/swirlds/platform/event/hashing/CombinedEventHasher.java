@@ -16,4 +16,7 @@
 
 package com.swirlds.platform.event.hashing;
 
+/**
+ * An interface for hashing events. Combines the {@link EventHasher} and {@link UnsignedEventHasher} interfaces.
+ */
 public interface CombinedEventHasher extends EventHasher, UnsignedEventHasher {}

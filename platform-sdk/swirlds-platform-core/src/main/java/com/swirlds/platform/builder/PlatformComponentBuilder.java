@@ -259,6 +259,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
+            // convert the migration version from a string to a SemanticVersion, this will throw an exception if the
+            // migration version is not a valid SemanticVersion
             eventHasher = new DefaultEventHasher(HashingMigrationUtils.convertMigrationVersion(
                     blocks.platformContext().getConfiguration().getConfigData(EventConfig.class)));
         }

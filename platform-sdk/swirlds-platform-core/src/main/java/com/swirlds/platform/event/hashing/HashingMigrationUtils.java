@@ -17,62 +17,68 @@
 package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.base.time.Time;
-import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.config.SemanticVersionConverter;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.state.spi.HapiUtils;
-import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class HashingMigrationUtils {
-    private static final Logger logger = LogManager.getLogger(HashingMigrationUtils.class);
-    private static final RateLimitedLogger tellMe =
-            new RateLimitedLogger(logger, Time.getCurrent(), Duration.ofSeconds(1));
-    private static final SemanticVersionConverter converter = new SemanticVersionConverter();
+/**
+ * Utility class for handling event hashing migration
+ */
+public final class HashingMigrationUtils {
+    /** Converts a string to a SemanticVersion */
+    private static final SemanticVersionConverter VERSION_CONVERTER = new SemanticVersionConverter();
 
-    public static UnsignedEventHasher getUnsignedEventHasher(
-            final EventConfig eventConfig, final SemanticVersion currentSoftwareVersion) {
+    private HashingMigrationUtils() {
+        // prevent instantiation
+    }
+
+    /**
+     * Create an appropriate {@link UnsignedEventHasher} for new events that are created depending on the configuration
+     * and the current software version.
+     *
+     * @param eventConfig            the event configuration
+     * @param currentSoftwareVersion the current software version
+     * @return a new {@link UnsignedEventHasher}
+     */
+    public static @NonNull UnsignedEventHasher getUnsignedEventHasher(
+            @NonNull final EventConfig eventConfig, @NonNull final SemanticVersion currentSoftwareVersion) {
         return getEventHasher(convertMigrationVersion(eventConfig), currentSoftwareVersion);
     }
 
-    public static SemanticVersion convertMigrationVersion(final EventConfig eventConfig) {
+    /**
+     * Converts the migration version string from the event configuration to a {@link SemanticVersion}. If the migration
+     * version is empty, returns null.
+     *
+     * @param eventConfig the event configuration
+     * @return the migration version as a {@link SemanticVersion} or null if not set
+     */
+    public static @Nullable SemanticVersion convertMigrationVersion(@NonNull final EventConfig eventConfig) {
         final String migrationVersionString =
                 eventConfig.hashingMigrationVersion().trim();
         if (migrationVersionString.isEmpty()) {
             // no migration version set, use the old event hashing algorithm
             return null;
         }
-        return converter.convert(migrationVersionString);
+        return VERSION_CONVERTER.convert(migrationVersionString);
     }
 
-    public static CombinedEventHasher getEventHasher(
-            final SemanticVersion migrationVersion, final SemanticVersion eventVersion) {
+    /**
+     * Get the appropriate {@link CombinedEventHasher} for the given migration version and event version.
+     *
+     * @param migrationVersion the migration version
+     * @param eventVersion     the event version
+     * @return a new {@link CombinedEventHasher}
+     */
+    public static @NonNull CombinedEventHasher getEventHasher(
+            @Nullable final SemanticVersion migrationVersion, @NonNull final SemanticVersion eventVersion) {
         if (migrationVersion == null) {
             // no migration version set, use the old event hashing algorithm
             return new StatefulEventHasher();
         }
-        //        logger.error(
-        //                LogMarker.EXCEPTION.getMarker(),
-        //                """
-        //                        Event version {}
-        //                        Migration version {}
-        //                        Comparison {}
-        //                        """,
-        //                eventVersion,
-        //                migrationVersion,
-        //                HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(eventVersion, migrationVersion)
-        //        );
         return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(eventVersion, migrationVersion) >= 0
                 ? new PbjHasher()
                 : new StatefulEventHasher();
-    }
-
-    public static void tellMe(final SemanticVersion migrationVersion, final SemanticVersion eventVersion) {
-        System.out.printf("Current version%n %s %n", eventVersion);
-        System.out.printf("Migration version%n %s %n", migrationVersion);
-        System.out.printf(
-                "Comparison%n %d %n", HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(eventVersion, migrationVersion));
     }
 }

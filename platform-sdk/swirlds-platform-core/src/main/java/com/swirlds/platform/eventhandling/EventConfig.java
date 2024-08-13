@@ -34,9 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
  * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
- * @param hashingMigrationVersion               if true then use the new event hashing algorithm for new events, events
- *                                          created by previous software versions will still need to be hashed using the
- *                                          old algorithm.
+ * @param hashingMigrationVersion           the version at which we should start hashing events with the new hashing
+ *                                          algorithm. if empty, the old hashing algorithm will be used
  */
 @ConfigData("event")
 public record EventConfig(

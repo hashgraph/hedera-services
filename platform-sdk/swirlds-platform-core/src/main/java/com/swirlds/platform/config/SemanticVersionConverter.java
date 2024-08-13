@@ -23,8 +23,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.regex.Pattern;
 
 /**
- * A {@link ConfigConverter} that converts a {@link String} to a {@link SemanticVersion}. The {@link String} must be
- * formatted according to the <a href="https://semver.org/">Semantic Versioning 2.0.0</a> specification.
+ * This class is copied from services. In order to avoid lots of dependency changes on a tight deadline, this class was
+ * copied in release 53, this should not be duplicated in any other release.
  */
 public final class SemanticVersionConverter implements ConfigConverter<SemanticVersion> {
     /** Arbitrary limit to prevent stack overflow when parsing unrealistically long versions. */

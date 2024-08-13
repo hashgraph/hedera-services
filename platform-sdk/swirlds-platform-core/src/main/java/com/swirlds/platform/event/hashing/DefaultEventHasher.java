@@ -19,6 +19,7 @@ package com.swirlds.platform.event.hashing;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -28,12 +29,13 @@ public class DefaultEventHasher implements EventHasher {
     private final SemanticVersion migrationVersion;
 
     /**
-     * Constructs a new {@link DefaultEventHasher} with the given {@link SemanticVersion} and migration flag.
+     * Constructs a new {@link DefaultEventHasher} with the given {@link SemanticVersion}.
      *
-     * @param migrationVersion    if true then use the new event hashing algorithm for new events, events created by
-     *                               previous software versions will still need to be hashed using the old algorithm.
+     * @param migrationVersion the version at which events should start being hashed by the new algorithm, all events
+     *                         prior to this version will be hashed by the old algorithm. if null, no hashing migration
+     *                         will occur
      */
-    public DefaultEventHasher(final SemanticVersion migrationVersion) {
+    public DefaultEventHasher(@Nullable final SemanticVersion migrationVersion) {
         this.migrationVersion = migrationVersion;
     }
 
