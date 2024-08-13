@@ -18,6 +18,7 @@ package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -27,28 +28,26 @@ import java.util.Objects;
  */
 public class DefaultEventHasher implements EventHasher {
     private final SemanticVersion currentSoftwareVersion;
-    private final boolean migrateEventHashing;
+    private final EventConfig eventConfig;
 
     /**
      * Constructs a new {@link DefaultEventHasher} with the given {@link SemanticVersion} and migration flag.
      *
      * @param currentSoftwareVersion the current software version
-     * @param migrateEventHashing    if true then use the new event hashing algorithm for new events, events created by
+     * @param eventConfig    if true then use the new event hashing algorithm for new events, events created by
      *                               previous software versions will still need to be hashed using the old algorithm.
      */
     public DefaultEventHasher(
-            @NonNull final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
+            @NonNull final SemanticVersion currentSoftwareVersion, final EventConfig eventConfig) {
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
-        this.migrateEventHashing = migrateEventHashing;
+        this.eventConfig = eventConfig;
     }
 
     @Override
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        if (migrateEventHashing
-                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, event.getSoftwareVersion())
-                        == 0) {
+        if (eventConfig.useNewEventHashing(currentSoftwareVersion)) {
             new PbjHasher().hashEvent(event);
             return event;
         }

@@ -41,6 +41,7 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -84,7 +85,9 @@ public class TestIntake {
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
         final EventHasher eventHasher =
-                new DefaultEventHasher(new BasicSoftwareVersion(1).getPbjSemanticVersion(), false);
+                new DefaultEventHasher(
+                        new BasicSoftwareVersion(1).getPbjSemanticVersion(),
+                        platformContext.getConfiguration().getConfigData(EventConfig.class));
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<PlatformEvent> postHashCollectorWiring =

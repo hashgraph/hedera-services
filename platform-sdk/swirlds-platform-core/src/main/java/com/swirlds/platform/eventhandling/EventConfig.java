@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.eventhandling;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -47,7 +49,18 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
         @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue,
-        @ConfigProperty(defaultValue = "true") boolean migrateEventHashing) {
+        @ConfigProperty(defaultValue = DISABLED_MIGRATION_STRING) SemanticVersion migrateEventHashing) {
+
+    public static final String DISABLED_MIGRATION_STRING = "0.0.0";
+    public static final SemanticVersion DISABLED_MIGRATION = SemanticVersion.newBuilder().major(0).minor(0).patch(0).build();
+
+
+    public boolean useNewEventHashing(final SemanticVersion currentSoftwareVersion) {
+        if(migrateEventHashing.equals(DISABLED_MIGRATION)){
+            return false;
+        }
+        return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, migrateEventHashing) >= 0;
+    }
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

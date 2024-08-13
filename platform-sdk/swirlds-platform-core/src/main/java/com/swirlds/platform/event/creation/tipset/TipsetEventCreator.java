@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -171,10 +172,11 @@ public class TipsetEventCreator implements EventCreator {
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
+
         this.eventHasher = platformContext
                         .getConfiguration()
                         .getConfigData(EventConfig.class)
-                        .migrateEventHashing()
+                        .useNewEventHashing(softwareVersion.getPbjSemanticVersion())
                 ? new PbjHasher()
                 : new StatefulEventHasher();
     }

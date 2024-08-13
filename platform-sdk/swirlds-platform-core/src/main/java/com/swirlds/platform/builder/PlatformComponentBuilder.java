@@ -262,8 +262,7 @@ public class PlatformComponentBuilder {
                     blocks.appVersion().getPbjSemanticVersion(),
                     blocks.platformContext()
                             .getConfiguration()
-                            .getConfigData(EventConfig.class)
-                            .migrateEventHashing());
+                            .getConfigData(EventConfig.class));
         }
         return eventHasher;
     }
