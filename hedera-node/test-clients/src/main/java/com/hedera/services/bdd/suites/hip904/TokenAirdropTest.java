@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.hip904;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -36,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -296,6 +299,20 @@ public class TokenAirdropTest {
                             validateChargedUsd("second", 0.001, 10),
                             // assert the account balance
                             getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop to contract with admin key")
+        final Stream<DynamicTest> airdropToContractWithAdminKey() {
+            final var testContract = "ToyMaker";
+            final var key = "key";
+            return hapiTest(
+                    newKeyNamed(key),
+                    uploadInitCode(testContract),
+                    contractCreate(testContract).adminKey(key),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER));
         }
     }
 
@@ -624,6 +641,19 @@ public class TokenAirdropTest {
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
                             .hasPrecheck(INVALID_TRANSACTION_BODY));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop to contract without admin key")
+        final Stream<DynamicTest> airdropToContractWithoutAdminKey() {
+            final var testContract = "ToyMaker";
+            return hapiTest(
+                    uploadInitCode(testContract),
+                    contractCreate(testContract).omitAdminKey(),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(INVALID_TRANSACTION_BODY));
         }
     }
 
