@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
+import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -151,11 +152,12 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
 
         validatePendingAirdropIds(context, pendingAirdropIds, payer, accountStore, airdropStore);
-        deleteAccountAirdropsFromAccount(pendingAirdropIds, airdropStore, payerAccount, accountStore);
-        updateAccountsNumberOfPendingAirdrops(payerAccount.accountId(), pendingAirdropIds.size(), accountStore);
-        deletePendingAirdropsFromStore(pendingAirdropIds, airdropStore);
+        new PendingAirdropUpdater(airdropStore, accountStore).removePendingAirdrops(op.pendingAirdrops());
     }
 
+    /**
+     * Using the configuration to validate if the body valid
+     */
     private static void configValidation(Configuration configuration, TokenCancelAirdropTransactionBody op) {
         var tokensConfig = configuration.getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
@@ -164,6 +166,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                 MAX_PENDING_AIRDROP_ID_EXCEEDED);
     }
 
+    /**
+     * Validating the list of PendingAirdropId
+     */
     private static void validatePendingAirdropIds(
             HandleContext context,
             List<PendingAirdropId> pendingAirdropIds,
@@ -187,65 +192,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                     pendingAirdropId.receiverIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             validateTrue(airdropStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
         }
-    }
-
-    private static void deleteAccountAirdropsFromAccount(
-            List<PendingAirdropId> pendingAirdropIds,
-            WritableAirdropStore airdropStore,
-            Account payerAccount,
-            WritableAccountStore accountStore) {
-        for (var pendingAirdropsToCancel : pendingAirdropIds) {
-            final var accountAirdropToCancel = airdropStore.getForModify(pendingAirdropsToCancel);
-            validateTrue(accountAirdropToCancel != null, INVALID_TRANSACTION_BODY);
-
-            // Update the account to point to the new head if the current one is being cancelled
-            if (pendingAirdropsToCancel.equals(payerAccount.headPendingAirdropId())) {
-                final var updatedPayer = accountStore
-                        .getForModify(payerAccount.accountId())
-                        .copyBuilder()
-                        .headPendingAirdropId(accountAirdropToCancel.nextAirdrop())
-                        .build();
-                accountStore.put(updatedPayer);
-            }
-
-            final var prevAirdropId = accountAirdropToCancel.previousAirdrop();
-            final var nextAirdropId = accountAirdropToCancel.nextAirdrop();
-            if (prevAirdropId != null) {
-                final var prevAccountAirdrop = airdropStore.getForModify(prevAirdropId);
-                validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var prevAirdropToUpdate = prevAccountAirdrop
-                        .copyBuilder()
-                        .nextAirdrop(nextAirdropId)
-                        .build();
-                airdropStore.put(prevAirdropId, prevAirdropToUpdate);
-            }
-            if (nextAirdropId != null) {
-                final var nextAccountAirdrop = airdropStore.getForModify(nextAirdropId);
-                validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var nextAirdropToUpdate = nextAccountAirdrop
-                        .copyBuilder()
-                        .previousAirdrop(prevAirdropId)
-                        .build();
-                airdropStore.put(nextAirdropId, nextAirdropToUpdate);
-            }
-        }
-    }
-
-    private static void updateAccountsNumberOfPendingAirdrops(
-            AccountID payerAccountId, int canceledPendingAirdropsSize, WritableAccountStore accountStore) {
-        final var payerAccount = requireNonNull(accountStore.getAccountById(payerAccountId));
-
-        var newNumberPendingAirdrops = payerAccount.numberPendingAirdrops() - canceledPendingAirdropsSize;
-        final var updatedAccount = payerAccount
-                .copyBuilder()
-                .numberPendingAirdrops(newNumberPendingAirdrops)
-                .build();
-        accountStore.put(updatedAccount);
-    }
-
-    private static void deletePendingAirdropsFromStore(
-            List<PendingAirdropId> pendingAirdropIds, WritableAirdropStore airdropStore) {
-        pendingAirdropIds.forEach(airdropStore::remove);
     }
 
     @NonNull
