@@ -366,16 +366,24 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("fungible token with fractional fee")
         final Stream<DynamicTest> fungibleTokenWithFractionalFeesPaidByReceiverFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
-                    .given()
-                    .when(
+            return defaultHapiSpec("should be successful transfer")
+                    .given(
                             tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
                             cryptoTransfer(
                                     moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
-                    .then(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
+                    .when(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION));
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            getTxnRecord("fractionalTxn")
+                                    .hasPriority(recordWith()
+                                            .tokenTransfers(includingFungibleMovement(moving(25, FT_WITH_FRACTIONAL_FEE)
+                                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))),
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 25));
         }
 
         @HapiTest
