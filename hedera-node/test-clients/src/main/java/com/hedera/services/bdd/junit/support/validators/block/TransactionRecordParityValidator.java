@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordParityValidator implements BlockStreamValidator {
-    private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
+    private static final Logger logger = LogManager.getLogger(TransactionRecordParityValidator.class);
 
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
