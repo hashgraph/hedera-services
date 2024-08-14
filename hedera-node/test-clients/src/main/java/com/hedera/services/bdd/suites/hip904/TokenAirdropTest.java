@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -74,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -452,6 +455,20 @@ public class TokenAirdropTest {
                             getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
 
+        @HapiTest
+        @DisplayName("airdrop to contract with admin key")
+        final Stream<DynamicTest> airdropToContractWithAdminKey() {
+            final var testContract = "ToyMaker";
+            final var key = "key";
+            return hapiTest(
+                    newKeyNamed(key),
+                    uploadInitCode(testContract),
+                    contractCreate(testContract).adminKey(key),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER));
+        }
+
         @Nested
         @DisplayName("and with receiverSigRequired=true")
         class ReceiverSigRequiredTests {
@@ -661,16 +678,24 @@ public class TokenAirdropTest {
         @HapiTest
         @DisplayName("fungible token with fractional fee")
         final Stream<DynamicTest> fungibleTokenWithFractionalFeesPaidByReceiverFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
-                    .given()
-                    .when(
+            return defaultHapiSpec("should be successful transfer")
+                    .given(
                             tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
                             cryptoTransfer(
                                     moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
-                    .then(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
+                    .when(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION));
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            getTxnRecord("fractionalTxn")
+                                    .hasPriority(recordWith()
+                                            .tokenTransfers(includingFungibleMovement(moving(25, FT_WITH_FRACTIONAL_FEE)
+                                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))),
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 25));
         }
 
         @HapiTest
@@ -1001,7 +1026,7 @@ public class TokenAirdropTest {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -1449,7 +1474,7 @@ public class TokenAirdropTest {
                                     moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
                                     moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
                             .signedByPayerAnd(ALICE)
-                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -1575,6 +1600,19 @@ public class TokenAirdropTest {
                             .payingWith(ALICE)
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop to contract without admin key")
+        final Stream<DynamicTest> airdropToContractWithoutAdminKey() {
+            final var testContract = "ToyMaker";
+            return hapiTest(
+                    uploadInitCode(testContract),
+                    contractCreate(testContract).omitAdminKey(),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(INVALID_TRANSACTION_BODY));
         }
     }
 

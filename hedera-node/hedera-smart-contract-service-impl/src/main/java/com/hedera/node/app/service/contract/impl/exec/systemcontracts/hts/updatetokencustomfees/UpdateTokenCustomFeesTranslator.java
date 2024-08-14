@@ -54,9 +54,8 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
         return attempt.configuration().getConfigData(ContractsConfig.class).systemContractUpdateCustomFeesEnabled()
-                && (Arrays.equals(attempt.selector(), UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector())
-                        || Arrays.equals(
-                                attempt.selector(), UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector()));
+                && attempt.isSelector(
+                        UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION, UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION);
     }
 
     public static long gasRequirement(

@@ -22,9 +22,13 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.hedera.node.app.spi.AppContext;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.InstantSource;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.function.Supplier;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Implementation of the {@link ContractService}.
@@ -35,9 +39,20 @@ public class ContractServiceImpl implements ContractService {
 
     private final ContractServiceComponent component;
 
-    public ContractServiceImpl(@NonNull final InstantSource instantSource) {
-        requireNonNull(instantSource);
-        this.component = DaggerContractServiceComponent.factory().create(instantSource);
+    public ContractServiceImpl(@NonNull final AppContext appContext) {
+        this(appContext, null);
+    }
+
+    public ContractServiceImpl(
+            @NonNull final AppContext appContext, @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+        requireNonNull(appContext);
+        this.component = DaggerContractServiceComponent.factory()
+                .create(
+                        appContext.instantSource(),
+                        // (FUTURE) Inject the signature verifier instance into the IsAuthorizedSystemContract
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14248
+                        appContext.signatureVerifier(),
+                        addOnTracers);
     }
 
     @Override

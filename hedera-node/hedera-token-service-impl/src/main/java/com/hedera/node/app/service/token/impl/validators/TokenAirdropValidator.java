@@ -30,7 +30,6 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.customfee
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -50,6 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -57,7 +57,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TokenAirdropValidator {
-    private static final int MAX_TOKEN_TRANSFERS = 10;
 
     /**
      * Default constructor for injection.
@@ -75,7 +74,6 @@ public class TokenAirdropValidator {
      */
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
-        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
         // If there is more than one negative transfer we throw an exception
         for (var tokenTransfer : tokenTransfers) {
             List<AccountAmount> negativeTransfers = tokenTransfer.transfers().stream()
@@ -96,6 +94,10 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableNftStore nftStore) {
+        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(
+                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
@@ -112,7 +114,7 @@ public class TokenAirdropValidator {
                     final var receiver = transfer.accountID();
                     if (!isExemptFromCustomFees(token, receiver)) {
                         validateTrue(
-                                tokenHasNoCustomFeesPaidByReceiver(token.tokenId(), tokenStore), INVALID_TRANSACTION);
+                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore), INVALID_TRANSACTION);
                     }
                 }
 
@@ -133,7 +135,7 @@ public class TokenAirdropValidator {
                     final var receiver = transfer.receiverAccountID();
                     if (!isExemptFromCustomFees(token, receiver)) {
                         validateTrue(
-                                tokenHasNoCustomFeesPaidByReceiver(token.tokenId(), tokenStore), INVALID_TRANSACTION);
+                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore), INVALID_TRANSACTION);
                     }
                 }
 
@@ -167,19 +169,12 @@ public class TokenAirdropValidator {
                         CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+    private boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+        if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             for (var fee : feeMeta.customFees()) {
-                if (fee.hasFractionalFee()
-                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
-                    return false;
-                }
-            }
-        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasRoyaltyFee()) {
+                if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
                     return false;
                 }
             }
