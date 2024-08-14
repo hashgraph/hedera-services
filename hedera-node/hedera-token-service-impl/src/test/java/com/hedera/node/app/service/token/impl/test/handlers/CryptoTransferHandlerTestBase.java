@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
+import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,6 +83,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     protected TokenAirdropValidator tokenAirdropValidator;
     protected TokenClaimAirdropHandler tokenClaimAirdropHandler;
     protected CryptoTransferValidator validator;
+    protected PendingAirdropUpdater pendingAirdropUpdater;
 
     @Mock
     protected HandleContext.SavepointStack stack;
@@ -93,7 +95,9 @@ class CryptoTransferHandlerTestBase extends StepsBase {
         tokenAirdropValidator = new TokenAirdropValidator();
         subject = new CryptoTransferHandler(validator);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
-        tokenClaimAirdropHandler = new TokenClaimAirdropHandler(tokenAirdropValidator, validator);
+        pendingAirdropUpdater = new PendingAirdropUpdater();
+        tokenClaimAirdropHandler =
+                new TokenClaimAirdropHandler(tokenAirdropValidator, validator, pendingAirdropUpdater);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {

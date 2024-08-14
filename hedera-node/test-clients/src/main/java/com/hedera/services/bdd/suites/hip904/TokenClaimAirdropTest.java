@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -181,7 +182,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .via("claimTxn2")
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(INVALID_TRANSACTION_BODY),
+                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID),
                 validateChargedUsd("claimTxn1", 0.001, 1),
                 validateChargedUsd("claimTxn2", 0.001, 1)));
     }
@@ -193,7 +194,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 setUpTokensAndAllReceivers(),
                 tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(INVALID_TRANSACTION_BODY)));
+                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID)));
     }
 
     @HapiTest
@@ -216,9 +217,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .via("claimTxn1")
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(INVALID_TRANSACTION_BODY),
-                validateChargedUsd("claimTxn", 0.001, 1),
-                validateChargedUsd("claimTxn1", 0.001, 1)));
+                        .hasPrecheck(INVALID_TRANSACTION_BODY),
+                validateChargedUsd("claimTxn", 0.001, 1)));
     }
 
     @HapiTest
