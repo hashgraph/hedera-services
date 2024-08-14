@@ -11,7 +11,7 @@ part of it. The data source is not exposed to the application directly, it's use
 
 ## Purpose and Context
 
-Historically, virtual maps and MerkleDb databases were designed to store entities of a particular
+Historically, virtual maps and MerkleDb databases were designed to store entities of particular
 types. In Java code, `VirtualMap` class is defined like this:
 
 ```java
@@ -112,10 +112,11 @@ byte compatibility) as previously.
 
 When a new virtual map is created, it gets key and value serializers from the app. However, there
 is a number of already created maps in the old states. They are not created from scratch, but loaded
-from state snapshots. Where do they get the serializers from? MerkleDb. Despite MerkleDb no longer
-uses serializers, it still loads them from disk (MerkleDb configuration), if available. When a
-virtual map is loaded from a state snapshot, and snapshot is old (before MerkleDb is switched to
-work with bytes), the map will query the data source for key and value serializers to use.
+from state snapshots. Such virtual maps rely on the MerkleDb to provide the serializers. Despite
+MerkleDb no longer uses serializers, it can still load them from disk (from the MerkleDb configuration),
+if available. When a virtual map is loaded from a state snapshot, and the snapshot is old (before
+MerkleDb is switched to work with bytes), the map will query the data source for key and value serializers
+to use.
 
 ## Testing
 
