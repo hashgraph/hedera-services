@@ -40,7 +40,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -62,6 +61,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -124,28 +124,29 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
         final var transfers = new ArrayList<TokenTransferList>();
-        final var tokensToAssociate = new ArrayList<Token>();
-        final var receiverId = op.pendingAirdrops().getFirst().receiverId();
+        final var tokensToAssociate = new LinkedHashMap<AccountID, List<Token>>();
 
         // 1. validate pending airdrops and create transfer lists
         for (var airdrop : op.pendingAirdrops()) {
             final var tokenId = airdrop.hasFungibleTokenType()
                     ? airdrop.fungibleTokenTypeOrThrow()
-                    : airdrop.nonFungibleTokenOrThrow().tokenId();
-            // build transfer lists
+                    : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             final var senderId = airdrop.senderIdOrThrow();
+            final var receiverId = airdrop.receiverIdOrThrow();
             transfers.add(createTokenTransferList(airdrop, pendingAirdropStore, tokenId, senderId, receiverId));
 
             // check if we need new association
             if (tokenRelStore.get(receiverId, tokenId) == null) {
-                tokensToAssociate.add(tokenStore.get(tokenId));
+                tokensToAssociate
+                        .computeIfAbsent(receiverId, k -> new ArrayList<>())
+                        .add(getIfUsable(tokenId, tokenStore));
             }
         }
-        // associate tokens
-        associateForFree(tokensToAssociate, receiverId, accountStore, tokenRelStore);
+        for (var entry : tokensToAssociate.entrySet()) {
+            associateForFree(entry.getValue(), entry.getKey(), accountStore, tokenRelStore);
+        }
         // do the crypto transfer
         transferForFree(transfers, context, recordBuilder);
-        // Update state
         pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), pendingAirdropStore, accountStore);
     }
 
@@ -163,14 +164,15 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                 PENDING_AIRDROP_ID_LIST_TOO_LONG);
 
         final var pendingAirdrops = op.pendingAirdrops();
-        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var pendingAirdropStore = context.storeFactory().readableStore(ReadableAirdropStore.class);
-
+        // We need receiver to sign the transaction in pre-handle.
+        // So no need to check if receiver is a valid account here.
+        // Sender cannot be deleted when there are pending airdrops, we don't nee to validate sender.
         for (final var airdrop : pendingAirdrops) {
             final var tokenId = airdrop.hasFungibleTokenType()
                     ? airdrop.fungibleTokenTypeOrThrow()
-                    : airdrop.nonFungibleTokenOrThrow().tokenId();
+                    : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             getIfUsable(tokenId, tokenStore);
             validateTrue(pendingAirdropStore.exists(airdrop), INVALID_PENDING_AIRDROP_ID);
             validateTrue(
