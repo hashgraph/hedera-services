@@ -216,10 +216,10 @@ Event Intake module).
 
 #### Self Events
 
-Events are not only given to the Event Intake system through gossip. Internal events are also fed to Event Intake.
-These internal events **may** bypass some steps in the pipeline. For example, internal self-events (those events created
-by the node itself) do not need validation. Likewise, when replaying events from the pre-consensus event buffer, those
-checks are not needed (since they have already been proved valid and are in topological order).
+Events are not only given to the Event Intake system through gossip. Self events (those events created by the node
+itself) are also fed to Event Intake. These events **may** bypass some steps in the pipeline. For example, self-events
+do not need validation. Likewise, when replaying events from the pre-consensus event buffer, those checks are not needed
+(since they have already been proved valid and are in topological order).
 
 #### Peer Discipline
 
