@@ -83,6 +83,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var singleTxnRecord =
                 switch (txnType) {
+                    case ContractCall -> new ContractCallTranslator().translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
