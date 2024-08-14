@@ -87,7 +87,7 @@ public class CryptoTransferValidator {
         }
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-        validateTokenTransfers(op.tokenTransfers());
+        validateTokenTransfers(op.tokenTransfers(), false);
     }
 
     /**
@@ -167,7 +167,8 @@ public class CryptoTransferValidator {
         return false;
     }
 
-    public static void validateTokenTransfers(List<TokenTransferList> tokenTransfers) throws PreCheckException {
+    public static void validateTokenTransfers(final List<TokenTransferList> tokenTransfers, final boolean isAirdrop)
+            throws PreCheckException {
         // Validate token transfers
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
@@ -177,11 +178,11 @@ public class CryptoTransferValidator {
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds);
+            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds, isAirdrop);
 
             // Validate the nft transfers
             final var nftIds = new HashSet<Long>();
-            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds);
+            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds, isAirdrop);
 
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
             validateFalsePreCheck(
@@ -191,12 +192,16 @@ public class CryptoTransferValidator {
     }
 
     public static void validateFungibleTransfers(
-            final List<AccountAmount> fungibleTransfers, final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds)
+            final List<AccountAmount> fungibleTransfers,
+            final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds,
+            final boolean isAirdrop)
             throws PreCheckException {
         validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
         boolean nonZeroFungibleValueFound = false;
         for (final AccountAmount acctAmount : fungibleTransfers) {
-            validateFalsePreCheck(acctAmount.isApproval(), INVALID_TRANSACTION);
+            if (isAirdrop) {
+                validateFalsePreCheck(acctAmount.isApproval(), INVALID_TRANSACTION);
+            }
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
             if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
@@ -207,10 +212,13 @@ public class CryptoTransferValidator {
                 uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
     }
 
-    public static void validateNftTransfers(final List<NftTransfer> nftTransfers, final Set<Long> nftIds)
+    public static void validateNftTransfers(
+            final List<NftTransfer> nftTransfers, final Set<Long> nftIds, final boolean isAirdrop)
             throws PreCheckException {
         for (final NftTransfer nftTransfer : nftTransfers) {
-            validateFalsePreCheck(nftTransfer.isApproval(), INVALID_TRANSACTION);
+            if (isAirdrop) {
+                validateFalsePreCheck(nftTransfer.isApproval(), INVALID_TRANSACTION);
+            }
             validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
