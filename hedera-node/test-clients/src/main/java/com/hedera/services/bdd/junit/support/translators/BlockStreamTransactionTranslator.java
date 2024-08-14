@@ -159,7 +159,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 .toList();
     }
 
-    private TransactionRecord.Builder parseTransaction(
+    private void parseTransaction(
             final Transaction txn,
             final TransactionRecord.Builder recordBuilder,
             final TransactionReceipt.Builder receiptBuilder)
@@ -187,10 +187,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var txnBytes = toBytesForHash(txn);
         final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
         recordBuilder.setTransactionHash(toByteString(hash));
-
-        receiptBuilder.setAccountID(transactionID.getAccountID());
-
-        return recordBuilder;
     }
 
     /**
