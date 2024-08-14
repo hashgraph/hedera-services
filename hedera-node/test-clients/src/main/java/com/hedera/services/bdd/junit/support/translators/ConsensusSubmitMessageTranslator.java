@@ -25,20 +25,19 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+
 public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    private static final long RUNNING_HASH_VERSION = 3L;
     @Override
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
-
-        // TODO: Where in state is the topicRunningHashVersion stored? Hardcode to 3 for now.
-        receiptBuilder.topicRunningHashVersion(3L);
-        //        final var txnOutputItem = transaction.output();
-        //        if (txnOutputItem != null && txnOutputItem.hasSubmitMessage()) {
-        //            final var submitMessageOutput = txnOutputItem.submitMessage();
-        //            final var version = submitMessageOutput.topicRunningHashVersion().protoOrdinal();
-        //            receiptBuilder.topicRunningHashVersion(version);
-        //        }
+        if (transaction.result().status().equals(SUCCESS)) {
+            receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
+        } else {
+            receiptBuilder.status(transaction.result().status());
+        }
 
         if (stateChanges != null) {
             stateChanges.stateChanges().stream()
