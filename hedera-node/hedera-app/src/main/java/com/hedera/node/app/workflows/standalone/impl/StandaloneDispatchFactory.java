@@ -142,7 +142,10 @@ public class StandaloneDispatchFactory {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
-                state, consensusConfig.handleMaxPrecedingRecords(), consensusConfig.handleMaxFollowingRecords(), StreamMode.BOTH);
+                state,
+                consensusConfig.handleMaxPrecedingRecords(),
+                consensusConfig.handleMaxFollowingRecords(),
+                StreamMode.RECORDS);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);

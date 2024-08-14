@@ -96,7 +96,8 @@ public class TokenAirdropValidator {
             @NonNull final ReadableNftStore nftStore) {
         var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(
-                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(),
+                TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
@@ -105,19 +106,6 @@ public class TokenAirdropValidator {
             // process fungible token transfers if any.
             // PureChecks validates there is only one debit, so findFirst should return one item
             if (!xfers.transfers().isEmpty()) {
-                for (var transfer : xfers.transfers()) {
-                    // We want to validate only the receivers. If it's a sender we skip the check.
-                    boolean isSender = transfer.amount() < 0;
-                    if (isSender) {
-                        continue;
-                    }
-                    final var receiver = transfer.accountID();
-                    if (!isExemptFromCustomFees(token, receiver)) {
-                        validateTrue(
-                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore), INVALID_TRANSACTION);
-                    }
-                }
-
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
