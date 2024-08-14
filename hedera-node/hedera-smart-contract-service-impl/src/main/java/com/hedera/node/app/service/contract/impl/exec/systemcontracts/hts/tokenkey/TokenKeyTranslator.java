@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class TokenKeyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -46,7 +45,7 @@ public class TokenKeyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_KEY.selector());
+        return attempt.isSelector(TOKEN_KEY);
     }
 
     /**

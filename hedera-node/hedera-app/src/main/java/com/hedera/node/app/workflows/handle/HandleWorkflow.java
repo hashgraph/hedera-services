@@ -65,6 +65,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -174,27 +175,45 @@ public class HandleWorkflow {
     public void handleRound(
             @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
-        final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Calls StartRound on the BlockStreamManager
+        }
+        recordCache.resetRoundReceipts();
+        try {
+            handleEvents(state, platformState, round);
+        } finally {
+            // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
+            // to the state so these transactions cannot be replayed in future rounds
+            recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
+        }
+    }
+
+    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+        final var userTransactionsHandled = new AtomicBoolean(false);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
+            if (blockStreamConfig.streamBlocks()) {
+                // FUTURE: Stream EventMetadata
+            }
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
+                    // We were given an event for a node that does not exist in the address book and was not from
+                    // a strictly earlier software upgrade. This will be logged as a warning, as this should never
+                    // happen, and we will skip the event. The platform should guarantee that we never receive an event
+                    // that isn't associated with the address book, and every node in the address book must have an
+                    // account ID, since you cannot delete an account belonging to a node, and you cannot change the
+                    // address book non-deterministically.
                     logger.warn(
                             "Received event (version {} vs current {}) from node {} which is not in the address book",
                             com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
                             com.hedera.hapi.util.HapiUtils.toString(version),
                             event.getCreatorId());
                 }
-                return;
+                continue;
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
@@ -221,8 +240,11 @@ public class HandleWorkflow {
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        if (userTransactionsHandled.get()) {
+        if (userTransactionsHandled.get() && blockStreamConfig.streamRecords()) {
             blockRecordManager.endRound(state);
+        }
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Calls EndRound on the BlockStreamManager
         }
     }
 
@@ -248,10 +270,18 @@ public class HandleWorkflow {
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
-        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
-        blockRecordManager.endUserTransaction(recordStream, state);
 
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamRecords()) {
+            blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        }
+        final var recordStream = execute(userTxn);
+        if (blockStreamConfig.streamRecords()) {
+            blockRecordManager.endUserTransaction(recordStream, state);
+        }
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Writes block items using BlockStreamManager
+        }
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
@@ -323,7 +353,14 @@ public class HandleWorkflow {
                     systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
-                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+
+                final var streamsRecords = configProvider
+                        .getConfiguration()
+                        .getConfigData(BlockStreamConfig.class)
+                        .streamRecords();
+                if (streamsRecords) {
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);

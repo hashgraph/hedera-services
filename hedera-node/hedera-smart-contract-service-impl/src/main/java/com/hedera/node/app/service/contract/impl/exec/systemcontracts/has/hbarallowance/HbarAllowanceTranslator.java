@@ -24,7 +24,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,7 +50,7 @@ public class HbarAllowanceTranslator extends AbstractCallTranslator<HasCallAttem
     @Override
     public boolean matches(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt);
-        return matchesAllowanceSelector(attempt.selector()) || matchesAllowanceProxySelector(attempt.selector());
+        return attempt.isSelector(HBAR_ALLOWANCE, HBAR_ALLOWANCE_PROXY);
     }
 
     /**
@@ -60,24 +59,12 @@ public class HbarAllowanceTranslator extends AbstractCallTranslator<HasCallAttem
     @Override
     public Call callFrom(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt);
-        if (matchesAllowanceSelector(attempt.selector())) {
+        if (attempt.isSelector(HBAR_ALLOWANCE)) {
             return decodeAllowance(attempt);
-        } else if (matchesAllowanceProxySelector(attempt.selector())) {
+        } else if (attempt.isSelector(HBAR_ALLOWANCE_PROXY)) {
             return decodeAllowanceProxy(attempt);
         }
         return null;
-    }
-
-    @NonNull
-    private boolean matchesAllowanceSelector(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, HBAR_ALLOWANCE.selector());
-    }
-
-    @NonNull
-    private boolean matchesAllowanceProxySelector(@NonNull final byte[] selector) {
-        requireNonNull(selector);
-        return Arrays.equals(selector, HBAR_ALLOWANCE_PROXY.selector());
     }
 
     @NonNull

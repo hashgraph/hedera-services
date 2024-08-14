@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -239,6 +240,20 @@ public class AbstractCallAttempt {
 
     public boolean isRedirect() {
         return redirectAddress != null;
+    }
+
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param functions selectors to match against
+     * @return boolean result
+     */
+    public boolean isSelector(@NonNull final Function... functions) {
+        for (final var function : functions) {
+            if (Arrays.equals(function.selector(), this.selector())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {

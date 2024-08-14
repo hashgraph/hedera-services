@@ -17,13 +17,22 @@
 package com.swirlds.platform.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 
+import com.swirlds.state.spi.QueueChangeListener;
 import com.swirlds.state.test.fixtures.ListWritableQueueState;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
+import java.util.Queue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 final class WritableQueueStateBaseTest<E> extends ReadableQueueStateBaseTest<E> {
 
@@ -305,6 +314,43 @@ final class WritableQueueStateBaseTest<E> extends ReadableQueueStateBaseTest<E> 
 
             assertThat(backingList).isEmpty();
         }
+
+        @Test
+        void commitAfterRemovingAllAddedElementsDoesNotThrow() {
+            final var backingList = new LinkedList<String>();
+            final var subject = new ListWritableQueueState<>(STEAM_STATE_KEY, backingList);
+            subject.add(ART);
+            subject.add(BIOLOGY);
+            subject.removeIf(s -> true);
+            subject.removeIf(s -> true);
+            assertThatCode(subject::commit).doesNotThrowAnyException();
+        }
+
+        @Test
+        void commitAfterRemovingSomeAddedElementsOnlyIncludesAdded() {
+            final var backingList = new LinkedList<String>();
+            final var subject = new ListWritableQueueState<>(STEAM_STATE_KEY, backingList);
+            subject.add(ART);
+            subject.add(BIOLOGY);
+            subject.add(CHEMISTRY);
+            subject.removeIf(s -> true);
+            subject.peek();
+            subject.removeIf(s -> true);
+            subject.peek();
+            subject.commit();
+            assertThat(backingList).containsExactly(CHEMISTRY);
+        }
+
+        @Test
+        void commitAfterPeekingAndAddingStillAddsEverything() {
+            final var backingList = new LinkedList<String>();
+            backingList.add(ART);
+            final var subject = new ListWritableQueueState<>(STEAM_STATE_KEY, backingList);
+            subject.peek();
+            subject.add(BIOLOGY);
+            subject.commit();
+            assertThat(backingList).containsExactly(ART, BIOLOGY);
+        }
     }
 
     @Nested
@@ -339,6 +385,48 @@ final class WritableQueueStateBaseTest<E> extends ReadableQueueStateBaseTest<E> 
             subject.reset();
 
             assertThat(backingList).containsExactly(ART);
+        }
+    }
+
+    @Nested
+    @DisplayName("with registered listeners")
+    @ExtendWith(MockitoExtension.class)
+    final class WithRegisteredListeners {
+        @Mock
+        private QueueChangeListener<String> firstListener;
+
+        @Mock
+        private QueueChangeListener<String> secondListener;
+
+        private final Queue<String> backingStore = new LinkedList<>();
+        private final ListWritableQueueState<String> subject =
+                new ListWritableQueueState<>(STEAM_STATE_KEY, backingStore);
+
+        @BeforeEach
+        void setUp() {
+            subject.registerListener(firstListener);
+            subject.registerListener(secondListener);
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of pops and adds in order")
+        void allAreNotifiedOfPopsAndAddsInOrder() {
+            final var inOrder = inOrder(firstListener, secondListener);
+            backingStore.add("Apple");
+            backingStore.add("Banana");
+            backingStore.add("Cantaloupe");
+
+            subject.removeIf(s -> true);
+            subject.removeIf(s -> true);
+            subject.add("Dragonfruit");
+            subject.commit();
+
+            inOrder.verify(firstListener).queuePopChange();
+            inOrder.verify(secondListener).queuePopChange();
+            inOrder.verify(firstListener).queuePopChange();
+            inOrder.verify(secondListener).queuePopChange();
+            inOrder.verify(firstListener).queuePushChange("Dragonfruit");
+            inOrder.verify(secondListener).queuePushChange("Dragonfruit");
         }
     }
 }

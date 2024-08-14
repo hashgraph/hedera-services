@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -45,6 +46,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -58,18 +60,21 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableAirdropStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -184,8 +189,11 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID hbarReceiverId =
             AccountID.newBuilder().accountNum(hbarReceiver).build();
     protected final int tokenReceiver = hbarReceiver + 1;
+    protected final int tokenReceiverNoAssociation = tokenReceiver + 1;
     protected final AccountID tokenReceiverId =
             AccountID.newBuilder().accountNum(tokenReceiver).build();
+    protected final AccountID tokenReceiverNoAssociationId =
+            AccountID.newBuilder().accountNum(tokenReceiverNoAssociation).build();
 
     protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
             .accountId(payerId)
@@ -310,6 +318,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<AccountID, Account> writableAccounts;
     protected MapReadableKVState<TokenID, Token> readableTokenState;
     protected MapWritableKVState<TokenID, Token> writableTokenState;
+    protected MapReadableKVState<PendingAirdropId, AccountPendingAirdrop> readableAirdropState;
+    protected MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> writableAirdropState;
     protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
     protected MapReadableKVState<NftID, Nft> readableNftState;
@@ -326,6 +336,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected ReadableAccountStore readableAccountStore;
     protected WritableAccountStore writableAccountStore;
+    protected ReadableAirdropStore readableAirdropStore;
+    protected WritableAirdropStore writableAirdropStore;
     protected ReadableTokenRelationStore readableTokenRelStore;
     protected WritableTokenRelationStore writableTokenRelStore;
     protected ReadableNftStore readableNftStore;
@@ -371,6 +383,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account treasuryAccount;
     protected Account stakingRewardAccount;
     protected Account tokenReceiverAccount;
+    protected Account tokenReceiverNoAssociationsAccount;
     protected Account hbarReceiverAccount;
     protected Account zeroAccount;
 
@@ -421,6 +434,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         if (prepopulateReceiverIds) {
             accountsMap.put(hbarReceiverId, hbarReceiverAccount);
             accountsMap.put(tokenReceiverId, tokenReceiverAccount);
+            accountsMap.put(tokenReceiverNoAssociationId, tokenReceiverNoAssociationsAccount);
         }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
@@ -460,6 +474,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         stakingNodeInfoMap.put(1L, node1Info);
     }
 
+    protected void givenAssociatedReceiver(AccountID accountID, TokenID tokenID) {
+        EntityIDPair pair =
+                EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenID).build();
+        TokenRelation rel = TokenRelation.newBuilder()
+                .tokenId(tokenID)
+                .accountId(accountID)
+                .balance(0L)
+                .frozen(false)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+
+        tokenRelsMap.put(pair, rel);
+    }
+
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
         assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
@@ -468,6 +497,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenAccountsInReadableStore();
         givenTokensInReadableStore();
         givenReadableTokenRelsStore();
+        givenReadableAirdropStore();
         givenReadableNftStore();
         givenReadableStakingRewardsStore();
         givenReadableStakingInfoStore();
@@ -477,6 +507,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenAccountsInWritableStore();
         givenTokensInWritableStore();
         givenWritableTokenRelsStore();
+        givenWritableAirdropStore();
         givenWritableNftStore();
         givenWritableStakingRewardsStore();
         givenWritableStakingInfoStore();
@@ -589,6 +620,20 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
+    }
+
+    private void givenReadableAirdropStore() {
+        readableAirdropState = emptyReadableAirdropStateBuilder().build();
+        given(readableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(readableAirdropState);
+        readableAirdropStore = new ReadableAirdropStoreImpl(readableStates);
+    }
+
+    private void givenWritableAirdropStore() {
+        writableAirdropState = emptyWritableAirdropStateBuilder().build();
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
+        writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -805,6 +850,16 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .headNftId((NftID) null)
                 .headNftSerialNumber(0L)
                 .build();
+        tokenReceiverNoAssociationsAccount = givenValidAccountBuilder()
+                .build()
+                .copyBuilder()
+                .accountId(tokenReceiverNoAssociationId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .maxAutoAssociations(0)
+                .usedAutoAssociations(0)
+                .build();
         hbarReceiverAccount = givenValidAccountBuilder()
                 .accountId(hbarReceiverId)
                 .tinybarBalance(Long.MAX_VALUE)
@@ -1001,6 +1056,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
+        given(storeFactory.readableStore(ReadableAirdropStore.class)).willReturn(readableAirdropStore);
+        given(storeFactory.writableStore(WritableAirdropStore.class)).willReturn(writableAirdropStore);
 
         given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);

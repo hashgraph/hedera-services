@@ -214,7 +214,7 @@ public class HashgraphPicture extends JPanel {
         }
         // if not consensus, then there's no order yet
         if (options.writeConsensusOrder() && event.isConsensus()) {
-            s += " " + event.getConsensusOrder();
+            s += " " + event.getBaseEvent().getConsensusOrder();
         }
         if (options.writeConsensusTimeStamp()) {
             final Instant t = event.getConsensusTimestamp();

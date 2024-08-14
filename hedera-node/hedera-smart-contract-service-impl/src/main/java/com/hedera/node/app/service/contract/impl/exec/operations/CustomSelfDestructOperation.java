@@ -99,13 +99,12 @@ public class CustomSelfDestructOperation extends AbstractOperation {
                     || !addressChecks.isPresent(beneficiaryAddress, frame)) {
                 return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
             }
-            // Enforce Hedera-specific restrictions on account deletion for non-static frames
-            if (!frame.isStatic()) {
-                final var maybeHaltReason =
-                        proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
-                if (maybeHaltReason.isPresent()) {
-                    return haltFor(null, 0, maybeHaltReason.get());
-                }
+
+            // Enforce Hedera-specific restrictions on account deletion
+            final var maybeHaltReason =
+                    proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
+            if (maybeHaltReason.isPresent()) {
+                return haltFor(null, 0, maybeHaltReason.get());
             }
 
             // This will enforce the Hedera signing requirements (while treating any Key{contractID=tbdAddress}
