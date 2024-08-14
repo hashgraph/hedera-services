@@ -1871,7 +1871,7 @@ public class UtilVerbs {
         });
     }
 
-    public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
+    public static SpecOperation[] takeBalanceSnapshots(String... entities) {
         return HapiSuite.flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L))
                         .noLogging(),
@@ -1880,7 +1880,7 @@ public class UtilVerbs {
                                         spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot",
                                         account)
                                 .payingWith(EXCHANGE_RATE_CONTROL))
-                        .toArray(n -> new HapiSpecOperation[n]));
+                        .toArray(n -> new SpecOperation[n]));
     }
 
     public static HapiSpecOperation validateRecordTransactionFees(String txn) {

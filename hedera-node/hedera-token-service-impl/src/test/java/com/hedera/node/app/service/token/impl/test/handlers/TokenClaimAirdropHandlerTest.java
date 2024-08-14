@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -137,7 +138,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .pendingAirdrops(pendingAirdropIds)
                 .build());
         final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(txn));
-        assertEquals(ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS, msg.responseCode());
+        assertEquals(ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED, msg.responseCode());
     }
 
     @Test
@@ -167,7 +168,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void preHAndleAccountNotExistPath() {
+    void preHandleAccountNotExistPath() {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         final var token9754 = asToken(9754);
         pendingAirdropIds.add(PendingAirdropId.newBuilder()
@@ -193,7 +194,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(accountStore.getAccountById(any())).willReturn(null);
 
         Assertions.assertThatThrownBy(() -> tokenClaimAirdropHandler.preHandle(preHandleContext))
-                .isInstanceOf(NullPointerException.class);
+                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
     @Test

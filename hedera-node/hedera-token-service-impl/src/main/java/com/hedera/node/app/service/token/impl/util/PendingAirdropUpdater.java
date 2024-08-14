@@ -27,9 +27,12 @@ import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Class that computes the expected results of a pending airdrops removal and then commit the needed changes.
@@ -37,25 +40,28 @@ import java.util.Map;
  * and {@code nextAirdrop()}, also sender's account updates of {@code headPendingAirdropId()} and
  * {@code numberPendingAirdrops()}
  */
+@Singleton
 public class PendingAirdropUpdater {
-    @NonNull
-    private final WritableAirdropStore pendingAirdropStore;
 
-    @NonNull
-    private final WritableAccountStore accountStore;
+    @Inject
+    public PendingAirdropUpdater() {}
 
-    public PendingAirdropUpdater(
-            @NonNull WritableAirdropStore pendingAirdropStore, @NonNull WritableAccountStore accountStore) {
-        this.pendingAirdropStore = pendingAirdropStore;
-        this.accountStore = accountStore;
-    }
-
-    public void removePendingAirdrops(@NonNull final List<PendingAirdropId> airdropsToRemove) {
-        final Map<AccountID, Account> updatedSenders = new HashMap<>();
-        final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops = new HashMap<>();
+    /**
+     * Removes provided pending airdrops from the state.
+     * Updates sender accounts ({@code headPendingAirdropId()} and {@code numberPendingAirdrops()}).
+     * Update neighbour pending airdrops linked list pointers ({@code previousAirdrop()} and {@code nextAirdrop()}).
+     *
+     * @param airdropsToRemove list of PendingAirdropId to be removed
+     */
+    public void removePendingAirdrops(
+            @NonNull final List<PendingAirdropId> airdropsToRemove,
+            @NonNull WritableAirdropStore pendingAirdropStore,
+            @NonNull WritableAccountStore accountStore) {
+        final var updatedSenders = new LinkedHashMap<AccountID, Account>();
+        final var updatedAirdrops = new LinkedHashMap<PendingAirdropId, AccountPendingAirdrop>();
         // calculate state changes
-        for (PendingAirdropId id : airdropsToRemove) {
-            removePendingAirdropAndUpdateStores(id, updatedSenders, updatedAirdrops);
+        for (final var id : airdropsToRemove) {
+            computeRemovalResults(id, updatedSenders, updatedAirdrops, pendingAirdropStore, accountStore);
         }
 
         // commit updates
@@ -64,46 +70,41 @@ public class PendingAirdropUpdater {
         airdropsToRemove.forEach(pendingAirdropStore::remove);
     }
 
-    private void removePendingAirdropAndUpdateStores(
-            final PendingAirdropId airdropId,
-            final Map<AccountID, Account> updatedSenders,
-            final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops) {
-
+    /**
+     *  Compute updates needed to be commited, after removing a single pending airdrop.
+     *  It populates maps {@code updatedSenders} and {@code updatedAirdrops} with updated entities, ready
+     *  to be persisted in the state.
+     *
+     * <p>
+     *  <b>Note:</b> this method don't persist any state changes.
+     *
+     * @param airdropId pending airdrop to remove
+     * @param updatedSenders map containing previous changes of the senders accounts
+     * @param updatedAirdrops map containing previous changes of the pending airdrops
+     */
+    private void computeRemovalResults(
+            @NonNull final PendingAirdropId airdropId,
+            @NonNull final Map<AccountID, Account> updatedSenders,
+            @NonNull final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops,
+            @NonNull WritableAirdropStore pendingAirdropStore,
+            @NonNull WritableAccountStore accountStore) {
         final var senderId = airdropId.senderIdOrThrow();
-        var senderAccount = updatedSenders.containsKey(senderId)
-                ? updatedSenders.get(senderId)
-                : requireNonNull(accountStore.getAccountById(senderId));
 
-        final var airdrop = updatedAirdrops.containsKey(airdropId)
-                ? updatedAirdrops.get(airdropId)
-                : pendingAirdropStore.getForModify(airdropId);
+        final var airdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, airdropId);
         validateTrue(airdrop != null, INVALID_TRANSACTION_BODY);
-
-        // updated sender's head of pending airdrops
-        if (airdropId.equals(senderAccount.headPendingAirdropId())) {
-            final var updatedSender = senderAccount
-                    .copyBuilder()
-                    .headPendingAirdropId(airdrop.nextAirdrop())
-                    .build();
-            updatedSenders.put(updatedSender.accountId(), updatedSender);
-        }
 
         // update pending airdrops links
         final var prevAirdropId = airdrop.previousAirdrop();
         final var nextAirdropId = airdrop.nextAirdrop();
         if (prevAirdropId != null) {
-            final var prevAccountAirdrop = updatedAirdrops.containsKey(prevAirdropId)
-                    ? updatedAirdrops.get(prevAirdropId)
-                    : pendingAirdropStore.getForModify(prevAirdropId);
+            final var prevAccountAirdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, prevAirdropId);
             validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
             final var prevAirdropToUpdate =
                     prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
             updatedAirdrops.put(prevAirdropId, prevAirdropToUpdate);
         }
         if (nextAirdropId != null) {
-            final var nextAccountAirdrop = updatedAirdrops.containsKey(nextAirdropId)
-                    ? updatedAirdrops.get(nextAirdropId)
-                    : pendingAirdropStore.getForModify(nextAirdropId);
+            final var nextAccountAirdrop = getPendingAirdrop(updatedAirdrops, pendingAirdropStore, nextAirdropId);
             validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
             final var nextAirdropToUpdate = nextAccountAirdrop
                     .copyBuilder()
@@ -112,14 +113,25 @@ public class PendingAirdropUpdater {
             updatedAirdrops.put(nextAirdropId, nextAirdropToUpdate);
         }
 
-        // decrement the number of pending airdrops
-        senderAccount = updatedSenders.containsKey(senderId)
+        // update sender
+        var senderAccount = updatedSenders.containsKey(senderId)
                 ? updatedSenders.get(senderId)
                 : requireNonNull(accountStore.getAccountById(senderId));
-        var updatedSenderAccount = senderAccount
-                .copyBuilder()
-                .numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1)
-                .build();
-        updatedSenders.put(updatedSenderAccount.accountId(), updatedSenderAccount);
+        final var updatedSender =
+                senderAccount.copyBuilder().numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1);
+        if (airdropId.equals(senderAccount.headPendingAirdropId())) {
+            updatedSender.headPendingAirdropId(airdrop.nextAirdrop());
+        }
+        updatedSenders.put(senderAccount.accountId(), updatedSender.build());
+    }
+
+    @Nullable
+    private AccountPendingAirdrop getPendingAirdrop(
+            final Map<PendingAirdropId, AccountPendingAirdrop> updatedAirdrops,
+            final @NonNull WritableAirdropStore pendingAirdropStore,
+            final PendingAirdropId prevAirdropId) {
+        return updatedAirdrops.containsKey(prevAirdropId)
+                ? updatedAirdrops.get(prevAirdropId)
+                : pendingAirdropStore.getForModify(prevAirdropId);
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec;
+package com.hedera.node.app.service.contract.impl.exec.tracers;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
@@ -25,8 +25,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.hapi.streams.ContractActions;
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
@@ -49,9 +49,6 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         this.actionStack = requireNonNull(actionStack);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void traceOriginAction(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
@@ -60,9 +57,6 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void sanitizeTracedActions(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
@@ -71,9 +65,6 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void tracePostExecution(
             @NonNull final MessageFrame frame, @NonNull final Operation.OperationResult operationResult) {
@@ -90,9 +81,6 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
@@ -107,9 +95,6 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         return actionStack.asContractActions();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void traceAccountCreationResult(
             @NonNull final MessageFrame frame, @NonNull final Optional<ExceptionalHaltReason> haltReason) {

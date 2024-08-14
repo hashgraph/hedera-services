@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -30,18 +32,18 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
@@ -74,30 +76,30 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenClaimAirdropHandler extends TransferExecutor implements TransactionHandler {
     private final TokenAirdropValidator validator;
+    private final PendingAirdropUpdater pendingAirdropUpdater;
 
     @Inject
     public TokenClaimAirdropHandler(
             @NonNull final TokenAirdropValidator validator,
-            @NonNull final CryptoTransferValidator cryptoTransferValidator) {
+            @NonNull final CryptoTransferValidator cryptoTransferValidator,
+            @NonNull final PendingAirdropUpdater pendingAirdropUpdater) {
         super(cryptoTransferValidator);
         this.validator = validator;
+        this.pendingAirdropUpdater = pendingAirdropUpdater;
     }
 
     @Override
     public void preHandle(@NonNull PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenClaimAirdrop();
-        requireNonNull(op);
+        final var op = requireNonNull(context.body().tokenClaimAirdrop());
         final var pendingAirdrops = op.pendingAirdrops();
-
         final var accountStore = context.createStore(ReadableAccountStore.class);
 
         for (final var pendingAirdrop : pendingAirdrops) {
-            AccountID receiverId = pendingAirdrop.receiverIdOrThrow();
-            Account account = accountStore.getAccountById(receiverId);
-            requireNonNull(account);
-            Key key = account.key();
-            validateTruePreCheck(key != null, KEY_NOT_PROVIDED);
+            final var receiverId = pendingAirdrop.receiverIdOrThrow();
+            final var account = accountStore.getAccountById(receiverId);
+            validateTruePreCheck(account != null, INVALID_ACCOUNT_ID);
+            validateTruePreCheck(account.key() != null, ACCOUNT_IS_IMMUTABLE);
             // requireKeyOrThrow also will set hollow accounts for finalization
             context.requireKeyOrThrow(receiverId, INVALID_ACCOUNT_ID);
         }
@@ -110,25 +112,24 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var op = txn.tokenClaimAirdrop();
         requireNonNull(op);
 
-        final List<PendingAirdropId> pendingAirdrops = op.pendingAirdrops();
-        if (pendingAirdrops.isEmpty()) {
-            throw new PreCheckException(EMPTY_PENDING_AIRDROP_ID_LIST);
-        }
+        final var pendingAirdrops = op.pendingAirdrops();
+        validateTruePreCheck(!pendingAirdrops.isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
 
-        final int numAirdrops = pendingAirdrops.size();
-        final Set<PendingAirdropId> uniqueAirdrops = Set.copyOf(pendingAirdrops);
-        if (numAirdrops != uniqueAirdrops.size()) {
-            throw new PreCheckException(PENDING_NFT_AIRDROP_ALREADY_EXISTS);
-        }
+        final var uniqueAirdrops = Set.copyOf(pendingAirdrops);
+        validateTruePreCheck(pendingAirdrops.size() == uniqueAirdrops.size(), PENDING_AIRDROP_ID_REPEATED);
+
+        // check if all pending airdrops have same receiver
+        var allReceiverIdsCount = pendingAirdrops.stream()
+                .map(PendingAirdropId::receiverId)
+                .distinct()
+                .count();
+        validateTruePreCheck(allReceiverIdsCount == 1, INVALID_TRANSACTION_BODY);
     }
 
     @Override
     public void handle(@NonNull HandleContext context) throws HandleException {
         final var op = context.body().tokenClaimAirdropOrThrow();
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(
-                op.pendingAirdrops().size() < tokensConfig.maxAllowedPendingAirdropsToClaim(),
-                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+        validateSemantics(context, op);
 
         final var pendingAirdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
@@ -136,19 +137,15 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
-        final List<TokenTransferList> transfers = new ArrayList<>();
-        final List<Token> tokensToAssociate = new ArrayList<>();
-        final AccountID receiverId = op.pendingAirdrops().getFirst().receiverId();
+        final var transfers = new ArrayList<TokenTransferList>();
+        final var tokensToAssociate = new ArrayList<Token>();
+        final var receiverId = op.pendingAirdrops().getFirst().receiverId();
 
         // 1. validate pending airdrops and create transfer lists
         for (var airdrop : op.pendingAirdrops()) {
             final var tokenId = airdrop.hasFungibleTokenType()
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
-            // validate existence and custom fees
-            validateTrue(pendingAirdropStore.exists(airdrop), INVALID_TRANSACTION_BODY);
-            validateTrue(validator.tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
-
             // build transfer lists
             final var senderId = airdrop.senderIdOrThrow();
             transfers.add(createTokenTransferList(airdrop, pendingAirdropStore, tokenId, senderId, receiverId));
@@ -158,26 +155,64 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                 tokensToAssociate.add(tokenStore.get(tokenId));
             }
         }
-
         // associate tokens
         associateForFree(tokensToAssociate, receiverId, accountStore, tokenRelStore);
-
         // do the crypto transfer
         transferForFree(transfers, context, recordBuilder);
-
         // Update state
-        final var pendingAirdropsUpdater = new PendingAirdropUpdater(pendingAirdropStore, accountStore);
-        pendingAirdropsUpdater.removePendingAirdrops(op.pendingAirdrops());
+        pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), pendingAirdropStore, accountStore);
+    }
+
+    /**
+     * Validates the semantics of the token claim airdrop transaction.
+     * @param context the handle context
+     * @param op the token claim airdrop transaction body
+     * @throws HandleException if the transaction is invalid
+     */
+    private void validateSemantics(@NonNull HandleContext context, @NonNull TokenClaimAirdropTransactionBody op)
+            throws HandleException {
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(
+                op.pendingAirdrops().size() <= tokensConfig.maxAllowedPendingAirdropsToClaim(),
+                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+
+        final var pendingAirdrops = op.pendingAirdrops();
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
+        final var pendingAirdropStore = context.storeFactory().readableStore(ReadableAirdropStore.class);
+
+        for (final var airdrop : pendingAirdrops) {
+            final var senderId = airdrop.senderIdOrThrow();
+            final var receiverId = airdrop.receiverIdOrThrow();
+            final var tokenId = airdrop.hasFungibleTokenType()
+                    ? airdrop.fungibleTokenTypeOrThrow()
+                    : airdrop.nonFungibleTokenOrThrow().tokenId();
+
+            // validate sender
+            final var senderAccount = accountStore.getAccountById(senderId);
+            validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
+
+            // validate receiver
+            final var receiverAccount = accountStore.getAccountById(receiverId);
+            validateTrue(receiverAccount != null, INVALID_ACCOUNT_ID);
+            getIfUsable(tokenId, tokenStore);
+
+            // validate existence and custom fees
+            validateTrue(pendingAirdropStore.exists(airdrop), INVALID_PENDING_AIRDROP_ID);
+            validateTrue(
+                    validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore),
+                    TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
+        }
     }
 
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.airdropsClaimEnabled(), ResponseCodeEnum.NOT_SUPPORTED);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        feeCalculator.resetUsage();
 
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
+        return feeCalculator
                 .addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1))
                 .calculate();
     }
@@ -191,14 +226,10 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var accountPendingAirdrop = airdropStore.get(airdrop);
         if (airdrop.hasFungibleTokenType()) {
             // process fungible tokens
-            final var senderAccountAmount = AccountAmount.newBuilder()
-                    .amount(-accountPendingAirdrop.pendingAirdropValue().amount())
-                    .accountID(senderId)
-                    .build();
-            final var receiverAccountAmount = AccountAmount.newBuilder()
-                    .amount(accountPendingAirdrop.pendingAirdropValue().amount())
-                    .accountID(receiverId)
-                    .build();
+            final var senderAccountAmount = asAccountAmount(
+                    senderId, -accountPendingAirdrop.pendingAirdropValue().amount());
+            final var receiverAccountAmount = asAccountAmount(
+                    receiverId, accountPendingAirdrop.pendingAirdropValue().amount());
             return TokenTransferList.newBuilder()
                     .token(tokenId)
                     .transfers(senderAccountAmount, receiverAccountAmount)
@@ -237,5 +268,9 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
         // We should skip custom fee steps here, because they must be already prepaid
         executeCryptoTransferWithoutCustomFee(syntheticCryptoTransferTxn, transferContext, context, recordBuilder);
+    }
+
+    public static AccountAmount asAccountAmount(final AccountID account, final long amount) {
+        return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 }
