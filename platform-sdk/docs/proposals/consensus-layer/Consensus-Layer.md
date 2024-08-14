@@ -86,7 +86,7 @@ When Execution starts, it will (at the appropriate time in its startup routine) 
 `initialize` it with appropriate arguments, which will be defined in detail in further documents. Critically,
 Consensus **does not maintain state**. Execution is wholly responsible for the definition and management of state. To
 start Consensus from a particular moment in time, Execution will need to initialize it with some information such as the
-witnesses of the round it wants to start from. It is by using this `initialize` method that Execution is able to create
+judges of the round it wants to start from. It is by using this `initialize` method that Execution is able to create
 a Consensus instance that starts from genesis, or from a particular round.
 
 Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus, and create a complete new one,
@@ -118,11 +118,11 @@ works in terms of events.
 When the Gossip module receives events through gossip, it *may* choose to perform some deduplication before sending
 them to Event Intake, but it is not required to do so.
 
-Honest nodes will **only** send valid events in *topological order* to peers. A peer may still receive events out of
-order, because different events may arrive from different peers at different times. To support topological ordering,
-events received by Gossip are not retained by Gossip, they are simply passed directly to Event Intake, which after
-verification, also orders events in topological order and recorded durably to disk, and then send back to the Gossip
-module to be sent out to its gossip peers.
+Some gossip algorithms send events in *topological order*. A peer may still receive events out of order, because
+different events may arrive from different peers at different times. To support topological ordering, events received by
+Gossip are not retained by Gossip, they are simply passed directly to Event Intake, which after verification, also
+orders events in topological order and recorded durably to disk, and then send back to the Gossip module to be sent out
+to its gossip peers.
 
 **The key design principle here is that a node will only send valid events through gossip**. If invalid events are
 ever received, you may know the node that sent them to you is dishonest. Validating events increases latency at each
@@ -143,18 +143,18 @@ The Gossip module must cache all non-expired events. Note that it must be a fixe
 "expired", because otherwise it is possible for a quiescent network to never recover (see the documentation for
 the tipset algorithm, and other-parent selection, for specifics on why this is true). This number must also be large
 enough in case rounds/sec increases dramatically, because reconnect requires a certain amount of time (not rounds) for
-catchup. As long as this number is large enough to meet th requirements regardless of the rounds/sec, and as long as it
+catchup. As long as this number is large enough to meet the requirements regardless of the rounds/sec, and as long as it
 is fixed in number of rounds, then it will work.
 
 #### Peer Discipline
 
 If a peer is misbehaving, the Gossip module will notify the Sheriff module that one of its peers is misbehaving. For
 example, if a peer is not responding to requests, even after repeated attempts to reconnect with it, it may be "bad".
-Or if the peer is sending events that exceed an acceptable rate, or exceed an acceptable side, then it is "bad". Or if
+Or if the peer is sending events that exceed an acceptable rate, or exceed an acceptable size, then it is "bad". Or if
 the events it sends cannot be parsed, or are signed incorrectly, or in other ways fail validation, then it is "bad".
-There may be additional rules by the Gossip module or others (such as Event Intake detecting forking) that could lead to
-a peer being marked as "bad". A "bad" node may be dishonest, or it may be broken. The two cases are indistinguishable,
-so all such nodes are treated equally.
+There may be additional rules by the Gossip module or others (such as Event Intake detecting branching) that could lead to
+a peer being marked as "bad". A "bad" node may be dishonest, or it may be broken. The two cases may be
+indistinguishable, so punishment must be adjusted based on the severity of the attack.
 
 If the Sheriff decides that the peer should be penalized, then it will instruct the Gossip module to "shun" that peer.
 "Shunning" is a unilateral behavior that one node can take towards another, where it terminates the connection and
@@ -210,7 +210,7 @@ If an event is valid, then we finally check the signature. Since validation and 
 significantly less expensive than signature verification, we wait on signature verification until the other steps are
 completed. The operating principle is that we want to fail fast and limit work for further stages in the pipeline.
 
-If an event has a very old birth-round that is expired, it is dropped. If a node sends a large number of expired events,
+If an event has a very old birth-round that is ancient, it is dropped. If a node sends a large number of ancient events,
 it may end up being disciplined (the exact rules around this will be defined in subsequent design docs for the
 Event Intake module).
 
@@ -238,7 +238,7 @@ buffer" for this purpose.
 
 Since Event Intake will also maintain some buffers, it needs to know about the progression of the hashgraph,
 so it can evict old events. In this case, the "orphan buffer" holds events until either the parent events have
-arrived, or the events expired due to the advancement of the "non-ancient event window" and the event is
+arrived, or the events have become ancient due to the advancement of the "non-ancient event window" and the event is
 dropped from the buffer. This document does not prescribe the existence of the orphan buffer or the method by which
 events are sorted and emitted in topological order, but it does describe a method by which old events can be dropped.
 
@@ -246,21 +246,20 @@ events are sorted and emitted in topological order, but it does describe a metho
 
 Several algorithms, including the hashgraph consensus algorithm and the tipset algorithm, require events to be part of
 a "generation". We use what is known as "local generation". Each node, when it starts, assigns "1" as the generation
-of the first event it encounters per event creator. So the first event from Alice is generation 1, as is the first event
-from Bob, but the second event from Alice is in generation 2. This resets each time the consensus module is restarted
-(node restart, upgrade, reconnect, etc.). The absolute numbers for the generations are not important, but their
-relative values are critical. Generations always increase by 1. Different nodes may assign different generations to
-the same events. The generation will be part of the event metadata, **not** part of `EventCore` (that is, it is not
+of the first event it encounters per event creator. The absolute numbers for the generations are not important, but
+their relative values are critical. The next generation will be the max generation of all parents, plus 1. So if Alice
+builds an event with parents `a4` and `b7`, the new event will be `a8`. Different nodes may assign different generations
+to the same events. The generation will be part of the event metadata, **not** part of `EventCore` (that is, it is not
 in the part of the event that is gossiped).
 
 Event Intake is responsible for assigning generations to events.
 
-#### Fork Detection
+#### Branch Detection
 
-The Event Intake module inspects events to determine whether any given event creator is "forking" the hashgraph. A
-"fork" happens when two or more different events from the same creator have the same "self-event" parent. Any node
-that forks (known affectionately as a "Dirty Rotten Forker") will be reported to the Sheriff. Forking is a sign of
-either a dishonest node, or a seriously broken node. In either case, it may be subject to "shunning", and will be
+The Event Intake module inspects events to determine whether any given event creator is "branching" the hashgraph. A
+"branch" happens when two or more different events from the same creator have the same "self-event" parent. Any node
+that branches (known affectionately as a "Dirty Rotten Brancher") will be reported to the Sheriff. Branching is a sign
+of either a dishonest node, or a seriously broken node. In either case, it may be subject to "shunning", and will be
 reported to the Execution layer for further observation and, if required, action (such as canceling rewards for
 stakers to that node).
 
@@ -297,7 +296,7 @@ execute first. This is extremely unlikely, but must be defended against in the E
 It is essential for events to be durably persisted before being sent to the Hashgraph, and self-events must be
 persisted before being gossiped. While it may not be necessary for all code paths to have durable pre-consensus events
 before they can handle them, to simplify the understanding of the system, we simply make all events durable before
-distributing them. This leads to a nice, clean, simple understanding that, during reply, the entire system will
+distributing them. This leads to a nice, clean, simple understanding that, during replay, the entire system will
 behave predictably.
 
 #### Roster Changes
@@ -312,8 +311,8 @@ so it can support peers that are farther behind in consensus than it is.
 The Hashgraph module orders events into rounds, and assigns timestamps to events. It is given ordered, persisted
 events from Event Intake. Sometimes when an event is added, it turns out to be the last event that was needed to cause
 an entire "round" of events to come to consensus. When this happens, the Hashgraph module emits a `round`. The round
-includes metadata about the round (the list of witnesses, the round number, the new ancient-round number, etc.) along
-with the events that were included in the round, in order, with their consensus-assigned timestamps.
+includes metadata about the round (the list of judge hashes, the round number, etc.) along with the events that were
+included in the round, in order, with their consensus-assigned timestamps.
 
 Rounds are immutable. They are sent "fire and forget" style from the Hashgraph module to other modules that require
 them. Some modules only really need the metadata, or a part of the metadata. Others require the actual round data.
