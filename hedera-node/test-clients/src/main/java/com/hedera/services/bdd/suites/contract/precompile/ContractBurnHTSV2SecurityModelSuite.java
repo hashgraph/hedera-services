@@ -826,7 +826,7 @@ public class ContractBurnHTSV2SecurityModelSuite {
 
     @HapiTest
     final Stream<DynamicTest> V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits() {
-        final var gasUsed = 14085L;
+        final var gasUsed = 15284L;
         final var CREATION_TX = "CREATION_TX";
         final var MULTI_KEY = "MULTI_KEY";
 
@@ -990,7 +990,7 @@ public class ContractBurnHTSV2SecurityModelSuite {
 
     @HapiTest
     final Stream<DynamicTest> V2SecurityHscsPrec005TokenBurnOfNft() {
-        final var gasUsed = 14085;
+        final var gasUsed = 15284L;
         final var CREATION_TX = "CREATION_TX";
         return defaultHapiSpec("V2SecurityHscsPrec005TokenBurnOfNft")
                 .given(

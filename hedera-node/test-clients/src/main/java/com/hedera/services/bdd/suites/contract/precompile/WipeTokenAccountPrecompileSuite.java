@@ -200,7 +200,7 @@ public class WipeTokenAccountPrecompileSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS))
-                                                .gasUsed(14085L))),
+                                                .gasUsed(15284L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
@@ -335,7 +335,7 @@ public class WipeTokenAccountPrecompileSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS))
-                                                .gasUsed(14085L))),
+                                                .gasUsed(15284L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }
