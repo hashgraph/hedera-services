@@ -19,35 +19,33 @@ package com.hedera.services.bdd.suites.regression;
 import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.THROTTLES;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -55,6 +53,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(LONG_RUNNING)
 @OrderedInIsolation
-public class SteadyStateThrottlingCheck {
+public class SteadyStateThrottlingTest {
     private static final int REGRESSION_NETWORK_SIZE = 4;
 
     private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
@@ -100,17 +99,13 @@ public class SteadyStateThrottlingCheck {
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
+    private static final SysFileOverrideOp throttleOverrideOp =
+            new SysFileOverrideOp(THROTTLES, () -> resourceAsString("testSystemFiles/artificial-limits.json"));
+
     @HapiTest
     @Order(1)
     final Stream<DynamicTest> setArtificialLimits() {
-        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
-
-        return defaultHapiSpec("SetArtificialLimits")
-                .given()
-                .when()
-                .then(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(artificialLimits.toByteArray()));
+        return hapiTest(throttleOverrideOp);
     }
 
     @HapiTest
@@ -146,13 +141,7 @@ public class SteadyStateThrottlingCheck {
     @HapiTest
     @Order(7)
     final Stream<DynamicTest> restoreDevLimits() {
-        final var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-        return defaultHapiSpec("RestoreDevLimits")
-                .given()
-                .when()
-                .then(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(defaultThrottles.toByteArray()));
+        return hapiTest(withOpContext((spec, opLog) -> throttleOverrideOp.restoreContentsIfNeeded(spec)));
     }
 
     final Stream<DynamicTest> checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
@@ -335,39 +324,6 @@ public class SteadyStateThrottlingCheck {
             @Override
             public Optional<HapiSpecOperation> get() {
                 var op = mintToken(TOKEN, 1L)
-                        .fee(ONE_HBAR)
-                        .noLogging()
-                        .rememberingNothing()
-                        .deferStatusResolution()
-                        .signedBy(TOKEN_TREASURY, SUPPLY)
-                        .payingWith(TOKEN_TREASURY)
-                        // The last "known status" can still be BUSY if we exhaust retries
-                        .hasKnownStatusFrom(BUSY, SUCCESS)
-                        .hasPrecheckFrom(OK, BUSY);
-                return Optional.of(op);
-            }
-        };
-    }
-
-    @SuppressWarnings("java:S1144")
-    private Function<HapiSpec, OpProvider> nonFungibleMintOps() {
-        final var metadata = "01234567890123456789012345678901234567890123456789"
-                + "01234567890123456789012345678901234567890123456789";
-        return spec -> new OpProvider() {
-            @Override
-            public List<SpecOperation> suggestedInitializers() {
-                return List.of(
-                        newKeyNamed(SUPPLY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
-                        tokenCreate(TOKEN)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(SUPPLY));
-            }
-
-            @Override
-            public Optional<HapiSpecOperation> get() {
-                var op = mintToken(TOKEN, List.of(ByteString.copyFromUtf8(metadata)))
                         .fee(ONE_HBAR)
                         .noLogging()
                         .rememberingNothing()
