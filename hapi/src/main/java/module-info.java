@@ -20,6 +20,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.scheduled;
     exports com.hedera.hapi.node.scheduled.codec;
     exports com.hedera.hapi.node.scheduled.schema;
+    exports com.hedera.hapi.node.state.roster;
     exports com.hedera.hapi.node.token;
     exports com.hedera.hapi.node.token.codec;
     exports com.hedera.hapi.node.token.schema;
