@@ -162,6 +162,19 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     }
 
     /**
+     * Returns an operation that calls a function on the contract with a specified value.
+     *
+     * @param function the name of the function to call
+     * @param value the value to send with the call
+     * @param parameters the parameters to pass to the function
+     * @return a CallContractOperation representing the call
+     */
+    public CallContractOperation callWithValue(
+            @NonNull final String function, final long value, @NonNull final Object... parameters) {
+        return new CallContractOperation(this, function, value, parameters);
+    }
+
+    /**
      * Returns an operation that static calls a function on the contract.
      *
      * @param function the function name
