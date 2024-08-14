@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -207,10 +206,6 @@ public interface HandleContext {
      * @return the {@code SystemPrivilege} of the current transaction
      */
     SystemPrivilege hasPrivilegedAuthorization();
-
-    /** Gets the {@link RecordCache}. */
-    @NonNull
-    RecordCache recordCache();
 
     /**
      * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.

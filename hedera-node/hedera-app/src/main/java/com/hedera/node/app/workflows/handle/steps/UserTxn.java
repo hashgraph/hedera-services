@@ -55,14 +55,15 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.TransactionType;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
@@ -104,8 +105,7 @@ public record UserTxn(
             // @Singleton
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
 
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
@@ -118,16 +118,17 @@ public record UserTxn(
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
                 isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
-                consensusConfig.handleMaxFollowingRecords());
+                consensusConfig.handleMaxFollowingRecords(),
+                blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
-                handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
+                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext =
-                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
@@ -172,7 +173,6 @@ public record UserTxn(
      * @param authorizer the authorizer to use
      * @param networkInfo the network information
      * @param feeManager the fee manager
-     * @param recordCache the record cache
      * @param dispatchProcessor the dispatch processor
      * @param blockRecordManager the block record manager
      * @param serviceScopeLookup the service scope lookup
@@ -189,7 +189,6 @@ public record UserTxn(
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -236,7 +235,6 @@ public record UserTxn(
                 stack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
