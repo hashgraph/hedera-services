@@ -59,6 +59,7 @@ public class FCMTransactionUtils {
      */
     public static TransactionType getTransactionType(final FCMTransaction fcmTransaction) {
         String bodyCase = fcmTransaction.getBodyCase().toString();
+        logger.info(DEMO_INFO, "bodyCase: {}", bodyCase);
         if (bodyCase.contains("CREATE")) {
             return Create;
         } else if (bodyCase.contains("UPDATE")) {
