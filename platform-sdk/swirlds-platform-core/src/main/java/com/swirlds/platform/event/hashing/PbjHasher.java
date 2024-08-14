@@ -37,9 +37,11 @@ import java.util.Objects;
 public class PbjHasher implements EventHasher, UnsignedEventHasher {
     /** The hashing stream for the event. */
     private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();
+
     private final WritableSequentialData eventStream = new WritableStreamingData(new HashingOutputStream(eventDigest));
     /** The hashing stream for the transactions. */
     private final MessageDigest transactionDigest = DigestType.SHA_384.buildDigest();
+
     private final WritableSequentialData transactionStream =
             new WritableStreamingData(new HashingOutputStream(transactionDigest));
 
@@ -67,7 +69,7 @@ public class PbjHasher implements EventHasher, UnsignedEventHasher {
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }
-        
+
         event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
     }
 }
