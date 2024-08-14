@@ -111,6 +111,16 @@ public class TinybarValues {
         }
         return asTinybars(
                 childTransactionResourcePrices.basePrices().servicedataOrThrow().gas()
+                        / FEE_SCHEDULE_UNITS_PER_TINYCENT
+                        * childTransactionResourcePrices.congestionMultiplier());
+    }
+
+    public long childTransactionTinybarGasPriceFullPrecision() {
+        if (childTransactionResourcePrices == null) {
+            throw new IllegalStateException("Cannot dispatch a child transaction from a query");
+        }
+        return asTinybars(
+                childTransactionResourcePrices.basePrices().servicedataOrThrow().gas()
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 

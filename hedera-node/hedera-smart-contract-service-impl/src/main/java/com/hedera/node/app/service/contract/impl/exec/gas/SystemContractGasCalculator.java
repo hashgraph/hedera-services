@@ -161,7 +161,7 @@ public class SystemContractGasCalculator {
      * @return the equivalent gas requirement at the current gas price
      */
     private long asGasRequirement(final long tinybarPrice) {
-        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPrice());
+        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPriceFullPrecision());
     }
 
     private long asGasRequirement(final long tinybarPrice, final long gasPrice) {

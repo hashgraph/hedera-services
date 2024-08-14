@@ -79,7 +79,7 @@ class TinybarValuesTest {
     @Test
     void computesExpectedChildGasServicePrice() {
         withTransactionSubject();
-        final var expectedGasPrice = 2 * CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
+        final var expectedGasPrice = 2 * CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE / CENTS_PER_HBAR;
         assertEquals(expectedGasPrice, subject.childTransactionTinybarGasPrice());
     }
 
