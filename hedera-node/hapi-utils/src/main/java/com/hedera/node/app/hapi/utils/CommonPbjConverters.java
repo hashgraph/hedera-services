@@ -17,6 +17,7 @@
 package com.hedera.node.app.hapi.utils;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -341,6 +342,89 @@ public class CommonPbjConverters {
             case TokenCancelAirdrop -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case TokenClaimAirdrop -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
+        };
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.HederaFunctionality fromPbj(
+            @NonNull final HederaFunctionality function) {
+        requireNonNull(function);
+
+        return switch (function) {
+            case CONSENSUS_CREATE_TOPIC -> ConsensusCreateTopic;
+            case CONSENSUS_DELETE_TOPIC -> ConsensusDeleteTopic;
+            case CONSENSUS_SUBMIT_MESSAGE -> ConsensusSubmitMessage;
+            case CONSENSUS_UPDATE_TOPIC -> ConsensusUpdateTopic;
+            case CONTRACT_CALL -> ContractCall;
+            case CONTRACT_CREATE -> ContractCreate;
+            case CONTRACT_DELETE -> ContractDelete;
+            case CONTRACT_UPDATE -> ContractUpdate;
+            case CRYPTO_ADD_LIVE_HASH -> CryptoAddLiveHash;
+            case CRYPTO_APPROVE_ALLOWANCE -> CryptoApproveAllowance;
+            case CRYPTO_CREATE -> CryptoCreate;
+            case CRYPTO_DELETE -> CryptoDelete;
+            case CRYPTO_DELETE_ALLOWANCE -> CryptoDeleteAllowance;
+            case CRYPTO_DELETE_LIVE_HASH -> CryptoDeleteLiveHash;
+            case CRYPTO_TRANSFER -> CryptoTransfer;
+            case CRYPTO_UPDATE -> CryptoUpdate;
+            case ETHEREUM_TRANSACTION -> EthereumTransaction;
+            case FILE_APPEND -> FileAppend;
+            case FILE_CREATE -> FileCreate;
+            case FILE_DELETE -> FileDelete;
+            case FILE_UPDATE -> FileUpdate;
+            case FREEZE -> Freeze;
+            case NODE_CREATE -> NodeCreate;
+            case NODE_DELETE -> NodeDelete;
+            case NODE_UPDATE -> NodeUpdate;
+            case SCHEDULE_CREATE -> ScheduleCreate;
+            case SCHEDULE_DELETE -> ScheduleDelete;
+            case SCHEDULE_SIGN -> ScheduleSign;
+            case SYSTEM_DELETE -> SystemDelete;
+            case SYSTEM_UNDELETE -> SystemUndelete;
+            case TOKEN_ACCOUNT_WIPE -> TokenAccountWipe;
+            case TOKEN_AIRDROP -> TokenAirdrop;
+            case TOKEN_ASSOCIATE_TO_ACCOUNT -> TokenAssociateToAccount;
+            case TOKEN_BURN -> TokenBurn;
+            case TOKEN_CREATE -> TokenCreate;
+            case TOKEN_DELETE -> TokenDelete;
+            case TOKEN_DISSOCIATE_FROM_ACCOUNT -> TokenDissociateFromAccount;
+            case TOKEN_FEE_SCHEDULE_UPDATE -> TokenFeeScheduleUpdate;
+            case TOKEN_FREEZE_ACCOUNT -> TokenFreezeAccount;
+            case TOKEN_GRANT_KYC_TO_ACCOUNT -> TokenGrantKycToAccount;
+            case TOKEN_MINT -> TokenMint;
+            case TOKEN_PAUSE -> TokenPause;
+            case TOKEN_REJECT -> TokenReject;
+            case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> TokenRevokeKycFromAccount;
+            case TOKEN_UNFREEZE_ACCOUNT -> TokenUnfreezeAccount;
+            case TOKEN_UNPAUSE -> TokenUnpause;
+            case TOKEN_UPDATE -> TokenUpdate;
+            case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
+            case UNCHECKED_SUBMIT -> UncheckedSubmit;
+            case UTIL_PRNG -> UtilPrng;
+            case TOKEN_CANCEL_AIRDROP -> TokenCancelAirdrop;
+            case TOKEN_CLAIM_AIRDROP -> TokenClaimAirdrop;
+            case CONSENSUS_GET_TOPIC_INFO -> ConsensusGetTopicInfo;
+            case CRYPTO_GET_LIVE_HASH -> CryptoGetLiveHash;
+            case NODE_STAKE_UPDATE -> NodeStakeUpdate;
+            case CRYPTO_GET_INFO -> CryptoGetInfo;
+            case CRYPTO_GET_ACCOUNT_BALANCE -> CryptoGetAccountBalance;
+            case CRYPTO_GET_ACCOUNT_RECORDS -> CryptoGetAccountRecords;
+            case CRYPTO_GET_STAKERS -> CryptoGetStakers;
+            case FILE_GET_CONTENTS -> FileGetContents;
+            case FILE_GET_INFO -> FileGetInfo;
+            case GET_ACCOUNT_DETAILS -> GetAccountDetails;
+            case GET_BY_KEY -> GetByKey;
+            case GET_BY_SOLIDITY_ID -> GetBySolidityID;
+            case GET_VERSION_INFO -> GetVersionInfo;
+            case NETWORK_GET_EXECUTION_TIME -> NetworkGetExecutionTime;
+            case TOKEN_GET_ACCOUNT_NFT_INFOS -> TokenGetAccountNftInfos;
+            case TOKEN_GET_INFO -> TokenGetInfo;
+            case TOKEN_GET_NFT_INFO -> TokenGetNftInfo;
+            case TOKEN_GET_NFT_INFOS -> TokenGetNftInfos;
+            case TRANSACTION_GET_RECEIPT -> TransactionGetReceipt;
+            case TRANSACTION_GET_RECORD -> TransactionGetRecord;
+            case TRANSACTION_GET_FAST_RECORD -> TransactionGetFastRecord;
+            case CREATE_TRANSACTION_RECORD -> CreateTransactionRecord;
+            case NONE -> throw new RuntimeException("Unknown HederaFunctionality: " + function);
         };
     }
 
