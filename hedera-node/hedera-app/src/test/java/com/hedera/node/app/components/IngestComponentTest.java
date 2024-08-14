@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -97,19 +98,19 @@ class IngestComponentTest {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
         app = DaggerHederaInjectionComponent.builder()
+                .configProviderImpl(configProvider)
+                .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
+                .fileServiceImpl(new FileServiceImpl())
+                .contractServiceImpl(new ContractServiceImpl(appContext))
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .configProvider(configProvider)
-                .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
-                .contractServiceImpl(new ContractServiceImpl(appContext))
-                .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
                 .build();
 

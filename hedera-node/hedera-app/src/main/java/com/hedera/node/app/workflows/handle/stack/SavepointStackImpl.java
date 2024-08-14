@@ -409,7 +409,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         final var builders = allStreamBuilders();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
-        for (int i = 0; i < builders.size(); i++) {
+        for (int i = 0, n = builders.size(); i < n; i++) {
             if (builders.get(i).category() == USER) {
                 indexOfUserRecord = i;
                 idBuilder = builders.get(i).transactionID().copyBuilder();
