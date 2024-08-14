@@ -43,6 +43,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -61,6 +62,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
@@ -140,8 +142,12 @@ public class StandaloneDispatchFactory {
             @NonNull final Instant consensusNow) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
-                state, consensusConfig.handleMaxPrecedingRecords(), consensusConfig.handleMaxFollowingRecords());
+                state,
+                consensusConfig.handleMaxPrecedingRecords(),
+                consensusConfig.handleMaxFollowingRecords(),
+                blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);
@@ -207,7 +213,8 @@ public class StandaloneDispatchFactory {
                 USER,
                 tokenContext,
                 platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ThrottleStrategy.GAS_ONLY_AT_CONSENSUS);
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {
