@@ -393,17 +393,15 @@ indicating to the client that it is busy and the client should retry later.
 Newly created events are sent to Event Intake, which then validates them, assigns generations, durably persists them,
 etc., before sending them out through Gossip and so forth.
 
-#### Stale Events
+#### Stale Self-Events
 
 The Event Creator needs to know about the state of the hashgraph for several reasons. If it uses the Tipset algorithm,
-then it needs a way to evict events from its internal caches that are ancient. And it needs to report "stale" events
-to the Execution layer. A stale event is an event that became ancient without ever coming to consensus. If the
-Event Creator determines that an event has become stale, then it will notify the Execution layer. Execution may look at
-each transaction within the event, and decide that some transactions (such as those that have expired or will soon
-expire) should be dropped while others (such as those not close to expiration) should be resubmitted in the next event.
-
-TODO: Why is stale event detection here? It could literally be anywhere, or be a separate module. It doesn't seem
-related to event creation at all, and therefore, shouldn't be part of this module.
+then it needs a way to evict events from its internal caches that are ancient. And it needs to report "stale"
+self-events to the Execution layer. A stale self-event is a self-event that became ancient without ever coming to
+consensus. If the Event Creator determines that a self-event has become stale, then it will notify the Execution layer.
+Execution may look at each transaction within the self-event, and decide that some transactions (such as those that have
+expired or will soon expire) should be dropped while others (such as those not close to expiration) should be
+resubmitted in the next event.
 
 ### Sheriff Module
 
