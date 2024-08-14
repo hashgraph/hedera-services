@@ -874,7 +874,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         // Extract MapKeys, TransactionType, and EntityType from FCMTransaction
         // which might effect entity's lifecycle status
         final List<MapKey> keys = FCMTransactionUtils.getMapKeys(fcmTransaction);
-        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(fcmTransaction);
+        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(fcmTransaction,3);
         final EntityType entityType = FCMTransactionUtils.getEntityType(fcmTransaction);
         final long epochMillis = timestamp.toEpochMilli();
 
