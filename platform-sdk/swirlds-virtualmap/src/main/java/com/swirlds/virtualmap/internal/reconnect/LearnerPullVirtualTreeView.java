@@ -251,6 +251,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
     // This method is called concurrently from multiple threads
     long getNextPathToSend() {
+        // If the last leaf path request has been sent, don't send anything else
         if (lastLeafSent.get()) {
             return Path.INVALID_PATH;
         }
@@ -259,6 +260,9 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             return intPath;
         }
         synchronized (this) {
+            // If the last leaf path is sent, all subsequent calls to getNextPathToSend()
+            // are expected to return INVALID_PATH, so there is no need to check
+            // lastLeafPath.get() here again
             final long leafPath = traversalOrder.getNextLeafPathToSend();
             if (leafPath == Path.INVALID_PATH) {
                 lastLeafSent.set(true);

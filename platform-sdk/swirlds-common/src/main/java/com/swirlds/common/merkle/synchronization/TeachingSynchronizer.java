@@ -244,8 +244,8 @@ public class TeachingSynchronizer {
         final MerkleNode root = subtree.getRoot();
         final String route = root == null ? "[]" : root.getRoute().toString();
         final TeacherTreeView<?> view = subtree.getView();
-        logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
         final int viewId = subtree.getViewId();
+        logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}, view={}", route, viewId);
         subtreesInProgress.put(viewId, subtree);
         final Consumer<Integer> completeListener = id -> {
             final TeacherSubtree st = subtreesInProgress.get(id);

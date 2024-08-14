@@ -120,7 +120,7 @@ public class LearnerPullVirtualTreeSendTask {
             }
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new MerkleSynchronizationException(
-                        "Timed out waiting for root node response from the teacher " + viewId);
+                        "Timed out waiting for root node response from the teacher, view=" + viewId);
             }
 
             while (!Thread.currentThread().isInterrupted()) {

@@ -71,9 +71,10 @@ public class BenchmarkSlowAsyncOutputStream extends AsyncOutputStream {
      * {@inheritDoc}
      */
     @Override
-    protected void serializeMessage(final SelfSerializable message) throws IOException {
+    protected void serializeMessage(final SelfSerializable message, final SerializableDataOutputStream out)
+            throws IOException {
         sleepMicros(delayNetworkMicrosecondsFuzzer.next());
-        super.serializeMessage(message);
+        super.serializeMessage(message, out);
     }
 
     /**

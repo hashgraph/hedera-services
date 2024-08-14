@@ -59,7 +59,8 @@ public class LaggingAsyncOutputStream extends AsyncOutputStream {
      * {@inheritDoc}
      */
     @Override
-    protected void serializeMessage(final SelfSerializable message) throws IOException {
+    protected void serializeMessage(final SelfSerializable message, final SerializableDataOutputStream out)
+            throws IOException {
         long messageTime = messageTimes.remove();
         long now = System.currentTimeMillis();
         long waitTime = (messageTime + latencyMilliseconds) - now;
@@ -70,6 +71,6 @@ public class LaggingAsyncOutputStream extends AsyncOutputStream {
                 Thread.currentThread().interrupt();
             }
         }
-        super.serializeMessage(message);
+        super.serializeMessage(message, out);
     }
 }

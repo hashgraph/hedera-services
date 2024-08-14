@@ -214,7 +214,12 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             return Path.INVALID_PATH;
         }
         long result = skipCleanPaths(path, reconnectLastLeafPath);
-        assert (result == Path.INVALID_PATH) || (result >= reconnectFirstLeafPath);
+        if (result == Path.INVALID_PATH) {
+            // No more leaf paths to send. Set lastLeafPath to reconnectLastLeafPath + 1, so
+            // all subsequent calls to this method return INVALID_PATH
+            result = reconnectLastLeafPath + 1;
+        }
+        assert result >= reconnectFirstLeafPath;
         return lastLeafPath = result;
     }
 

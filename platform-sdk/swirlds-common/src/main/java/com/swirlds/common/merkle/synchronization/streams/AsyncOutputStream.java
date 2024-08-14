@@ -120,7 +120,7 @@ public class AsyncOutputStream {
     }
 
     /**
-     * Start the thread that reads from the stream.
+     * Start the thread that writes to the stream.
      */
     public void start() {
         workGroup.execute("async-output-stream", this::run);
@@ -163,7 +163,7 @@ public class AsyncOutputStream {
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
         final ByteArrayOutputStream bout = new ByteArrayOutputStream();
         try (final SerializableDataOutputStream dout = new SerializableDataOutputStream(bout)) {
-            message.serialize(dout);
+            serializeMessage(message, dout);
         } catch (final IOException e) {
             throw new MerkleSynchronizationException("Can't serialize message", e);
         }
@@ -228,8 +228,9 @@ public class AsyncOutputStream {
         return true;
     }
 
-    protected void serializeMessage(final SelfSerializable message) throws IOException {
-        message.serialize(outputStream);
+    protected void serializeMessage(final SelfSerializable message, final SerializableDataOutputStream out)
+            throws IOException {
+        message.serialize(out);
     }
 
     private boolean flush() {
