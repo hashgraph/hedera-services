@@ -28,7 +28,7 @@ Following a successful build, the jar file should in the `build/libs` directory 
 The services CLI is organized into commands and subcommands, with each command having its own set of options.
 The jar file can be run directly, but it's more convenient to use the [`services-cli.sh`](services-cli.sh)shell script.
 Inspired by the platform's [`pcli.sh`](../../platform-sdk/pcli.sh) script, `services-cli.sh`likewise provides a convenient
-wrapper for the jar file, particularly for computing the jar's needed classpath. (Note: these commands should 
+wrapper for the jar file, particularly for computing the jar's needed classpath. (Note: these commands should
 also work correctly with the PCLI tool or its scripts, e.g. `pcli.sh`)
 
 Using the shell script, the format of a command is as follows:
@@ -50,11 +50,11 @@ actual tasks in class files annotated with _both_ `@CommandLine.Command` _and_ `
 `AccountBalanceCommand` example, the account balance command has a `SignBalance` subcommand, which is implemented
 in the [`SignBalanceCommand`](src/main/java/com/hedera/services/cli/sign/SignBalanceCommand.java) class.
 
-The `[sub/command options]` portion is a list of flags and arguments that are specific to the subcommand. There 
+The `[sub/command options]` portion is a list of flags and arguments that are specific to the subcommand. There
 are some options applicable to the jar as a whole, but by and large the majority of arguments used by the script are
 intended for each subcommand. The options for the script as a whole are discussed in the[next section](#script-options).
 Options for each subcommand are specified in the documentation for that subcommand, beginning in the
-['Commands'](#commands) section. 
+['Commands'](#commands) section.
 
 Notably, the `services-cli.sh` script is meant to be used from the same directory as the jar file. From the
 script itself:
@@ -145,7 +145,7 @@ The syntax of the sign subcommand is as follows:
 ```shell
 ./services-cli.sh [PCLI options] \
 account-balance sign \
-[sub/command options] \           
+[sub/command options] \
 <keyFilePath> <keyFilePassword> <keyAlias>
 ```
 
