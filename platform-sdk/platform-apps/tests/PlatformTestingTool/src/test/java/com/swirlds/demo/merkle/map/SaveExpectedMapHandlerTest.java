@@ -101,7 +101,7 @@ public class SaveExpectedMapHandlerTest {
     // Serializes and deserializes the expected map with all valid keys
     @Test
     public void serializeAndDeserializePositiveTest() throws IOException {
-        final var jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
+        final String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
         for (int i = 0; i < 20; i++) {
             assertTrue(jsonValue.contains("[0,0," + i + "]"));
         }
@@ -125,7 +125,7 @@ public class SaveExpectedMapHandlerTest {
     @Test
     public void DeserializeNullEntityTypeTest() throws IOException {
         addInvalidKeysToMap();
-        final var jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
+        final String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
 
         for (int i = 20; i < 25; i++) {
             assertTrue(jsonValue.contains("MapKey[0,0," + i + "]"));

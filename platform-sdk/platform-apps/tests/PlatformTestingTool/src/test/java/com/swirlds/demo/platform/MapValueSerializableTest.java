@@ -373,7 +373,7 @@ class MapValueSerializableTest {
     }
 
     @Test
-    void serializeExpectedFCMFamilyTest(@TempDir Path tmpDir) {
+    void serializeExpectedFCMFamilyTest(final @TempDir Path tmpDir) {
         String savePath = tmpDir.resolve("saved.txt").toString();
         boolean isError = false;
 
