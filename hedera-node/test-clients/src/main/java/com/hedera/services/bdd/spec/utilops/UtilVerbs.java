@@ -66,8 +66,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -880,6 +882,38 @@ public class UtilVerbs {
 
     public static HapiSpecOperation overriding(String property, String value) {
         return overridingAllOf(Map.of(property, value));
+    }
+
+    /**
+     * Returns an operation that overrides the throttles on the target network to the values from the named resource.
+     * @param resource the resource to load the throttles from
+     * @return the operation that overrides the throttles
+     */
+    public static SpecOperation overridingThrottles(@NonNull final String resource) {
+        requireNonNull(resource);
+        return sourcing(() -> fileUpdate(THROTTLE_DEFS)
+                .noLogging()
+                .payingWith(GENESIS)
+                .contents(protoDefsFromResource(resource).toByteArray())
+                .hasKnownStatusFrom(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
+    }
+
+    /**
+     * Returns an operation that attempts overrides the throttles on the target network to the values from the
+     * named resource and expects the given failure status.
+     * @param resource the resource to load the throttles from
+     * @param status the expected status
+     * @return the operation that overrides the throttles and expects failure
+     */
+    public static SpecOperation overridingThrottlesFails(
+            @NonNull final String resource, @NonNull final ResponseCodeEnum status) {
+        requireNonNull(resource);
+        requireNonNull(status);
+        return sourcing(() -> fileUpdate(THROTTLE_DEFS)
+                .noLogging()
+                .payingWith(GENESIS)
+                .contents(protoDefsFromResource(resource).toByteArray())
+                .hasKnownStatus(status));
     }
 
     /**

@@ -48,22 +48,12 @@ public abstract class HapiSuite {
     // The first 0 refers to the shard of the target network.
     // The second 0 refers to the realm.
     public static final String DEFAULT_SHARD_REALM = "0.0.";
-    public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
-    public static final String TOKEN_UNDER_TEST = "TokenUnderTest";
-    public static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     public static final String EVM_VERSION_046 = "v0.46";
     public static final String EVM_VERSION_050 = "v0.50";
     protected static String ALICE = "ALICE";
     protected static String BOB = "BOB";
-    protected static String CAROL = "CAROL";
-    protected static String RED_PARTITION = "RED_PARTITION";
-    protected static String BLUE_PARTITION = "BLUE_PARTITION";
-    protected static String GREEN_PARTITION = "GREEN_PARTITION";
     public static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
-    public static long FUNGIBLE_INITIAL_SUPPLY = 1_000_000_000L;
-    public static long NON_FUNGIBLE_INITIAL_SUPPLY = 10L;
-    public static long FUNGIBLE_INITIAL_BALANCE = FUNGIBLE_INITIAL_SUPPLY / 100;
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
     public enum FinalOutcome {
