@@ -5,7 +5,7 @@
 	"variedSize": false,
 	"_comment": "this test requires 10 nodes",
 	"type":  "TYPE_FCM_VIRTUAL_MIX",
-	"ratioOfFCMTransaction": 0.5,
+	"ratioOfFCMTransaction": 0.2,
 	"payloadByteSize": 100,
 	"maxByteSize": 100
   },
