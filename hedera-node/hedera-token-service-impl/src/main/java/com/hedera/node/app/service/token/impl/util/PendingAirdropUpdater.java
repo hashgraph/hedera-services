@@ -57,14 +57,11 @@ public class PendingAirdropUpdater {
     }
 
     /**
-     *  Compute updates needed to be commited, after removing a single pending airdrop.
-     *  It populates maps {@code updatedSenders} and {@code updatedAirdrops} with updated entities, ready
-     *  to be persisted in the state.
-     *
-     * <p>
-     *  <b>Note:</b> this method don't persist any state changes.
+     * Removes the given airdrop from the given stores, including updating the prev/next pointers.
      *
      * @param airdropId pending airdrop to remove
+     * @param pendingAirdropStore store containing the pending airdrop
+     * @param accountStore store containing the account
      */
     private void removePendingAirdrops(
             @NonNull final PendingAirdropId airdropId,

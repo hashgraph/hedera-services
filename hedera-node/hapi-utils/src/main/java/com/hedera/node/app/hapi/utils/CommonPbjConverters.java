@@ -257,13 +257,13 @@ public class CommonPbjConverters {
 
     public static @NonNull HederaFunctionality toPbj(
             @NonNull com.hederahashgraph.api.proto.java.HederaFunctionality function) {
-        return HederaFunctionality.values()[requireNonNull(function).getNumber()];
+        return HederaFunctionality.values()[requireNonNull(function).ordinal()];
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.HederaFunctionality fromPbj(
             @NonNull final HederaFunctionality function) {
-        return com.hederahashgraph.api.proto.java.HederaFunctionality.forNumber(
-                requireNonNull(function).ordinal());
+        return com.hederahashgraph.api.proto.java.HederaFunctionality.values()[
+                requireNonNull(function).ordinal()];
     }
 
     public static @NonNull SubType toPbj(@NonNull com.hederahashgraph.api.proto.java.SubType subType) {
@@ -280,7 +280,7 @@ public class CommonPbjConverters {
     }
 
     public static @NonNull ResponseCodeEnum toPbj(@NonNull com.hederahashgraph.api.proto.java.ResponseCodeEnum code) {
-        return ResponseCodeEnum.values()[requireNonNull(code).getNumber()];
+        return ResponseCodeEnum.values()[requireNonNull(code).ordinal()];
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.ContractID fromPbj(final @NonNull ContractID contractID) {

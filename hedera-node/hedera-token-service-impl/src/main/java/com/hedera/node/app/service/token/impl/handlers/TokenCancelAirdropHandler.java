@@ -67,9 +67,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     private final PendingAirdropUpdater pendingAirdropUpdater;
 
     @Inject
-    public TokenCancelAirdropHandler(final PendingAirdropUpdater pendingAirdropUpdater) {
+    public TokenCancelAirdropHandler(@NonNull final PendingAirdropUpdater pendingAirdropUpdater) {
         // Exists for injection
-        this.pendingAirdropUpdater = pendingAirdropUpdater;
+        this.pendingAirdropUpdater = requireNonNull(pendingAirdropUpdater);
     }
 
     @Override
