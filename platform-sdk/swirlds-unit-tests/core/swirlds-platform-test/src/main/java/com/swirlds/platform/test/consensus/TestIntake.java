@@ -83,8 +83,9 @@ public class TestIntake {
         model = WiringModelBuilder.create(platformContext).build();
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
-        final EventHasher eventHasher =
-                new DefaultEventHasher(new BasicSoftwareVersion(1).getPbjSemanticVersion(), false);
+        final EventHasher eventHasher = new DefaultEventHasher(
+                // this version will ensure that the old hashing method is used
+                new BasicSoftwareVersion(Integer.MAX_VALUE).getPbjSemanticVersion());
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<PlatformEvent> postHashCollectorWiring =
