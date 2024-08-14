@@ -106,6 +106,11 @@ public class SysFileOverrideOp extends UtilOp {
                             ByteString.copyFrom(rawContents),
                             true,
                             OptionalLong.of(ONE_HBAR)));
+            if (target == Target.FEES) {
+                if (!spec.tryReinitializingFees()) {
+                    log.warn("Failed to reinitialize fees");
+                }
+            }
         }
         return false;
     }

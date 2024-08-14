@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.extensions;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
@@ -61,17 +62,11 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 // If there are properties to preserve or system files to override and restore, bind that info to the
                 // thread before executing the test factory
                 if (isAnnotated(method, LeakyHapiTest.class)) {
-                    HapiSpec.PROPERTIES_TO_PRESERVE.set(
-                            List.of(method.getAnnotation(LeakyHapiTest.class).overrides()));
-                    HapiSpec.THROTTLES_OVERRIDE.set(effectiveThrottleResource(
-                            method.getAnnotation(LeakyHapiTest.class).requirement(),
-                            method.getAnnotation(LeakyHapiTest.class).throttles()));
+                    final var a = method.getAnnotation(LeakyHapiTest.class);
+                    bindThreadTargets(a.requirement(), a.overrides(), a.throttles(), a.fees());
                 } else if (isAnnotated(method, LeakyEmbeddedHapiTest.class)) {
-                    HapiSpec.PROPERTIES_TO_PRESERVE.set(List.of(
-                            method.getAnnotation(LeakyEmbeddedHapiTest.class).overrides()));
-                    HapiSpec.THROTTLES_OVERRIDE.set(effectiveThrottleResource(
-                            method.getAnnotation(LeakyEmbeddedHapiTest.class).requirement(),
-                            method.getAnnotation(LeakyEmbeddedHapiTest.class).throttles()));
+                    final var a = method.getAnnotation(LeakyEmbeddedHapiTest.class);
+                    bindThreadTargets(a.requirement(), a.overrides(), a.throttles(), a.fees());
                 }
             }
         });
@@ -84,18 +79,31 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
         HapiSpec.PROPERTIES_TO_PRESERVE.remove();
     }
 
+    private void bindThreadTargets(
+            @NonNull final ContextRequirement[] requirement,
+            @NonNull final String[] overrides,
+            @NonNull final String throttles,
+            @NonNull final String fees) {
+        HapiSpec.PROPERTIES_TO_PRESERVE.set(List.of(overrides));
+        HapiSpec.THROTTLES_OVERRIDE.set(effectiveResource(requirement, THROTTLE_OVERRIDES, throttles));
+        HapiSpec.FEES_OVERRIDE.set(effectiveResource(requirement, FEE_SCHEDULE_OVERRIDES, fees));
+    }
+
     /**
-     * If there is an explicit throttle resource to load, returns it; otherwise returns null if the test's
-     * context requirement does not include overriding throttles.
+     * If there is an explicit resource to load, returns it; otherwise returns null if the test's
+     * context requirement does not include the relevant requirement.
      * @param contextRequirements the context requirements of the test
-     * @param throttles the path to the throttle resource
+     * @param relevantRequirement the relevant context requirement
+     * @param resource the path to the resource
      * @return the effective throttle resource
      */
-    private @Nullable String effectiveThrottleResource(
-            @NonNull final ContextRequirement[] contextRequirements, @NonNull final String throttles) {
-        if (!throttles.isBlank()) {
-            return throttles;
+    private @Nullable String effectiveResource(
+            @NonNull final ContextRequirement[] contextRequirements,
+            @NonNull final ContextRequirement relevantRequirement,
+            @NonNull final String resource) {
+        if (!resource.isBlank()) {
+            return resource;
         }
-        return List.of(contextRequirements).contains(THROTTLE_OVERRIDES) ? "" : null;
+        return List.of(contextRequirements).contains(relevantRequirement) ? "" : null;
     }
 }
