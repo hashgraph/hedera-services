@@ -38,10 +38,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_HAS_NO_AIRDROPS_TO_CANCEL;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -141,7 +141,7 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
         return hapiTest(
                 tokenCancelAirdrop(pendingNFTAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 5L))
                         .payingWith(OWNER)
-                        .hasKnownStatus(SENDER_HAS_NO_AIRDROPS_TO_CANCEL));
+                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID));
     }
 
     @HapiTest
@@ -152,7 +152,7 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
                 cryptoCreate(receiver),
                 tokenCancelAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
                         .payingWith(OWNER)
-                        .hasKnownStatus(SENDER_HAS_NO_AIRDROPS_TO_CANCEL));
+                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID));
     }
 
     @HapiTest
