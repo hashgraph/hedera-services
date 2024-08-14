@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
@@ -30,6 +28,8 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -70,8 +71,34 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             @NonNull final SingleTransactionBlockItems txnWrapper, @Nullable final StateChanges stateChanges) {
         Objects.requireNonNull(txnWrapper, "transaction must not be null");
 
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var receiptBuilder = TransactionReceipt.newBuilder();
+        final HederaFunctionality txnType;
+        try {
+            txnType = CommonUtils.functionOf(CommonUtils.extractTransactionBodyUnchecked(pbjToProto(
+                    txnWrapper.txn(),
+                    com.hedera.hapi.node.base.Transaction.class,
+                    com.hederahashgraph.api.proto.java.Transaction.class)));
+        } catch (UnknownHederaFunctionality e) {
+            throw new RuntimeException(e);
+        }
+
+        final var singleTxnRecord =
+                switch (txnType) {
+                    case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
+                    default -> new SingleTransactionRecord(
+                            txnWrapper.txn(),
+                            com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
+                                    .build(),
+                            List.of(),
+                            new SingleTransactionRecord.TransactionOutputs(null));
+                };
+
+        final var txnRecord = pbjToProto(
+                singleTxnRecord.transactionRecord(),
+                com.hedera.hapi.node.transaction.TransactionRecord.class,
+                com.hederahashgraph.api.proto.java.TransactionRecord.class);
+        final var recordBuilder = txnRecord.toBuilder();
+        final var receiptBuilder =
+                txnRecord.hasReceipt() ? txnRecord.getReceipt().toBuilder() : TransactionReceipt.newBuilder();
 
         Objects.requireNonNull(txnWrapper.txn(), "transaction must not be null");
         Objects.requireNonNull(txnWrapper.result(), "transaction result must not be null");
@@ -357,15 +384,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasNodeDelete()) {
         //                rb.nodeId(txnOutput.nodeDelete().nodeID());
         //            }
-
-        if (txnOutput.hasUtilPrng()) {
-            final var entropy = txnOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                trb.setPrngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                trb.setPrngNumber(entropy.as());
-            }
-        }
 
         maybeAssignEvmAddressAlias(txnOutput, trb);
 

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -33,6 +35,7 @@ import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockStreamTransactionTranslator;
 import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
 import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.utils.RcDiff;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,6 +50,24 @@ import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordParityValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(TransactionRecordParityValidator.class);
+
+    public static final Factory FACTORY = new Factory() {
+        @NonNull
+        @Override
+        public TransactionRecordParityValidator create(@NonNull final HapiSpec spec) {
+            return newValidatorFor(spec);
+        }
+
+        @Override
+        public boolean appliesTo(@NonNull HapiSpec spec) {
+            // Embedded networks don't have saved states or a Merkle tree to validate hashes against
+            return spec.targetNetworkOrThrow().type() == SUBPROCESS_NETWORK;
+        }
+    };
+
+    private static TransactionRecordParityValidator newValidatorFor(HapiSpec spec) {
+        return new TransactionRecordParityValidator();
+    }
 
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
@@ -99,8 +120,9 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
     private List<RecordStreamEntry> translateAll(final BlocksData blocksData) {
         // Translate each block transaction into a SingleTransactionRecord instance
-        final var singleTxnRecs =
+        final List<SingleTransactionRecord> singleTxnRecs =
                 TRANSACTION_RECORD_TRANSLATOR.translateAll(blocksData.txns(), blocksData.allStateChanges());
+
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()
                 .map(txnRecord -> {
