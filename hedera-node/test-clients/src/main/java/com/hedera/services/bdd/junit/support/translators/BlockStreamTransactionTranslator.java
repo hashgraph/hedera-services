@@ -336,14 +336,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
 
-        //        if (txnOutput.hasSubmitMessage()) {
-        //            rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-        //
-        //            Optional.ofNullable(txnOutput.submitMessage().topicRunningHashVersion())
-        //                    .map(RunningHashVersion::protoOrdinal)
-        //                    .ifPresent(rb::setTopicRunningHashVersion);
-        //        }
-
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());
         //            }
