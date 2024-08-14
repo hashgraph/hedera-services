@@ -39,33 +39,28 @@ import org.apache.logging.log4j.Logger;
 public class SysFileOverrideOp extends UtilOp {
     private static final Logger log = LogManager.getLogger(SysFileOverrideOp.class);
 
+    /**
+     * Defines a target system file to override by its default number (which we never override in test).
+     */
     public enum Target {
-        FEES {
-            @Override
-            public long number() {
-                return 111L;
-            }
-        },
-        EXCHANGE_RATES {
-            @Override
-            public long number() {
-                return 112L;
-            }
-        },
-        THROTTLES {
-            @Override
-            public long number() {
-                return 123L;
-            }
-        },
-        PERMISSIONS {
-            @Override
-            public long number() {
-                return 122L;
-            }
-        };
+        FEES(111L),
+        EXCHANGE_RATES(112L),
+        THROTTLES(123L),
+        PERMISSIONS(122L);
 
-        public abstract long number();
+        Target(final long number) {
+            this.number = number;
+        }
+
+        /**
+         * Returns the number of the system file targeted by this enum constant.
+         * @return the number of the system file
+         */
+        public long number() {
+            return number;
+        }
+
+        private final long number;
     }
 
     private final Target target;
@@ -98,8 +93,11 @@ public class SysFileOverrideOp extends UtilOp {
         allRunFor(spec, getFileContents("0.0." + target.number()).consumedBy(bytes -> this.originalContents = bytes));
         log.info("Took snapshot of {}", target);
         final var styledContents = overrideSupplier.get();
+        // The supplier can return null to indicate that this operation should not update the file,
+        // as the parent spec wants to override the contents itself later
         if (styledContents != null) {
             final var rawContents = SYS_FILE_SERDES.get(target.number()).toRawFile(styledContents, null);
+            log.info("Now automatically overriding {}", target);
             allRunFor(
                     spec,
                     updateLargeFile(

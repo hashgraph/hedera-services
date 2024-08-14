@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.THROTTLES;
+import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.withoutAutoRestoring;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
@@ -100,7 +101,7 @@ public class SteadyStateThrottlingTest {
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
     private static final SysFileOverrideOp throttleOverrideOp =
-            new SysFileOverrideOp(THROTTLES, () -> resourceAsString("testSystemFiles/artificial-limits.json"));
+            withoutAutoRestoring(THROTTLES, () -> resourceAsString("testSystemFiles/artificial-limits.json"));
 
     @HapiTest
     @Order(1)
