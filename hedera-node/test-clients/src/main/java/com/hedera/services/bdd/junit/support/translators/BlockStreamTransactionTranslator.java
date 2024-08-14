@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
@@ -86,6 +84,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var singleTxnRecord =
                 switch (txnType) {
                     case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
+                    case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
                             com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
@@ -366,15 +365,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasNodeDelete()) {
         //                rb.nodeId(txnOutput.nodeDelete().nodeID());
         //            }
-
-        if (txnOutput.hasUtilPrng()) {
-            final var entropy = txnOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                trb.setPrngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                trb.setPrngNumber(entropy.as());
-            }
-        }
 
         maybeAssignEvmAddressAlias(txnOutput, trb);
 
