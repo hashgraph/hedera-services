@@ -137,6 +137,8 @@ public class TokenAirdropTest {
     private static final String HBAR_COLLECTOR = "hbarCollector";
     private static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
     private static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
+    private static final String TREASURY_AS_SENDER = "treasuryAsSender";
+    private static final String TREASURY_AS_SENDER_TOKEN = "treasuryAsSenderToken";
     // all collectors exempt
     private static final String NFT_ALL_COLLECTORS_EXEMPT_OWNER = "nftAllCollectorsExemptOwner";
     private static final String NFT_ALL_COLLECTORS_EXEMPT_RECEIVER = "nftAllCollectorsExemptReceiver";
@@ -474,9 +476,7 @@ public class TokenAirdropTest {
     @Nested
     @DisplayName("with custom fees for")
     class AirdropTokensWithCustomFees {
-
-        private static long hbarFee = 1_000L;
-        private static long tokenTotal = 1_000L;
+        private static long hbarFee = 1000L;
         private static long htsFee = 100L;
 
         @BeforeAll
@@ -518,6 +518,22 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
+        @DisplayName("fungible token with fixed Hbar fee payed by treasury")
+        final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFeePayedByTreasury() {
+            return defaultHapiSpec(" sender should prepay hbar custom fee")
+                    .given()
+                    .when(tokenAirdrop(moving(1, TREASURY_AS_SENDER_TOKEN)
+                                    .between(TREASURY_AS_SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(TREASURY_AS_SENDER)
+                            .signedBy(TREASURY_AS_SENDER)
+                            .via("transferTx"))
+                    .then(
+                            // custom fee should not be charged
+                            getAccountBalance(TREASURY_AS_SENDER).hasTokenBalance(DENOM_TOKEN, 0),
+                            validateChargedUsd("transferTx", 0.1, 10));
+        }
+
+        @HapiTest
         @DisplayName("NFT with 2 layers fixed Hts fee")
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
@@ -530,25 +546,24 @@ public class TokenAirdropTest {
                             cryptoTransfer(
                                     movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES),
-                                    moving(tokenTotal, FT_WITH_HTS_FIXED_FEE)
+                                    moving(htsFee, FT_WITH_HTS_FIXED_FEE)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES),
-                                    moving(tokenTotal, DENOM_TOKEN)
+                                    moving(htsFee, DENOM_TOKEN)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
                     .when(
                             tokenAirdrop(movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
                                             .between(
                                                     OWNER_OF_TOKENS_WITH_CUSTOM_FEES,
                                                     RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                                    .fee(ONE_HUNDRED_HBARS)
                                     .payingWith(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
                                     .via("transferTx"),
                             // pending airdrop should be created
                             validateChargedUsd("transferTx", 0.1, 10))
                     .then(
                             getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1)
-                                    .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, tokenTotal - htsFee)
-                                    .hasTokenBalance(DENOM_TOKEN, tokenTotal - htsFee),
+                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1) // token was transferred
+                                    .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, 0) // hts was charged
+                                    .hasTokenBalance(DENOM_TOKEN, 0), // hts was charged
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0));
         }
@@ -611,8 +626,8 @@ public class TokenAirdropTest {
                     tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
                     tokenAssociate(OWNER, DENOM_TOKEN),
                     cryptoTransfer(
-                            moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
-                            moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                            moving(htsFee, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(htsFee, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, HTS_COLLECTOR))
                             .signedByPayerAnd(HTS_COLLECTOR, OWNER));
         }
@@ -637,8 +652,8 @@ public class TokenAirdropTest {
                     tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
                     tokenAssociate(OWNER, DENOM_TOKEN),
                     cryptoTransfer(
-                            moving(tokenTotal, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
-                            moving(tokenTotal, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                            moving(htsFee, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(htsFee, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
                             .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
         }
@@ -1659,6 +1674,15 @@ public class TokenAirdropTest {
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
                 tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
                 mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+
+                // token treasury as sender
+                cryptoCreate(TREASURY_AS_SENDER),
+                tokenCreate(TREASURY_AS_SENDER_TOKEN)
+                        .treasury(TREASURY_AS_SENDER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(tokenTotal)
+                        .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN, HTS_COLLECTOR)),
+                tokenAssociate(HTS_COLLECTOR, TREASURY_AS_SENDER_TOKEN),
 
                 // all collectors exempt setup
                 cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),
