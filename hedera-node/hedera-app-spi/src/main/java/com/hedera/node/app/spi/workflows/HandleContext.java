@@ -426,7 +426,7 @@ public interface HandleContext {
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer,
-            @NonNull final ThrottleStrategy throttleStrategy);
+            @NonNull ThrottleStrategy throttleStrategy);
 
     /**
      * Returns the current {@link SavepointStack}.

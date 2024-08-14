@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -42,8 +43,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -255,6 +258,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
+
+    @Mock
+    private Predicate<Key> signatureTest;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -279,6 +286,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
             Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+
+    private static final TransactionBody MISSING_PAYER_ID =
+            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
+
+    private static final AccountID PAYER_ID =
+            AccountID.newBuilder().accountNum(1_234L).build();
+    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
+            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -812,5 +828,53 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient().when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
         given(baseState.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         given(baseState.getReadableStates(TokenService.NAME)).willReturn(defaultTokenReadableStates());
+    }
+
+    @Test
+    void defaultDispatchRemovableChildThrowsOnMissingTransactionId() {
+        final var subject = mock(DispatchHandleContext.class);
+        doCallRealMethod()
+                .when(subject)
+                .dispatchRemovableChildTransaction(
+                        TransactionBody.DEFAULT,
+                        StreamBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        NOOP_RECORD_CUSTOMIZER,
+                        AT_CONSENSUS_AND_INGEST);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.dispatchRemovableChildTransaction(
+                        TransactionBody.DEFAULT,
+                        StreamBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        NOOP_RECORD_CUSTOMIZER,
+                        AT_CONSENSUS_AND_INGEST));
+    }
+
+    @Test
+    void defaultDispatchRemovableChildUsesTransactionIdWhenSet() {
+        final var subject = mock(DispatchHandleContext.class);
+        doCallRealMethod()
+                .when(subject)
+                .dispatchRemovableChildTransaction(
+                        WITH_PAYER_ID,
+                        StreamBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        NOOP_RECORD_CUSTOMIZER,
+                        AT_CONSENSUS_AND_INGEST);
+        subject.dispatchRemovableChildTransaction(
+                WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, NOOP_RECORD_CUSTOMIZER,
+                AT_CONSENSUS_AND_INGEST);
+        verify(subject)
+                .dispatchRemovableChildTransaction(
+                        WITH_PAYER_ID,
+                        StreamBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        NOOP_RECORD_CUSTOMIZER,
+                        AT_CONSENSUS_AND_INGEST);
     }
 }

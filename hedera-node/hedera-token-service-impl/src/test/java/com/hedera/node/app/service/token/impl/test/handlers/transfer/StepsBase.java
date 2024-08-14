@@ -201,7 +201,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         any(Predicate.class),
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class),
-                        ONLY_AT_INGEST))
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
@@ -218,7 +218,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(syntheticPayer),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)
@@ -285,7 +285,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         any(Predicate.class),
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class),
-                        ONLY_AT_INGEST))
+                        any()))
                 .willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
         given(configProvider.getConfiguration()).willReturn(versionedConfig);

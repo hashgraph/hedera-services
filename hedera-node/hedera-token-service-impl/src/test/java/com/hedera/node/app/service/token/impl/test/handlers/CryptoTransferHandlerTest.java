@@ -466,7 +466,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -504,7 +504,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -592,7 +592,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -644,7 +644,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

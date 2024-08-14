@@ -329,7 +329,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(TokenAirdropStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
@@ -392,7 +392,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                         eq(TokenAirdropStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        eq(HandleContext.ThrottleStrategy.ONLY_AT_INGEST)))
+                        any()))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();

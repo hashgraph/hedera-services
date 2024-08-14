@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -100,53 +101,6 @@ class HandleContextTest {
                         signatureTest,
                         PAYER_ID,
                         SCHEDULED,
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
-    }
-
-    @Test
-    void defaultDispatchRemovableChildThrowsOnMissingTransactionId() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        ONLY_AT_INGEST);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        ONLY_AT_INGEST));
-    }
-
-    @Test
-    void defaultDispatchRemovableChildUsesTransactionIdWhenSet() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        ONLY_AT_INGEST);
-        subject.dispatchRemovableChildTransaction(
-                WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, NOOP_RECORD_CUSTOMIZER, ONLY_AT_INGEST);
-        verify(subject)
-                .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        ONLY_AT_INGEST);
+                        HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST);
     }
 }

@@ -187,7 +187,7 @@ class HandleHederaNativeOperationsTest {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -209,7 +209,7 @@ class HandleHederaNativeOperationsTest {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

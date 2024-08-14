@@ -70,7 +70,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     public void setUp() {
         super.setUp();
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(StreamBuilder.class), eq(null), any(), HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -387,7 +387,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                                 .build())
                 .build();
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(StreamBuilder.class), eq(null), any(), HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation = new TokenRelation(fungibleTokenId, ownerId, 1, false, true, true, null, null);
                     final var relation1 =

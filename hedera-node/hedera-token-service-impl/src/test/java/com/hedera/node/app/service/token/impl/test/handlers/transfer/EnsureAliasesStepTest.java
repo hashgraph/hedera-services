@@ -77,7 +77,7 @@ class EnsureAliasesStepTest extends StepsBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -149,7 +149,7 @@ class EnsureAliasesStepTest extends StepsBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
@@ -259,7 +259,7 @@ class EnsureAliasesStepTest extends StepsBase {
                         eq(CryptoCreateStreamBuilder.class),
                         eq(null),
                         eq(payerId),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

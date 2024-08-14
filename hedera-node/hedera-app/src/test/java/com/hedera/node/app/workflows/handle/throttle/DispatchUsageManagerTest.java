@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
 import static java.util.Objects.requireNonNull;
@@ -159,7 +160,7 @@ class DispatchUsageManagerTest {
 
     @Test
     void doesNotScreeNonContractOperation() throws DispatchUsageManager.ThrottleException {
-        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(dispatch.throttleStrategy()).willReturn(ONLY_AT_INGEST);
 
         subject.screenForCapacity(dispatch);
 
@@ -215,6 +216,7 @@ class DispatchUsageManagerTest {
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
+        given(dispatch.throttleStrategy()).willReturn(ONLY_AT_INGEST);
 
         subject.trackUsage(dispatch, USER_TRANSACTION);
 
@@ -229,6 +231,7 @@ class DispatchUsageManagerTest {
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
+        given(dispatch.throttleStrategy()).willReturn(ONLY_AT_INGEST);
 
         subject.trackUsage(dispatch, USER_TRANSACTION);
 
