@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.config.types;
 
-import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
-import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import dagger.Module;
-
-@Module
-public interface UtilServiceInjectionModule {
-
-    UtilPrngHandler prngHandler();
-
-    UtilHandlers utilHandlers();
+/**
+ * Enumerates the choices of what stream to produce; blocks, records, or both.
+ */
+public enum StreamMode {
+    /**
+     * Stream blocks only.
+     */
+    BLOCKS,
+    /**
+     * Stream records only.
+     */
+    RECORDS,
+    /**
+     * Stream both blocks and records.
+     */
+    BOTH
 }

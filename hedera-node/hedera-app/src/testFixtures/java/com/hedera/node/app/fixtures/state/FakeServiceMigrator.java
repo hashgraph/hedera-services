@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes;
+package com.hedera.node.app.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
-import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
-import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -65,8 +62,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with FakeServicesRegistry instances");
         }
 
-        final AtomicLong nextEntityNum =
-                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity());
+        final AtomicLong prevEntityNum =
+                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
                 .filter(service ->
@@ -83,7 +80,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 networkInfo,
                 config,
                 sharedValues,
-                nextEntityNum);
+                prevEntityNum);
         registry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
                 .forEach(registration -> {
@@ -97,13 +94,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             networkInfo,
                             config,
                             sharedValues,
-                            nextEntityNum);
+                            prevEntityNum);
                 });
         final var entityIdWritableStates = fakeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE);
         if (!(entityIdWritableStates instanceof MapWritableStates mapWritableStates)) {
             throw new IllegalArgumentException("Can only be used with MapWritableStates instances");
         }
-        mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(nextEntityNum.get()));
+        mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(prevEntityNum.get()));
         mapWritableStates.commit();
     }
 }
