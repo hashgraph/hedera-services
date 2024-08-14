@@ -194,6 +194,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      * @return true if the input data matches any of the known create selectors, false otherwise
      */
     private boolean checkIfCreateScenario(MessageFrame frame) {
+        if (frame.getInputData().isEmpty()) {
+            return false;
+        }
         var selector = frame.getInputData().slice(0, 4).toArray();
         return Arrays.stream(new byte[][] {
                     CREATE_FUNGIBLE_TOKEN_V1.selector(),
