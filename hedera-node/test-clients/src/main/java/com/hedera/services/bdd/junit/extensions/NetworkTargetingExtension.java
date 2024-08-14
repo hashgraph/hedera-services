@@ -75,6 +75,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
     @Override
     public void afterEach(@NonNull final ExtensionContext extensionContext) {
         HapiSpec.TARGET_NETWORK.remove();
+        HapiSpec.FEES_OVERRIDE.remove();
         HapiSpec.THROTTLES_OVERRIDE.remove();
         HapiSpec.PROPERTIES_TO_PRESERVE.remove();
     }
