@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Setting;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -174,6 +175,13 @@ class ConfigProviderImplTest {
         // then
         assertThat(configuration.getVersion()).isEqualTo(1);
         assertThat(configuration.getValue("bar.test")).isNotEqualTo("genesis");
+    }
+
+    @Test
+    void incorporatesOverrideProperties() {
+        final var subject = new ConfigProviderImpl(false, null, Map.of("baz.test", "789"));
+        final var config = subject.getConfiguration();
+        assertThat(config.getValue("baz.test")).isEqualTo("789");
     }
 
     @Test
