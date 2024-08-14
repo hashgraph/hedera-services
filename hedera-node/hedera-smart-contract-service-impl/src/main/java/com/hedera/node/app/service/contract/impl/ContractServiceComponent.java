@@ -21,7 +21,10 @@ import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Singleton
 @Component(modules = ContractServiceModule.class)
@@ -29,7 +32,9 @@ public interface ContractServiceComponent {
     @Component.Factory
     interface Factory {
         ContractServiceComponent create(
-                @BindsInstance InstantSource instantSource, @BindsInstance SignatureVerifier signatureVerifier);
+                @BindsInstance InstantSource instantSource,
+                @BindsInstance SignatureVerifier signatureVerifier,
+                @BindsInstance @javax.annotation.Nullable Supplier<List<OperationTracer>> addOnTracers);
     }
 
     ContractHandlers handlers();
