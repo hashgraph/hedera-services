@@ -25,22 +25,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -54,8 +51,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
-public class CongestionPricingSuite {
-    private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
+public class CongestionPricingTest {
+    private static final Logger log = LogManager.getLogger(CongestionPricingTest.class);
 
     private static final String CIVILIAN_ACCOUNT = "civilian";
     private static final String SECOND_ACCOUNT = "second";
@@ -65,10 +62,8 @@ public class CongestionPricingSuite {
             requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
             overrides = {"contracts.maxGasPerSec", "fees.percentCongestionMultipliers", "fees.minCongestionPeriod"})
     final Stream<DynamicTest> canUpdateMultipliersDynamically() {
-        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-        var contract = "Multipurpose";
-        String tmpMinCongestionPeriod = "1";
+        final var contract = "Multipurpose";
+        final var tmpMinCongestionPeriod = "1";
 
         AtomicLong normalPrice = new AtomicLong();
         AtomicLong sevenXPrice = new AtomicLong();
@@ -98,7 +93,7 @@ public class CongestionPricingSuite {
                         "1,7x",
                         "fees.minCongestionPeriod",
                         tmpMinCongestionPeriod),
-                fileUpdate(THROTTLE_DEFS).payingWith(EXCHANGE_RATE_CONTROL).contents(artificialLimits.toByteArray()),
+                overridingThrottles("testSystemFiles/artificial-limits-congestion.json"),
                 sleepFor(2_000),
                 blockingOrder(IntStream.range(0, 10)
                         .mapToObj(i -> new HapiSpecOperation[] {
@@ -125,14 +120,6 @@ public class CongestionPricingSuite {
                     log.info("Congestion fee is {}", congestionFee);
                     sevenXPrice.set(congestionFee);
                 }),
-
-                /* Make sure the multiplier is reset before the next spec runs */
-                fileUpdate(THROTTLE_DEFS)
-                        .fee(ONE_HUNDRED_HBARS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(defaultThrottles.toByteArray()),
-
-                /* Check for error after resetting settings. */
                 withOpContext((spec, opLog) -> Assertions.assertEquals(
                         7.0,
                         (1.0 * sevenXPrice.get()) / normalPrice.get(),
@@ -144,8 +131,6 @@ public class CongestionPricingSuite {
             requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
             overrides = {"fees.percentCongestionMultipliers", "fees.minCongestionPeriod"})
     final Stream<DynamicTest> canUpdateMultipliersDynamically2() {
-        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriod = "1";
 
         AtomicLong normalPrice = new AtomicLong();
@@ -169,7 +154,7 @@ public class CongestionPricingSuite {
                         "1,7x",
                         "fees.minCongestionPeriod",
                         tmpMinCongestionPeriod),
-                fileUpdate(THROTTLE_DEFS).payingWith(EXCHANGE_RATE_CONTROL).contents(artificialLimits.toByteArray()),
+                overridingThrottles("testSystemFiles/artificial-limits-congestion.json"),
                 sleepFor(2_000),
                 blockingOrder(IntStream.range(0, 20)
                         .mapToObj(i -> new HapiSpecOperation[] {
@@ -190,13 +175,6 @@ public class CongestionPricingSuite {
                     log.info("Congestion fee is {}", congestionFee);
                     sevenXPrice.set(congestionFee);
                 }),
-
-                /* Make sure the multiplier is reset before the next spec runs */
-                fileUpdate(THROTTLE_DEFS)
-                        .fee(ONE_HUNDRED_HBARS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(defaultThrottles.toByteArray()),
-                /* Check for error after resetting settings. */
                 withOpContext((spec, opLog) -> Assertions.assertEquals(
                         7.0,
                         (1.0 * sevenXPrice.get()) / normalPrice.get(),
