@@ -111,7 +111,6 @@ public class TinybarValues {
         }
         return asTinybars(
                 childTransactionResourcePrices.basePrices().servicedataOrThrow().gas()
-                        / FEE_SCHEDULE_UNITS_PER_TINYCENT
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 

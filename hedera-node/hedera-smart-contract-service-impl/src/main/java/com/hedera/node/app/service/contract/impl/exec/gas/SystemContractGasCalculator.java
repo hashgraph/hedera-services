@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -166,7 +167,7 @@ public class SystemContractGasCalculator {
     private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
         // We round up to the nearest gas unit, and then add 20% to account for the premium
         // of doing a HAPI operation from inside the EVM
-        final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
+        final var gasRequirement = (tinybarPrice + gasPrice - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPrice;
         return gasRequirement + (gasRequirement / 5);
     }
 }
