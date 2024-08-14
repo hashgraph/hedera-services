@@ -62,6 +62,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.ConsensusConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -141,7 +142,10 @@ public class StandaloneDispatchFactory {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
-                state, consensusConfig.handleMaxPrecedingRecords(), consensusConfig.handleMaxFollowingRecords());
+                state,
+                consensusConfig.handleMaxPrecedingRecords(),
+                consensusConfig.handleMaxFollowingRecords(),
+                StreamMode.RECORDS);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);
