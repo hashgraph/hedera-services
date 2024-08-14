@@ -557,19 +557,18 @@ public class TokenAirdropTest {
         }
 
         @HapiTest
-        @DisplayName("with missing owner's signature")
-        final Stream<DynamicTest> missingPayerSigFails() {
+        @DisplayName("with allowance")
+        final Stream<DynamicTest> airdropWithAllowance() {
             var spender = "spender";
-            return defaultHapiSpec("should fail - INVALID_SIGNATURE")
+            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
                     .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
                     .when(cryptoApproveAllowance()
                             .payingWith(OWNER)
                             .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100))
                     .then(tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
                                     .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            // Should be signed by owner as well
-                            .signedBy(spender)
-                            .hasPrecheck(INVALID_SIGNATURE));
+                            .signedBy(OWNER, spender)
+                            .hasPrecheck(INVALID_TRANSACTION));
         }
 
         @HapiTest
