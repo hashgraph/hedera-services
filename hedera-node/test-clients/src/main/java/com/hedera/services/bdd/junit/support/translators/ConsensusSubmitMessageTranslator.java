@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -25,10 +27,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-
 public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     private static final long RUNNING_HASH_VERSION = 3L;
+
     @Override
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
