@@ -100,7 +100,6 @@ public class TokenAirdropValidator {
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            validateTrue(tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore), INVALID_TRANSACTION);
             final var token = getIfUsable(tokenId, tokenStore);
 
             // process fungible token transfers if any.

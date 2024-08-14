@@ -278,15 +278,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void pureChecksTokenTransfersAboveMax() {
-        final var txn = newTokenAirdrop(transactionBodyAboveMaxTransferLimit());
-
-        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.pureChecks(txn))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
-    }
-
-    @Test
     void pureChecksForEmptyHbarTransferAndEmptyTokenTransfers() {
         // It's actually valid to have no token transfers
         final var txn = newTokenAirdrop(Collections.emptyList());

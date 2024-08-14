@@ -76,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -903,7 +904,7 @@ public class TokenAirdropTest {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -1351,7 +1352,7 @@ public class TokenAirdropTest {
                                     moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
                                     moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
                             .signedByPayerAnd(ALICE)
-                            .hasPrecheck(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
