@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -73,7 +75,7 @@ public class CryptoTransferValidationHelper {
             final ReadableTokenStore.TokenMetadata tokenMeta,
             @Nullable final CryptoTransferTransactionBody op,
             final ReadableAccountStore accountStore,
-            final boolean receiverSigRequiredCheck)
+            final TransferExecutor.OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
 
         // Lookup the receiver account and verify it.
@@ -93,10 +95,14 @@ public class CryptoTransferValidationHelper {
             // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
             // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
             throw new PreCheckException(INVALID_ACCOUNT_ID);
-        } else if (receiverSigRequiredCheck && receiverAccount.receiverSigRequired()) {
-            // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
-            // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
-            meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
+        } else if (receiverAccount.receiverSigRequired()) {
+            if (receiverKeyCheck == RECEIVER_KEY_IS_OPTIONAL) {
+                meta.optionalKey(receiverKey);
+            } else {
+                // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
+                // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
+                meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
+            }
         } else if (tokenMeta.hasRoyaltyWithFallback()) {
             // For airdrops, we don't support tokens with royalties with fallback
             if (op == null) {
@@ -111,12 +117,6 @@ public class CryptoTransferValidationHelper {
                     meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
                 }
             }
-        }
-    }
-
-    public static void checkPayer(AccountID sender, PreHandleContext context) throws PreCheckException {
-        if (context.payer() != sender) {
-            context.requireKeyOrThrow(context.payerKey(), INVALID_ACCOUNT_ID);
         }
     }
 

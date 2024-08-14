@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -76,7 +78,7 @@ public class TransferExecutor {
      * @throws PreCheckException if any error occurs during the process
      */
     protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) throws PreCheckException {
-        preHandle(context, op, true);
+        preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED);
     }
 
     /**
@@ -87,12 +89,15 @@ public class TransferExecutor {
      * @param op transaction body
      * @throws PreCheckException if any error occurs during the process
      */
-    protected void preHandleWithoutReceiverSigRequired(PreHandleContext context, CryptoTransferTransactionBody op)
+    protected void preHandleWithOptionalReceiverSignature(PreHandleContext context, CryptoTransferTransactionBody op)
             throws PreCheckException {
-        preHandle(context, op, false);
+        preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL);
     }
 
-    private void preHandle(PreHandleContext context, CryptoTransferTransactionBody op, boolean receiverSigRequiredCheck)
+    private void preHandle(
+            @NonNull final PreHandleContext context,
+            @NonNull final CryptoTransferTransactionBody op,
+            @NonNull final OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -102,8 +107,8 @@ public class TransferExecutor {
         for (final var transfers : tokenTransfers) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false, receiverSigRequiredCheck);
-            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore, receiverSigRequiredCheck);
+            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false, receiverKeyCheck);
+            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore, receiverKeyCheck);
         }
 
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
@@ -330,7 +335,7 @@ public class TransferExecutor {
             @NonNull final ReadableAccountStore accountStore,
             final boolean hbarTransfer)
             throws PreCheckException {
-        checkFungibleTokenTransfers(transfers, ctx, accountStore, hbarTransfer, true);
+        checkFungibleTokenTransfers(transfers, ctx, accountStore, hbarTransfer, RECEIVER_KEY_IS_REQUIRED);
     }
 
     /**
@@ -340,7 +345,7 @@ public class TransferExecutor {
      * @param ctx                      The context we gather signing keys into
      * @param accountStore             The account store to use to look up accounts
      * @param hbarTransfer             Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
-     * @param receiverSigRequiredCheck Whether to check for receiver signature during pre-handle (we skip it if the transaction is airdrop)
+     * @param receiverKeyCheck Since in airdrops receiver key is optional to sign the transaction, add it to optional keys
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
@@ -348,7 +353,7 @@ public class TransferExecutor {
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore,
             final boolean hbarTransfer,
-            final boolean receiverSigRequiredCheck)
+            @NonNull final OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of hbar INTO a single account or OUT of a
@@ -388,10 +393,13 @@ public class TransferExecutor {
                     }
 
                 } else if (isCredit && account.receiverSigRequired()) {
-                    if (receiverSigRequiredCheck) {
+                    // Add receiver key as an optional key to sign for airdrops.
+                    // If the receiver has not signed, we don't fail the transaction. Instead, it becomes a
+                    // pending airdrops
+                    if (receiverKeyCheck == RECEIVER_KEY_IS_OPTIONAL) {
+                        ctx.optionalKey(account.keyOrThrow());
+                    } else {
                         ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
-                    } else if (account.key() != null) {
-                        ctx.optionalKey(account.key());
                     }
                 }
             } else if (hbarTransfer) {
@@ -417,7 +425,7 @@ public class TransferExecutor {
             final ReadableTokenStore.TokenMetadata tokenMeta,
             final CryptoTransferTransactionBody op,
             final ReadableAccountStore accountStore,
-            final boolean receiverSigRequiredCheck)
+            final OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
@@ -426,8 +434,17 @@ public class TransferExecutor {
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
-            checkReceiver(
-                    receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore, receiverSigRequiredCheck);
+            checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore, receiverKeyCheck);
         }
+    }
+
+    /**
+     * Enum to specify the receiver key check type. For airdrops, receiver key is optional to sign the transaction.
+     * If the receiver has not signed, we don't fail the transaction. Instead, it becomes a pending airdrops.
+     * For CryptoTransfer, receiver key is required to sign the transaction if receiverSigRequired is set to true.
+     */
+    public enum OptionalKeyCheck {
+        RECEIVER_KEY_IS_OPTIONAL,
+        RECEIVER_KEY_IS_REQUIRED
     }
 }

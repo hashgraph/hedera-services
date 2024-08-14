@@ -42,6 +42,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -77,10 +78,12 @@ public class AirdropHandlerHelper {
      * @return {@link FungibleAirdropLists} a record containing two lists - transfers to be added in pending state and transfers to be executed
      */
     public static FungibleAirdropLists separateFungibleTransfers(
-            HandleContext context, TokenID tokenId, List<AccountAmount> transfers) {
-        List<AccountAmount> transferFungibleAmounts = new ArrayList<>();
-        List<AccountAmount> pendingFungibleAmounts = new ArrayList<>();
-        Set<AccountID> transfersNeedingAutoAssociation = new HashSet<>();
+            @NonNull final HandleContext context,
+            @NonNull final TokenID tokenId,
+            @NonNull final List<AccountAmount> transfers) {
+        final var transferFungibleAmounts = new ArrayList<AccountAmount>();
+        final var pendingFungibleAmounts = new ArrayList<AccountAmount>();
+        final var transfersNeedingAutoAssociation = new LinkedHashSet<AccountID>();
 
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
@@ -169,19 +172,20 @@ public class AirdropHandlerHelper {
     }
 
     /**
-     * Check if given airdrop should be pending or transfer will be executed.
-     * The check is done by account's available auto associations slots and the existence of account-token relation.
-     * If receiver's account is not existing, we should proceed with the transfer, this way {@link com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler}
-     * will handle auto creation and auto association of the new receiver.
-     *
-     * @param receiver receivers account
-     * @param tokenRelation token relation
-     * @return if airdrop of given token to given receiver should be added to the airdrop pending state
+     * Checks if the airdrop to an account is pending airdrop. An airdrop will result into a pending airdrop, iuf
+     * the receiver has not signed the transaction when receiverSigRequired is set to true, or if the
+     * receiver is no yet associated to teh token but there are no open slots available. In other scenarios,
+     * the airdrop is not pending and will be transferred.
+     * @param context the context
+     * @param receiver the receiver account
+     * @param tokenRelation the token relation
+     * @return boolean value indicating if the airdrop is pending
      */
     private static boolean isPendingAirdrop(
             @NonNull final HandleContext context,
             @NonNull final Account receiver,
             @Nullable final TokenRelation tokenRelation) {
+        // Check if the receiver has signed the transaction. If not, it should result in a pending airdrop
         if (receiver.receiverSigRequired()) {
             var sigVerification = context.keyVerifier().verificationFor(requireNonNull(receiver.key()));
             if (sigVerification.failed()) {
