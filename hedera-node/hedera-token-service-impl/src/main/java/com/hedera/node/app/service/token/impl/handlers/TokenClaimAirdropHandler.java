@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
@@ -93,15 +91,10 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         requireNonNull(context);
         final var op = requireNonNull(context.body().tokenClaimAirdrop());
         final var pendingAirdrops = op.pendingAirdrops();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
 
         for (final var pendingAirdrop : pendingAirdrops) {
             final var receiverId = pendingAirdrop.receiverIdOrThrow();
-            final var account = accountStore.getAccountById(receiverId);
-            validateTruePreCheck(account != null, INVALID_ACCOUNT_ID);
-            validateTruePreCheck(account.key() != null, ACCOUNT_IS_IMMUTABLE);
-            // requireKeyOrThrow also will set hollow accounts for finalization
-            context.requireKeyOrThrow(receiverId, INVALID_ACCOUNT_ID);
+            context.requireAliasedKeyOrThrow(receiverId, INVALID_ACCOUNT_ID);
         }
     }
 
@@ -117,13 +110,6 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
 
         final var uniqueAirdrops = Set.copyOf(pendingAirdrops);
         validateTruePreCheck(pendingAirdrops.size() == uniqueAirdrops.size(), PENDING_AIRDROP_ID_REPEATED);
-
-        // check if all pending airdrops have same receiver
-        var allReceiverIdsCount = pendingAirdrops.stream()
-                .map(PendingAirdropId::receiverId)
-                .distinct()
-                .count();
-        validateTruePreCheck(allReceiverIdsCount == 1, INVALID_TRANSACTION_BODY);
     }
 
     @Override
@@ -182,22 +168,10 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var pendingAirdropStore = context.storeFactory().readableStore(ReadableAirdropStore.class);
 
         for (final var airdrop : pendingAirdrops) {
-            final var senderId = airdrop.senderIdOrThrow();
-            final var receiverId = airdrop.receiverIdOrThrow();
             final var tokenId = airdrop.hasFungibleTokenType()
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenId();
-
-            // validate sender
-            final var senderAccount = accountStore.getAccountById(senderId);
-            validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
-
-            // validate receiver
-            final var receiverAccount = accountStore.getAccountById(receiverId);
-            validateTrue(receiverAccount != null, INVALID_ACCOUNT_ID);
             getIfUsable(tokenId, tokenStore);
-
-            // validate existence and custom fees
             validateTrue(pendingAirdropStore.exists(airdrop), INVALID_PENDING_AIRDROP_ID);
             validateTrue(
                     validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore),
