@@ -97,7 +97,6 @@ public class OrderedComparison {
         final var filteredSecond = secondEntries.stream().filter(inclusionTest).toList();
 
         final var compareList = getCompareList(filteredFirst, filteredSecond);
-
         return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
