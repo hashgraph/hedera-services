@@ -217,10 +217,12 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         if (result == Path.INVALID_PATH) {
             // No more leaf paths to send. Set lastLeafPath to reconnectLastLeafPath + 1, so
             // all subsequent calls to this method return INVALID_PATH
-            result = reconnectLastLeafPath + 1;
+            lastLeafPath = reconnectLastLeafPath + 1;
+        } else {
+            assert result >= reconnectFirstLeafPath;
+            lastLeafPath = result;
         }
-        assert result >= reconnectFirstLeafPath;
-        return lastLeafPath = result;
+        return result;
     }
 
     private int getPathChunk(long path) {
