@@ -158,9 +158,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
     }
 
     private TransactionRecord.Builder parseTransaction(
-            final Transaction txn,
-            final TransactionRecord.Builder recordBuilder)
-            throws NoSuchAlgorithmException {
+            final Transaction txn, final TransactionRecord.Builder recordBuilder) throws NoSuchAlgorithmException {
         if (txn.body() != null) {
             final var transactionID = pbjToProto(
                     txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class);
