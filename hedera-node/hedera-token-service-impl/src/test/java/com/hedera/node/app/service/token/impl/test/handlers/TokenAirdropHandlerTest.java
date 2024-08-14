@@ -47,7 +47,6 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
@@ -88,9 +87,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Mock
     private FeeCalculator feeCalculator;
-
-    @Mock
-    private ReadableTokenRelationStore readableTokenRelationStore;
 
     @SuppressWarnings("DataFlowIssue")
     @Test
