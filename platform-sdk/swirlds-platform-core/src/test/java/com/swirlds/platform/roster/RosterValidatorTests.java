@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.roster;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -27,17 +28,19 @@ import org.junit.jupiter.api.Test;
 public class RosterValidatorTests {
     @Test
     void nullTest() {
-        assertThrows(InvalidRosterException.class, () -> RosterValidator.validate(null));
+        final Exception ex = assertThrows(InvalidRosterException.class, () -> RosterValidator.validate(null));
+        assertEquals("roster is null", ex.getMessage());
     }
 
     @Test
     void emptyTest() {
-        assertThrows(InvalidRosterException.class, () -> RosterValidator.validate(Roster.DEFAULT));
+        final Exception ex = assertThrows(InvalidRosterException.class, () -> RosterValidator.validate(Roster.DEFAULT));
+        assertEquals("roster is empty", ex.getMessage());
     }
 
     @Test
     void zeroWeightTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -72,11 +75,52 @@ public class RosterValidatorTests {
                                                 .build())
                                         .build())
                         .build()));
+        assertEquals("roster weight is zero or negative", ex.getMessage());
+    }
+
+    @Test
+    void negativeWeightTest() {
+        final Exception ex = assertThrows(
+                InvalidRosterException.class,
+                () -> RosterValidator.validate(Roster.newBuilder()
+                        .rosters(
+                                RosterEntry.newBuilder()
+                                        .nodeId(1)
+                                        .weight(0)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(2)
+                                        .weight(-1)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(3)
+                                        .weight(2)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build())
+                        .build()));
+        assertEquals("weight is negative for node id: 2", ex.getMessage());
     }
 
     @Test
     void duplicateNodeIdTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -111,11 +155,12 @@ public class RosterValidatorTests {
                                                 .build())
                                         .build())
                         .build()));
+        assertEquals("duplicate node id: 1", ex.getMessage());
     }
 
     @Test
     void invalidGossipCertTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -150,11 +195,12 @@ public class RosterValidatorTests {
                                                 .build())
                                         .build())
                         .build()));
+        assertEquals("gossipCaCertificate is empty for NodeId 2", ex.getMessage());
     }
 
     @Test
     void emptyGossipEndpointsTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -185,11 +231,12 @@ public class RosterValidatorTests {
                                         .tssEncryptionKey(Bytes.wrap("test"))
                                         .build())
                         .build()));
+        assertEquals("gossipEndpoint is empty for NodeId 3", ex.getMessage());
     }
 
     @Test
     void zeroPortTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -224,11 +271,14 @@ public class RosterValidatorTests {
                                                 .build())
                                         .build())
                         .build()));
+        assertEquals(
+                "gossipPort is zero for NodeId 1 and ServiceEndpoint ServiceEndpoint[ipAddressV4=, port=0, domainName=domain.com]",
+                ex.getMessage());
     }
 
     @Test
     void domainAndIpTest() {
-        assertThrows(
+        final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
                         .rosters(
@@ -264,6 +314,91 @@ public class RosterValidatorTests {
                                                 .build())
                                         .build())
                         .build()));
+        assertEquals(
+                "ServiceEndpoint must specify either a domainName or an ipAddressV4, but not both. For NodeId 2 found ServiceEndpoint ServiceEndpoint[ipAddressV4=74657374, port=666, domainName=domain.com]",
+                ex.getMessage());
+    }
+
+    @Test
+    void wrongNodeIdOrderTest() {
+        final Exception ex = assertThrows(
+                InvalidRosterException.class,
+                () -> RosterValidator.validate(Roster.newBuilder()
+                        .rosters(
+                                RosterEntry.newBuilder()
+                                        .nodeId(1)
+                                        .weight(1)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(3)
+                                        .weight(2)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(2)
+                                        .weight(3)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build())
+                        .build()));
+        assertEquals("RosterEntries sort order is invalid. Found node id: 2 following 3", ex.getMessage());
+    }
+
+    @Test
+    void invalidIPv4Test() {
+        final Exception ex = assertThrows(
+                InvalidRosterException.class,
+                () -> RosterValidator.validate(Roster.newBuilder()
+                        .rosters(
+                                RosterEntry.newBuilder()
+                                        .nodeId(1)
+                                        .weight(1)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(2)
+                                        .weight(2)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .domainName("domain.com")
+                                                .port(666)
+                                                .build())
+                                        .build(),
+                                RosterEntry.newBuilder()
+                                        .nodeId(3)
+                                        .weight(3)
+                                        .gossipCaCertificate(Bytes.wrap("test"))
+                                        .tssEncryptionKey(Bytes.wrap("test"))
+                                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                                .ipAddressV4(Bytes.wrap("test too long"))
+                                                .port(666)
+                                                .build())
+                                        .build())
+                        .build()));
+        assertEquals(
+                "ServiceEndpoint ipAddressV4 must have a length of 4 bytes, found 13 bytes for nodeId 3",
+                ex.getMessage());
     }
 
     @Test
