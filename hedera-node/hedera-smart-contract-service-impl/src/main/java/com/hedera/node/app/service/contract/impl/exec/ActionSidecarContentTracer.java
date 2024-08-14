@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.hevm;
+package com.hedera.node.app.service.contract.impl.exec;
 
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.hapi.streams.ContractActions;
