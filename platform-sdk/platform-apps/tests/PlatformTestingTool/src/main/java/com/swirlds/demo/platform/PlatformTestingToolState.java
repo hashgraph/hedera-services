@@ -808,10 +808,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(consensusTimestamp, "consensusTimestamp must not be null");
         final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
-
-        String bodyCase = virtualMerkleTransaction.getBodyCase().toString();
-        logger.info(LOGM_DEMO_INFO, "vm bodyCase: {}", bodyCase);
-
         VirtualMerkleTransactionHandler.handle(
                 consensusTimestamp,
                 virtualMerkleTransaction,
