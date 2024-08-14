@@ -110,8 +110,10 @@ public class TokenAirdropValidator {
                         .filter(item -> item.amount() < 0)
                         .findFirst();
                 final var senderId = senderAccountAmount.orElseThrow().accountIDOrThrow();
-                final var senderAccount = accountStore.get(senderId);
-                validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
+
+                final var senderAccount =
+                        getIfUsable(senderId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+
                 // 1. Validate allowances and token associations
                 validateFungibleTransfers(
                         context.payer(), senderAccount, tokenId, senderAccountAmount.get(), tokenRelStore);

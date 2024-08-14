@@ -468,6 +468,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         // set up transaction and context
         givenAirdropTxn(false, zeroAccountId, TOKEN_AIRDROP);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
                 .isInstanceOf(HandleException.class)
