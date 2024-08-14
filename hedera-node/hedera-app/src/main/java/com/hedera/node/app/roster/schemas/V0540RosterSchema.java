@@ -26,6 +26,9 @@ import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
+/**
+ * Schema for the TSS Base service
+ */
 public class V0540RosterSchema extends Schema {
     public static final String ROSTER_KEY = "ROSTER";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";

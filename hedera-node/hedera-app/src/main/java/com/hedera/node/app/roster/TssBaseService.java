@@ -20,7 +20,7 @@ import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Implements the TssBaseService</a>.
+ * Implements the TssBaseService.
  */
 public interface TssBaseService extends Service {
     /**
