@@ -49,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordParityValidator implements BlockStreamValidator {
-    private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
+    private static final Logger logger = LogManager.getLogger(TransactionRecordParityValidator.class);
 
     public static final Factory FACTORY = new Factory() {
         @NonNull
@@ -118,10 +118,10 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         }
     }
 
-    private List<RecordStreamEntry> translateAll(final BlocksData inputs) {
+    private List<RecordStreamEntry> translateAll(final BlocksData blocksData) {
         // Translate each block transaction into a SingleTransactionRecord instance
-        List<SingleTransactionRecord> singleTxnRecs =
-                TRANSACTION_RECORD_TRANSLATOR.translateAll(inputs.txns(), inputs.allStateChanges());
+        final List<SingleTransactionRecord> singleTxnRecs =
+                TRANSACTION_RECORD_TRANSLATOR.translateAll(blocksData.txns(), blocksData.allStateChanges());
 
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()

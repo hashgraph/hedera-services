@@ -112,7 +112,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             throw new IllegalArgumentException("Unparseable transaction given", e);
         }
 
-        // TODO: how do we generically parse the state changes, especially for synthetic child transactions?
         // (Near) FUTURE: parse state changes via specific transaction type parser classes
 
         recordBuilder.setReceipt(receiptBuilder.build());
@@ -186,8 +185,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var txnBytes = toBytesForHash(txn);
         final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
         recordBuilder.setTransactionHash(toByteString(hash));
-
-        receiptBuilder.setAccountID(transactionID.getAccountID());
 
         return recordBuilder;
     }
