@@ -140,8 +140,8 @@ public class StandaloneDispatchFactory {
             @NonNull final TransactionBody transactionBody,
             @NonNull final Instant consensusNow) {
         final var config = configProvider.getConfiguration();
-        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
                 consensusConfig.handleMaxPrecedingRecords(),
