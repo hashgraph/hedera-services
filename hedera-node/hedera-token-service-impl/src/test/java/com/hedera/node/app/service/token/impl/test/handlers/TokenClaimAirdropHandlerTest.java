@@ -236,7 +236,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenClaimAirdrop(airdrops);
 
         final var msg = assertThrows(HandleException.class, () -> tokenClaimAirdropHandler.handle(handleContext));
-        assertEquals(ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED, msg.getStatus());
+        assertEquals(ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG, msg.getStatus());
     }
 
     @Test

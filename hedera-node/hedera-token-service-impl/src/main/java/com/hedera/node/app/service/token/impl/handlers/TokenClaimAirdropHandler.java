@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -174,7 +174,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(
                 op.pendingAirdrops().size() <= tokensConfig.maxAllowedPendingAirdropsToClaim(),
-                MAX_PENDING_AIRDROP_ID_EXCEEDED);
+                PENDING_AIRDROP_ID_LIST_TOO_LONG);
 
         final var pendingAirdrops = op.pendingAirdrops();
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);

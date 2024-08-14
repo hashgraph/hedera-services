@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
@@ -105,7 +105,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(MAX_PENDING_AIRDROP_ID_EXCEEDED));
+                .has(responseCode(PENDING_AIRDROP_ID_LIST_TOO_LONG));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(MAX_PENDING_AIRDROP_ID_EXCEEDED));
+                .has(responseCode(PENDING_AIRDROP_ID_LIST_TOO_LONG));
     }
 
     @Test

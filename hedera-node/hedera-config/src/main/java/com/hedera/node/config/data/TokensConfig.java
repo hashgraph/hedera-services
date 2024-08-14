@@ -51,9 +51,9 @@ public record TokensConfig(
         @ConfigProperty(value = "maxAllowedAirdrops", defaultValue = "1000000") @NetworkProperty
                 long maxAllowedAirdrops,
         @ConfigProperty(value = "maxAllowedPendingAirdropsToClaim", defaultValue = "10") @NetworkProperty
-                long maxAllowedPendingAirdropsToClaim,
+                int maxAllowedPendingAirdropsToClaim,
         @ConfigProperty(value = "maxAllowedAirdropTransfersPerTx", defaultValue = "10") @NetworkProperty
-                long maxAllowedAirdropTransfersPerTx,
+                int maxAllowedAirdropTransfersPerTx,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled,
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
