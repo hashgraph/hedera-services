@@ -88,41 +88,41 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     @HapiTest
     @DisplayName("Claim token airdrop after dissociation")
     final Stream<DynamicTest> claimTokenAirdropAfterDissociation() {
-        return defaultHapiSpec("should claim token airdrop after dissociation")
-                .given(flattened(
-                        setUpTokensAndAllReceivers(), cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS)))
-                .when(
-                        // do token association and dissociation
-                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
-                        tokenDissociate(RECEIVER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
 
-                        // do pending airdrop
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
-                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
-                                .payingWith(OWNER),
+                // do token association and dissociation
+                tokenAssociate(RECEIVER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
+                tokenDissociate(RECEIVER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
 
-                        // do claim
-                        tokenClaimAirdrop(
-                                        pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                        pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
-                                .payingWith(RECEIVER)
-                                .via("claimTxn"))
-                .then( // assert txn record
-                        getTxnRecord("claimTxn")
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(includingFungibleMovement(
-                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
-                                        .tokenTransfers(includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 1)
-                                                .between(OWNER, RECEIVER)))),
-                        validateChargedUsd("claimTxn", 0.001, 1),
-                        // assert balance fungible tokens
-                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        // assert balances NFT
-                        getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                        // assert token associations
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
-                        getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
+                // do pending airdrop
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
+                        .payingWith(OWNER),
+
+                // do claim
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(RECEIVER)
+                        .via("claimTxn"),
+                getTxnRecord("claimTxn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
+                                .tokenTransfers(includingNonfungibleMovement(
+                                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER)))),
+                validateChargedUsd("claimTxn", 0.001, 1),
+
+                // assert balances
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+
+                // assert token associations
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
     }
 
     @HapiTest
@@ -212,7 +212,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
-    @DisplayName("given two same claims, secod should fail")
+    @DisplayName("given two same claims, second should fail")
     final Stream<DynamicTest> twoSameClaims() {
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
