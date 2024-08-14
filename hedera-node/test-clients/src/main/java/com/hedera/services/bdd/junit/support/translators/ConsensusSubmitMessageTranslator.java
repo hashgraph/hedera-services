@@ -46,8 +46,10 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
                     .findFirst()
                     .ifPresent(stateChange -> {
                         final var topic = stateChange.mapUpdate().value().topicValue();
-                        receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                        receiptBuilder.topicRunningHash(topic.runningHash());
+                        if (topic != null) {
+                            receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
+                            receiptBuilder.topicRunningHash(topic.runningHash());
+                        }
                     });
         }
 
