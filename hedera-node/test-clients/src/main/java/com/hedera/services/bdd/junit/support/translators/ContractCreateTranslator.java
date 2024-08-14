@@ -21,11 +21,14 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class ContractCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     @Override
     public SingleTransactionRecord translate(
-            @NotNull SingleTransactionBlockItems transaction, @NotNull StateChanges stateChanges) {
+            @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
 
         final var receiptBuilder = TransactionReceipt.newBuilder();
         final var recordBuilder = TransactionRecord.newBuilder();
@@ -42,7 +45,7 @@ public class ContractCreateTranslator implements TransactionRecordTranslator<Sin
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),
-                txnOutput.contractCreate().sidecars(),
+                txnOutput != null ? txnOutput.contractCreate().sidecars() : List.of(),
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
