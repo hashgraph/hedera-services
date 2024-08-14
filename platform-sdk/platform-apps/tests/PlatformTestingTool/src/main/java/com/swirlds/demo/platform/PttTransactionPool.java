@@ -315,6 +315,7 @@ public class PttTransactionPool implements FastCopyable {
         } else if (generateType == PAYLOAD_TYPE.TYPE_FCM_TEST) {
             invalidSig = invalidSig();
             payloadPair = fcmTransactionPool.getTransaction(invalidSig);
+            logger.info(MARKER, "should not be called");
             if (payloadPair != null) {
                 payload = payloadPair.left();
             }
