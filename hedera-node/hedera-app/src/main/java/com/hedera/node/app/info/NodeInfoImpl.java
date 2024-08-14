@@ -42,7 +42,7 @@ public record NodeInfoImpl(
         @NonNull String selfName)
         implements NodeInfo {
     @NonNull
-    static NodeInfo fromAddress(@NonNull final Address address) {
+    public static NodeInfo fromAddress(@NonNull final Address address) {
         final var sigCert = address.getSigCert();
         Bytes sigCertBytes;
         try {
