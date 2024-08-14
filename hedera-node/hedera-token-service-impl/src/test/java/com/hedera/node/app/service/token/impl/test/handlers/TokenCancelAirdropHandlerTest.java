@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithNfts;
@@ -297,7 +297,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
             final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
             // Assert
-            assertEquals(MAX_PENDING_AIRDROP_ID_EXCEEDED, response.getStatus());
+            assertEquals(PENDING_AIRDROP_ID_LIST_TOO_LONG, response.getStatus());
         }
 
         private static Stream<Arguments> maxAirdropsExceededArguments() {

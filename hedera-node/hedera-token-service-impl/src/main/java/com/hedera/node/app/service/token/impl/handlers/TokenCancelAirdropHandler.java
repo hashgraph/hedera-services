@@ -23,11 +23,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_HAS_NO_AIRDROPS_TO_CANCEL;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -43,8 +41,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
@@ -59,7 +55,6 @@ import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -86,7 +81,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var accountStore = context.createStore(ReadableAccountStore.class);
 
         for (final var airdrop : allPendingAirdrops) {
-            validateTrue(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
+            validateTruePreCheck(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
             verifyAndRequireKeyForSender(airdrop.senderIdOrThrow(), context, accountStore);
         }
     }
@@ -149,11 +144,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var airdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
 
         final var pendingAirdropIds = op.pendingAirdrops();
-        final var payer = context.payer();
-        final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-        validateTrue(payerAccount.hasHeadPendingAirdropId(), SENDER_HAS_NO_AIRDROPS_TO_CANCEL);
-
-        validateAirdropIdsToCancel(context, pendingAirdropIds, payer, accountStore, airdropStore);
+        for (final var pendingAirdropId : pendingAirdropIds) {
+            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_PENDING_AIRDROP_ID);
+        }
         pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), airdropStore, accountStore);
     }
 
@@ -169,44 +162,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
         validateFalse(
                 op.pendingAirdrops().size() > tokensConfig.maxAllowedPendingAirdropsToCancel(),
-                MAX_PENDING_AIRDROP_ID_EXCEEDED);
-    }
-
-    /**
-     * Validates the list of pending airdrop IDs to cancel.
-     * @param context The handle context.
-     * @param pendingAirdropIds The list of pending airdrop IDs to cancel.
-     * @param payerId The account ID of the payer.
-     * @param accountStore The account store.
-     * @param airdropStore The airdrop store.
-     */
-    private void validateAirdropIdsToCancel(
-            @NonNull final HandleContext context,
-            @NonNull final List<PendingAirdropId> pendingAirdropIds,
-            @NonNull final AccountID payerId,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final WritableAirdropStore airdropStore) {
-        requireNonNull(context);
-        requireNonNull(pendingAirdropIds);
-        requireNonNull(payerId);
-        requireNonNull(accountStore);
-        requireNonNull(airdropStore);
-
-        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
-        final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
-
-        for (final var pendingAirdropId : pendingAirdropIds) {
-            validateTrue(payerId.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
-            if (pendingAirdropId.hasFungibleTokenType()) {
-                getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
-            } else {
-                final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
-                validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
-            }
-            getIfUsable(
-                    pendingAirdropId.senderIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_PENDING_AIRDROP_ID);
-        }
+                PENDING_AIRDROP_ID_LIST_TOO_LONG);
     }
 
     @NonNull

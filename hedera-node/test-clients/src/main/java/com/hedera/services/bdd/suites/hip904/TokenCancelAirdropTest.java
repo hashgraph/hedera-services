@@ -39,7 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_HAS_NO_AIRDROPS_TO_CANCEL;
 
@@ -177,7 +177,7 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
                         pendingNFTAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 10L),
                         pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                 .payingWith(OWNER)
-                .hasKnownStatus(MAX_PENDING_AIRDROP_ID_EXCEEDED));
+                .hasKnownStatus(PENDING_AIRDROP_ID_LIST_TOO_LONG));
     }
 
     @HapiTest
