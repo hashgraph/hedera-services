@@ -234,7 +234,6 @@ public class FCMTransactionPool implements FastCopyable {
 
         transactionMapKeyPair = getPayloadFromSequentialTest(invalidSig);
 
-        final fcmTransacction = transactionMapKeyPair.key();
         if (transactionMapKeyPair == null) {
             return null;
         }
