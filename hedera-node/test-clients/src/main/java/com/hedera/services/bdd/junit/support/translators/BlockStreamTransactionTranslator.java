@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
@@ -87,6 +85,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 switch (txnType) {
                     case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
                             .translate(txnWrapper, stateChanges);
+                    case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
                             com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
@@ -95,13 +94,13 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                             new SingleTransactionRecord.TransactionOutputs(null));
                 };
 
-        final var singleTxnRecordProto = pbjToProto(
+        final var txnRecord = pbjToProto(
                 singleTxnRecord.transactionRecord(),
                 com.hedera.hapi.node.transaction.TransactionRecord.class,
                 com.hederahashgraph.api.proto.java.TransactionRecord.class);
-
-        final var recordBuilder = singleTxnRecordProto.toBuilder();
-        final var receiptBuilder = singleTxnRecordProto.getReceipt().toBuilder();
+        final var recordBuilder = txnRecord.toBuilder();
+        final var receiptBuilder =
+                txnRecord.hasReceipt() ? txnRecord.getReceipt().toBuilder() : TransactionReceipt.newBuilder();
 
         Objects.requireNonNull(txnWrapper.txn(), "transaction must not be null");
         Objects.requireNonNull(txnWrapper.result(), "transaction result must not be null");
@@ -387,15 +386,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasNodeDelete()) {
         //                rb.nodeId(txnOutput.nodeDelete().nodeID());
         //            }
-
-        if (txnOutput.hasUtilPrng()) {
-            final var entropy = txnOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                trb.setPrngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                trb.setPrngNumber(entropy.as());
-            }
-        }
 
         maybeAssignEvmAddressAlias(txnOutput, trb);
 

@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -119,8 +120,9 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
     private List<RecordStreamEntry> translateAll(final BlocksData blocksData) {
         // Translate each block transaction into a SingleTransactionRecord instance
-        final var singleTxnRecs =
+        final List<SingleTransactionRecord> singleTxnRecs =
                 TRANSACTION_RECORD_TRANSLATOR.translateAll(blocksData.txns(), blocksData.allStateChanges());
+
         // Shape the translated records into RecordStreamEntry instances
         return singleTxnRecs.stream()
                 .map(txnRecord -> {
