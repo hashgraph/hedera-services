@@ -318,8 +318,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     @Override
     public void close() throws IOException {
-        bucketIndexToBucketLocation.close();
+        // Close the files first, then the index. If done in a different order, there may be
+        // file operations still running, but the index is already closed
         fileCollection.close();
+        bucketIndexToBucketLocation.close();
     }
 
     // =================================================================================================================
