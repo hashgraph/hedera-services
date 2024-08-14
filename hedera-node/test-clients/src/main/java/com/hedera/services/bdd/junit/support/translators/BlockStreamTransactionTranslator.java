@@ -159,9 +159,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 .toList();
     }
 
-    private void parseTransaction(
-            final Transaction txn,
-            final TransactionRecord.Builder recordBuilder)
+    private void parseTransaction(final Transaction txn, final TransactionRecord.Builder recordBuilder)
             throws NoSuchAlgorithmException {
         if (txn.body() != null) {
             final var transactionID = pbjToProto(
