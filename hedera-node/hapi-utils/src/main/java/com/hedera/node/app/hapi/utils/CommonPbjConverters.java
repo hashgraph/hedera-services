@@ -424,6 +424,13 @@ public class CommonPbjConverters {
             case TRANSACTION_GET_RECORD -> TransactionGetRecord;
             case TRANSACTION_GET_FAST_RECORD -> TransactionGetFastRecord;
             case CREATE_TRANSACTION_RECORD -> CreateTransactionRecord;
+            case CONTRACT_AUTO_RENEW -> ContractAutoRenew;
+            case CRYPTO_ACCOUNT_AUTO_RENEW -> CryptoAccountAutoRenew;
+            case CONTRACT_CALL_LOCAL -> ContractCallLocal;
+            case CONTRACT_GET_BYTECODE -> ContractGetBytecode;
+            case CONTRACT_GET_INFO -> ContractGetInfo;
+            case CONTRACT_GET_RECORDS -> ContractGetRecords;
+            case SCHEDULE_GET_INFO -> ScheduleGetInfo;
             case NONE -> throw new RuntimeException("Unknown HederaFunctionality: " + function);
         };
     }
