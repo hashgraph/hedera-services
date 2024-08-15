@@ -237,7 +237,6 @@ public class FCMTransactionPool implements FastCopyable {
         if (transactionMapKeyPair == null) {
             return null;
         }
-        final FCMTransaction fcmTransaction = transactionMapKeyPair.key();
 
         PAYLOAD_TYPE payloadType = PAYLOAD_TYPE.BodyCase_TO_PAYLOAD_TYPE.get(
                 transactionMapKeyPair.key().getBodyCase());
@@ -373,6 +372,7 @@ public class FCMTransactionPool implements FastCopyable {
 
         // move to next file payload type
         if (sequentialTestCount[this.sequentialTypeIndex] >= config.getSequentialAmount(sequentialTypeIndex)) {
+            logger.info(MARKER, "Generated enough FCM test for type {}", generateType);
             sequentialTypeIndex++;
         }
 
