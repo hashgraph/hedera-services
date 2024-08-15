@@ -32,6 +32,7 @@ import java.util.Set;
 public class V0540RosterSchema extends Schema {
     public static final String ROSTER_KEY = "ROSTER";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
+    //
     private static final long MAX_ROSTERS = 8L;
 
     /**
@@ -57,6 +58,7 @@ public class V0540RosterSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        // no migration logic yet as this is for a brand-new service
+        // no-op
+        // a dedicated genesis roster will be created during a separate genesis process
     }
 }

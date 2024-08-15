@@ -23,7 +23,8 @@ import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An implementation of the {@link TssBaseService} interface. Enables registration the roster schema.
+ * An implementation of the {@link TssBaseService} interface.
+ * This is really only needed to register the roster schema.
  */
 public class TssBaseServiceImpl implements TssBaseService {
 
