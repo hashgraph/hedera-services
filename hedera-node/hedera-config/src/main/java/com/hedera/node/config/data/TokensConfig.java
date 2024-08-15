@@ -50,6 +50,8 @@ public record TokensConfig(
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "maxPendingAllowedAirdrops", defaultValue = "20000000") @NetworkProperty
                 long maxPendingAllowedAirdrops,
+        @ConfigProperty(value = "maxAllowedPendingAirdropsToCancel", defaultValue = "10") @NetworkProperty
+                long maxAllowedPendingAirdropsToCancel,
         @ConfigProperty(value = "maxAllowedAirdropTransfersPerTx", defaultValue = "10") @NetworkProperty
                 long maxAllowedAirdropTransfersPerTx,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
