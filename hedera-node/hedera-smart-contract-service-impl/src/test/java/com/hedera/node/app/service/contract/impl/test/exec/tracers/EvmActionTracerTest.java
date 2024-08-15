@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec;
+package com.hedera.node.app.service.contract.impl.test.exec.tracers;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.hapi.streams.ContractActions;
-import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Deque;

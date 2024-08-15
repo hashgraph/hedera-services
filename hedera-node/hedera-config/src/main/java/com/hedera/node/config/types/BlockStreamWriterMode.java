@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.exception;
+package com.hedera.node.config.types;
 
 /**
- * An exception that thrown if unknown HederaFunctionality is found.
- *
+ * Initially we will write block streams to files, but in the next phases we will support writing
+ * them to a gRPC stream.
  */
-public class UnknownHederaFunctionality extends Exception {
-
+public enum BlockStreamWriterMode {
     /**
-     * Constructs a new exception with the specified detail message.
-     *
-     * @param errMessage the detail error message.
+     * Write block streams to a gRPC stream.
      */
-    public UnknownHederaFunctionality(String errMessage) {
-        super(errMessage);
-    }
+    GRPC,
+    /**
+     * Write block streams to files.
+     */
+    FILE
 }
