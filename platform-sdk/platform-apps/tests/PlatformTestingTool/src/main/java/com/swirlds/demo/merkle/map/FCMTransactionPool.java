@@ -372,7 +372,7 @@ public class FCMTransactionPool implements FastCopyable {
 
         // move to next file payload type
         if (sequentialTestCount[this.sequentialTypeIndex] >= config.getSequentialAmount(sequentialTypeIndex)) {
-            logger.info(MARKER, "Generated enough FCM test for type {}", generateType);
+            logger.info(MARKER, "Generated enough FCM transaction for type {}", generateType);
             sequentialTypeIndex++;
         }
 
@@ -611,7 +611,6 @@ public class FCMTransactionPool implements FastCopyable {
                         EXCEPTION.getMarker(), "Warning: sequentialAmount is 0 for {}, will be skipped ", test_type);
             }
             sequentialTypeIndex++;
-            logger.info(MARKER, "Stop generating {} for node <{}>", test_type, myID);
             test_type = config.getSequentialType(sequentialTypeIndex); // update
             amount = config.getSequentialAmount(sequentialTypeIndex);
         }

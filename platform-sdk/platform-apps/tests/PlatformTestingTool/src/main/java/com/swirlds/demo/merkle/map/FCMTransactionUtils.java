@@ -57,7 +57,7 @@ public class FCMTransactionUtils {
      * @param fcmTransaction
      * @return
      */
-    public static TransactionType getTransactionType(final FCMTransaction fcmTransaction, final int tag) {
+    public static TransactionType getTransactionType(final FCMTransaction fcmTransaction) {
         String bodyCase = fcmTransaction.getBodyCase().toString();
         if (bodyCase.contains("CREATE")) {
             return Create;
@@ -112,7 +112,7 @@ public class FCMTransactionUtils {
                 }
             }
         } else {
-            logger.error(EXCEPTION.getMarker(), "Invalid body for TransactionType in FCMTransaction: {} tag {}", bodyCase, tag);
+            logger.error(EXCEPTION.getMarker(), "Invalid body for TransactionType in FCMTransaction: {}", bodyCase);
             return null;
         }
     }

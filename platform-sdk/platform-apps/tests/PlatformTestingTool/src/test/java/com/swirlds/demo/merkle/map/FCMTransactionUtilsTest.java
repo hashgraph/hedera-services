@@ -59,10 +59,10 @@ public class FCMTransactionUtilsTest {
         // for all FCMTransactions except Activity,
         // extracted TransactionType should match the original TransactionType
         for (int i = 0; i < transactions.size() - 1; i++) {
-            assertEquals(triples.get(i).left(), FCMTransactionUtils.getTransactionType(transactions.get(i),4));
+            assertEquals(triples.get(i).left(), FCMTransactionUtils.getTransactionType(transactions.get(i)));
         }
 
-        assertEquals(null, FCMTransactionUtils.getTransactionType(activity,4));
+        assertEquals(null, FCMTransactionUtils.getTransactionType(activity));
     }
 
     @Test
@@ -83,7 +83,7 @@ public class FCMTransactionUtilsTest {
         for (int i = 0; i < transactions.size() - 1; i++) {
             final List<MapKey> mapKeys = FCMTransactionUtils.getMapKeys(transactions.get(i));
             // for transfer transactions, the list size should be 2
-            if (FCMTransactionUtils.getTransactionType(transactions.get(i),4).equals(Transfer)) {
+            if (FCMTransactionUtils.getTransactionType(transactions.get(i)).equals(Transfer)) {
                 assertEquals(2, mapKeys.size());
                 // compare sender
                 assertEquals(triples.get(i).right(), mapKeys.get(0));

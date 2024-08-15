@@ -64,22 +64,22 @@
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 20000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_UPDATE",
-		"sequentialAmount": 100000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 300000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_DELETE",
-		"sequentialAmount": 20000,
+		"sequentialAmount": 10000,
 		"sequentialSize": 100
 	  }
 	]

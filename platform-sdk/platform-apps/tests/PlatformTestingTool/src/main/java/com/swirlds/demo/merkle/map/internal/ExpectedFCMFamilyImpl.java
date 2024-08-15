@@ -790,7 +790,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
             return false;
         }
 
-        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(trans.getFcmTransaction(),1);
+        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(trans.getFcmTransaction());
         if (transactionType == TransactionType.TransferToken || transactionType == TransactionType.BurnToken) {
             return true;
         }
@@ -857,7 +857,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
         final TestTransaction trans = parseTransaction(payload, payloadConfig.isAppendSig());
 
         final long originNodeId = FCMTransactionUtils.getNodeId(trans.getFcmTransaction());
-        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(trans.getFcmTransaction(),2);
+        final TransactionType transactionType = FCMTransactionUtils.getTransactionType(trans.getFcmTransaction());
         return LifecycleStatus.builder()
                 .setTransactionType(transactionType)
                 .setTransactionState(INITIALIZED)
