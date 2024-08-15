@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.roster;
+package com.swirlds.state.spi;
 
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Implements the TssBaseService.
+ * A definition of an interface that will be implemented by components that need to register schemas with the
+ * {@link SchemaRegistry}.
  */
-public interface TssBaseService extends Service {
-    /**
-     * The name of the service
-     */
-    String NAME = "TssBaseService";
+public interface SchemaAware {
 
-    @NonNull
-    @Override
-    default String getServiceName() {
-        return NAME;
-    }
+    /**
+     * Registers the schemas this application state really uses with the given {@link SchemaRegistry}.
+     *
+     * @param registry the registry to register the schemas with
+     */
+    void registerSchemas(@NonNull SchemaRegistry registry);
 }

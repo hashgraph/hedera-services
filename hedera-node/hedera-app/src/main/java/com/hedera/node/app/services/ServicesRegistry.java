@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,8 +75,10 @@ public interface ServicesRegistry {
     Set<Registration> registrations();
 
     /**
-     * Register a service with the registry.
-     * @param service The service to register
+     * Registers a schema-aware entity with the registry.
+     * Schema-aware entities are typically {@link Service}s
+     * or other implementations that require schema registration.
+     * @param schemaAware The schema-aware implementation to register
      */
-    void register(@NonNull final Service service);
+    void register(@NonNull final SchemaAware schemaAware);
 }

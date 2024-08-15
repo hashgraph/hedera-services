@@ -29,22 +29,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class TssBaseServiceImplTest {
-    private TssBaseServiceImpl tssBaseService;
+class RosterSchemaRegistryImplTest {
+    private RosterSchemaRegistryImpl rosterSchemaRegistry;
 
     @BeforeEach
     void setUp() {
-        tssBaseService = new TssBaseServiceImpl();
+        rosterSchemaRegistry = new RosterSchemaRegistryImpl();
     }
 
     @Test
     void defaultConstructor() {
-        assertThat(new TssBaseServiceImpl()).isNotNull();
+        assertThat(new RosterSchemaRegistryImpl()).isNotNull();
     }
 
     @Test
     void registerSchemasNullArgsThrow() {
-        Assertions.assertThatThrownBy(() -> tssBaseService.registerSchemas(null))
+        Assertions.assertThatThrownBy(() -> rosterSchemaRegistry.registerSchemas(mock(SchemaRegistry.class)))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -52,16 +52,11 @@ class TssBaseServiceImplTest {
     void registerSchemasRegistersTokenSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        tssBaseService.registerSchemas(schemaRegistry);
+        rosterSchemaRegistry.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
         verify(schemaRegistry, times(1)).register(captor.capture());
         final var schemas = captor.getAllValues();
         assertThat(schemas).hasSize(1);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
-    }
-
-    @Test
-    void verifyServiceName() {
-        assertThat(tssBaseService.getServiceName()).isEqualTo("TssBaseService");
     }
 }

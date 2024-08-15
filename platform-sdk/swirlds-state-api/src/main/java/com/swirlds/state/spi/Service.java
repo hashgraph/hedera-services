@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A definition of an interface that will be implemented by each conceptual "service" like
  * crypto-service, token-service etc.,
  */
-public interface Service {
+public interface Service extends SchemaAware {
 
     /**
      * A sort value for the service, used to determine the order in which service
@@ -49,11 +49,4 @@ public interface Service {
      */
     @NonNull
     String getServiceName();
-
-    /**
-     * Registers the schemas this application state really uses with the given {@link SchemaRegistry}.
-     *
-     * @param registry the registry to register the schemas with
-     */
-    void registerSchemas(@NonNull SchemaRegistry registry);
 }

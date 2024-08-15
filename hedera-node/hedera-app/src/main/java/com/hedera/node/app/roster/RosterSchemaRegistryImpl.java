@@ -19,14 +19,15 @@ package com.hedera.node.app.roster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An implementation of the {@link TssBaseService} interface.
- * This is really only needed to register the roster schema.
+ * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link SchemaAware} interface.
+ * Registers the roster schemas with the {@link SchemaRegistry}.
  */
-public class TssBaseServiceImpl implements TssBaseService {
+public class RosterSchemaRegistryImpl implements SchemaAware {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
