@@ -28,6 +28,8 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    // For explanation about this constant value, see
+    // https://github.com/hashgraph/hedera-protobufs/blob/pbj-storage-spec-review/block/stream/output/consensus_service.proto#L6
     private static final long RUNNING_HASH_VERSION = 3L;
 
     @Override

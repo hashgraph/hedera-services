@@ -85,7 +85,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
         final var actual = translateAll(inputs);
 
-        final var maxDiffs = 1000;
+        final var maxDiffs = 10;
         final var lenOfDiffSecs = 300;
         final var rcDiff = new RcDiff(maxDiffs, lenOfDiffSecs, expectedTxnRecs, actual, null, System.out);
         // Perform the diff
