@@ -268,6 +268,7 @@ public abstract class HapiSuite {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final List<Stream<DynamicTest>> allOf(final List<Stream<DynamicTest>>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
