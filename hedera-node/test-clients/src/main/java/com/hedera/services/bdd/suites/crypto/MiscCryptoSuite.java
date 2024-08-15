@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModifiedWithFixedPayer;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyAddLiveHashNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyUserFreezeNotAuthorized;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -63,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -151,12 +149,8 @@ public class MiscCryptoSuite {
                 .then(
                         cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
                                 .payingWith("sender")
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(OK),
-                        getAccountBalance("sender")
-                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE)
-                                .logged(),
-                        uploadDefaultFeeSchedules(GENESIS));
+                                .fee(ONE_HBAR),
+                        getAccountBalance("sender").hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE));
     }
 
     @HapiTest

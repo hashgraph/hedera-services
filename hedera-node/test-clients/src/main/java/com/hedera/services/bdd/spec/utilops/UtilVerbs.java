@@ -1415,18 +1415,9 @@ public class UtilVerbs {
         }
     }
 
-    public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
+    public static HapiSpecOperation uploadScheduledContractPrices(@NonNull final String payer) {
         return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("FeeSchedule.json")));
-            if (!spec.tryReinitializingFees()) {
-                throw new IllegalStateException("New fee schedules won't be available, dying!");
-            }
-        });
-    }
-
-    public static HapiSpecOperation uploadGivenFeeSchedules(String payer, String feeSchedules) {
-        return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith(feeSchedules)));
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("scheduled-contract-fees.json")));
             if (!spec.tryReinitializingFees()) {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
