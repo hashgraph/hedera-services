@@ -69,6 +69,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -96,10 +97,10 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-        lifecycle.doAdhoc(
-                overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
-                overriding("tokens.airdrops.enabled", "false"),
-                overriding("tokens.airdrops.claim.enabled", "false"));
+        lifecycle.overrideInClass(Map.of(
+                "entities.unlimitedAutoAssociationsEnabled", "false",
+                "tokens.airdrops.enabled", "false",
+                "tokens.airdrops.claim.enabled", "false"));
         // create some entities with disabled airdrops
         lifecycle.doAdhoc(setUpEntitiesPreHIP904());
         // enable airdrops
