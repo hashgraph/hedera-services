@@ -238,8 +238,6 @@ public class FCMTransactionPool implements FastCopyable {
             return null;
         }
         final FCMTransaction fcmTransaction = transactionMapKeyPair.key();
-        // log body case
-        logger.info(MARKER, "fcm body case: {}", fcmTransaction.getBodyCase());
 
         PAYLOAD_TYPE payloadType = PAYLOAD_TYPE.BodyCase_TO_PAYLOAD_TYPE.get(
                 transactionMapKeyPair.key().getBodyCase());
