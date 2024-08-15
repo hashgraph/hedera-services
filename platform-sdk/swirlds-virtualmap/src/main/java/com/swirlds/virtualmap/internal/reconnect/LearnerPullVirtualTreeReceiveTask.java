@@ -121,6 +121,8 @@ public class LearnerPullVirtualTreeReceiveTask {
                 final AtomicLong viewExpectedResponses = expectedResponses.get(viewId);
                 viewExpectedResponses.decrementAndGet();
                 if (path == Path.INVALID_PATH) {
+                    logger.info(RECONNECT.getMarker(), "The last response for view={} is received,"
+                            + " {} responses are in progress", viewId, viewExpectedResponses.get());
                     // There may be other messages for this view being handled by other threads
                     final long waitStart = System.currentTimeMillis();
                     while (viewExpectedResponses.get() != 0) {
@@ -130,6 +132,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                                     "Timed out waiting for view all remaining view messages to be processed");
                         }
                     }
+                    logger.info(RECONNECT.getMarker(), "Learning is complete for view={}", viewId);
                     completeListener.accept(viewId);
                 } else if (response.getPath() == 0) {
                     logger.info(RECONNECT.getMarker(),
