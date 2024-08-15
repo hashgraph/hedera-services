@@ -31,10 +31,12 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingNFTAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -45,17 +47,28 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +79,20 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 @DisplayName("Claim token airdrop")
 public class TokenClaimAirdropTest extends TokenAirdropBase {
-    private static final String RECEIVER = "receiver";
+    private static final String OWNER_2 = "owner2";
+    private static final String FUNGIBLE_TOKEN_1 = "fungibleToken1";
+    private static final String FUNGIBLE_TOKEN_2 = "fungibleToken2";
+    private static final String FUNGIBLE_TOKEN_3 = "fungibleToken3";
+    private static final String FUNGIBLE_TOKEN_4 = "fungibleToken4";
+    private static final String FUNGIBLE_TOKEN_5 = "fungibleToken5";
+    private static final String FUNGIBLE_TOKEN_6 = "fungibleToken6";
+    private static final String FUNGIBLE_TOKEN_7 = "fungibleToken7";
+    private static final String FUNGIBLE_TOKEN_8 = "fungibleToken8";
+    private static final String FUNGIBLE_TOKEN_9 = "fungibleToken9";
+    private static final String FUNGIBLE_TOKEN_10 = "fungibleToken10";
+    private static final String FUNGIBLE_TOKEN_11 = "fungibleToken11";
+    private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    private static final String NFT_SUPPLY_KEY = "supplyKey";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -116,6 +142,128 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         // assert token associations
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                         getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)));
+    }
+
+    @HapiTest
+    @DisplayName("single token claim success that receiver paying for it")
+    final Stream<DynamicTest> singleTokenClaimSuccessThatReceiverPayingForIt() {
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .payingWith(OWNER),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN_1))
+                        .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN_1, 999),
+                getAccountInfo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasToken(relationshipWith(FUNGIBLE_TOKEN_1)));
+    }
+
+    @HapiTest
+    @DisplayName("single nft claim success that receiver paying for it")
+    final Stream<DynamicTest> singleNFTTransfer() {
+        return hapiTest(
+                cryptoCreate(OWNER_2).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                newKeyNamed(NFT_SUPPLY_KEY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .name(NON_FUNGIBLE_TOKEN)
+                        .treasury(OWNER_2)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .supplyKey(NFT_SUPPLY_KEY),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER_2, RECEIVER))
+                        .payingWith(OWNER_2),
+                tokenClaimAirdrop(pendingNFTAirdrop(OWNER_2, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(RECEIVER));
+    }
+
+    @HapiTest
+    @DisplayName("not enough Hbar to claim and than enough")
+    final Stream<DynamicTest> notEnoughHbarToCalimAndThanEnough() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(0L).maxAutomaticTokenAssociations(0),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                cryptoCreate(BOB).balance(ONE_MILLION_HBARS),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(OWNER, ALICE)).payingWith(OWNER),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, ALICE, FUNGIBLE_TOKEN_1))
+                        .payingWith(ALICE)
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
+                cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, ALICE, FUNGIBLE_TOKEN_1))
+                        .payingWith(ALICE));
+    }
+
+    @HapiTest
+    @DisplayName("token claim with no pending airdrop should fail")
+    final Stream<DynamicTest> tokenClaimWithNoPendingAirdrop() {
+        return hapiTest(tokenClaimAirdrop().hasPrecheck(EMPTY_PENDING_AIRDROP_ID_LIST));
+    }
+
+    @HapiTest
+    @DisplayName("token claim with duplicate entires should fail")
+    final Stream<DynamicTest> duplicateClaimAirdrop() {
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1))
+                        .payingWith(RECEIVER)
+                        .hasPrecheck(PENDING_AIRDROP_ID_REPEATED));
+    }
+
+    @HapiTest
+    @DisplayName("token claim with more than ten pending airdrops should fail")
+    final Stream<DynamicTest> tokenClaimWithMoreThanTenPendingAirdropsShouldFail() {
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_2, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_3, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_4, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_5, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_6, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_7, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_8, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_9, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_10, OWNER, 1000L),
+                createFT(FUNGIBLE_TOKEN_11, OWNER, 1000L),
+                airdropFT(FUNGIBLE_TOKEN_1, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_2, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_3, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_4, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_5, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_6, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_7, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_8, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_9, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_10, OWNER, RECEIVER, 20),
+                airdropFT(FUNGIBLE_TOKEN_11, OWNER, RECEIVER, 20),
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_2),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_3),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_4),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_5),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_6),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_7),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_8),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_9),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_10),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_11))
+                        .payingWith(RECEIVER)
+                        .via("claimTxn")
+                        .hasKnownStatus(PENDING_AIRDROP_ID_LIST_TOO_LONG));
     }
 
     @HapiTest
@@ -170,7 +318,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
-    @DisplayName("given two same claims, secod should fail")
+    @DisplayName("given two same claims, second should fail")
     final Stream<DynamicTest> twoSameClaims() {
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
@@ -245,5 +393,17 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenClaimAirdrop(pendingAirdrop(spender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                         .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)));
+    }
+
+    private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {
+        return tokenCreate(tokenName)
+                .treasury(treasury)
+                .tokenType(FUNGIBLE_COMMON)
+                .initialSupply(amount);
+    }
+
+    private HapiTokenAirdrop airdropFT(String tokenName, String sender, String receiver, int amountToMove) {
+        return tokenAirdrop(moving(amountToMove, tokenName).between(sender, receiver))
+                .payingWith(sender);
     }
 }
