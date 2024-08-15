@@ -66,6 +66,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
+    private final byte[] EMPTY_ADDRESS = new byte[20];
     private final EthTxSigsCache ethereumSignatures;
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
@@ -105,7 +106,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
         validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         // Do not allow sending HBars to Burn Address
         if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-            validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
         }
     }
 

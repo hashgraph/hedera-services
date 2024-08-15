@@ -51,7 +51,7 @@ class CallOutcomeTest {
     private ContractCreateStreamBuilder contractCreateRecordBuilder;
 
     @Test
-    void setsAbortCallResultIfRequested() {
+    void setsAbortCallResult() {
         final var abortedCall =
                 new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
         abortedCall.addCallDetailsTo(contractCallRecordBuilder);

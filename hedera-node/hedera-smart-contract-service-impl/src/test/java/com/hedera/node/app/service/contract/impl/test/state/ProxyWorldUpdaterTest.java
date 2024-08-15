@@ -253,7 +253,7 @@ class ProxyWorldUpdaterTest {
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
-        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(4321L);
 
         subject.setupInternalCreate(ADDRESS_6);
 
