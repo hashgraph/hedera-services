@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.throttling;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -30,7 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
@@ -41,13 +42,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SOFTWARE_UPDATE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
-import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.HapiSuite.UPDATE_ZIP_FILE;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -57,11 +55,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
-public class PrivilegedOpsSuite {
-    private static final byte[] totalLimits =
-            protoDefsFromResource("testSystemFiles/only-mint-allowed.json").toByteArray();
-    private static final byte[] defaultThrottles =
-            protoDefsFromResource("testSystemFiles/throttles-dev.json").toByteArray();
+public class PrivilegedOpsTest {
     private static final String ACCOUNT_88 = "0.0.88";
     private static final String ACCOUNT_2 = "0.0.2";
     private static final String CIVILIAN = "civilian";
@@ -193,17 +187,14 @@ public class PrivilegedOpsSuite {
                                 .signedBy(SYSTEM_ADMIN, GENESIS));
     }
 
-    @LeakyHapiTest
+    @LeakyHapiTest(requirement = THROTTLE_OVERRIDES)
     final Stream<DynamicTest> systemAccountsAreNeverThrottled() {
         return hapiTest(flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
                         .fee(ONE_HUNDRED_HBARS),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
                         .fee(ONE_HUNDRED_HBARS),
-                fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION),
+                overridingThrottles("testSystemFiles/only-mint-allowed.json"),
                 transferBurstFn.apply(SYSTEM_ADMIN),
                 transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
                 miscTxnBurstFn.apply(SYSTEM_ADMIN),
@@ -214,8 +205,6 @@ public class PrivilegedOpsSuite {
                 inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
                 createTopic("misc"),
                 inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
-                inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-                sleepFor(5_000L),
-                fileUpdate(THROTTLE_DEFS).payingWith(EXCHANGE_RATE_CONTROL).contents(defaultThrottles)));
+                inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL))));
     }
 }
