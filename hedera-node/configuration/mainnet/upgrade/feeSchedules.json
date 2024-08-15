@@ -1687,7 +1687,10 @@
                 "min": 0,
                 "max": 1000000000000000
               }
-            },
+            }
+          ]
+        }
+      },
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TokenReject",
