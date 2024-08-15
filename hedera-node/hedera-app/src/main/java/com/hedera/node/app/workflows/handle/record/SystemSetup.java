@@ -277,8 +277,11 @@ public class SystemSetup {
             if (overrideAutoRenewPeriod != null) {
                 op.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             }
-            final var body =
-                    TransactionBody.newBuilder().cryptoCreateAccount(op).build();
+            final var bodyBuilder = TransactionBody.newBuilder().cryptoCreateAccount(op);
+            if (recordMemo != null) {
+                bodyBuilder.memo(recordMemo);
+            }
+            final var body = bodyBuilder.build();
             recordBuilder.transaction(transactionWith(body));
 
             final var balance = account.tinybarBalance();
