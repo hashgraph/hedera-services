@@ -190,11 +190,7 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
      */
     @Override
     public void setChild(final MerkleNode parent, final int childIndex, final MerkleNode child) {
-        if (parent == null) {
-            child.setRoute(MerkleRouteFactory.buildRoute(0));
-        } else {
-            parent.asInternal().setChild(childIndex, child);
-        }
+        parent.asInternal().setChild(childIndex, child);
     }
 
     /**

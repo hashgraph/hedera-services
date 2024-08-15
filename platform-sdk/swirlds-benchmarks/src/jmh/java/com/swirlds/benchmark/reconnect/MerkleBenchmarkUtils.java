@@ -55,7 +55,6 @@ public class MerkleBenchmarkUtils {
 
     public static MerkleInternal createTreeForMaps(final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps) {
         final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
-        tree.setRoute(MerkleRouteFactory.buildRoute(0));
         initializeTreeAfterCopy(tree);
         for (int i = 0; i < maps.size(); i++) {
             tree.setChild(i, maps.get(i));

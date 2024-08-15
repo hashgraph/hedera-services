@@ -22,6 +22,7 @@ import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Virtual node traversal policy, which starts sending requests from the root node and proceeds
@@ -42,7 +43,7 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     private volatile long reconnectLastLeafPath;
 
     // Last sent path. Initialized to 0, since the root path is always sent first
-    private long lastPath = 0;
+    private final AtomicLong lastPath = new AtomicLong(0);
 
     // Clean node paths, as received from the teacher. Only internal paths are recorded here,
     // there is no need to track clean leaves, since they don't have children. This set is
@@ -85,22 +86,58 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
     @Override
     public long getNextInternalPathToSend() {
-        return Path.INVALID_PATH;
+        long wasLastPath;
+        long result;
+        // This method may be run in parallel on multiple threads. Only ony of the threads should
+        // update lastPath, that's why a loop with compareAndSet() is here
+        do {
+            wasLastPath = lastPath.get();
+            if ((wasLastPath == Path.INVALID_PATH) || (wasLastPath >= reconnectFirstLeafPath)) {
+                return Path.INVALID_PATH;
+            }
+            long path = wasLastPath + 1;
+            // Skip as many clean paths as possible, up to the first leaf path (excluding)
+            result = skipCleanPaths(path, reconnectFirstLeafPath - 1);
+            while ((result != Path.INVALID_PATH) && (result != path)) {
+                path = result;
+                result = skipCleanPaths(path, reconnectFirstLeafPath - 1);
+            }
+            // If the next clean path is a leaf, return INVALID_PATH. It will trigger a call to
+            // getNextLeafPathToSend() below
+            if (result == Path.INVALID_PATH) {
+                return Path.INVALID_PATH;
+            }
+        } while (!lastPath.compareAndSet(wasLastPath, result));
+        return result;
     }
 
     @Override
     public long getNextLeafPathToSend() {
-        if (lastPath == Path.INVALID_PATH) {
+        if (lastPath.get() == Path.INVALID_PATH) {
             return Path.INVALID_PATH;
         }
-        long path = lastPath + 1;
-        long result = skipCleanPaths(path);
+        long path = lastPath.get() + 1;
+        long result = skipCleanPaths(path, reconnectLastLeafPath);
         // Find the highest clean path and skip all paths in its sub-tree. Repeat
         while ((result != Path.INVALID_PATH) && (result != path)) {
             path = result;
+            result = skipCleanPaths(path, reconnectLastLeafPath);
+        }
+        lastPath.set(result);
+        return result;
+    }
+
+    /**
+     * Skip all clean paths starting from the given path at the same rank, un until the limit. If
+     * all paths are clean to the very limit, Path.INVALID_PATH is returned
+     */
+    private long skipCleanPaths(long path, final long limit) {
+        long result = skipCleanPaths(path);
+        while ((result < limit) && (result != path)) {
+            path = result;
             result = skipCleanPaths(path);
         }
-        return lastPath = result;
+        return (result <= limit) ? result : Path.INVALID_PATH;
     }
 
     /**
@@ -114,10 +151,6 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
      */
     private long skipCleanPaths(final long path) {
         assert path > 0;
-        if (path > reconnectLastLeafPath) {
-            return Path.INVALID_PATH;
-        }
-        // Find the highest clean parent and its rank
         long parent = Path.getParentPath(path);
         long cleanParent = Path.INVALID_PATH;
         int parentRanksAbove = 1;
@@ -140,6 +173,6 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
             result = Path.getRightGrandChildPath(cleanParent, cleanParentRanksAbove) + 1;
         }
         assert result >= path;
-        return (result <= reconnectLastLeafPath) ? result : Path.INVALID_PATH;
+        return result;
     }
 }
