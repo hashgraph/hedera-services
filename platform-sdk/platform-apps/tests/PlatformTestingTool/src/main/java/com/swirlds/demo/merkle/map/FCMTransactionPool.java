@@ -611,6 +611,7 @@ public class FCMTransactionPool implements FastCopyable {
                         EXCEPTION.getMarker(), "Warning: sequentialAmount is 0 for {}, will be skipped ", test_type);
             }
             sequentialTypeIndex++;
+            logger.info(MARKER, "Stop generating {} for node <{}>", test_type, myID);
             test_type = config.getSequentialType(sequentialTypeIndex); // update
             amount = config.getSequentialAmount(sequentialTypeIndex);
         }
