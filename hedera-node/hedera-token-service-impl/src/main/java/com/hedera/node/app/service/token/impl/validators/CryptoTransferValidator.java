@@ -200,7 +200,7 @@ public class CryptoTransferValidator {
         boolean nonZeroFungibleValueFound = false;
         for (final AccountAmount acctAmount : fungibleTransfers) {
             if (isAirdrop) {
-                validateFalsePreCheck(acctAmount.isApproval(), INVALID_TRANSACTION);
+                validateFalsePreCheck(acctAmount.isApproval(), NOT_SUPPORTED);
             }
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
@@ -217,7 +217,7 @@ public class CryptoTransferValidator {
             throws PreCheckException {
         for (final NftTransfer nftTransfer : nftTransfers) {
             if (isAirdrop) {
-                validateFalsePreCheck(nftTransfer.isApproval(), INVALID_TRANSACTION);
+                validateFalsePreCheck(nftTransfer.isApproval(), NOT_SUPPORTED);
             }
             validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
