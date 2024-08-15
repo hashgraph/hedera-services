@@ -266,16 +266,15 @@ stakers to that node).
 #### Persistence
 
 Event Intake is also responsible to durably persist pre-consensus events **before** they are emitted, but after they
-have been ordered. This has been previously called the "Pre-Consensus Event Stream", or PCES, but this name pre-supposes
-a particular implementation. The current implementation requires coordination between the PCES and the Hashgraph
-component to know when to flush, and the PCES needs to know when rounds are signed so it knows when to prune files
-from the PCES.
+have been ordered. This system is known as the "Pre-Consensus Event Stream", or PCES. The current implementation
+requires coordination between the PCES and the Hashgraph component to know when to flush, and the PCES needs to know
+when rounds are signed so it knows when to prune files from the PCES.
 
-Instead, the PCES will be implemented as a single large cyclic buffer. As valid, ordered events are made available,
+Instead, the PCES could be implemented as a single large cyclic buffer. As valid, ordered events are made available,
 they will be written to the head of this buffer, and **only then** emitted from Event Intake. The buffer will be large
 enough so the node can recover from a saved state + buffered pre-consensus events. Typically, this would be configured
 to be some value several multiples in size larger than the state saving timeframe and maximum event/sec rate, so as to
-provide a solid guarantee of data availability.By using a sufficiently large circular buffer, there is no need to
+provide a solid guarantee of data availability. By using a sufficiently large circular buffer, there is no need to
 coordinate with the Hashgraph module or the Execution layer.
 
 (NOTE: The actual implementation of persistence is to be defined in subsequent design documents).
