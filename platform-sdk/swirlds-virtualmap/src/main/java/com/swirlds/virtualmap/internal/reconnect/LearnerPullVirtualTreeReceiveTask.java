@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -130,6 +132,8 @@ public class LearnerPullVirtualTreeReceiveTask {
                     }
                     completeListener.accept(viewId);
                 } else if (response.getPath() == 0) {
+                    logger.info(RECONNECT.getMarker(),
+                            "Root response received from the teacher, view=" + viewId);
                     final CountDownLatch rootResponseReceived = rootResponsesReceived.get(viewId);
                     rootResponseReceived.countDown();
                 }
