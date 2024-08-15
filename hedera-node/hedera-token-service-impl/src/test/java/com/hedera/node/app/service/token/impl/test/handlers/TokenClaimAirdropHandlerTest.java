@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
@@ -168,7 +170,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void preHandleAccountNotExistPath() {
+    void preHandleAccountNotExistPath() throws PreCheckException {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         final var token9754 = asToken(9754);
         pendingAirdropIds.add(PendingAirdropId.newBuilder()
@@ -190,8 +192,10 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .pendingAirdrops(pendingAirdropIds)
                 .build());
         given(preHandleContext.body()).willReturn(txn);
+        doThrow(new PreCheckException(INVALID_ACCOUNT_ID))
+                .when(preHandleContext)
+                .requireAliasedKeyOrThrow(ACCOUNT_ID_3333, INVALID_ACCOUNT_ID);
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(accountStore.getAccountById(any())).willReturn(null);
 
         Assertions.assertThatThrownBy(() -> tokenClaimAirdropHandler.preHandle(preHandleContext))
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
@@ -220,8 +224,6 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .pendingAirdrops(pendingAirdropIds)
                 .build());
         given(preHandleContext.body()).willReturn(txn);
-        given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(accountStore.getAccountById(any())).willReturn(ACCOUNT_3333);
 
         Assertions.assertThatCode(() -> tokenClaimAirdropHandler.preHandle(preHandleContext))
                 .doesNotThrowAnyException();
@@ -282,6 +284,10 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         var airdrops = new ArrayList<PendingAirdropId>();
         airdrops.add(secondPendingAirdropId);
         givenClaimAirdrop(airdrops);
+
+        final var thirdAirdrop = writableAirdropState.getForModify(thirdPendingAirdropId);
+        final var secondAirdrop = writableAirdropState.getForModify(secondPendingAirdropId);
+        final var firstAirdrop = writableAirdropState.getForModify(firstPendingAirdropId);
 
         tokenClaimAirdropHandler.handle(handleContext);
 

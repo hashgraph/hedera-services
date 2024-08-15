@@ -127,6 +127,9 @@
   "TokenClaimAirdrop": {
     "DEFAULT": 0.001
   },
+  "TokenCancelAirdrop": {
+    "DEFAULT": 0.001
+  },
   "ContractCreate": {
 	"DEFAULT": 1.0
   },

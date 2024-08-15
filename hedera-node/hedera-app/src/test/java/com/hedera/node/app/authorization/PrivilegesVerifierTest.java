@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -725,7 +724,7 @@ class PrivilegesVerifierTest {
         try {
             final var function = functionOf(protoTxnBody);
             return new TestCase(payerId, toPbj(function), txn);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (com.hedera.hapi.util.UnknownHederaFunctionality e) {
             throw new IllegalStateException(e);
         }
     }
