@@ -336,7 +336,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             throw new MerkleSynchronizationException("Cannot schedule next subtree, unknown view: " + viewId);
         }
 
-        logger.info(RECONNECT.getMarker(), "Receiving tree rooted with route {}", route);
+        logger.info(RECONNECT.getMarker(), "Receiving tree rooted with route={}, viewId={}", route, viewId);
 
         final AtomicReference<MerkleNode> reconstructedRoot = new AtomicReference<>();
         reconstructedRoots.add(reconstructedRoot);

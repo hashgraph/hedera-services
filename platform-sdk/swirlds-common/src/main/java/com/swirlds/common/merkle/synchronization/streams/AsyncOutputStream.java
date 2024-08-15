@@ -81,12 +81,12 @@ public class AsyncOutputStream {
     /**
      * Using own buffer instead of BufferedOutputStream to avoid unneeded synchronization costs.
      */
-    private final ByteArrayOutputStream bufferedOut = new ByteArrayOutputStream(65536);
+    // private final ByteArrayOutputStream bufferedOut = new ByteArrayOutputStream(65536);
 
     /**
      * Data output stream on top of bufferedOut.
      */
-    private final DataOutputStream dataOut = new DataOutputStream(bufferedOut);
+    // private final DataOutputStream dataOut = new DataOutputStream(bufferedOut);
 
     private final StandardWorkGroup workGroup;
 
@@ -201,7 +201,7 @@ public class AsyncOutputStream {
             return false;
         }
         try {
-            bufferedOut.reset();
+            // bufferedOut.reset();
             while (item != null) {
                 if (item.toNotify() != null) {
                     assert item.messageBytes() == null;
@@ -209,19 +209,22 @@ public class AsyncOutputStream {
                 } else {
                     final int viewId = item.viewId();
                     final byte[] messageBytes = item.messageBytes();
-                    dataOut.writeInt(viewId);
-                    dataOut.writeInt(messageBytes.length);
-                    dataOut.write(messageBytes);
+                    outputStream.writeInt(viewId);
+                    // dataOut.writeInt(viewId);
+                    outputStream.writeInt(messageBytes.length);
+                    // dataOut.writeInt(messageBytes.length);
+                    outputStream.write(messageBytes);
+                    // dataOut.write(messageBytes);
                     bufferedMessageCount += 1;
                     // Don't let the buffer grow too much
-                    if (bufferedOut.size() >= 256 * 1024) {
-                        bufferedOut.writeTo(outputStream);
-                        bufferedOut.reset();
-                    }
+                    // if (bufferedOut.size() >= 256 * 1024) {
+                    //     bufferedOut.writeTo(outputStream);
+                    //     bufferedOut.reset();
+                    // }
                 }
                 item = streamQueue.poll();
             }
-            bufferedOut.writeTo(outputStream);
+            // bufferedOut.writeTo(outputStream);
         } catch (final IOException e) {
             throw new MerkleSynchronizationException(e);
         }
