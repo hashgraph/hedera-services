@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,11 +136,6 @@ public final class EventUtils {
         return true;
     }
 
-    /** Used for sorting a list of events. */
-    public static int compareEvents(final IndexedEvent event1, final IndexedEvent event2) {
-        return (int) (event1.getGeneratorIndex() - event2.getGeneratorIndex());
-    }
-
     /**
      * Sort a list of events on generator ID.
      *
@@ -148,7 +144,7 @@ public final class EventUtils {
      */
     public static List<IndexedEvent> sortEventList(final List<IndexedEvent> events) {
         final List<IndexedEvent> sortedEvents = new ArrayList<>(events);
-        sortedEvents.sort(EventUtils::compareEvents);
+        sortedEvents.sort(Comparator.comparing(IndexedEvent::getBaseHash));
         return sortedEvents;
     }
 

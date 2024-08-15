@@ -18,7 +18,6 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.gatherOtherParentAges;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
@@ -493,21 +492,6 @@ public class GraphGeneratorTests {
                 generator.getMaxGeneration(lastEvent.getCreatorId()),
                 "last event should have the max generation");
         generator.reset();
-    }
-
-    /**
-     * Assert that two generators emit the same events but in a different order.
-     */
-    public void assertOrderIsDifferent(
-            final GraphGenerator<?> generator1, final GraphGenerator<?> generator2, final int numberOfEvents) {
-        final List<IndexedEvent> list1 = generator1.generateEvents(numberOfEvents);
-        final List<IndexedEvent> list2 = generator2.generateEvents(numberOfEvents);
-
-        assertTrue(areEventListsEquivalent(list1, list2));
-        assertNotEquals(list1, list2);
-
-        generator1.reset();
-        generator2.reset();
     }
 
     @ParameterizedTest
