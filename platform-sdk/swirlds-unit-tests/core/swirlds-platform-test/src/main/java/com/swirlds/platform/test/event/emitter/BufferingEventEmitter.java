@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -46,7 +46,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      * The queue at index 0 corresponds to the source with node ID 0, and so on. Events are strongly ordered within
      * an individual queue.
      */
-    protected Map<NodeId, Queue<IndexedEvent>> events;
+    protected Map<NodeId, Queue<EventImpl>> events;
 
     /**
      * The number of events that are currently buffered by this generator.
@@ -69,7 +69,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
         while (events.get(nodeID).isEmpty()
                 && bufferedEvents < MAX_BUFFERED_EVENTS
                 && getCheckpoint() > numEventsGenerated) {
-            final IndexedEvent nextEvent = getGraphGenerator().generateEvent();
+            final EventImpl nextEvent = getGraphGenerator().generateEvent();
             numEventsGenerated++;
             events.get(nextEvent.getCreatorId()).add(nextEvent);
             bufferedEvents++;
@@ -99,12 +99,12 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      */
     protected boolean isReadyToEmitEvent(@NonNull final NodeId nodeID) {
         Objects.requireNonNull(nodeID, "nodeID");
-        final IndexedEvent potentialEvent = events.get(nodeID).peek();
+        final EventImpl potentialEvent = events.get(nodeID).peek();
         if (potentialEvent == null) {
             return false;
         }
 
-        final IndexedEvent otherParent = (IndexedEvent) potentialEvent.getOtherParent();
+        final EventImpl otherParent = potentialEvent.getOtherParent();
 
         // if the checkpoint is active AND
         //        if (getCheckpoint() > getNumEventsEmitted()
@@ -122,7 +122,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
 
         final NodeId otherNodeID = otherParent.getCreatorId();
 
-        for (final IndexedEvent event : events.get(otherNodeID)) {
+        for (final EventImpl event : events.get(otherNodeID)) {
             if (event == otherParent) {
                 // Our other parent has not yet been emitted
                 return false;
