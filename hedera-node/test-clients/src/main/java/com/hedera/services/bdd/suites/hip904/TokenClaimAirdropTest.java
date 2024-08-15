@@ -56,8 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -264,7 +263,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_11))
                         .payingWith(RECEIVER)
                         .via("claimTxn")
-                        .hasKnownStatus(MAX_PENDING_AIRDROP_ID_EXCEEDED));
+                        .hasKnownStatus(PENDING_AIRDROP_ID_LIST_TOO_LONG));
     }
 
     @HapiTest
