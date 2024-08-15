@@ -16,7 +16,9 @@
 
 package com.swirlds.virtualmap.config;
 
+import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM;
 import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC;
+import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PUSH;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -94,7 +96,7 @@ public record VirtualMapConfig(
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
-        @ConfigProperty(defaultValue = PULL_TWO_PHASE_PESSIMISTIC) String reconnectMode,
+        @ConfigProperty(defaultValue = PULL_TOP_TO_BOTTOM) String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values

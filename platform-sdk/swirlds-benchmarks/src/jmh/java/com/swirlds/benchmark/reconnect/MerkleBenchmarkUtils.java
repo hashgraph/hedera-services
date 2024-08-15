@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
+import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -54,6 +55,7 @@ public class MerkleBenchmarkUtils {
 
     public static MerkleInternal createTreeForMaps(final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps) {
         final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
+        tree.setRoute(MerkleRouteFactory.buildRoute(0));
         initializeTreeAfterCopy(tree);
         for (int i = 0; i < maps.size(); i++) {
             tree.setChild(i, maps.get(i));

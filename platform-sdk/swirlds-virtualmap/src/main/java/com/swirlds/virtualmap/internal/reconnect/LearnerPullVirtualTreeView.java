@@ -203,7 +203,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         final AtomicBoolean lastPathSent =
                 learningSynchronizer.computeViewMetadata("LASTPATHSENT" + viewId, new AtomicBoolean(false));
         // FUTURE WORK: configurable number of tasks
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 4; i++) {
             final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
                     reconnectConfig,
                     workGroup,

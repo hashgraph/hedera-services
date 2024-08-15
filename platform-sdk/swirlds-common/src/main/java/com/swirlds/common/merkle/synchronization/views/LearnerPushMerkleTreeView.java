@@ -24,6 +24,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
@@ -189,7 +190,11 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
      */
     @Override
     public void setChild(final MerkleNode parent, final int childIndex, final MerkleNode child) {
-        parent.asInternal().setChild(childIndex, child);
+        if (parent == null) {
+            child.setRoute(MerkleRouteFactory.buildRoute(0));
+        } else {
+            parent.asInternal().setChild(childIndex, child);
+        }
     }
 
     /**
