@@ -470,6 +470,128 @@ public class TokenAirdropTest {
                             .signedBy(OWNER)
                             .payingWith(OWNER));
         }
+
+        @Nested
+        @DisplayName("and with receiverSigRequired=true")
+        class ReceiverSigRequiredTests {
+            private static final String RECEIVER_WITH_SIG_REQUIRED = "receiver_sig_required";
+
+            @HapiTest
+            @DisplayName("signed and no free slots")
+            final Stream<DynamicTest> receiverSigInPending() {
+
+                return defaultHapiSpec("should go to pending state")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(0))
+                        .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                .via("sigTxn"))
+                        .then(
+                                getTxnRecord("sigTxn")
+                                        // assert transfers
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(
+                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+            }
+
+            @HapiTest
+            @DisplayName("signed and with free slots")
+            final Stream<DynamicTest> receiverSigInPendingFreeSlots() {
+
+                return defaultHapiSpec("should result in successful transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                .via("sigTxn"))
+                        .then(
+                                getTxnRecord("sigTxn")
+                                        // assert transfers
+                                        .hasPriority(recordWith()
+                                                .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+            }
+
+            @HapiTest
+            @DisplayName("and is associated and signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociated() {
+
+                return defaultHapiSpec("should result in successful transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .tokenTransfers(includingFungibleMovement(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+            }
+
+            @HapiTest
+            @DisplayName("and is associated but not signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociatedButNotSigned() {
+
+                return defaultHapiSpec("should result in pending transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+            }
+
+            @HapiTest
+            @DisplayName("multiple tokens with one associated")
+            final Stream<DynamicTest> multipleTokensOneAssociated() {
+
+                return defaultHapiSpec("should transfer one token and keep the other in pending state")
+                        .given(
+                                tokenCreate("FT_B").treasury(OWNER).initialSupply(500),
+                                cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                        .receiverSigRequired(true)
+                                        .maxAutomaticTokenAssociations(0))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, "FT_B"))
+                        .then(
+                                tokenAirdrop(
+                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_SIG_REQUIRED),
+                                                moving(10, "FT_B").between(OWNER, RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER, RECEIVER_WITH_SIG_REQUIRED)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(
+                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))
+                                                .tokenTransfers(includingFungibleMovement(moving(10, "FT_B")
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance("FT_B", 10));
+            }
+        }
     }
 
     // custom fees

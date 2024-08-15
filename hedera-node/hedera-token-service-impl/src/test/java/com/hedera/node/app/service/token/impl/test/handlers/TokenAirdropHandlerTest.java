@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -54,6 +55,7 @@ import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
@@ -338,6 +340,9 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        var sigVerificationMock = mock(SignatureVerification.class);
+        given(keyVerifier.verificationFor(any())).willReturn(sigVerificationMock);
+        given(handleContext.keyVerifier()).willReturn(keyVerifier);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
         given(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         given(feeCalculator.calculate()).willReturn(new Fees(10, 10, 10));

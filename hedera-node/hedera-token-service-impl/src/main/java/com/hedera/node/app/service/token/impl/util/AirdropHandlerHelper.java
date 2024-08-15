@@ -42,6 +42,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +70,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link AccountAmount} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(HandleContext, Account, TokenRelation)}
      *
      * @param context {@link HandleContext} used to obtain state stores
      * @param tokenId token id
@@ -77,10 +78,12 @@ public class AirdropHandlerHelper {
      * @return {@link FungibleAirdropLists} a record containing two lists - transfers to be added in pending state and transfers to be executed
      */
     public static FungibleAirdropLists separateFungibleTransfers(
-            HandleContext context, TokenID tokenId, List<AccountAmount> transfers) {
-        List<AccountAmount> transferFungibleAmounts = new ArrayList<>();
-        List<AccountAmount> pendingFungibleAmounts = new ArrayList<>();
-        Set<AccountID> transfersNeedingAutoAssociation = new HashSet<>();
+            @NonNull final HandleContext context,
+            @NonNull final TokenID tokenId,
+            @NonNull final List<AccountAmount> transfers) {
+        final var transferFungibleAmounts = new ArrayList<AccountAmount>();
+        final var pendingFungibleAmounts = new ArrayList<AccountAmount>();
+        final var transfersNeedingAutoAssociation = new LinkedHashSet<AccountID>();
 
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
@@ -93,14 +96,14 @@ public class AirdropHandlerHelper {
                 continue;
             }
 
-            if (aa.amount() > 0) {
-                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
-            }
-
             final var account =
                     getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             final var tokenRel = tokenRelStore.get(accountId, tokenId);
-            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+            var isPendingAirdrop = false;
+            if (aa.amount() > 0) {
+                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
+                isPendingAirdrop = isPendingAirdrop(context, account, tokenRel);
+            }
 
             if (isPendingAirdrop) {
                 pendingFungibleAmounts.add(aa);
@@ -123,7 +126,7 @@ public class AirdropHandlerHelper {
      * Checks every {@link NftTransfer} from given transfer list and separate it in to two lists.
      * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
      * be executed. The check is done by account's available auto associations slots and the existence of account-token
-     * relation {@link #isPendingAirdrop(Account, TokenRelation)}
+     * relation {@link #isPendingAirdrop(HandleContext, Account, TokenRelation)}
      *
      * @param context context
      * @param tokenId token id
@@ -151,7 +154,7 @@ public class AirdropHandlerHelper {
             var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
             var tokenRel = tokenRelStore.get(receiverId, tokenId);
-            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
+            var isPendingAirdrop = isPendingAirdrop(context, account, tokenRel);
 
             if (isPendingAirdrop) {
                 pendingNftList.add(nftTransfer);
@@ -169,24 +172,27 @@ public class AirdropHandlerHelper {
     }
 
     /**
-     * Check if given airdrop should be pending or transfer will be executed.
-     * The check is done by account's available auto associations slots and the existence of account-token relation.
-     * If receiver's account is not existing, we should proceed with the transfer, this way {@link com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler}
-     * will handle auto creation and auto association of the new receiver.
-     *
-     * @param receiver receivers account
-     * @param tokenRelation token relation
-     * @return if airdrop of given token to given receiver should be added to the airdrop pending state
+     * Checks if the airdrop to an account is pending airdrop. An airdrop will result into a pending airdrop, iuf
+     * the receiver has not signed the transaction when receiverSigRequired is set to true, or if the
+     * receiver is no yet associated to teh token but there are no open slots available. In other scenarios,
+     * the airdrop is not pending and will be transferred.
+     * @param context the context
+     * @param receiver the receiver account
+     * @param tokenRelation the token relation
+     * @return boolean value indicating if the airdrop is pending
      */
-    private static boolean isPendingAirdrop(@NonNull Account receiver, @Nullable TokenRelation tokenRelation) {
-        // check if we have existing association or free auto associations slots or unlimited auto associations
-        if (tokenRelation != null) {
-            return false;
-        } else if (receiver.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS) {
-            return false;
-        } else {
-            return receiver.usedAutoAssociations() == receiver.maxAutoAssociations();
+    private static boolean isPendingAirdrop(
+            @NonNull final HandleContext context,
+            @NonNull final Account receiver,
+            @Nullable final TokenRelation tokenRelation) {
+        // Check if the receiver has signed the transaction. If not, it should result in a pending airdrop
+        if (receiver.receiverSigRequired()) {
+            var sigVerification = context.keyVerifier().verificationFor(requireNonNull(receiver.key()));
+            if (sigVerification.failed()) {
+                return true;
+            }
         }
+        return tokenRelation == null && isAutoAssociationLimitReached(receiver);
     }
 
     /**
@@ -277,5 +283,10 @@ public class AirdropHandlerHelper {
             return false;
         }
         return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
+    }
+
+    private static boolean isAutoAssociationLimitReached(@NonNull final Account receiver) {
+        return receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
+                && receiver.maxAutoAssociations() != UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }
