@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -354,18 +355,28 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                 moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
                         .payingWith(OWNER),
-                // signed by account not referenced as receiver id
+                // Payer is not receiver
                 tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .via("claimTxn")
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                         .hasKnownStatus(INVALID_SIGNATURE),
-                // has multiple receivers
+                // Missing signature from second receiver
                 tokenClaimAirdrop(
                                 pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN),
                                 pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
                         .via("claimTxn1")
                         .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                        .hasPrecheck(INVALID_TRANSACTION_BODY),
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                // Succeeds with all required signatures
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN),
+                                pendingAirdrop(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
+                        .signedBy(
+                                DEFAULT_PAYER,
+                                RECEIVER_WITH_0_AUTO_ASSOCIATIONS,
+                                RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 1),
                 validateChargedUsd("claimTxn", 0.001, 1)));
     }
 

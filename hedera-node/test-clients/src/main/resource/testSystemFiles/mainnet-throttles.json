@@ -2,7 +2,7 @@
   "buckets": [
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 15000,
+      "burstPeriodMs": 1000,
       "name": "ThroughputLimits",
       "throttleGroups": [
         {
@@ -96,8 +96,7 @@
             "TokenUpdateNfts",
             "TokenReject",
             "TokenAirdrop",
-            "TokenClaimAirdrop",
-            "TokenCancelAirdrop"
+            "TokenClaimAirdrop"
           ]
         }
       ]

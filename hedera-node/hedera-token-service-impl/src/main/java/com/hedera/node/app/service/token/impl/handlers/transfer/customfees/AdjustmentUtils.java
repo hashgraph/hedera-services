@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACC
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -98,18 +99,19 @@ public class AdjustmentUtils {
      * Adjusts a HTS fee. If the fee is self-denominated, it should not trigger custom fees again
      * So add the adjustment to previous level transaction. If the fee is not self-denominated,
      * it should trigger custom fees again. So add the adjustment to next level transaction.
-     * @param result The {@link AssessmentResult} object
-     * @param sender The sender account
-     * @param collector The fee collector
-     * @param chargingTokenMeta The {@link CustomFeeMeta} object of token to be charged
-     * @param amount The amount to be charged
+     *
+     * @param result            The {@link AssessmentResult} object
+     * @param sender            The sender account
+     * @param collector         The fee collector
+     * @param token             the token
+     * @param amount            The amount to be charged
      * @param denominatingToken The token denomination
      */
     public static void adjustHtsFees(
             final AssessmentResult result,
             final AccountID sender,
             final AccountID collector,
-            final CustomFeeMeta chargingTokenMeta,
+            final Token token,
             final long amount,
             final TokenID denominatingToken) {
         final var newHtsAdjustments = result.getHtsAdjustments();
@@ -117,7 +119,7 @@ public class AdjustmentUtils {
 
         // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
-        if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
+        if (token.tokenId().equals(denominatingToken)) {
             addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
         } else {
             // Any change that might trigger next level custom fees should be added to next
