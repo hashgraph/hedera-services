@@ -106,15 +106,6 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
 
         final EventImpl otherParent = potentialEvent.getOtherParent();
 
-        // if the checkpoint is active AND
-        //        if (getCheckpoint() > getNumEventsEmitted()
-        //                &&
-        //                // this event must not be emitted until after the checkpoint
-        //                potentialEvent.getGeneratorIndex() >= getCheckpoint()) {
-        //            // do not emit it
-        //            return false;
-        //        }
-
         if (otherParent == null) {
             // There is no other parent, so no need to wait for it to be emitted
             return true;
