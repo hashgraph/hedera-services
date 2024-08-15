@@ -265,8 +265,9 @@ public class LearnerPushTask<T> {
 
                 if (parent == null) {
                     root.set(newChild);
+                } else {
+                    view.setChild(parent, expectedLesson.getPositionInParent(), newChild);
                 }
-                view.setChild(parent, expectedLesson.getPositionInParent(), newChild);
 
                 addToNodeCount(expectedLesson, lesson, newChild);
 

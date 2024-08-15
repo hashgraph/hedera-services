@@ -86,9 +86,9 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * Set the child of an internal node.
      *
      * @param parent
-     * 		the parent that will hold the child, may be null if the child is the root of the tree or
-     * 		if the view allows null to represent internal nodes in the subtree (although it seems unlikely that
-     * 		such a representation would be very useful for views to use)
+     * 		the parent that will hold the child, may be null if the view allows null to represent
+     * 		internal nodes in the subtree (although it seems unlikely that such a representation would
+     * 		be very useful for views to use)
      * @param childIndex
      * 		the position of the child
      * @param child
