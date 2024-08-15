@@ -261,6 +261,47 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("multiple pending transfers in one airdrop same token different receivers")
+    final Stream<DynamicTest> multiplePendingInOneAirdropDifferentReceivers() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        final String CAROL = "CAROL";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                tokenAirdrop(
+                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, CAROL))
+                        .payingWith(ALICE),
+                tokenClaimAirdrop(
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_1))
+                        .signedBy(BOB, CAROL)
+                        .payingWith(BOB));
+    }
+
+    @HapiTest
+    @DisplayName("multiple pending transfers in one airdrop different token same receivers with max auto association")
+    final Stream<DynamicTest> multiplePendingInOneAirdropSameReceiverDifferentTokensWithMaxAutoAssociation() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createFT(FUNGIBLE_TOKEN_2, ALICE, 1000L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_2).between(ALICE, BOB)).payingWith(ALICE),
+                tokenClaimAirdrop(
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
+                        .signedBy(BOB)
+                        .payingWith(BOB));
+    }
+
+    @HapiTest
     @DisplayName("token claim with no pending airdrop should fail")
     final Stream<DynamicTest> tokenClaimWithNoPendingAirdrop() {
         return hapiTest(tokenClaimAirdrop().hasPrecheck(EMPTY_PENDING_AIRDROP_ID_LIST));
