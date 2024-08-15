@@ -139,8 +139,10 @@ in a consensus round, or are in one of the last 26 consensus rounds. Expired eve
 that is older than the last most recent 500 consensus rounds. And ancient events are those that are in a round between
 26 and 500.
 
-The Gossip module must cache all non-expired events. Note that it must be a fixed number of rounds that defines
-"expired", because otherwise it is possible for a quiescent network to never recover (see the documentation for
+The Gossip module may cache all non-expired events, but must cache all non-ancient events.
+
+Note that it must be a fixed
+number of rounds that defines "expired", because otherwise it is possible for a quiescent network to never recover (see the documentation for
 the tipset algorithm, and other-parent selection, for specifics on why this is true). This number must also be large
 enough in case rounds/sec increases dramatically, because reconnect requires a certain amount of time (not rounds) for
 catchup. As long as this number is large enough to meet the requirements regardless of the rounds/sec, and as long as it
@@ -262,6 +264,10 @@ that branches (known affectionately as a "Dirty Rotten Brancher") will be report
 of either a dishonest node, or a seriously broken node. In either case, it may be subject to "shunning", and will be
 reported to the Execution layer for further observation and, if required, action (such as canceling rewards for
 stakers to that node).
+
+Pre-consensus branching detection and remediation can happen quickly, but to _prove_ a node is a DRB, the check will
+have to happen in the Hashgraph module. When determining to take system-wide action, only the actually proven bad
+behavior post-consensus should be used.
 
 #### Persistence
 
