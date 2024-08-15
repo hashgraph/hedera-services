@@ -40,6 +40,8 @@ import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -179,6 +181,8 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
+        given(configProvider.getConfiguration())
+                .willReturn(new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1));
 
         subject.handleRound(state, platformState, round);
 
