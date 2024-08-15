@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -148,7 +147,6 @@ class SystemSetupTest {
     void externalizeInitSideEffectsCreatesNoRecordsWhenEmpty() {
         subject.externalizeInitSideEffects(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
-        verify(context, never()).markMigrationRecordsStreamed();
     }
 
     private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo) {

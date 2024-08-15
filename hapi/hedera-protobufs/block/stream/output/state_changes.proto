@@ -45,7 +45,6 @@ import "state/addressbook/node.proto";
 import "state/blockrecords/block_info.proto";
 import "state/blockrecords/running_hashes.proto";
 import "state/blockstream/block_stream_info.proto";
-import "state/common.proto";
 import "state/congestion/congestion_level_starts.proto";
 import "state/consensus/topic.proto";
 import "state/contract/bytecode.proto";
@@ -62,45 +61,6 @@ import "state/token/staking_node_info.proto";
 import "state/token/token.proto";
 import "state/token/token_relation.proto";
 import "timestamp.proto";
-
-/**
- * The "cause" of a state change.
- *
- * What was the network doing that led to the change in state?<br/>
- * The most common event is, of course, a user transaction.
- * Other sources of state changes include end-of-block housekeeping changes,
- * data migration, and "system" transactions.
- */
-enum StateChangesCause {
-    /**
-     * A set of transaction state changes.<br/>
-     * This is a deliberate default because this is the most common 'cause'
-     * and we wish to minimize serialized size.
-     */
-    STATE_CHANGE_CAUSE_TRANSACTION = 0;
-
-    /**
-     * A system-internal state change.<br/>
-     * System-initiated transactions exist to enable the network to maintain
-     * state signatures and network communication.
-     */
-    STATE_CHANGE_CAUSE_SYSTEM = 1;
-
-    /**
-     * A set of end-of-block state changes.<br/>
-     * The network performs certain processes, such as writing to the block
-     * stream, updating singleton states, or updating queue states at the end
-     * of a block to minimize impacts on consensus nodes.
-     */
-    STATE_CHANGE_CAUSE_END_OF_BLOCK = 2;
-
-    /**
-     * A set of data migration state changes.<br/>
-     * Data migration is typically necessary following a network upgrade to
-     * make required storage format updates and enable new features.
-     */
-    STATE_CHANGE_CAUSE_MIGRATION = 3;
-}
 
 /**
  * A set of state changes.
@@ -130,20 +90,11 @@ enum StateChangesCause {
  */
 message StateChanges {
     /**
-     * The proximate source of this state change set.
-     * <p>
-     * This field describes the source (e.g. user transaction, system
-     * "housekeeping", end of block, etc...) of the changes included
-     * in this change set.
-     */
-    StateChangesCause cause = 1;
-
-    /**
      * The consensus timestamp of this set of changes.
      * <p>
      * This value SHALL be deterministic with the cause of the state change.
      */
-    proto.Timestamp consensus_timestamp = 2;
+    proto.Timestamp consensus_timestamp = 1;
 
     /**
      * An ordered list of individual changes.
@@ -151,7 +102,7 @@ message StateChanges {
      * These changes MUST be applied in the order listed to produce
      * a correct modified state.
      */
-    repeated StateChange state_changes = 3;
+    repeated StateChange state_changes = 2;
 }
 
 /**
@@ -375,19 +326,19 @@ enum StateIdentifier {
     STATE_ID_FREEZE_TIME = 23;
 
     /**
-     * A state identifier for the block stream information.
+     * A state identifier for the block stream status singleton.
      */
     STATE_ID_BLOCK_STREAM_INFO = 24;
 
     /**
-     * A state identifier for the record cache.
-     */
-    STATE_ID_RECORD_QUEUE = 25;
-
-    /**
      * A state identifier for pending airdrops.
      */
-    STATE_ID_PENDING_AIRDROPS = 26;
+    STATE_ID_PENDING_AIRDROPS = 25;
+
+    /**
+     * A state identifier for the record cache.
+     */
+    STATE_ID_RECORD_QUEUE = 126;
 
     /**
      * A state for the `150` upgrade file data
@@ -507,7 +458,7 @@ message SingletonUpdateChange {
          * identifier used for the current shard and realm and SHALL be used
          * to issue new entity numbers.
          */
-        proto.EntityNumber entity_number_value = 3;
+        google.protobuf.UInt64Value entity_number_value = 3;
 
         /**
          * A change to the exchange rates singleton.
@@ -577,9 +528,12 @@ message SingletonUpdateChange {
         proto.Timestamp timestamp_value = 10;
 
         /**
-         * A change to the block stream information singleton.
+         * A change to the block stream status singleton.
+         * <p>
+         * This MUST be updated at the beginning of a block, with the
+         * information for the immediately prior block.
          */
-        proto.BlockStreamInfo block_stream_info_value = 11;
+        com.hedera.hapi.node.state.blockstream.BlockStreamInfo block_stream_info_value = 11;
     }
 }
 
@@ -645,15 +599,15 @@ message MapChangeKey {
          * This map is keyed by the pair of account identifier and
          * token identifier.
          */
-        proto.EntityIDPair entity_id_pair_key = 2;
+        proto.TokenAssociation token_relationship_key = 2;
 
         /**
-         * A change to a map keyed by an EntityNumber (which is a single int64).
+         * A change to a map keyed by an EntityNumber (which is a whole number).
          * <p>
          * This SHOULD NOT be used. Virtual maps SHOULD be keyed to
          * full identifiers that include shard and realm information.
          */
-        proto.EntityNumber entity_number_key = 3;
+        google.protobuf.UInt64Value entity_number_key = 3;
 
         /**
          * A change to a virtual map keyed by File identifier.
