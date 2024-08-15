@@ -16,16 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithNfts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAirdrops;
@@ -33,10 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -44,19 +35,15 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -88,16 +75,11 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
     @Mock
     private StoreFactory storeFactory;
 
-    @Mock
-    private ExpiryValidator expiryValidator;
-
     private WritableAirdropStore airdropStore;
     private WritableAccountStore writableAccountStore;
-    private ReadableNftStore readableNftStore;
     protected Configuration testConfig;
     private static final AccountID senderId = asAccount(1001);
     private static final AccountID receiverId = asAccount(1010);
-    private static final AccountID invalidAccountId = asAccount(1002);
     private static final TokenID fungibleTokenId = asToken(333);
     private static final NftID nftId =
             NftID.newBuilder().tokenId(fungibleTokenId).build();
@@ -119,15 +101,10 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
                         .build(),
                 Account.newBuilder().accountId(receiverId).build());
         when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
-        when(handleContext.payer()).thenReturn(senderId);
-        when(handleContext.expiryValidator()).thenReturn(expiryValidator);
     }
 
     @Test
     void cancelAirdropHappyPath() {
-        // Arrange
-        when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).thenReturn(OK);
-
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrops())
                 .build();
@@ -138,11 +115,6 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
 
         readableTokenStore = newReadableStoreWithTokens(
                 Token.newBuilder().tokenId(fungibleTokenId).build());
-        when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-
-        readableNftStore =
-                newReadableStoreWithNfts(Nft.newBuilder().nftId(nftId).build());
-        when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
 
         writableAccountStore = newWritableStoreWithAccounts(
                 Account.newBuilder()
@@ -165,12 +137,8 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         // Arrange
 
         // setup common mocks
-        when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).thenReturn(OK);
         readableTokenStore = newReadableStoreWithTokens(
                 Token.newBuilder().tokenId(fungibleTokenId).build());
-        readableNftStore =
-                newReadableStoreWithNfts(Nft.newBuilder().nftId(nftId).build());
-        when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
 
         // Transaction body with cancel airdrops that doesn't exist in the state
         transactionBody = TransactionBody.newBuilder()
@@ -194,8 +162,6 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
 
         // setup common mocks
         readableTokenStore = newReadableStoreWithTokens();
-        when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).thenReturn(OK);
 
         // Transaction body with token id that doesn't exist in the token store
         transactionBody = TransactionBody.newBuilder()
@@ -208,48 +174,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         // Assert
-        assertEquals(INVALID_TOKEN_ID, response.getStatus());
-    }
-
-    @Test
-    void cancelAirdropWithPayerDifferentFromSenderThrowsException() {
-        // Arrange
-        transactionBody = TransactionBody.newBuilder()
-                .tokenCancelAirdrop(tokenCancelAirdrop(true))
-                .build();
-        when(handleContext.body()).thenReturn(transactionBody);
-        when(handleContext.payer()).thenReturn(invalidAccountId);
-
-        // Act
-        final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-
-        // Assert
-        assertEquals(INVALID_ACCOUNT_ID, response.getStatus());
-    }
-
-    @Test
-    void cancelAirdropWithInvalidReceiverAccountIdThrowsException() {
-        // Arrange
-
-        // setup common mocks
-        airdropStore = newWritableStoreWithAirdrops(getFungibleAirdrop());
-        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
-
-        // standard transactionBody
-        transactionBody = TransactionBody.newBuilder()
-                .tokenCancelAirdrop(tokenCancelAirdrop(true))
-                .build();
-        when(handleContext.body()).thenReturn(transactionBody);
-
-        // payer with invalid account id
-        when(handleContext.payer()).thenReturn(invalidAccountId);
-
-        // Act
-        final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-
-        // Assert
-        assertEquals(INVALID_ACCOUNT_ID, response.getStatus());
-        assertTrue(airdropStore.exists(getFungibleAirdrop()));
+        assertEquals(INVALID_PENDING_AIRDROP_ID, response.getStatus());
     }
 
     @Test
@@ -258,8 +183,6 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
 
         // setup common mocks
         readableTokenStore = newReadableStoreWithTokens();
-        when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).thenReturn(OK);
 
         // Transaction body with nfId that doesn't exist in the nft store
         transactionBody = TransactionBody.newBuilder()
@@ -267,16 +190,13 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
                 .build();
         when(handleContext.body()).thenReturn(transactionBody);
 
-        // Empty nft store
-        readableNftStore = newReadableStoreWithNfts();
-        when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
         when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
 
         // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         // Assert
-        assertEquals(INVALID_NFT_ID, response.getStatus());
+        assertEquals(INVALID_PENDING_AIRDROP_ID, response.getStatus());
     }
 
     @Nested

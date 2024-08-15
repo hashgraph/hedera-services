@@ -27,7 +27,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -121,17 +121,11 @@ public final class CommonUtils {
      *
      * @param txn the {@code TransactionBody}
      * @return one of HederaFunctionality
-     * @throws UnknownHederaFunctionality if all the check fails
      */
     @NonNull
     public static HederaFunctionality functionOf(@NonNull final TransactionBody txn) throws UnknownHederaFunctionality {
         requireNonNull(txn);
-        try {
-            return fromPbj(HapiUtils.functionOf(toPbj(txn)));
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Child fee context was constructed with invalid transaction body " + txn, e);
-        }
+        return fromPbj(HapiUtils.functionOf(toPbj(txn)));
     }
 
     /**
