@@ -52,6 +52,8 @@ public record TokensConfig(
                 long maxAllowedAirdrops,
         @ConfigProperty(value = "maxAllowedPendingAirdropsToClaim", defaultValue = "10") @NetworkProperty
                 int maxAllowedPendingAirdropsToClaim,
+        @ConfigProperty(value = "maxAllowedPendingAirdropsToCancel", defaultValue = "10") @NetworkProperty
+                int maxAllowedPendingAirdropsToCancel,
         @ConfigProperty(value = "maxAllowedAirdropTransfersPerTx", defaultValue = "10") @NetworkProperty
                 int maxAllowedAirdropTransfersPerTx,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty

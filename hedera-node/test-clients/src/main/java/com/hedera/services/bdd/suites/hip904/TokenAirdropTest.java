@@ -34,16 +34,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
@@ -53,7 +46,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -62,26 +54,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
-import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -92,29 +75,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 @HapiTestLifecycle
 @DisplayName("Token airdrop")
-public class TokenAirdropTest {
-    private static final String OWNER = "owner";
-    // receivers
-    private static final String RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS = "receiverWithUnlimitedAutoAssociations";
-    private static final String RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS = "receiverWithFreeAutoAssociations";
-    private static final String RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS = "receiverWithoutFreeAutoAssociations";
-    private static final String RECEIVER_WITH_0_AUTO_ASSOCIATIONS = "receiverWith0AutoAssociations";
-    private static final String ASSOCIATED_RECEIVER = "associatedReceiver";
-    // tokens
-    private static final String FUNGIBLE_TOKEN = "fungibleToken";
-    private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
-    // tokens with custom fees
-    private static final String FT_WITH_HBAR_FIXED_FEE = "fungibleTokenWithHbarCustomFee";
-    private static final String FT_WITH_HTS_FIXED_FEE = "fungibleTokenWithHtsCustomFee";
-    private static final String FT_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalFee";
-    private static final String NFT_WITH_HTS_FIXED_FEE = "NftWithHtsFixedFee";
-    private static final String NFT_WITH_ROYALTY_FEE = "NftWithRoyaltyFee";
-    private static final String DENOM_TOKEN = "denomToken";
-    private static final String HTS_COLLECTOR = "htsCollector";
-    private static final String HTS_COLLECTOR2 = "htsCollector2";
-    private static final String HBAR_COLLECTOR = "hbarCollector";
-    private static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
-    private static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
+public class TokenAirdropTest extends TokenAirdropBase {
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -333,9 +294,10 @@ public class TokenAirdropTest {
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
+            final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(initialBalance),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HBAR_FIXED_FEE),
                             cryptoTransfer(moving(1000, FT_WITH_HBAR_FIXED_FEE)
                                     .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
@@ -355,7 +317,7 @@ public class TokenAirdropTest {
                                 final var txFee = record.getResponseRecord().getTransactionFee();
                                 // the token should not be transferred but the custom fee should be charged
                                 final var ownerBalance = getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                        .hasTinyBars(ONE_MILLION_HBARS - (txFee + hbarFee))
+                                        .hasTinyBars(initialBalance - (txFee + hbarFee))
                                         .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 1000);
                                 allRunFor(spec, ownerBalance);
                             }),
@@ -368,7 +330,7 @@ public class TokenAirdropTest {
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(100 * ONE_HUNDRED_HBARS),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, DENOM_TOKEN),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HTS_FIXED_FEE),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, NFT_WITH_HTS_FIXED_FEE),
@@ -694,130 +656,5 @@ public class TokenAirdropTest {
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
-    }
-
-    private TokenMovement defaultMovementOfToken(String token) {
-        return moving(10, token).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
-    }
-
-    private TokenMovement moveFungibleTokensTo(String receiver) {
-        return moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver);
-    }
-
-    /**
-     * Create Fungible token and set up all scenario receivers
-     * - receiver with unlimited auto associations
-     * - associated receiver
-     * - receiver with 0 auto associations
-     * - receiver with free auto associations
-     * - receiver with positive number associations, but without fee ones
-     *
-     * @return array of operations
-     */
-    private static SpecOperation[] setUpTokensAndAllReceivers() {
-        var nftSupplyKey = "nftSupplyKey";
-        final var t = new ArrayList<SpecOperation>(List.of(
-                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                // base tokens
-                tokenCreate(FUNGIBLE_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(1000L),
-                tokenCreate("dummy").treasury(OWNER).tokenType(FUNGIBLE_COMMON).initialSupply(100L),
-                newKeyNamed(nftSupplyKey),
-                tokenCreate(NON_FUNGIBLE_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .initialSupply(0L)
-                        .name(NON_FUNGIBLE_TOKEN)
-                        .supplyKey(nftSupplyKey),
-                mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c"),
-                                ByteString.copyFromUtf8("d"),
-                                ByteString.copyFromUtf8("e"),
-                                ByteString.copyFromUtf8("f"))),
-
-                // all kind of receivers
-                cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
-                cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0),
-                cryptoCreate(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(100),
-                cryptoCreate(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(1),
-                // fill the auto associate slot
-                cryptoTransfer(moving(10, "dummy").between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)),
-                cryptoCreate(ASSOCIATED_RECEIVER),
-                tokenAssociate(ASSOCIATED_RECEIVER, FUNGIBLE_TOKEN),
-                tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN)));
-
-        return t.toArray(new SpecOperation[0]);
-    }
-
-    private static SpecOperation[] setUpTokensWithCustomFees(long tokenTotal, long hbarFee, long htsFee) {
-        var nftWithCustomFeeSupplyKey = "nftWithCustomFeeSupplyKey";
-        final var t = new ArrayList<SpecOperation>(List.of(
-                // tokens with custom fees
-                cryptoCreate(TREASURY_FOR_CUSTOM_FEE_TOKENS),
-                cryptoCreate(HBAR_COLLECTOR).balance(0L),
-                tokenCreate(FT_WITH_HBAR_FIXED_FEE)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .initialSupply(tokenTotal)
-                        .withCustom(fixedHbarFee(hbarFee, HBAR_COLLECTOR)),
-                cryptoCreate(HTS_COLLECTOR),
-                cryptoCreate(HTS_COLLECTOR2),
-                tokenCreate(DENOM_TOKEN)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .initialSupply(tokenTotal),
-                tokenAssociate(HTS_COLLECTOR, DENOM_TOKEN),
-                tokenCreate(FT_WITH_HTS_FIXED_FEE)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .initialSupply(tokenTotal)
-                        .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN, HTS_COLLECTOR)),
-                tokenAssociate(HTS_COLLECTOR2, FT_WITH_HTS_FIXED_FEE),
-                newKeyNamed(nftWithCustomFeeSupplyKey),
-                tokenCreate(NFT_WITH_HTS_FIXED_FEE)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                        .supplyKey(nftWithCustomFeeSupplyKey)
-                        .supplyType(TokenSupplyType.INFINITE)
-                        .initialSupply(0)
-                        .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FIXED_FEE, HTS_COLLECTOR2)),
-                mintToken(NFT_WITH_HTS_FIXED_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
-                tokenCreate(FT_WITH_FRACTIONAL_FEE)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                        .initialSupply(Long.MAX_VALUE),
-                tokenCreate(NFT_WITH_ROYALTY_FEE)
-                        .maxSupply(10L)
-                        .initialSupply(0)
-                        .supplyType(TokenSupplyType.FINITE)
-                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .supplyKey(nftWithCustomFeeSupplyKey)
-                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .withCustom(
-                                royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
-                tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
-                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
-
-        return t.toArray(new SpecOperation[0]);
-    }
-
-    /**
-     * Create and mint NFT and set up all scenario receivers
-     * - receiver with unlimited auto associations
-     * - associated receiver
-     * - receiver with 0 auto associations
-     * - receiver with free auto associations
-     * - receiver with positive number associations, but without fee ones
-     *
-     * @return array of operations
-     */
-    private HapiTokenCreate createTokenWithName(String tokenName) {
-        return tokenCreate(tokenName).tokenType(TokenType.FUNGIBLE_COMMON).treasury(OWNER);
     }
 }

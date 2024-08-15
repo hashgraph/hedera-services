@@ -61,8 +61,10 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -123,7 +125,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
-        final var transfers = new ArrayList<TokenTransferList>();
+        final Map<TokenID, TokenTransferList> transfers = new HashMap<>();
         final var tokensToAssociate = new LinkedHashMap<AccountID, List<Token>>();
 
         // 1. validate pending airdrops and create transfer lists
@@ -133,7 +135,9 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                     : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             final var senderId = airdrop.senderIdOrThrow();
             final var receiverId = airdrop.receiverIdOrThrow();
-            transfers.add(createTokenTransferList(airdrop, pendingAirdropStore, tokenId, senderId, receiverId));
+
+            // Merge this transfer by token id into the transfers map
+            createOrUpdateTransfers(airdrop, pendingAirdropStore, tokenId, senderId, receiverId, transfers);
 
             // check if we need new association
             if (tokenRelStore.get(receiverId, tokenId) == null) {
@@ -146,7 +150,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
             associateForFree(entry.getValue(), entry.getKey(), accountStore, tokenRelStore);
         }
         // do the crypto transfer
-        transferForFree(transfers, context, recordBuilder);
+        transferForFree(new ArrayList<>(transfers.values()), context, recordBuilder);
         pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), pendingAirdropStore, accountStore);
     }
 
@@ -193,35 +197,56 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                 .calculate();
     }
 
-    private TokenTransferList createTokenTransferList(
+    private void createOrUpdateTransfers(
             @NonNull final PendingAirdropId airdrop,
             @NonNull final WritableAirdropStore airdropStore,
             @NonNull final TokenID tokenId,
             @NonNull final AccountID senderId,
-            @NonNull final AccountID receiverId) {
-        final var accountPendingAirdrop = airdropStore.get(airdrop);
+            @NonNull final AccountID receiverId,
+            @NonNull final Map<TokenID, TokenTransferList> transfers) {
+        final var accountPendingAirdrop = requireNonNull(airdropStore.get(airdrop));
+        final var soFar = transfers.computeIfAbsent(
+                tokenId, k -> TokenTransferList.newBuilder().token(tokenId).build());
         if (airdrop.hasFungibleTokenType()) {
             // process fungible tokens
             final var senderAccountAmount = asAccountAmount(
-                    senderId, -accountPendingAirdrop.pendingAirdropValue().amount());
+                    senderId,
+                    -accountPendingAirdrop.pendingAirdropValueOrThrow().amount());
             final var receiverAccountAmount = asAccountAmount(
-                    receiverId, accountPendingAirdrop.pendingAirdropValue().amount());
-            return TokenTransferList.newBuilder()
-                    .token(tokenId)
-                    .transfers(senderAccountAmount, receiverAccountAmount)
-                    .build();
+                    receiverId,
+                    accountPendingAirdrop.pendingAirdropValueOrThrow().amount());
+            final List<AccountAmount> newTransfers = new ArrayList<>(soFar.transfers());
+            mergeTransfer(newTransfers, senderAccountAmount);
+            mergeTransfer(newTransfers, receiverAccountAmount);
+            transfers.put(tokenId, soFar.copyBuilder().transfers(newTransfers).build());
         } else {
             // process non-fungible tokens
             final var nftTransfer = NftTransfer.newBuilder()
                     .senderAccountID(senderId)
                     .receiverAccountID(receiverId)
-                    .serialNumber(airdrop.nonFungibleToken().serialNumber())
+                    .serialNumber(airdrop.nonFungibleTokenOrThrow().serialNumber())
                     .build();
-            return TokenTransferList.newBuilder()
-                    .token(tokenId)
-                    .nftTransfers(nftTransfer)
-                    .build();
+            final List<NftTransfer> newTransfers = new ArrayList<>(soFar.nftTransfers());
+            newTransfers.add(nftTransfer);
+            transfers.put(
+                    tokenId, soFar.copyBuilder().nftTransfers(newTransfers).build());
         }
+    }
+
+    private void mergeTransfer(@NonNull final List<AccountAmount> transfers, @NonNull final AccountAmount newTransfer) {
+        final var accountId = newTransfer.accountIDOrThrow();
+        for (int i = 0, n = transfers.size(); i < n; i++) {
+            if (transfers.get(i).accountIDOrThrow().equals(accountId)) {
+                final var updatedTransfer = transfers
+                        .get(i)
+                        .copyBuilder()
+                        .amount(transfers.get(i).amount() + newTransfer.amount())
+                        .build();
+                transfers.set(i, updatedTransfer);
+                return;
+            }
+        }
+        transfers.add(newTransfer);
     }
 
     private void associateForFree(
