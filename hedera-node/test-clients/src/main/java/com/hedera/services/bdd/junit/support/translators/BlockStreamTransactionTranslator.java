@@ -83,6 +83,8 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var singleTxnRecord =
                 switch (txnType) {
+                    case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
+                            .translate(txnWrapper, stateChanges);
                     case ContractCall -> new ContractCallTranslator().translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
@@ -334,14 +336,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasTopicCreate()) {
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
-
-        //        if (txnOutput.hasSubmitMessage()) {
-        //            rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
-        //
-        //            Optional.ofNullable(txnOutput.submitMessage().topicRunningHashVersion())
-        //                    .map(RunningHashVersion::protoOrdinal)
-        //                    .ifPresent(rb::setTopicRunningHashVersion);
-        //        }
 
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());

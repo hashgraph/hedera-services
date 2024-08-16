@@ -115,12 +115,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
         this.blockNumber = blockNumber;
 
-        // Create the chain of streams.
         this.blockFilePath = getBlockFilePath(blockNumber);
-        //        logger.info(
-        //                "Writing block {} to {}",
-        //                blockNumber,
-        //                blockFilePath.toAbsolutePath().toString());
 
         OutputStream out = null;
         try {
@@ -128,8 +123,11 @@ public class FileBlockItemWriter implements BlockItemWriter {
             out = new BufferedOutputStream(out, 1024 * 1024); // 1 MB
             if (compressFiles) {
                 out = new GZIPOutputStream(out, 1024 * 256); // 256 KB
-                // This double buffer is needed to reduce the number of synchronized calls to the underlying
-                // GZIPOutputStream. We know most files are going to be ~3-4 MB, so we can safely buffer that much.
+                // By wrapping the GZIPOutputStream in a BufferedOutputStream, the code reduces the number of write
+                // operations to the GZIPOutputStream, and therefore the number of synchronized calls. Instead of
+                // writing each small piece of data immediately to the GZIPOutputStream, it writes the data to the
+                // buffer, and only when the buffer is full, it writes all the data to the GZIPOutputStream in one go.
+                // This can significantly improve the performance when writing many small amounts of data.
                 out = new BufferedOutputStream(out, 1024 * 1024 * 4); // 4 MB
             }
 
@@ -198,7 +196,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
     }
 
     /**
-     *
+     * Convert a long to a 36-character string, padded with leading zeros.
      * @param value
      * @return
      */
@@ -208,7 +206,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
         BigInteger unsignedValue =
                 BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));
 
-        // Format the unsignedValue as a 20-character string, padded with leading zeros to ensure we have enough digits
+        // Format the unsignedValue as a 36-character string, padded with leading zeros to ensure we have enough digits
         // for an unsigned long. However, to allow for future expansion, we use 36 characters as that's what UUID uses.
         return String.format("%036d", unsignedValue);
     }
