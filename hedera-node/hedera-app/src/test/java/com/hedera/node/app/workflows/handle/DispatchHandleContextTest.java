@@ -258,7 +258,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
-
     @Mock
     private Predicate<Key> signatureTest;
 
@@ -866,7 +865,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         NOOP_RECORD_CUSTOMIZER,
                         AT_CONSENSUS_AND_INGEST);
         subject.dispatchRemovableChildTransaction(
-                WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, NOOP_RECORD_CUSTOMIZER,
+                WITH_PAYER_ID,
+                StreamBuilder.class,
+                signatureTest,
+                PAYER_ID,
+                NOOP_RECORD_CUSTOMIZER,
                 AT_CONSENSUS_AND_INGEST);
         verify(subject)
                 .dispatchRemovableChildTransaction(

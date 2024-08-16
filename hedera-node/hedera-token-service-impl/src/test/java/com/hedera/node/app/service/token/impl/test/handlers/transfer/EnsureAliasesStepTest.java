@@ -44,7 +44,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -73,11 +72,7 @@ class EnsureAliasesStepTest extends StepsBase {
     void autoCreatesAccounts() {
         ensureAliasesInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(),
-                        eq(CryptoCreateStreamBuilder.class),
-                        eq(null),
-                        eq(payerId),
-                        any()))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -145,11 +140,7 @@ class EnsureAliasesStepTest extends StepsBase {
         givenTxn(body, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(),
-                        eq(CryptoCreateStreamBuilder.class),
-                        eq(null),
-                        eq(payerId),
-                        any()))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
@@ -255,11 +246,7 @@ class EnsureAliasesStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(),
-                        eq(CryptoCreateStreamBuilder.class),
-                        eq(null),
-                        eq(payerId),
-                        any()))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
