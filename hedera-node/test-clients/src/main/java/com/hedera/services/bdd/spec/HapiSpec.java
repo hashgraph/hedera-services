@@ -204,7 +204,7 @@ public class HapiSpec implements Runnable, Executable {
         TRUE
     }
 
-    private record Failure(Throwable cause, String opDescription) {
+    public record Failure(Throwable cause, String opDescription) {
         private static final String LOG_TPL = "%s when executing %s";
 
         @Override
@@ -1306,7 +1306,7 @@ public class HapiSpec implements Runnable, Executable {
         this.quietMode = "true".equalsIgnoreCase(quiet) || (!"false".equalsIgnoreCase(quiet) && isCiCheck);
     }
 
-    interface Def {
+    public interface Def {
         @FunctionalInterface
         interface Sourced {
             Given withProperties(Object... sources);
