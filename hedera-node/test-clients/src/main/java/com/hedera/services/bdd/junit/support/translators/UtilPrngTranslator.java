@@ -22,13 +22,14 @@ import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfTyp
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 
 public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     @Override
     public SingleTransactionRecord translate(
-            @NotNull SingleTransactionBlockItems transaction, @NotNull StateChanges stateChanges) {
+            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var recordBuilder = TransactionRecord.newBuilder();
         final var txOutput = transaction.output();
         if (txOutput != null && txOutput.hasUtilPrng()) {
