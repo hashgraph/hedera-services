@@ -63,34 +63,37 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 `VirtualDataSource` interface is changed to work with bytes:
 
 * `loadLeafRecord()` now returns a `VirtualLeafBytes` (was: `VirtualLeafRecord`)
-* `loadHash()` now returns a `VirtualHashBytes` (was: `VirtualHashRecord`)
-* `saveRecords()` now accepts streams of `VirtualLeafBytes` and `VirtualHashBytes` (was: streams of
-  records)
+* `saveRecords()` now accepts streams of `VirtualLeafBytes` (was: streams of `VirtualLeafRecord`)
 
 `VirtualLeafBytes` is a binary counterpart of the existing `VirtualLeafRecord`. It also contains a
 path, a key, and a value, but the key and the value are immutable `Bytes` (PBJ type), not typed
 `VirtualKey` and `VirtualValue` subclasses.
 
-`VirtualHashBytes` is a similar concept for virtual internal nodes that store hashes.
-
 ### Serialization
 
-Virtual leaf and hash records are serialized to bytes at the virtual map level before they get
-flushed to disk:
+Virtual leaf records are serialized to bytes at the virtual map level before they get flushed to
+disk:
 
 * Copy flushes: in `VirtualRootNode`
 * Reconnect flushes: in `AbstractHashListener`
 
 Serialization is done using `KeySerializer` and `ValueSerializer`. These interfaces are moved from
 MerkleDb to VirtualMap Java modules. Key and value serializer instances are now provided by the app
-to virtual maps, not to MerkleDb data sources.
+to virtual maps, not to MerkleDb data sources. Serializers implementation is not changed, they are
+100% compatible with old versions to avoid data migration.
+
+The only change is when the serializers are used. Previously they were called in MerkleDb code, when
+data was written to disk. With the new approach, they are called in VirtualMap.
 
 ### Deserialization
 
 All keys and values are stored as untyped bytes objects on disk. When they are read from disk,
-MerkleDb returns them as bytes (`VirtualLeafBytes` or `VirtualHashBytes` objects) to the caller,
-usually `RecordAccessorImpl`. At that level, the bytes are deserialized to Java key and value
-objects using the same serializers as in the section above.
+MerkleDb returns them as bytes (`VirtualLeafBytes` objects) to the caller, usually `RecordAccessorImpl`.
+At that level, the bytes are deserialized to Java key and value objects using the same serializers as
+in the section above.
+
+Previously, MerkleDb not only read data from disk, but also deserialized it to Java objects and return
+them to callers.
 
 ### API changes
 
