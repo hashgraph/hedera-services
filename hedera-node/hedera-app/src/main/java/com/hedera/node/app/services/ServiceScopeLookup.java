@@ -102,6 +102,7 @@ public class ServiceScopeLookup {
                     TOKEN_UNPAUSE,
                     TOKEN_UPDATE_NFTS,
                     TOKEN_AIRDROP,
+                    TOKEN_CLAIM_AIRDROP,
                     TOKEN_CANCEL_AIRDROP,
                     TOKEN_REJECT -> TokenService.NAME;
 

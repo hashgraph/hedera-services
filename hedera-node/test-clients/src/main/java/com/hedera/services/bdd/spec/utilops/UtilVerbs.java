@@ -988,6 +988,15 @@ public class UtilVerbs {
      * @return the operation
      */
     public static SpecOperation createHollow(final int n, @NonNull final IntFunction<String> nameFn) {
+        return createHollow(n, nameFn, address -> cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS)));
+    }
+
+    public static SpecOperation createHollow(
+            final int n,
+            @NonNull final IntFunction<String> nameFn,
+            @NonNull final Function<Address, HapiCryptoTransfer> creationFn) {
+        requireNonNull(nameFn);
+        requireNonNull(creationFn);
         return withOpContext((spec, opLog) -> {
             final List<AccountID> createdIds = new ArrayList<>();
             final List<String> keyNames = new ArrayList<>();
@@ -1002,8 +1011,7 @@ public class UtilVerbs {
                             keyNames,
                             addresses -> blockingOrder(addresses.stream()
                                     .map(address -> blockingOrder(
-                                            cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS))
-                                                    .via("autoCreate" + address),
+                                            creationFn.apply(address).via("autoCreate" + address),
                                             getTxnRecord("autoCreate" + address)
                                                     .exposingCreationsTo(creations ->
                                                             createdIds.add(asAccount(creations.getFirst())))))
@@ -1896,7 +1904,7 @@ public class UtilVerbs {
         });
     }
 
-    public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
+    public static SpecOperation[] takeBalanceSnapshots(String... entities) {
         return HapiSuite.flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L))
                         .noLogging(),
@@ -1905,7 +1913,7 @@ public class UtilVerbs {
                                         spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot",
                                         account)
                                 .payingWith(EXCHANGE_RATE_CONTROL))
-                        .toArray(n -> new HapiSpecOperation[n]));
+                        .toArray(n -> new SpecOperation[n]));
     }
 
     public static HapiSpecOperation validateRecordTransactionFees(String txn) {
