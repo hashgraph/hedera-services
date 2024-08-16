@@ -23,12 +23,6 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-text-blocks,-varargs,-static")
-}
-
 mainModuleInfo {
     runtimeOnly("org.junit.jupiter.engine")
     runtimeOnly("org.junit.platform.launcher")

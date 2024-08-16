@@ -17,10 +17,19 @@ contract EmitBlockTimestamp {
     }
 
     function getLastBlockMeta() external view returns (
-        uint bNo, 
+        uint bNo,
         bytes32 bHash
     ) {
-        bNo = block.number - 1; 
+        bNo = block.number - 1;
         bHash = blockhash(bNo);
+    }
+
+    function getAllBlockHashes() external view returns (bytes32[] memory) {
+        uint max = 255;
+        bytes32[] memory blockHashes = new bytes32[](256);
+        for (uint i = 0; i < max; i++) {
+            blockHashes[i] = blockhash(block.number - i);
+        }
+        return blockHashes;
     }
 }

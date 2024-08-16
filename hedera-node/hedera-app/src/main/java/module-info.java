@@ -24,6 +24,8 @@ module com.hedera.node.app {
     requires transitive dagger;
     requires transitive io.grpc.stub;
     requires transitive javax.inject;
+    requires transitive org.apache.logging.log4j;
+    requires transitive org.hyperledger.besu.evm;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.addressbook;
@@ -47,14 +49,12 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.commons.lang3;
-    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
     // javax.annotation.processing.Generated
 
-    exports com.hedera.node.app to
-            com.hedera.node.test.clients;
+    exports com.hedera.node.app;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.ingest to
@@ -67,6 +67,7 @@ module com.hedera.node.app {
             com.hedera.node.services.cli,
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.dispatcher;
+    exports com.hedera.node.app.workflows.standalone;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.signature to
@@ -77,10 +78,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.version to
-            com.hedera.node.app.test.fixtures,
-            com.swirlds.platform,
-            com.hedera.node.test.clients;
+    exports com.hedera.node.app.version;
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;

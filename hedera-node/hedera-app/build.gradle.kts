@@ -47,6 +47,7 @@ testModuleInfo {
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
+    requires("headlong")
     requires("org.assertj.core")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
