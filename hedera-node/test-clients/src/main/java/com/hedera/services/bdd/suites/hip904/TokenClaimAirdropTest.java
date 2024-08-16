@@ -343,6 +343,29 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("multiple pending transfers in one airdrop different token same receivers with specific association")
+    final Stream<DynamicTest> multiplePendingInOneAirdropSameReceiverDifferentTokensWithSpecificAssociation() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createFT(FUNGIBLE_TOKEN_2, ALICE, 1000L),
+                tokenAssociate(BOB, FUNGIBLE_TOKEN_1).payingWith(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                        moving(1, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 0),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1)
+                );
+    }
+
+    @HapiTest
     @DisplayName("token claim with no pending airdrop should fail")
     final Stream<DynamicTest> tokenClaimWithNoPendingAirdrop() {
         return hapiTest(tokenClaimAirdrop().hasPrecheck(EMPTY_PENDING_AIRDROP_ID_LIST));
