@@ -48,12 +48,12 @@ public record TokensConfig(
                 ScaleFactor nftsMintThrottleScaleFactor,
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "true") @NetworkProperty
                 boolean nftsUseVirtualMerkle,
-        @ConfigProperty(value = "maxAllowedAirdrops", defaultValue = "20000000") @NetworkProperty
-                long maxAllowedAirdrops,
+        @ConfigProperty(value = "maxPendingAllowedAirdrops", defaultValue = "20000000") @NetworkProperty
+                long maxPendingAllowedAirdrops,
+        @ConfigProperty(value = "maxAllowedPendingAirdropsToCancel", defaultValue = "10") @NetworkProperty
+                long maxAllowedPendingAirdropsToCancel,
         @ConfigProperty(value = "maxAllowedPendingAirdropsToClaim", defaultValue = "10") @NetworkProperty
                 int maxAllowedPendingAirdropsToClaim,
-        @ConfigProperty(value = "maxAllowedPendingAirdropsToCancel", defaultValue = "10") @NetworkProperty
-                int maxAllowedPendingAirdropsToCancel,
         @ConfigProperty(value = "maxAllowedAirdropTransfersPerTx", defaultValue = "10") @NetworkProperty
                 int maxAllowedAirdropTransfersPerTx,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty

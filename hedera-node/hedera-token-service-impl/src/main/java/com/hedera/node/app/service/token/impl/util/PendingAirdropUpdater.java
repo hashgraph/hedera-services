@@ -69,6 +69,7 @@ public class PendingAirdropUpdater {
             @NonNull final PendingAirdropId airdropId,
             @NonNull final WritableAirdropStore pendingAirdropStore,
             @NonNull final WritableAccountStore accountStore) {
+        final var senderId = airdropId.senderIdOrThrow();
         final var airdrop = pendingAirdropStore.getForModify(airdropId);
         validateTrue(airdrop != null, INVALID_PENDING_AIRDROP_ID);
 

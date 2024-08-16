@@ -57,6 +57,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 public class CommonPbjConverters {
     public static @NonNull com.hederahashgraph.api.proto.java.Query fromPbj(@NonNull Query query) {
@@ -99,6 +100,18 @@ public class CommonPbjConverters {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull List<com.hederahashgraph.api.proto.java.ServiceEndpoint> fromPbj(
+            @NonNull final List<ServiceEndpoint> endpoint) {
+        requireNonNull(endpoint);
+        return endpoint.stream().map(CommonPbjConverters::fromPbj).toList();
+    }
+
+    public static @NonNull List<ServiceEndpoint> toPbj(
+            @NonNull final List<com.hederahashgraph.api.proto.java.ServiceEndpoint> endpoint) {
+        requireNonNull(endpoint);
+        return endpoint.stream().map(CommonPbjConverters::toPbj).toList();
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.ServiceEndpoint fromPbj(
