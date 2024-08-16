@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
@@ -47,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -253,6 +255,34 @@ public interface HapiPropertySource {
 
     static String asTopicString(TopicID topic) {
         return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
+    }
+
+    /**
+     * Interprets the given string as a comma-separated list of {@code {<IP>|<DNS>}:{<PORT>}} pairs, returning a list
+     * of {@link ServiceEndpoint} instances with the appropriate host references set.
+     * @param v the string to interpret
+     * @return the parsed list of {@link ServiceEndpoint} instances
+     */
+    static List<ServiceEndpoint> asCsServiceEndpoints(@NonNull final String v) {
+        requireNonNull(v);
+        return Stream.of(v.split(","))
+                .map(HapiPropertySource::asTypedServiceEndpoint)
+                .toList();
+    }
+
+    /**
+     * Interprets the given string as a {@code {<IP>|<DNS>}:{<PORT>}} pair, returning an {@link ServiceEndpoint}
+     * with the appropriate host reference set.
+     * @param v the string to interpret
+     * @return the parsed {@link ServiceEndpoint}
+     */
+    static ServiceEndpoint asTypedServiceEndpoint(@NonNull final String v) {
+        requireNonNull(v);
+        try {
+            return asServiceEndpoint(v);
+        } catch (Exception ignore) {
+            return asDnsServiceEndpoint(v);
+        }
     }
 
     static ServiceEndpoint asServiceEndpoint(String v) {
