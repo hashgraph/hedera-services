@@ -21,10 +21,14 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ContractCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    private static final Logger logger = LogManager.getLogger(ContractCreateTranslator.class);
+
     @Override
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
@@ -40,7 +44,10 @@ public class ContractCreateTranslator implements TransactionRecordTranslator<Sin
                     .receipt(receiptBuilder.build())
                     .contractCreateResult(contractCreateResult)
                     .evmAddress(contractCreateResult.evmAddress());
+        } else {
+            logger.info("Was not able to translate ContractCreate operation");
         }
+
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),

@@ -23,9 +23,13 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    private static final Logger logger = LogManager.getLogger(UtilPrngTranslator.class);
+
     @Override
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @NotNull StateChanges stateChanges) {
@@ -38,7 +42,10 @@ public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTra
             } else if (entropy.kind() == PRNG_NUMBER) {
                 recordBuilder.prngNumber(entropy.as());
             }
+        } else {
+            logger.info("Was not able to translate ContractCreate operation");
         }
+
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),

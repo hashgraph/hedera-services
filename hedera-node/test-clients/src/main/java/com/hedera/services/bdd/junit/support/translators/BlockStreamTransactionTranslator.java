@@ -299,6 +299,24 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //                rb.fileID(txnOutput.fileCreate().fileID());
         //            }
 
+        if (txnOutput.hasContractCreate()) {
+            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
+                    .map(com.hedera.hapi.node.contract.ContractFunctionResult::contractID)
+                    .ifPresent(id -> rb.setContractID(fromPbj(id)));
+
+            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
+                    .ifPresent(id -> {
+                        try {
+                            trb.setContractCreateResult(ContractFunctionResult.parseFrom(
+                                    com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
+                                            .toBytes(txnOutput.contractCreate().contractCreateResult())
+                                            .toByteArray()));
+                        } catch (InvalidProtocolBufferException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+        }
+
         if (txnOutput.hasContractCall()) {
             final var callResult =
                     ContractFunctionResult.parseFrom(com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
@@ -316,6 +334,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasTopicCreate()) {
         //                rb.topicID(txnOutput.topicCreate().topicID());
         //            }
+
+        //        if (txnOutput.hasSubmitMessage()) {
+        //            rb.topicSequenceNumber(txnOutput.submitMessage().topicSequenceNumber());
+        //
+        //            Optional.ofNullable(txnOutput.submitMessage().topicRunningHashVersion())
+        //                    .map(RunningHashVersion::protoOrdinal)
+        //                    .ifPresent(rb::setTopicRunningHashVersion);
+        //        }
 
         //            if (txnOutput.hasCreateToken()) {
         //                rb.tokenID(txnOutput.createToken().tokenID());
