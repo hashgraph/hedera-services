@@ -43,7 +43,7 @@ public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTra
                 recordBuilder.prngNumber(entropy.as());
             }
         } else {
-            logger.info("Was not able to translate ContractCreate operation");
+            logger.info("Was not able to translate UtilPrng operation");
         }
 
         return new SingleTransactionRecord(
