@@ -187,6 +187,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             getIfUsable(tokenId, tokenStore);
+            validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore);
         }
         return standardAirdropIds;
     }
@@ -260,7 +261,11 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
             @NonNull final AccountID receiverId,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        createAndLinkTokenRels(accountStore.getAccountById(receiverId), tokensToAssociate, accountStore, tokenRelStore);
+        createAndLinkTokenRels(
+                requireNonNull(accountStore.getAccountById(receiverId)),
+                tokensToAssociate,
+                accountStore,
+                tokenRelStore);
     }
 
     private void transferForFree(
