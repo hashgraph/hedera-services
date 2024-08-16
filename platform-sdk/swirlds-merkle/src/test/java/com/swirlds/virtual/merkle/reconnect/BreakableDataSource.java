@@ -21,7 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
@@ -46,7 +46,7 @@ public final class BreakableDataSource implements VirtualDataSource {
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
             final boolean isReconnectContext)

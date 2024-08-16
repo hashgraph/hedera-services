@@ -49,7 +49,7 @@ import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
@@ -119,7 +119,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
     /**
      * On disk store for node hashes. Can be null if all hashes are being stored in ram by setting
-     * tableConfig.hashesRamToDiskThreshold to Long.MAX_VALUE. Stores {@link VirtualHashBytes}
+     * tableConfig.hashesRamToDiskThreshold to Long.MAX_VALUE. Stores {@link VirtualHashRecord}
      * objects as bytes.
      */
     private final MemoryIndexDiskKeyValueStore hashStoreDisk;
@@ -280,8 +280,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final LoadedDataCallback hashRecordLoadedCallback;
             if (hashIndexEmpty) {
                 hashRecordLoadedCallback = (dataLocation, hashData) -> {
-                    final VirtualHashBytes hashBytes = VirtualHashBytes.parseFrom(hashData);
-                    pathToDiskLocationInternalNodes.put(hashBytes.path(), dataLocation);
+                    final VirtualHashRecord hashRecord = VirtualHashRecord.parseFrom(hashData);
+                    pathToDiskLocationInternalNodes.put(hashRecord.path(), dataLocation);
                 };
             } else {
                 hashRecordLoadedCallback = null;
@@ -475,7 +475,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            @NonNull final Stream<VirtualHashBytes> hashRecordsToUpdate,
+            @NonNull final Stream<VirtualHashRecord> hashRecordsToUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
             final boolean isReconnectContext)
@@ -679,17 +679,17 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             return null;
         }
 
-        final Bytes hashBytes;
+        final Hash hash;
         if (path < tableConfig.getHashesRamToDiskThreshold()) {
-            hashBytes = hashStoreRam.get(path);
+            hash = hashStoreRam.get(path);
             // Should count hash reads here, too?
         } else {
-            final VirtualHashBytes rec = VirtualHashBytes.parseFrom(hashStoreDisk.get(path));
-            hashBytes = (rec != null) ? rec.hashBytes() : null;
+            final VirtualHashRecord rec = VirtualHashRecord.parseFrom(hashStoreDisk.get(path));
+            hash = (rec != null) ? rec.hash() : null;
             statisticsUpdater.countHashReads();
         }
 
-        return hashBytes != null ? new Hash(hashBytes.toByteArray()) : null;
+        return hash;
     }
 
     /**
@@ -709,11 +709,10 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // However, if a hash is stored in the files as a VirtualHashRecord, its bytes are
         // slightly different, so additional processing is required
         if (path < tableConfig.getHashesRamToDiskThreshold()) {
-            final Bytes hashBytes = hashStoreRam.get(path);
-            if (hashBytes == null) {
+            final Hash hash = hashStoreRam.get(path);
+            if (hash == null) {
                 return false;
             }
-            final Hash hash = new Hash(hashBytes.toByteArray());
             hash.serialize(out);
         } else {
             final BufferedData hashBytes = hashStoreDisk.get(path);
@@ -721,7 +720,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 return false;
             }
             // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
-            VirtualHashBytes.extractAndWriteHashBytes(hashBytes, out);
+            VirtualHashRecord.extractAndWriteHashBytes(hashBytes, out);
         }
         return true;
     }
@@ -1076,7 +1075,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     /**
      * Write all hashes to hashStore
      */
-    private void writeHashes(final long maxValidPath, final Stream<VirtualHashBytes> dirtyHashes) throws IOException {
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
         if ((dirtyHashes == null) || (maxValidPath <= 0)) {
             // nothing to do
             return;
@@ -1089,7 +1088,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         dirtyHashes.forEach(rec -> {
             statisticsUpdater.countFlushHashesWritten();
             if (rec.path() < tableConfig.getHashesRamToDiskThreshold()) {
-                hashStoreRam.put(rec.path(), rec.hashBytes());
+                hashStoreRam.put(rec.path(), rec.hash());
             } else {
                 try {
                     hashStoreDisk.put(rec.path(), rec::writeTo, rec.getSizeInBytes());

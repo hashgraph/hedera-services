@@ -133,9 +133,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     count,
                     count * 2,
-                    IntStream.range(0, count)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     Stream.empty(),
                     Stream.empty());
 
@@ -186,9 +184,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     testSize,
                     testSize * 2,
-                    IntStream.range(0, testSize)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, testSize).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     Stream.empty(),
                     Stream.empty());
             // create 4 lists with random hash updates some *10 hashes
@@ -201,9 +197,7 @@ class MerkleDbDataSourceTest {
                 dataSource.saveRecords(
                         testSize,
                         testSize * 2,
-                        list.primitiveStream()
-                                .mapToObj(i -> new VirtualHashRecord(i, hash(i * 10)))
-                                .map(VirtualHashRecord::toBytes),
+                        list.primitiveStream().mapToObj(i -> new VirtualHashRecord(i, hash(i * 10))),
                         Stream.empty(),
                         Stream.empty());
             }
@@ -233,9 +227,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     count,
                     count * 2,
-                    IntStream.range(count, count * 2)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(count, count * 2).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     IntStream.range(count, count * 2)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -273,8 +265,7 @@ class MerkleDbDataSourceTest {
                     incFirstLeafPath,
                     exclLastLeafPath,
                     IntStream.range(incFirstLeafPath, exclLastLeafPath)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     IntStream.range(incFirstLeafPath, exclLastLeafPath)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -341,8 +332,7 @@ class MerkleDbDataSourceTest {
                     incFirstLeafPath,
                     exclLastLeafPath,
                     IntStream.range(incFirstLeafPath, exclLastLeafPath)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     IntStream.range(incFirstLeafPath, exclLastLeafPath)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -361,7 +351,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     incFirstLeafPath,
                     exclLastLeafPath,
-                    Stream.of(vir500).map(VirtualHashRecord::toBytes),
+                    Stream.of(vir500),
                     Stream.of(vlr500).map(r -> r.toBytes(keySerializer, valueSerializer)),
                     Stream.empty());
             // check 250 now has 500's data
@@ -415,8 +405,7 @@ class MerkleDbDataSourceTest {
                     count,
                     count * 2,
                     IntStream.range(count, count * 2)
-                            .mapToObj(i -> testType.dataType().createVirtualInternalRecord(i))
-                            .map(VirtualHashRecord::toBytes),
+                            .mapToObj(i -> testType.dataType().createVirtualInternalRecord(i)),
                     IntStream.range(count, count * 2)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -484,9 +473,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     count,
                     count * 2,
-                    IntStream.range(0, count * 2)
-                            .mapToObj(i -> createVirtualInternalRecord(i, i + 1))
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, count * 2).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
                     IntStream.range(count, count * 2)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -610,9 +597,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     10,
                     20,
-                    IntStream.range(0, 21)
-                            .mapToObj(i -> createVirtualInternalRecord(i, i + 1))
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
                     IntStream.range(10, 21)
                             .mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i), values.get(i)))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -632,9 +617,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     10,
                     20,
-                    IntStream.range(0, 21)
-                            .mapToObj(i -> createVirtualInternalRecord(i, i + 2))
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 2)),
                     IntStream.range(10, 21)
                             .mapToObj(i -> new VirtualLeafRecord<>(i, keys.get(i - 5), values.get(i - 5)))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -669,9 +652,7 @@ class MerkleDbDataSourceTest {
             dataSource.saveRecords(
                     10,
                     20,
-                    IntStream.range(0, 21)
-                            .mapToObj(i -> createVirtualInternalRecord(i, i + 3))
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 3)),
                     Stream.empty(),
                     oldLeaves.subList(0, 6).stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
                     true);
@@ -861,16 +842,14 @@ class MerkleDbDataSourceTest {
                 dataSource.saveRecords(
                         1000,
                         2000,
-                        IntStream.range(1, 5)
-                                .mapToObj(i -> {
-                                    System.out.println("SLOWLY loading record #"
-                                            + i
-                                            + " in "
-                                            + Thread.currentThread().getName());
-                                    sleepUnchecked(50L);
-                                    return createVirtualInternalRecord(i);
-                                })
-                                .map(VirtualHashRecord::toBytes),
+                        IntStream.range(1, 5).mapToObj(i -> {
+                            System.out.println("SLOWLY loading record #"
+                                    + i
+                                    + " in "
+                                    + Thread.currentThread().getName());
+                            sleepUnchecked(50L);
+                            return createVirtualInternalRecord(i);
+                        }),
                         Stream.empty(),
                         Stream.empty());
             } catch (final IOException impossible) {

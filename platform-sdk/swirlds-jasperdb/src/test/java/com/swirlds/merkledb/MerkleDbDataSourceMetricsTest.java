@@ -91,9 +91,7 @@ class MerkleDbDataSourceMetricsTest {
         dataSource.saveRecords(
                 COUNT,
                 COUNT * 2,
-                IntStream.range(0, COUNT)
-                        .mapToObj(MerkleDbDataSourceMetricsTest::createVirtualInternalRecord)
-                        .map(VirtualHashRecord::toBytes),
+                IntStream.range(0, COUNT).mapToObj(MerkleDbDataSourceMetricsTest::createVirtualInternalRecord),
                 Stream.empty(),
                 Stream.empty());
 
@@ -105,9 +103,7 @@ class MerkleDbDataSourceMetricsTest {
         dataSource.saveRecords(
                 COUNT * 2,
                 COUNT * 4,
-                IntStream.range(0, COUNT * 2)
-                        .mapToObj(MerkleDbDataSourceMetricsTest::createVirtualInternalRecord)
-                        .map(VirtualHashRecord::toBytes),
+                IntStream.range(0, COUNT * 2).mapToObj(MerkleDbDataSourceMetricsTest::createVirtualInternalRecord),
                 Stream.empty(),
                 Stream.empty());
 

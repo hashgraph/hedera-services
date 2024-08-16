@@ -70,7 +70,7 @@ public interface VirtualDataSource {
      * @param lastLeafPath
      *      the tree path for last leaf
      * @param pathHashRecordsToUpdate
-     * 		stream of dirty hash record bytes to update
+     * 		stream of dirty hash records to update
      * @param leafRecordsToAddOrUpdate
      * 		stream of new and updated leaf node bytes
      * @param leafRecordsToDelete
@@ -81,7 +81,7 @@ public interface VirtualDataSource {
     default void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete)
             throws IOException {
@@ -102,7 +102,7 @@ public interface VirtualDataSource {
      * @param lastLeafPath
      * 		the new path of last leaf node
      * @param pathHashRecordsToUpdate
-     * 		stream of dirty hash record bytes to update
+     * 		stream of dirty hash records to update
      * @param leafRecordsToAddOrUpdate
      * 		stream of new and updated leaf node bytes
      * @param leafRecordsToDelete
@@ -115,7 +115,7 @@ public interface VirtualDataSource {
     void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
             final boolean isReconnectContext)

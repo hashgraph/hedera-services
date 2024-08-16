@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.utilities;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import java.nio.ByteBuffer;
@@ -46,9 +45,9 @@ public final class HashTools {
      * 		the hash with the digest to put in a byte buffer
      * @return the byte buffer with the digest of the hash
      */
-    public static ByteBuffer hashToByteBuffer(final Bytes hash) {
+    public static ByteBuffer hashToByteBuffer(final Hash hash) {
         final ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
-        hash.writeTo(buf);
+        hash.getBytes().writeTo(buf);
         return buf.flip();
     }
 
@@ -60,8 +59,8 @@ public final class HashTools {
      * @param buf
      * 		the byte buffer to receive the digest of the hash
      */
-    public static void hashToByteBuffer(final Bytes hash, final ByteBuffer buf) {
-        hash.writeTo(buf);
+    public static void hashToByteBuffer(final Hash hash, final ByteBuffer buf) {
+        hash.getBytes().writeTo(buf);
     }
 
     /**
@@ -73,14 +72,14 @@ public final class HashTools {
      * 		the version of serialization used to create the byte buffer
      * @return a SHA-384 hash whose digest is the contents of the given buffer
      */
-    public static Bytes byteBufferToHash(final ByteBuffer buffer, final int serializationVersion) {
+    public static Hash byteBufferToHash(final ByteBuffer buffer, final int serializationVersion) {
         if (serializationVersion != CURRENT_SERIALIZATION_VERSION) {
             throw new IllegalArgumentException(
                     "Current version is " + CURRENT_SERIALIZATION_VERSION + ", got " + serializationVersion);
         }
         final byte[] bytes = new byte[DEFAULT_DIGEST.digestLength()];
         buffer.get(bytes);
-        return Bytes.wrap(bytes);
+        return new Hash(bytes, DEFAULT_DIGEST);
     }
 
     private HashTools() {

@@ -177,7 +177,7 @@ class VirtualInternalNodeTest extends VirtualTestBase {
                 .saveRecords(
                         6,
                         12,
-                        leaves.stream().map(this::hash).map(VirtualHashRecord::toBytes),
+                        leaves.stream().map(this::hash),
                         leaves.stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         Stream.empty());
 

@@ -191,7 +191,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                 dataSource.saveRecords(
                         firstLeafPath,
                         lastLeafPath,
-                        hashesToFlush.stream().map(VirtualHashRecord::toBytes),
+                        hashesToFlush.stream(),
                         leavesToFlush.stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         findLeavesToRemove().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         true);

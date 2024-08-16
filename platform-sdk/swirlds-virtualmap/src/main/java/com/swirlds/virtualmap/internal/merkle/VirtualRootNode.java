@@ -67,7 +67,6 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapReconnectMode;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -1207,9 +1206,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final Stream<VirtualLeafBytes> deletedLeaves =
                     cacheToFlush.deletedLeaves().map(r -> r.toBytes(keySerializer, valueSerializer));
             // Save the dirty hashes
-            final Stream<VirtualHashBytes> dirtyHashes = cacheToFlush
-                    .dirtyHashesForFlush(stateToUse.getLastLeafPath())
-                    .map(VirtualHashRecord::toBytes);
+            final Stream<VirtualHashRecord> dirtyHashes =
+                    cacheToFlush.dirtyHashesForFlush(stateToUse.getLastLeafPath());
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
                     stateToUse.getLastLeafPath(),

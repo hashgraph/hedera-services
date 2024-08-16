@@ -39,7 +39,6 @@ import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
@@ -158,8 +157,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                             firstLeafPath,
                             lastLeafPathInclusive,
                             IntStream.range(0, lastLeafPathInclusive + 1 /* exclusive */)
-                                    .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                                    .map(VirtualHashRecord::toBytes),
+                                    .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                             IntStream.range(firstLeafPath, lastLeafPathInclusive + 1 /* exclusive */)
                                     .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                                     .map(r -> r.toBytes(keySerializer, valueSerializer)),
@@ -339,9 +337,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             dataSource.saveRecords(
                     COUNT,
                     lastLeafPath,
-                    IntStream.range(start, COUNT + end)
-                            .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                            .map(VirtualHashRecord::toBytes),
+                    IntStream.range(start, COUNT + end).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                     IntStream.range(COUNT + start, COUNT + end)
                             .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
                             .map(r -> r.toBytes(keySerializer, valueSerializer)),

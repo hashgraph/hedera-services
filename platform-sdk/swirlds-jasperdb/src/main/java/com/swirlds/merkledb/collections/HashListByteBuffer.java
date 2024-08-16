@@ -22,8 +22,8 @@ import static com.swirlds.merkledb.utilities.HashTools.hashToByteBuffer;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.utilities.HashTools;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
@@ -203,7 +203,7 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
      * {@inheritDoc}
      */
     @Override
-    public Bytes get(final long index) throws IOException {
+    public Hash get(final long index) throws IOException {
         // Range-check on the index
         if (index < 0 || index >= maxHashes) {
             throw new IndexOutOfBoundsException();
@@ -222,7 +222,7 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
      * {@inheritDoc}
      */
     @Override
-    public void put(final long index, final Bytes hash) {
+    public void put(final long index, final Hash hash) {
         // Range-check on the index
         if (index < 0 || index >= maxHashes) {
             throw new IndexOutOfBoundsException(

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
@@ -66,9 +65,7 @@ class DataSourceValidatorTest {
                     dataSource.saveRecords(
                             count,
                             count * 2L,
-                            IntStream.range(0, count)
-                                    .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                                    .map(VirtualHashRecord::toBytes),
+                            IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                             IntStream.range(count, count * 2 + 1)
                                     .mapToObj(
                                             i -> TestType.fixed_fixed.dataType().createVirtualLeafRecord(i))
@@ -96,9 +93,7 @@ class DataSourceValidatorTest {
                     dataSource.saveRecords(
                             count,
                             count * 2L,
-                            IntStream.range(0, count)
-                                    .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord)
-                                    .map(VirtualHashRecord::toBytes),
+                            IntStream.range(0, count).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                             // leaves are missing
                             Stream.empty(),
                             Stream.empty());

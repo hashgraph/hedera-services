@@ -20,7 +20,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
@@ -39,7 +39,7 @@ public class InMemoryDataSource implements VirtualDataSource {
     private static final String NEGATIVE_PATH_MESSAGE = "path is less than 0";
 
     private final String name;
-    private final ConcurrentHashMap<Long, Bytes> hashes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Hash> hashes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, VirtualLeafBytes> leafRecords = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Bytes, Long> keyToPathMap = new ConcurrentHashMap<>();
     private volatile long firstLeafPath = -1;
@@ -92,7 +92,7 @@ public class InMemoryDataSource implements VirtualDataSource {
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
             @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
             final boolean isReconnectContext)
@@ -213,8 +213,7 @@ public class InMemoryDataSource implements VirtualDataSource {
             return null;
         }
 
-        final Bytes hashBytes = hashes.get(path);
-        return hashBytes != null ? new Hash(hashBytes.toByteArray()) : null;
+        return hashes.get(path);
     }
 
     /**
@@ -244,14 +243,13 @@ public class InMemoryDataSource implements VirtualDataSource {
     // =================================================================================================================
     // private methods
 
-    private void saveInternalRecords(final long maxValidPath, final Stream<VirtualHashBytes> pathHashRecords)
+    private void saveInternalRecords(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
             throws IOException {
         final var itr = pathHashRecords.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
             final var path = rec.path();
-            final var hash =
-                    Objects.requireNonNull(rec.hashBytes(), "The hash of a saved internal record cannot be null");
+            final var hash = Objects.requireNonNull(rec.hash(), "The hash of a saved internal record cannot be null");
 
             if (path < 0) {
                 throw new IOException("Internal record for " + path + " is bogus. It cannot be < 0");

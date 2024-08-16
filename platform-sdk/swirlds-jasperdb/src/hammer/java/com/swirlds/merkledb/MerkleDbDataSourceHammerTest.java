@@ -88,9 +88,7 @@ public class MerkleDbDataSourceHammerTest {
                 dataSource.saveRecords(
                         count - 1,
                         2 * count - 2,
-                        IntStream.range(0, count)
-                                .mapToObj(j -> new VirtualHashRecord(k + j, hash(k + j + 1)))
-                                .map(VirtualHashRecord::toBytes),
+                        IntStream.range(0, count).mapToObj(j -> new VirtualHashRecord(k + j, hash(k + j + 1))),
                         IntStream.range(count - 1, count)
                                 .mapToObj(j -> new VirtualLeafRecord<>(k + j, keys.get(k), values.get((k + j) % count)))
                                 .map(r -> r.toBytes(keySerializer, valueSerializer)),

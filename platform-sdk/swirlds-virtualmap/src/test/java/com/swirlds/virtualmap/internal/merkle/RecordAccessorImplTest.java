@@ -30,7 +30,6 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -101,7 +100,7 @@ public class RecordAccessorImplTest {
         dataSource.saveRecords(
                 6,
                 12,
-                Stream.of(root, left, right, leftLeft, leftRight, rightLeft).map(VirtualHashRecord::toBytes),
+                Stream.of(root, left, right, leftLeft, leftRight, rightLeft),
                 Stream.of(firstLeaf, secondLeaf, thirdLeaf, fourthLeaf, fifthLeaf, sixthLeaf, seventhLeaf)
                         .map(r -> r.toBytes(KEY_SERIALIZER, VALUE_SERIALIZER)),
                 Stream.empty());
@@ -345,7 +344,7 @@ public class RecordAccessorImplTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                 final boolean isReconnectContext)

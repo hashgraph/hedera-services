@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualHashBytes;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
@@ -124,15 +124,15 @@ class ReconnectHashListenerTest {
                 this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
 
         // Now validate that everything showed up the data source in ordered chunks
-        final TreeSet<VirtualHashBytes> allInternalRecords =
-                new TreeSet<>(Comparator.comparingLong(VirtualHashBytes::path));
-        for (List<VirtualHashBytes> internalRecords : ds.internalRecords) {
+        final TreeSet<VirtualHashRecord> allInternalRecords =
+                new TreeSet<>(Comparator.comparingLong(VirtualHashRecord::path));
+        for (List<VirtualHashRecord> internalRecords : ds.internalRecords) {
             allInternalRecords.addAll(internalRecords);
         }
 
         assertEquals(size + size, allInternalRecords.size(), "Some internal records were not written!");
         long expected = 0;
-        for (VirtualHashBytes rec : allInternalRecords) {
+        for (VirtualHashRecord rec : allInternalRecords) {
             final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
@@ -166,7 +166,7 @@ class ReconnectHashListenerTest {
 
         private final VirtualDataSource delegate;
 
-        private final List<List<VirtualHashBytes>> internalRecords = new ArrayList<>();
+        private final List<List<VirtualHashRecord>> internalRecords = new ArrayList<>();
         private final List<List<VirtualLeafBytes>> leafRecords = new ArrayList<>();
 
         VirtualDataSourceSpy(VirtualDataSource delegate) {
@@ -182,7 +182,7 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                 final boolean isReconnectContext)
@@ -199,7 +199,7 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                @NonNull final Stream<VirtualHashBytes> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
                 @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete)
                 throws IOException {
