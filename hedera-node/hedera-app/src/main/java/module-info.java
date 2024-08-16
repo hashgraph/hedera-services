@@ -54,8 +54,7 @@ module com.hedera.node.app {
     requires static java.compiler;
     // javax.annotation.processing.Generated
 
-    exports com.hedera.node.app to
-            com.hedera.node.test.clients;
+    exports com.hedera.node.app;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.ingest to
@@ -79,10 +78,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.version to
-            com.hedera.node.app.test.fixtures,
-            com.swirlds.platform,
-            com.hedera.node.test.clients;
+    exports com.hedera.node.app.version;
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;

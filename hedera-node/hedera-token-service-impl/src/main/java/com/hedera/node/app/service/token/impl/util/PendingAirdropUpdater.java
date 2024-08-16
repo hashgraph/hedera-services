@@ -25,6 +25,7 @@ import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
  * and {@code nextAirdrop()}, also sender's account updates of {@code headPendingAirdropId()} and
  * {@code numberPendingAirdrops()}
  */
+@Singleton
 public class PendingAirdropUpdater {
     private static final Logger log = LogManager.getLogger(PendingAirdropUpdater.class);
 
@@ -67,7 +69,6 @@ public class PendingAirdropUpdater {
             @NonNull final PendingAirdropId airdropId,
             @NonNull final WritableAirdropStore pendingAirdropStore,
             @NonNull final WritableAccountStore accountStore) {
-        final var senderId = airdropId.senderIdOrThrow();
         final var airdrop = pendingAirdropStore.getForModify(airdropId);
         validateTrue(airdrop != null, INVALID_PENDING_AIRDROP_ID);
 
@@ -75,7 +76,7 @@ public class PendingAirdropUpdater {
         final var prevAirdropId = airdrop.previousAirdrop();
         final var nextAirdropId = airdrop.nextAirdrop();
         if (prevAirdropId != null) {
-            final var prevAirdrop = pendingAirdropStore.getForModify(airdropId);
+            final var prevAirdrop = pendingAirdropStore.getForModify(prevAirdropId);
             if (prevAirdrop == null) {
                 log.error("Failed to find pending airdrop with id {}", prevAirdropId);
             } else {
@@ -94,13 +95,17 @@ public class PendingAirdropUpdater {
                 pendingAirdropStore.put(nextAirdropId, updatedAirdrop);
             }
         }
-        var senderAccount = accountStore.getAccountById(senderId);
-        final var updatedSender =
-                senderAccount.copyBuilder().numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1);
-        if (airdropId.equals(senderAccount.headPendingAirdropId())) {
-            updatedSender.headPendingAirdropId(airdrop.nextAirdrop());
+        final var senderAccount = accountStore.getAccountById(airdropId.senderIdOrThrow());
+        if (senderAccount == null) {
+            log.error("Failed to find sender account with id {}", airdropId.senderIdOrThrow());
+        } else {
+            final var updatedSender =
+                    senderAccount.copyBuilder().numberPendingAirdrops(senderAccount.numberPendingAirdrops() - 1);
+            if (airdropId.equals(senderAccount.headPendingAirdropId())) {
+                updatedSender.headPendingAirdropId(airdrop.nextAirdrop());
+            }
+            accountStore.put(updatedSender.build());
         }
-        accountStore.put(updatedSender.build());
         pendingAirdropStore.remove(airdropId);
     }
 }

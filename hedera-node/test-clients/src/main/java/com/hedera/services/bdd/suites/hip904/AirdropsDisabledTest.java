@@ -38,10 +38,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -118,27 +120,35 @@ import org.junit.jupiter.api.DynamicTest;
 public class AirdropsDisabledTest {
     private static final Logger LOG = LogManager.getLogger(AirdropsDisabledTest.class);
 
+    private static String owner = "owner";
+    private static String receiver = "receiver";
+    private static String fungibleToken = "fungibleToken";
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
                 "tokens.airdrops.enabled", "false",
-                "entities.unlimitedAutoAssociationsEnabled", "false"));
+                "entities.unlimitedAutoAssociationsEnabled", "false",
+                "tokens.airdrops.claim.enabled", "false"));
+        testLifecycle.doAdhoc(
+                cryptoCreate(owner).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(receiver),
+                tokenCreate(fungibleToken).tokenType(TokenType.FUNGIBLE_COMMON).treasury(owner));
     }
 
     @HapiTest
-    @DisplayName("feature flag is disabled")
-    final Stream<DynamicTest> notSupported() {
-        return defaultHapiSpec("should fail - NOT_SUPPORTED")
-                .given(
-                        cryptoCreate("OWNER").balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("RECEIVER"),
-                        tokenCreate("FUNGIBLE_TOKEN")
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury("OWNER"))
-                .when()
-                .then(tokenAirdrop(moving(10, "FUNGIBLE_TOKEN").between("OWNER", "RECEIVER"))
-                        .payingWith("OWNER")
-                        .hasPrecheck(NOT_SUPPORTED));
+    @DisplayName("airdrop feature flag is disabled")
+    final Stream<DynamicTest> airdropNotSupported() {
+        return hapiTest(tokenAirdrop(moving(10, fungibleToken).between(owner, receiver))
+                .payingWith(owner)
+                .hasPrecheck(NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    @DisplayName("airdrop claim feature flag is disabled")
+    final Stream<DynamicTest> airdropClaimNotSupported() {
+        return hapiTest(tokenClaimAirdrop(pendingAirdrop(owner, receiver, fungibleToken))
+                .hasPrecheck(NOT_SUPPORTED));
     }
 
     @HapiTest
