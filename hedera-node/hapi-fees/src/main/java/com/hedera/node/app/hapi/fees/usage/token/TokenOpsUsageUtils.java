@@ -145,7 +145,7 @@ public enum TokenOpsUsageUtils {
     }
 
     public <R> R retrieveRawDataFrom(
-            final SubType subType, final IntSupplier getDataForNFT, final Producer<R> producer) {
+            final SubType subType, final IntSupplier getDataForNFT, final TokenOpsProducer<R> producer) {
         int serialNumsCount = 0;
         int bpt = 0;
         int transferRecordRb = 0;
@@ -160,11 +160,6 @@ public enum TokenOpsUsageUtils {
         bpt += BASIC_ENTITY_ID_SIZE;
 
         return producer.create(bpt, subType, transferRecordRb, serialNumsCount);
-    }
-
-    @FunctionalInterface
-    interface Producer<R> {
-        R create(int bpt, SubType subType, long recordDb, int t);
     }
 
     public int getTokenTxnBaseSize(final TransactionBody txn) {
@@ -192,7 +187,15 @@ public enum TokenOpsUsageUtils {
         return baseSize;
     }
 
-    public static <T> long keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
-        return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+    /**
+     * Get the size of the key if it is present in the transaction body
+     * @param body the body of the transaction
+     * @param check the predicate to check if the key is present
+     * @param getter the function to get the key
+     * @return the size of the key if it is present, 0 otherwise
+     * @param <T> the type of the body
+     */
+    public static <T> int keySizeIfPresent(final T body, final Predicate<T> check, final Function<T, Key> getter) {
+        return check.test(body) ? getAccountKeyStorageSize(getter.apply(body)) : 0;
     }
 }
