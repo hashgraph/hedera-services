@@ -17,18 +17,18 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 @Singleton
-public class CongestionThrottleService implements SchemaAware {
+public class CongestionThrottleService implements Service {
     public static final String NAME = "CongestionThrottleService";
 
     @NonNull
     @Override
-    public String getStateName() {
+    public String getServiceName() {
         return NAME;
     }
 

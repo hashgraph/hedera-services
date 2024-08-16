@@ -22,6 +22,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;
@@ -44,11 +45,11 @@ public interface ServicesRegistry {
      * @param service The service that was registered
      * @param registry The schema registry for the service
      */
-    record Registration(@NonNull SchemaAware service, @NonNull SchemaRegistry registry)
+    record Registration(@NonNull Service service, @NonNull SchemaRegistry registry)
             implements Comparable<Registration> {
         private static final Comparator<Registration> COMPARATOR = Comparator.<Registration>comparingInt(
                         r -> r.service().migrationOrder())
-                .thenComparing(r -> r.service().getStateName());
+                .thenComparing(r -> r.service().getServiceName());
 
         public Registration {
             requireNonNull(service);
@@ -56,7 +57,7 @@ public interface ServicesRegistry {
         }
 
         public String serviceName() {
-            return service.getStateName();
+            return service.getServiceName();
         }
 
         @Override
@@ -75,7 +76,7 @@ public interface ServicesRegistry {
 
     /**
      * Registers a schema-aware entity with the registry.
-     * Schema-aware entities are typically {@link SchemaAware}s
+     * Schema-aware entities are typically {@link Service}s
      * or other implementations that require schema registration.
      * @param schemaAware The schema-aware implementation to register
      */

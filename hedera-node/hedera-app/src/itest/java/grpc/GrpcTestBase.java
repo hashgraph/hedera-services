@@ -144,7 +144,7 @@ abstract class GrpcTestBase extends TestBase {
         final var testService = new RpcService() {
             @NonNull
             @Override
-            public String getStateName() {
+            public String getServiceName() {
                 return "TestService";
             }
 

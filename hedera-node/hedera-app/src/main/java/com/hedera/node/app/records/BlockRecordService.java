@@ -19,17 +19,17 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 /**
- * A {@link SchemaAware} service for managing the state of the running hashes and block information. Used by the
+ * A {@link Service} for managing the state of the running hashes and block information. Used by the
  * {@link BlockRecordManagerImpl}. This service is not exposed outside `hedera-app`.
  */
 @Singleton
-public final class BlockRecordService implements SchemaAware {
+public final class BlockRecordService implements Service {
     /** The name of this service */
     public static final String NAME = "BlockRecordService";
 
@@ -40,7 +40,7 @@ public final class BlockRecordService implements SchemaAware {
 
     @NonNull
     @Override
-    public String getStateName() {
+    public String getServiceName() {
         return NAME;
     }
 

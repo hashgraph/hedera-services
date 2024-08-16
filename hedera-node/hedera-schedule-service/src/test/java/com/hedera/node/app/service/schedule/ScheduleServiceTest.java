@@ -27,7 +27,7 @@ class ScheduleServiceTest {
 
     @Test
     void verifyServiceName() {
-        Assertions.assertThat(subject.getStateName()).isEqualTo("ScheduleService");
+        Assertions.assertThat(subject.getServiceName()).isEqualTo("ScheduleService");
     }
 
     @Test

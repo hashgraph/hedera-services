@@ -36,8 +36,8 @@ import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -227,10 +227,10 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Define Service A:
-        final var serviceA = new SchemaAware() {
+        final var serviceA = new Service() {
             @NonNull
             @Override
-            public String getStateName() {
+            public String getServiceName() {
                 return "A-Service";
             }
 
@@ -244,10 +244,10 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Define Service B:
-        final var serviceB = new SchemaAware() {
+        final var serviceB = new Service() {
             @NonNull
             @Override
-            public String getStateName() {
+            public String getServiceName() {
                 return "B-Service";
             }
 
@@ -298,13 +298,13 @@ class DependencyMigrationTest extends MerkleTestBase {
 
     // This class represents a service that depends on EntityIdService. This class will create a simple mapping from an
     // entity ID to a string value.
-    private static class DependentService implements SchemaAware {
+    private static class DependentService implements Service {
         static final String NAME = "DependentService";
         static final String STATE_KEY = "DS_MAPPINGS";
 
         @NonNull
         @Override
-        public String getStateName() {
+        public String getServiceName() {
             return NAME;
         }
 

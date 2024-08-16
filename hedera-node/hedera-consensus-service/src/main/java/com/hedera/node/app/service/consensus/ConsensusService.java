@@ -33,7 +33,7 @@ public interface ConsensusService extends RpcService {
 
     @NonNull
     @Override
-    default String getStateName() {
+    default String getServiceName() {
         return NAME;
     }
 

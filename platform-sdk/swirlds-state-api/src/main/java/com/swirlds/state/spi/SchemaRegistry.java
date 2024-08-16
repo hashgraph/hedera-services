@@ -20,8 +20,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
 /**
- * Provided by the application to the {@link SchemaAware}, the {@link SchemaRegistry} is used by the
- * {@link SchemaAware} to register all of its {@link Schema}s.
+ * Provided by the application to the {@link Service}, the {@link SchemaRegistry} is used by the
+ * {@link Service} to register all of its {@link Schema}s.
  */
 public interface SchemaRegistry {
     /**

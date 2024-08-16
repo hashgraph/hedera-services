@@ -17,20 +17,20 @@
 package com.hedera.node.app.ids;
 
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Service for providing incrementing entity id numbers. It stores the most recent entity id in state.
  */
-public class EntityIdService implements SchemaAware {
+public class EntityIdService implements Service {
     public static final String NAME = "EntityIdService";
 
     /** {@inheritDoc} */
     @NonNull
     @Override
-    public String getStateName() {
+    public String getServiceName() {
         return NAME;
     }
 

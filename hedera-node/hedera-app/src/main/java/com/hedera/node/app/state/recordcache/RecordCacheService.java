@@ -18,8 +18,8 @@ package com.hedera.node.app.state.recordcache;
 
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,14 +27,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Facilities like Record Cache are "little s" services. They have state and schemas, but are not big ticket services
  * marketed to the world.
  */
-public class RecordCacheService implements SchemaAware {
+public class RecordCacheService implements Service {
     /** The record cache service name */
     public static final String NAME = "RecordCache";
 
     /** {@inheritDoc} */
     @NonNull
     @Override
-    public String getStateName() {
+    public String getServiceName() {
         return NAME;
     }
 

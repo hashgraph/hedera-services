@@ -33,7 +33,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.spi.SchemaAware;
+import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.Set;
@@ -44,8 +44,8 @@ import java.util.Set;
  * <p>A dispatch can originate from any of,
  * <ol>
  *     <li>A user-submitted HAPI transaction at consensus.</li>
- *     <li>A {@link SchemaAware} service that needs to delegate to another
- *     service to reuse logic or change state owned by
+ *     <li>A {@link Service} that needs to delegate to another
+ *     {@link Service} to reuse logic or change state owned by
  *     that service.</li>
  *     <li>A facility in the app itself; for example, the
  *     auto-renewal/expiration facility.</li>

@@ -29,17 +29,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class RosterSchemaAwareImpl implements SchemaAware {
 
-    public static final String SCHEMA_NAME = "ROSTER_SCHEMA";
-
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
-    }
-
-    @NonNull
-    @Override
-    public String getStateName() {
-        return SCHEMA_NAME;
     }
 }

@@ -17,16 +17,14 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.pbj.runtime.RpcServiceDefinition;
-import com.swirlds.state.spi.SchemaAware;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
  * This interface defines the contract for a service that can expose RPC endpoints.
- * It will be implemented by each conceptual "service" like
- * crypto-service, token-service etc.
  */
-public interface RpcService extends SchemaAware {
+public interface RpcService extends Service {
 
     /**
      * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
