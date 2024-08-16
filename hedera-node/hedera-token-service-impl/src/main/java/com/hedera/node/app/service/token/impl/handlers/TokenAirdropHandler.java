@@ -134,9 +134,9 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         var convertedOp = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(op.tokenTransfers())
                 .build();
-        assessAndChargeCustomFee(context, convertedOp);
 
-        for (final var xfers : op.tokenTransfers()) {
+        var transfersAfterCustomFees = assessAndChargeCustomFee(context, convertedOp);
+        for (final var xfers : transfersAfterCustomFees.getFirst().tokenTransfers()) {
             throwIfContractWithoutAdminKey(xfers, accountStore);
 
             final var tokenId = xfers.tokenOrThrow();
@@ -362,13 +362,14 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * Assesses and charge the custom fee for the token airdrop transaction.
      * @param context the handle context
      * @param body the crypto transfer transaction body
+     * @return transfer transaction bodies after custom fees assessment
      */
-    private void assessAndChargeCustomFee(
+    private List<CryptoTransferTransactionBody> assessAndChargeCustomFee(
             @NonNull final HandleContext context, @NonNull final CryptoTransferTransactionBody body) {
         final var syntheticCryptoTransferTxn =
                 TransactionBody.newBuilder().cryptoTransfer(body).build();
         final var transferContext = new TransferContextImpl(context, body, true);
-        chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
+        return chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
     }
 
     /**

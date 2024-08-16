@@ -360,12 +360,12 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0),
                             getAccountBalance(HTS_COLLECTOR).hasTokenBalance(DENOM_TOKEN, htsFee),
-                            getAccountBalance(HTS_COLLECTOR2).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
+                            getAccountBalance(HTS_COLLECTOR).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
         }
 
         @HapiTest
         @DisplayName("fungible token with fractional fee")
-        final Stream<DynamicTest> fungibleTokenWithFractionalFeesPaidByReceiverFails() {
+        final Stream<DynamicTest> fungibleTokenWithFractionalFees() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
                             tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
@@ -377,13 +377,35 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .via("fractionalTxn"))
                     .then(
                             validateChargedUsd("fractionalTxn", 0.1, 10),
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
+                            getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, Long.MAX_VALUE - 100 + 2),
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 23));
+        }
+
+        @HapiTest
+        @DisplayName("fungible token with fractional in pending state")
+        final Stream<DynamicTest> ftAirdropInPendingStateAfterChargingFractionalFeeWithNetTransferFalse() {
+            var sender = "sender";
+            return defaultHapiSpec("the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                                    .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(sender)
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            // check if only 90% are stored in the pending airdrop state
                             getTxnRecord("fractionalTxn")
                                     .hasPriority(recordWith()
-                                            .tokenTransfers(includingFungibleMovement(moving(25, FT_WITH_FRACTIONAL_FEE)
-                                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))),
-                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
-                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 25));
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moving(90, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))));
         }
 
         @HapiTest

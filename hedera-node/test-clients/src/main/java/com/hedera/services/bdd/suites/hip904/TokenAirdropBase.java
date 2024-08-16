@@ -64,11 +64,12 @@ public class TokenAirdropBase {
     protected static final String FT_WITH_HBAR_FIXED_FEE = "fungibleTokenWithHbarCustomFee";
     protected static final String FT_WITH_HTS_FIXED_FEE = "fungibleTokenWithHtsCustomFee";
     protected static final String FT_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalFee";
+    protected static final String FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS = "ftWithFractionalFeeNetOfTransfers";
     protected static final String NFT_WITH_HTS_FIXED_FEE = "NftWithHtsFixedFee";
     protected static final String NFT_WITH_ROYALTY_FEE = "NftWithRoyaltyFee";
     protected static final String DENOM_TOKEN = "denomToken";
     protected static final String HTS_COLLECTOR = "htsCollector";
-    protected static final String HTS_COLLECTOR2 = "htsCollector2";
+    // protected static final String HTS_COLLECTOR2 = "htsCollector2";
     protected static final String HBAR_COLLECTOR = "hbarCollector";
     protected static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
     protected static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
@@ -144,7 +145,7 @@ public class TokenAirdropBase {
                         .initialSupply(tokenTotal)
                         .withCustom(fixedHbarFee(hbarFee, HBAR_COLLECTOR)),
                 cryptoCreate(HTS_COLLECTOR),
-                cryptoCreate(HTS_COLLECTOR2),
+                //                cryptoCreate(HTS_COLLECTOR2),
                 tokenCreate(DENOM_TOKEN)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .initialSupply(tokenTotal),
@@ -154,7 +155,7 @@ public class TokenAirdropBase {
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .initialSupply(tokenTotal)
                         .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN, HTS_COLLECTOR)),
-                tokenAssociate(HTS_COLLECTOR2, FT_WITH_HTS_FIXED_FEE),
+                tokenAssociate(HTS_COLLECTOR, FT_WITH_HTS_FIXED_FEE),
                 newKeyNamed(nftWithCustomFeeSupplyKey),
                 tokenCreate(NFT_WITH_HTS_FIXED_FEE)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
@@ -162,12 +163,17 @@ public class TokenAirdropBase {
                         .supplyKey(nftWithCustomFeeSupplyKey)
                         .supplyType(TokenSupplyType.INFINITE)
                         .initialSupply(0)
-                        .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FIXED_FEE, HTS_COLLECTOR2)),
+                        .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FIXED_FEE, HTS_COLLECTOR)),
                 mintToken(NFT_WITH_HTS_FIXED_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
                 tokenCreate(FT_WITH_FRACTIONAL_FEE)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .tokenType(FUNGIBLE_COMMON)
                         .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), TREASURY_FOR_CUSTOM_FEE_TOKENS))
+                        .initialSupply(Long.MAX_VALUE),
+                tokenCreate(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.of(100), TREASURY_FOR_CUSTOM_FEE_TOKENS))
                         .initialSupply(Long.MAX_VALUE),
                 tokenCreate(NFT_WITH_ROYALTY_FEE)
                         .maxSupply(10L)

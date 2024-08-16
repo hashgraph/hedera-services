@@ -125,8 +125,10 @@ public class TransferExecutor extends BaseTokenHandler {
      *
      * @param txn             transaction body
      * @param transferContext transfer context
+     * @return transfer transaction bodies after custom fees assessment
      */
-    protected void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
+    protected List<CryptoTransferTransactionBody> chargeCustomFee(
+            TransactionBody txn, TransferContextImpl transferContext) {
         final var customFeeStep = new CustomFeeAssessmentStep(txn.cryptoTransferOrThrow());
         var transferBodies = customFeeStep.assessCustomFees(transferContext);
         var topLevelPayer = transferContext.getHandleContext().payer();
@@ -140,6 +142,8 @@ public class TransferExecutor extends BaseTokenHandler {
                     new AdjustFungibleTokenChangesStep(transferBodies.get(i).tokenTransfers(), topLevelPayer);
             adjustFungibleChangesStep.doIn(transferContext);
         }
+
+        return transferBodies;
     }
 
     /**
