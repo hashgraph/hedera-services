@@ -302,6 +302,65 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("Claim token airdrop - 2nd account pays")
+    final Stream<DynamicTest> claimTokenAirdropOtherAccountPays() {
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(0L),
+                cryptoCreate(OWNER_2).balance(ONE_HUNDRED_HBARS),
+
+                // do pending airdrop
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)).payingWith(OWNER),
+
+                // do claim
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
+                        .signedBy(OWNER_2, RECEIVER)
+                        .payingWith(OWNER_2)
+                        .via("claimTxn"),
+                getTxnRecord("claimTxn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
+                validateChargedUsd("claimTxn", 0.001, 1),
+
+                // assert balances
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+
+                // assert token associations
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+    }
+
+    @HapiTest
+    @DisplayName("Claim token airdrop - sender account pays")
+    final Stream<DynamicTest> claimTokenAirdropSenderAccountPays() {
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(0L),
+
+                // do pending airdrop
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)).payingWith(OWNER),
+
+                // do claim
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
+                        .signedBy(OWNER, RECEIVER)
+                        .payingWith(OWNER)
+                        .via("claimTxn"),
+                getTxnRecord("claimTxn")
+                        .hasPriority(recordWith()
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
+                validateChargedUsd("claimTxn", 0.001, 1),
+
+                // assert balances
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+
+                // assert token associations
+                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+    }
+
+    @HapiTest
     @DisplayName("multiple pending transfers in one airdrop same token different receivers")
     final Stream<DynamicTest> multiplePendingInOneAirdropDifferentReceivers() {
         final String ALICE = "ALICE";
@@ -353,16 +412,16 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
                 createFT(FUNGIBLE_TOKEN_2, ALICE, 1000L),
                 tokenAssociate(BOB, FUNGIBLE_TOKEN_1).payingWith(ALICE),
-                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
-                        moving(1, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
+                tokenAirdrop(
+                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                                moving(1, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
                         .payingWith(ALICE),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 0),
                 tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
                         .signedBy(BOB)
                         .payingWith(BOB),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1)
-                );
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1));
     }
 
     @HapiTest
