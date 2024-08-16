@@ -202,6 +202,17 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isLiteralEvmAddress(@NonNull final String s) {
+        return (s.startsWith("0x") && s.substring(2).matches("[0-9a-fA-F]+"))
+                || (s.length() == 40 && s.matches("[0-9a-fA-F]+"));
+    }
+
+    public static ByteString asLiteralEvmAddress(@NonNull final String s) {
+        return s.startsWith("0x")
+                ? ByteString.copyFrom(CommonUtils.unhex(s.substring(2)))
+                : ByteString.copyFrom(CommonUtils.unhex(s));
+    }
+
     public static boolean isNumericLiteral(final String s) {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
@@ -215,6 +226,9 @@ public class TxnUtils {
     }
 
     public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
+        if (isLiteralEvmAddress(s)) {
+            return AccountID.newBuilder().setAlias(asLiteralEvmAddress(s)).build();
+        }
         return isIdLiteral(s)
                 ? asAccount(s)
                 : (lookupSpec.registry().hasAccountId(s)

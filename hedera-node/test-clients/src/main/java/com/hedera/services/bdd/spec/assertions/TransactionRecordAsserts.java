@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -169,6 +170,18 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts pendingAirdrops(ErroringAssertsProvider<List<PendingAirdropRecord>> provider) {
         registerTypedProvider("newPendingAirdropsList", provider);
+        return this;
+    }
+
+    public TransactionRecordAsserts pendingAirdropsCount(final int n) {
+        this.<List<PendingAirdropId>>registerTypedProvider("newPendingAirdropsList", spec -> pendingAirdrops -> {
+            try {
+                assertEquals(n, pendingAirdrops.size(), "Wrong # of pending airdrops");
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
         return this;
     }
 
