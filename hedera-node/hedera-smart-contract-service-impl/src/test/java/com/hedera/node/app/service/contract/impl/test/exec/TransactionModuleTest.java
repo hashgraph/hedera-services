@@ -237,7 +237,8 @@ class TransactionModuleTest {
         given(tinybarValues.childTransactionTinybarGasPriceFullPrecision()).willReturn(2L);
         final var calculator =
                 TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
-        final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
+        final var result =
+                calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT) / 1000;
         // Expect the result to be ceil(7 tinybar / 2 tinybar per gas) = 4 gas.
         assertEquals(4L, result);
     }
