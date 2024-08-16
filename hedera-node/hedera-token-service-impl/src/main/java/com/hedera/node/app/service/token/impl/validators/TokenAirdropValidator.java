@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -159,11 +160,10 @@ public class TokenAirdropValidator {
                         CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
     }
 
-    private boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
+    public boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
-        final var feeMeta = customFeeMetaFrom(token);
-        if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            for (var fee : feeMeta.customFees()) {
+        if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            for (var fee : token.customFees()) {
                 if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
                     return false;
                 }

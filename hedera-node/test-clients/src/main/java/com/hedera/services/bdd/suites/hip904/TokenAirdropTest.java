@@ -42,11 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
@@ -95,14 +90,9 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -113,7 +103,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 @HapiTestLifecycle
 @DisplayName("Token airdrop")
-public class TokenAirdropTest {
+public class TokenAirdropTest extends TokenAirdropBase {
     private static final String OWNER = "owner";
     // receivers
     private static final String RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS = "receiverWithUnlimitedAutoAssociations";
@@ -609,9 +599,10 @@ public class TokenAirdropTest {
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
+            final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(initialBalance),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HBAR_FIXED_FEE),
                             cryptoTransfer(moving(1000, FT_WITH_HBAR_FIXED_FEE)
                                     .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
@@ -631,7 +622,7 @@ public class TokenAirdropTest {
                                 final var txFee = record.getResponseRecord().getTransactionFee();
                                 // the token should not be transferred but the custom fee should be charged
                                 final var ownerBalance = getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                        .hasTinyBars(ONE_MILLION_HBARS - (txFee + hbarFee))
+                                        .hasTinyBars(initialBalance - (txFee + hbarFee))
                                         .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 1000);
                                 allRunFor(spec, ownerBalance);
                             }),
@@ -660,7 +651,7 @@ public class TokenAirdropTest {
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(100 * ONE_HUNDRED_HBARS),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, DENOM_TOKEN),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HTS_FIXED_FEE),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, NFT_WITH_HTS_FIXED_FEE),

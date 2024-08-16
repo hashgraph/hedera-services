@@ -40,6 +40,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -60,7 +61,7 @@ import javax.inject.Singleton;
  * custom fee assessment steps from other steps (to prepay fees in case of pending airdrops)
  */
 @Singleton
-public class TransferExecutor {
+public class TransferExecutor extends BaseTokenHandler {
     private final CryptoTransferValidator validator;
     /**
      * Default constructor for injection.

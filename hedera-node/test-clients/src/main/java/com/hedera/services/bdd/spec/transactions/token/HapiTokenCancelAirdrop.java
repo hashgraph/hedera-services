@@ -44,6 +44,7 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
     private final List<Function<HapiSpec, PendingAirdropId>> pendingAirdropIds;
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public HapiTokenCancelAirdrop(final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
         this.pendingAirdropIds = List.of(pendingAirdropIds);
     }
