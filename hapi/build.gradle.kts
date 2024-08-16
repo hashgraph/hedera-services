@@ -34,10 +34,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     // tag = "v0.53.0"
     // uncomment below to use a specific branch
-    // branch = "add-throttle-at-consensus"
-    // DO NOT MERGE THE BELOW, it's a PR branch for
-    // https://github.com/hashgraph/hedera-protobufs/pull/393 .
-    branch = "392-add-proto-for-rosterentry"
+    branch = "add-throttle-at-consensus"
 }
 
 sourceSets {
