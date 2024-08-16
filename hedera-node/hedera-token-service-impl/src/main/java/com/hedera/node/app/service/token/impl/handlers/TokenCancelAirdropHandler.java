@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
@@ -33,14 +32,12 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
@@ -78,32 +75,10 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var txn = context.body();
         final var op = txn.tokenCancelAirdropOrThrow();
         final var allPendingAirdrops = op.pendingAirdrops();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-
         for (final var airdrop : allPendingAirdrops) {
             validateTruePreCheck(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
-            verifyAndRequireKeyForSender(airdrop.senderIdOrThrow(), context, accountStore);
+            context.requireAliasedKeyOrThrow(airdrop.senderIdOrThrow(), INVALID_ACCOUNT_ID);
         }
-    }
-
-    /**
-     * Verifies that the sender account exists and ensures the account's key is valid and required for the transaction.
-     *
-     * @param senderId The AccountID of the specified sender whose key needs to be validated.
-     * @param context The PreHandleContext providing transaction context.
-     * @param accountStore The store to access readable account information.
-     * @throws PreCheckException If the sender's account is immutable or the sender's account ID is invalid.
-     */
-    private void verifyAndRequireKeyForSender(
-            @NonNull final AccountID senderId,
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableAccountStore accountStore)
-            throws PreCheckException {
-        final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
-        // If the sender account is immutable, then we throw an exception.
-        validateTruePreCheck(senderAccount.key() != null, ACCOUNT_IS_IMMUTABLE);
-        context.requireKey(senderAccount.key());
     }
 
     @Override
