@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link SchemaAware} interface.
  * Registers the roster schemas with the {@link SchemaRegistry}.
  */
-public class RosterSchemaRegistryImpl implements SchemaAware {
+public class RosterSchemaAwareImpl implements SchemaAware {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {

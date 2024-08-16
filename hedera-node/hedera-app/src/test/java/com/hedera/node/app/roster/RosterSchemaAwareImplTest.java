@@ -29,17 +29,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class RosterSchemaRegistryImplTest {
-    private RosterSchemaRegistryImpl rosterSchemaRegistry;
+class RosterSchemaAwareImplTest {
+    private RosterSchemaAwareImpl rosterSchemaRegistry;
 
     @BeforeEach
     void setUp() {
-        rosterSchemaRegistry = new RosterSchemaRegistryImpl();
+        rosterSchemaRegistry = new RosterSchemaAwareImpl();
     }
 
     @Test
     void defaultConstructor() {
-        assertThat(new RosterSchemaRegistryImpl()).isNotNull();
+        assertThat(new RosterSchemaAwareImpl()).isNotNull();
     }
 
     @Test

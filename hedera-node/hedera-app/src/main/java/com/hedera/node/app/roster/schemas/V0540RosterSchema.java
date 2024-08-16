@@ -27,12 +27,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Schema for the TSS Base service
+ * Roster Schema
  */
 public class V0540RosterSchema extends Schema {
     public static final String ROSTER_KEY = "ROSTER";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
-    //
     private static final long MAX_ROSTERS = 8L;
 
     /**
