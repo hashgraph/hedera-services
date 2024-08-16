@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -78,20 +77,38 @@ class ContractCallTranslatorTest {
         when(mockContractCallOutput.contractCallResult()).thenReturn(mockContractFunctionResult);
         when(mockContractCallOutput.sidecars()).thenReturn(sidecars);
 
-        final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
-        when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
+        SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
+
+        // Then
+        TransactionRecord expectedRecord = TransactionRecord.newBuilder()
+                .contractCallResult(mockContractFunctionResult)
+                .build();
+
+        assertEquals(mockTransaction, result.transaction());
+        assertEquals(expectedRecord, result.transactionRecord());
+        assertEquals(result.transactionSidecarRecords(), sidecars);
+        assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    @Test
+    void testTranslateContractCallDefaultSidecars() {
+        // When
+        when(mockTransactionBlockItems.txn()).thenReturn(mockTransaction);
+        when(mockTransactionBlockItems.output()).thenReturn(mockTransactionOutput);
+        when(mockTransactionBlockItems.output().hasContractCall()).thenReturn(true);
+        when(mockTransactionBlockItems.output().contractCall()).thenReturn(mockContractCallOutput);
+        when(mockContractCallOutput.contractCallResult()).thenReturn(mockContractFunctionResult);
 
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
         // Then
         TransactionRecord expectedRecord = TransactionRecord.newBuilder()
                 .contractCallResult(mockContractFunctionResult)
-                .consensusTimestamp(timestamp)
                 .build();
 
         assertEquals(mockTransaction, result.transaction());
         assertEquals(expectedRecord, result.transactionRecord());
-        assertEquals(result.transactionSidecarRecords(), sidecars);
+        assertEquals(result.transactionSidecarRecords(), List.of());
         assertEquals(result.transactionOutputs(), new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
