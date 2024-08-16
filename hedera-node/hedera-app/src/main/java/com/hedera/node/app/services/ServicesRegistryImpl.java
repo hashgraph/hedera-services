@@ -23,7 +23,6 @@ import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaAware;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -70,19 +69,15 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      */
     @Override
     public void register(@NonNull final SchemaAware schemaAware) {
-        requireNonNull(schemaAware);
-        if (!(schemaAware instanceof final Service service)) {
-            throw new IllegalArgumentException("Only services can be registered with the registry");
-        }
-        final var serviceName = service.getServiceName();
+        final var serviceName = schemaAware.getStateName();
 
         logger.debug("Registering schemas for service {}", serviceName);
         final var registry =
                 new MerkleSchemaRegistry(constructableRegistry, serviceName, bootstrapConfig, new SchemaApplications());
-        service.registerSchemas(registry);
+        schemaAware.registerSchemas(registry);
 
-        entries.add(new Registration(service, registry));
-        logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());
+        entries.add(new Registration(schemaAware, registry));
+        logger.info("Registered service {} with implementation {}", schemaAware.getStateName(), schemaAware.getClass());
     }
 
     @NonNull

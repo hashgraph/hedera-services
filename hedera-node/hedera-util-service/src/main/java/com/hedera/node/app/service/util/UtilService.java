@@ -35,7 +35,7 @@ public interface UtilService extends RpcService {
 
     @NonNull
     @Override
-    default String getServiceName() {
+    default String getStateName() {
         return NAME;
     }
 

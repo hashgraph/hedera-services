@@ -69,7 +69,7 @@ class TokenServiceImplTest {
 
     @Test
     void verifyServiceName() {
-        assertThat(subject.getServiceName()).isEqualTo("TokenService");
+        assertThat(subject.getStateName()).isEqualTo("TokenService");
     }
 
     @Test

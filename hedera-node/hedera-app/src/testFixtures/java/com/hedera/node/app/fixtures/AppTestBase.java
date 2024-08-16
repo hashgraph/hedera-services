@@ -54,7 +54,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -243,7 +243,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public static final class TestAppBuilder {
         private SemanticVersion softwareVersion = CURRENT_VERSION;
         private SemanticVersion hapiVersion = CURRENT_VERSION;
-        private Set<Service> services = new LinkedHashSet<>();
+        private Set<SchemaAware> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = null;
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
@@ -257,7 +257,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
          * @param service The service to include.
          * @return a reference to this builder
          */
-        public TestAppBuilder withService(@NonNull final Service service) {
+        public TestAppBuilder withService(@NonNull final SchemaAware service) {
             services.add(service);
             return this;
         }
@@ -373,7 +373,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);
-                reg.migrate(svc.getServiceName(), initialState, networkInfo);
+                reg.migrate(svc.getStateName(), initialState, networkInfo);
             });
             workingStateAccessor.setState(initialState);
 

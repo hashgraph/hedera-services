@@ -79,7 +79,6 @@ final class ServicesRegistryImplTest {
         registry.register(TestService.newBuilder().name("A").build());
 
         final var registrations = registry.registrations();
-        assertThat(registrations.stream().map(r -> r.service().getServiceName()))
-                .containsExactly("A", "B", "C");
+        assertThat(registrations.stream().map(r -> r.service().getStateName())).containsExactly("A", "B", "C");
     }
 }

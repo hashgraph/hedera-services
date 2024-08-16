@@ -16,13 +16,10 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.services.ServicesRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaAware;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -58,15 +55,11 @@ public class FakeServicesRegistry implements ServicesRegistry {
      */
     @Override
     public void register(@NonNull final SchemaAware schemaAware) {
-        requireNonNull(schemaAware);
-        if (!(schemaAware instanceof final Service service)) {
-            throw new IllegalArgumentException("Only services can be registered with the registry");
-        }
         final var registry = new FakeSchemaRegistry();
-        service.registerSchemas(registry);
+        schemaAware.registerSchemas(registry);
 
-        entries.add(new FakeServicesRegistry.Registration(service, registry));
-        logger.info("Registered service {}", service.getServiceName());
+        entries.add(new FakeServicesRegistry.Registration(schemaAware, registry));
+        logger.info("Registered service {}", schemaAware.getStateName());
     }
 
     @NonNull

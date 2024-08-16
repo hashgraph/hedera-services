@@ -41,7 +41,7 @@ class ScheduleServiceImplTest {
         final ScheduleService service = new ScheduleServiceImpl();
         BDDAssertions.assertThat(service).isNotNull();
         BDDAssertions.assertThat(service.getClass()).isEqualTo(ScheduleServiceImpl.class);
-        BDDAssertions.assertThat(service.getServiceName()).isEqualTo("ScheduleService");
+        BDDAssertions.assertThat(service.getStateName()).isEqualTo("ScheduleService");
     }
 
     @Test

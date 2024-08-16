@@ -26,8 +26,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
+import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  * The entire purpose of this class is to ensure that inter-service dependencies are respected between
  * migrations. The only required dependency right now is the {@link EntityIdService}, which is needed
  * for genesis blocklist accounts in the token service genesis migration. (See {@link
- * Service#registerSchemas(SchemaRegistry)}).
+ * SchemaAware#registerSchemas(SchemaRegistry)}).
  *
  * <p>Note: there are only two ordering requirements to maintain: first, that the entity ID service
  * is migrated before the token service; and second, that the remaining services are migrated _in any
@@ -72,7 +72,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
         final Map<String, Object> sharedValues = new HashMap<>();
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
-                .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
+                .filter(service -> EntityIdService.NAME.equals(service.service().getStateName()))
                 .findFirst()
                 .orElseThrow();
         final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
@@ -109,7 +109,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                     // FUTURE We should have metrics here to keep track of how long it takes to
                     // migrate each service
                     final var service = registration.service();
-                    final var serviceName = service.getServiceName();
+                    final var serviceName = service.getStateName();
                     logger.info("Migrating Service {}", serviceName);
                     final var registry = (MerkleSchemaRegistry) registration.registry();
 

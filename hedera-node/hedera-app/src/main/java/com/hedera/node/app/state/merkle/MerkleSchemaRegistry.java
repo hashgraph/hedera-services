@@ -53,8 +53,8 @@ import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -74,7 +74,7 @@ import org.apache.logging.log4j.Logger;
  * An implementation of {@link SchemaRegistry}.
  *
  * <p>When the Hedera application starts, it creates an instance of {@link MerkleSchemaRegistry} for
- * each {@link Service}, and passes it to the service as part of construction. The {@link Service}
+ * each {@link SchemaAware}, and passes it to the service as part of construction. The {@link SchemaAware}
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *

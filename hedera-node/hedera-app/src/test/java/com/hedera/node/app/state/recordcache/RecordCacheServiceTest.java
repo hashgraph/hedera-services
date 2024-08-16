@@ -39,7 +39,7 @@ final class RecordCacheServiceTest {
     @Test
     void constructor() {
         final var svc = new RecordCacheService();
-        assertThat(svc.getServiceName()).isEqualTo(RecordCacheService.NAME);
+        assertThat(svc.getStateName()).isEqualTo(RecordCacheService.NAME);
     }
 
     @Test

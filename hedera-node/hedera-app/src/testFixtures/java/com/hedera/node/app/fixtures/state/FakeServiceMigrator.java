@@ -67,7 +67,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
                 .filter(service ->
-                        NAME_OF_ENTITY_ID_SERVICE.equals(service.service().getServiceName()))
+                        NAME_OF_ENTITY_ID_SERVICE.equals(service.service().getStateName()))
                 .findFirst()
                 .orElseThrow();
         if (!(entityIdRegistration.registry() instanceof FakeSchemaRegistry entityIdRegistry)) {

@@ -55,9 +55,9 @@ final class BlockRecordServiceTest {
     private @Mock WritableStates writableStates;
 
     @Test
-    void testGetServiceName() {
+    void testGetStateName() {
         BlockRecordService blockRecordService = new BlockRecordService();
-        assertEquals(BlockRecordService.NAME, blockRecordService.getServiceName());
+        assertEquals(BlockRecordService.NAME, blockRecordService.getStateName());
     }
 
     @Test

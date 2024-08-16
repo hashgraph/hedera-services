@@ -44,7 +44,7 @@ class RosterSchemaAwareImplTest {
 
     @Test
     void registerSchemasNullArgsThrow() {
-        Assertions.assertThatThrownBy(() -> rosterSchemaRegistry.registerSchemas(mock(SchemaRegistry.class)))
+        Assertions.assertThatThrownBy(() -> rosterSchemaRegistry.registerSchemas(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -58,5 +58,10 @@ class RosterSchemaAwareImplTest {
         final var schemas = captor.getAllValues();
         assertThat(schemas).hasSize(1);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
+    }
+
+    @Test
+    void getStateNameReturnsCorrectName() {
+        assertThat(rosterSchemaRegistry.getStateName()).isEqualTo(RosterSchemaAwareImpl.SCHEMA_NAME);
     }
 }

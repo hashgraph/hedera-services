@@ -20,7 +20,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import java.time.InstantSource;
 
 /**
- * Gives context to {@link com.swirlds.state.spi.Service} implementations on how the application workflows will do
+ * Gives context to {@link com.swirlds.state.spi.SchemaAware} implementations on how the application workflows will do
  * shared functions like verifying signatures or computing the current instant.
  */
 public interface AppContext {
