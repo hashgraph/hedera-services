@@ -26,8 +26,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -156,8 +154,7 @@ public class TokenAirdropValidator {
      */
     private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
         return token.customFees().stream()
-                .anyMatch(customFee ->
-                        CustomFeeExemptions.isPayerExempt(customFeeMetaFrom(token), customFee, receiverId));
+                .anyMatch(customFee -> CustomFeeExemptions.isPayerExempt(token, customFee, receiverId));
     }
 
     public boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
