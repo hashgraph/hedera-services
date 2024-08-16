@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -295,9 +294,10 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
+            final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(initialBalance),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HBAR_FIXED_FEE),
                             cryptoTransfer(moving(1000, FT_WITH_HBAR_FIXED_FEE)
                                     .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
@@ -317,7 +317,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 final var txFee = record.getResponseRecord().getTransactionFee();
                                 // the token should not be transferred but the custom fee should be charged
                                 final var ownerBalance = getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                        .hasTinyBars(ONE_MILLION_HBARS - (txFee + hbarFee))
+                                        .hasTinyBars(initialBalance - (txFee + hbarFee))
                                         .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 1000);
                                 allRunFor(spec, ownerBalance);
                             }),
@@ -330,7 +330,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
-                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(ONE_MILLION_HBARS),
+                            cryptoCreate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES).balance(100 * ONE_HUNDRED_HBARS),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, DENOM_TOKEN),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, FT_WITH_HTS_FIXED_FEE),
                             tokenAssociate(OWNER_OF_TOKENS_WITH_CUSTOM_FEES, NFT_WITH_HTS_FIXED_FEE),
