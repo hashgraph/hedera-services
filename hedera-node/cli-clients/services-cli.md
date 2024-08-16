@@ -331,7 +331,6 @@ The syntax of the sign subcommand is almost identical to the account balance `si
 the command name&ndash;use `record-stream` instead of `account-balance`:
 
 ```shell
-
 ./services-cli.sh [PCLI options] \
 record-stream sign \    # <-- Use record-stream instead of account-balance
 [sub/command options] \
