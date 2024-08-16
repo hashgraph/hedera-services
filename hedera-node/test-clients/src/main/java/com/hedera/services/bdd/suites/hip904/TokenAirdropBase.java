@@ -28,7 +28,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -40,6 +44,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalLong;
 
@@ -176,6 +181,18 @@ public class TokenAirdropBase {
                 tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
                 mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
 
+        return t.toArray(new SpecOperation[0]);
+    }
+
+    protected static SpecOperation[] setUpEntitiesPreHIP904() {
+        final var validAlias = "validAlias";
+        final var sponsor = "sponsor";
+        final var t = new ArrayList<SpecOperation>(List.of(
+                // create hollow account with 0 auto associations
+                cryptoCreate(sponsor).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE)));
+        t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
+        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
         return t.toArray(new SpecOperation[0]);
     }
 
