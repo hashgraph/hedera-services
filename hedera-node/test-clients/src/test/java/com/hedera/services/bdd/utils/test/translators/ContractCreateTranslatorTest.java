@@ -23,7 +23,6 @@ import com.hedera.hapi.block.stream.output.CreateContractOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -86,9 +85,6 @@ class ContractCreateTranslatorTest {
         when(mockContractFunctionResult.contractID()).thenReturn(contractID);
         when(mockContractFunctionResult.evmAddress()).thenReturn(evmAddress);
 
-        final Timestamp timestamp = Timestamp.newBuilder().seconds(123456L).build();
-        when(mockStateChanges.consensusTimestamp()).thenReturn(timestamp);
-
         SingleTransactionRecord result = translator.translate(mockTransactionBlockItems, mockStateChanges);
 
         // Then
@@ -99,7 +95,6 @@ class ContractCreateTranslatorTest {
                 .receipt(expectedReceipt)
                 .evmAddress(evmAddress)
                 .contractCreateResult(mockContractFunctionResult)
-                .consensusTimestamp(timestamp)
                 .build();
 
         assertEquals(mockTransaction, result.transaction());
