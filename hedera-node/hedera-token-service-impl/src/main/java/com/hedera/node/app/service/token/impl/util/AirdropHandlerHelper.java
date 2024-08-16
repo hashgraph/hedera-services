@@ -17,8 +17,12 @@
 package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -32,8 +36,10 @@ import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -45,6 +51,52 @@ import java.util.Set;
  * Utility class that provides static methods
  */
 public class AirdropHandlerHelper {
+    /**
+     * Given an account store and a list of validated pending airdrop ids, standardizes the pending airdrop ids
+     * to use only the {@code 0.0.X} numeric ids for both sender and receiver.
+     * @param accountStore the account store to look up aliases in
+     * @param airdropIds the list of pending airdrop ids to standardize
+     * @param knownExtantIdTypes the set of id types that are known to exist in the system
+     * @return a list of standardized pending airdrop ids
+     * @throws HandleException with INVALID_PENDING_AIRDROP_ID if any of the pending airdrop ids are invalid
+     */
+    public static List<PendingAirdropId> standardizeAirdropIds(
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableAirdropStore airdropStore,
+            @NonNull final List<PendingAirdropId> airdropIds,
+            @NonNull final Set<IdType> knownExtantIdTypes) {
+        final List<PendingAirdropId> standardAirdropIds = new ArrayList<>();
+        for (final var airdropId : airdropIds) {
+            final var sender = knownExtantIdTypes.contains(IdType.SENDER)
+                    ? requireNonNull(accountStore.getAliasedAccountById(airdropId.senderIdOrThrow()))
+                    : accountStore.getAliasedAccountById(airdropId.senderIdOrElse(AccountID.DEFAULT));
+            validateTrue(sender != null, INVALID_PENDING_AIRDROP_ID);
+            final var receiver = knownExtantIdTypes.contains(IdType.RECEIVER)
+                    ? requireNonNull(accountStore.getAliasedAccountById(airdropId.receiverIdOrThrow()))
+                    : accountStore.getAliasedAccountById(airdropId.receiverIdOrElse(AccountID.DEFAULT));
+            validateTrue(receiver != null, INVALID_PENDING_AIRDROP_ID);
+            // Airdrop ids always have 0.0.X form of both sender and receiver ids
+            final var validatedId = airdropId
+                    .copyBuilder()
+                    .senderId(sender.accountIdOrThrow())
+                    .receiverId(receiver.accountIdOrThrow())
+                    .build();
+            validateTrue(airdropStore.exists(validatedId), INVALID_PENDING_AIRDROP_ID);
+            standardAirdropIds.add(validatedId);
+        }
+        final var uniqueAirdropIds = Set.copyOf(standardAirdropIds);
+        validateTrue(standardAirdropIds.size() == uniqueAirdropIds.size(), PENDING_AIRDROP_ID_REPEATED);
+        return standardAirdropIds;
+    }
+
+    /**
+     * A type of airdrop-involved id to look up in the account store.
+     */
+    public enum IdType {
+        SENDER,
+        RECEIVER
+    }
+
     public record FungibleAirdropLists(
             @NonNull List<AccountAmount> transferFungibleAmounts,
             @NonNull List<AccountAmount> pendingFungibleAmounts,
@@ -80,8 +132,8 @@ public class AirdropHandlerHelper {
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
-            // if not existing account, create transfer
-            if (!accountStore.contains(accountId)) {
+            // Treat a transfer to a missing account as an auto-creation attempt
+            if (accountStore.isMissing(accountId)) {
                 transferFungibleAmounts.add(aa);
                 transfersNeedingAutoAssociation.add(accountId);
                 continue;
@@ -130,20 +182,18 @@ public class AirdropHandlerHelper {
             final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
             final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
 
-            var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
-            // if not existing account, create transfer
-            if (!accountStore.contains(receiverId)) {
+            final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
+            // Treat a transfer to a missing account as an auto-creation attempt
+            if (accountStore.isMissing(receiverId)) {
                 transferNftList.add(nftTransfer);
                 transfersNeedingAutoAssociation.add(receiverId);
                 continue;
             }
 
-            var account =
+            final var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-            var tokenRel = tokenRelStore.get(receiverId, tokenId);
-            var isPendingAirdrop = isPendingAirdrop(account, tokenRel);
-
-            if (isPendingAirdrop) {
+            final var tokenRel = tokenRelStore.get(receiverId, tokenId);
+            if (isPendingAirdrop(account, tokenRel)) {
                 pendingNftList.add(nftTransfer);
             } else {
                 transferNftList.add(nftTransfer);
@@ -183,15 +233,15 @@ public class AirdropHandlerHelper {
      * Creates a {@link PendingAirdropId} for a fungible token.
      *
      * @param tokenId the ID of the token
-     * @param senderId the ID of sender's account
-     * @param receiverId the ID of receiver's account
+     * @param sender the sender's account
+     * @param receiver the receiver's account
      * @return {@link PendingAirdropId} for storing in the state
      */
     public static PendingAirdropId createFungibleTokenPendingAirdropId(
-            TokenID tokenId, AccountID senderId, AccountID receiverId) {
+            TokenID tokenId, Account sender, Account receiver) {
         return PendingAirdropId.newBuilder()
-                .receiverId(receiverId)
-                .senderId(senderId)
+                .receiverId(receiver.accountIdOrThrow())
+                .senderId(sender.accountIdOrThrow())
                 .fungibleTokenType(tokenId)
                 .build();
     }
@@ -201,17 +251,17 @@ public class AirdropHandlerHelper {
      *
      * @param tokenId the ID of the token
      * @param serialNumber the serial number of the token
-     * @param senderId the ID of the sender's account
-     * @param receiverId the ID of the receiver's account
+     * @param sender the sender's account
+     * @param receiver the receiver's account
      * @return {@link PendingAirdropId} for storing in the state
      */
     public static PendingAirdropId createNftPendingAirdropId(
-            TokenID tokenId, long serialNumber, AccountID senderId, AccountID receiverId) {
+            TokenID tokenId, long serialNumber, Account sender, Account receiver) {
         var nftId =
                 NftID.newBuilder().tokenId(tokenId).serialNumber(serialNumber).build();
         return PendingAirdropId.newBuilder()
-                .receiverId(receiverId)
-                .senderId(senderId)
+                .receiverId(receiver.accountIdOrThrow())
+                .senderId(sender.accountIdOrThrow())
                 .nonFungibleToken(nftId)
                 .build();
     }
