@@ -21,7 +21,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -39,7 +38,7 @@ public class TotalSupplyTranslator extends AbstractCallTranslator<HtsCallAttempt
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOTAL_SUPPLY.selector());
+        return attempt.isSelector(TOTAL_SUPPLY);
     }
 
     /**

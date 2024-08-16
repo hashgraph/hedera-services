@@ -75,7 +75,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -569,10 +568,8 @@ public class LeakyCryptoTestsSuite {
                             op7,
                             op7FeeAssertion,
                             op8,
-                            op9,
-                            uploadDefaultFeeSchedules(GENESIS));
-                }),
-                uploadDefaultFeeSchedules(GENESIS));
+                            op9);
+                }));
     }
 
     @Order(14)

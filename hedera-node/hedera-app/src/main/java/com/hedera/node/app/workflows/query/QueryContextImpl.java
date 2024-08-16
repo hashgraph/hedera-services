@@ -19,13 +19,9 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
-import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -118,17 +114,8 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public BlockRecordInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
-            final var states = state.getReadableStates(BlockRecordService.NAME);
-            final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)
-                    .get();
-            final var runningHashState = states.<RunningHashes>getSingleton(
-                            V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY)
-                    .get();
-            if (blockInfoState == null) throw new NullPointerException("state cannot be null!");
-            if (runningHashState == null) throw new NullPointerException("state cannot be null!");
-            blockRecordInfo = new BlockRecordInfoImpl(blockInfoState, runningHashState);
+            blockRecordInfo = BlockRecordInfoImpl.from(state);
         }
-
         return blockRecordInfo;
     }
 

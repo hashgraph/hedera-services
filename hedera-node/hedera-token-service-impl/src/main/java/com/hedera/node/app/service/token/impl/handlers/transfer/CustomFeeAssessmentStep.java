@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.*;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -362,8 +361,7 @@ public class CustomFeeAssessmentStep {
             final var nftTransfers = xfer.nftTransfers();
 
             final var token = getIfUsable(tokenId, tokenStore, PERMIT_PAUSED);
-            final var feeMeta = customFeeMetaFrom(token);
-            if (feeMeta.customFees().isEmpty()) {
+            if (token.customFees().isEmpty()) {
                 continue;
             }
 
@@ -378,21 +376,21 @@ public class CustomFeeAssessmentStep {
                     final var sender = aa.accountID();
                     // If sender for this adjustment is same as treasury for token
                     // then don't charge any custom fee. Since token treasuries are exempt from custom fees
-                    if (feeMeta.treasuryId().equals(sender)) {
+                    if (token.treasuryAccountIdOrThrow().equals(sender)) {
                         continue;
                     }
                     customFeeAssessor.assess(
-                            sender, feeMeta, null, result, tokenRelStore, accountStore, autoCreationTest);
+                            sender, token, null, result, tokenRelStore, accountStore, autoCreationTest);
                 }
             }
 
             for (final var nftTransfer : nftTransfers) {
-                if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
+                if (token.treasuryAccountIdOrThrow().equals(nftTransfer.senderAccountID())) {
                     continue;
                 }
                 customFeeAssessor.assess(
                         nftTransfer.senderAccountID(),
-                        feeMeta,
+                        token,
                         nftTransfer.receiverAccountID(),
                         result,
                         tokenRelStore,
