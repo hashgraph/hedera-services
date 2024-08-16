@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -187,7 +188,9 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             getIfUsable(tokenId, tokenStore);
-            validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore);
+            validateTrue(
+                    validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore),
+                    TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
         }
         return standardAirdropIds;
     }
