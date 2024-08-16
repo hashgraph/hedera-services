@@ -113,13 +113,41 @@ another Java module).
 No data migration is expected at this point. Data on disk is stored in the same format (100% byte to
 byte compatibility) as previously.
 
+### Key and value serializer objects
+
 When a new virtual map is created, it gets key and value serializers from the app. However, there
 is a number of already created maps in the old states. They are not created from scratch, but loaded
 from state snapshots. Such virtual maps rely on the MerkleDb to provide the serializers. Despite
 MerkleDb no longer uses serializers, it can still load them from disk (from the MerkleDb configuration),
 if available. When a virtual map is loaded from a state snapshot, and the snapshot is old (before
 MerkleDb is switched to work with bytes), the map will query the data source for key and value serializers
-to use.
+to use. The steps will be:
+
+* When a data source is loaded from a snapshot, it reads its table config from MerkleDb metadata. If key /
+  value serializers are there, they are loaded. If not - no error
+* When a virtual map is loaded from a snapshot, it checks its serialization version. Based on the version,
+  it will either deserialize the serializers or not
+* If the version is "old", and no serializers are available, the virtual map will get them from the data
+  source, it's guaranteed to have them because of the version (if for some reason there are no serializers,
+  an exception is thrown)
+* When a virtual map is created from scratch, it will have the serializers set explicitly, it won't try to
+  load them from the data source
+
+### Key hash codes
+
+MerkleDb uses key hash codes internally. They are literally results of `Object.hashCode()` calls on
+virtual key objects. With this proposal, MerkleDb no longer has access to virtual keys, only key bytes.
+Hash codes on the bytes may not be the same as hash codes of the corresponding key objects. If bytes
+hash codes are used, it would result in data loss.
+
+To fix it, all data source calls that deal with virtual keys accept key hash codes in addition to
+key bytes:
+
+```java
+   VirtualLeafBytes loadLeafRecord(final Bytes keyBytes, final int keyHashCode) throws IOException;
+
+    long findKey(final Bytes keyBytes, final int keyHashCode) throws IOException;
+```
 
 ## Testing
 
