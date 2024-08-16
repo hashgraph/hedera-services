@@ -29,7 +29,7 @@ public class PlatformStateHolder {
         // Default constructor
     }
 
-    public PlatformStateAccessor getPlatformStateAccessor() {
+    public PlatformStateAccessor getPlatformState() {
         return platformState;
     }
 

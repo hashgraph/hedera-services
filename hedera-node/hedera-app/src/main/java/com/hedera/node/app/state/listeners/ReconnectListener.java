@@ -81,7 +81,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state
             // will be up-to-date
-            upgradeActions.catchUpOnMissedSideEffects(platformStateHolder.getPlatformStateAccessor());
+            upgradeActions.catchUpOnMissedSideEffects(platformStateHolder.getPlatformState());
         } catch (Exception e) {
             log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }

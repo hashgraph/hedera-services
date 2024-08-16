@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.PlatformStateConverter.convert;
+import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -27,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -53,6 +56,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -752,7 +756,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformState.class);
+            final var platformState = Mockito.mock(PlatformStateAccessor.class);
             final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
 
             state.handleConsensusRound(round, platformState);
@@ -770,7 +774,7 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformState.class);
+            final var platformState = Mockito.mock(PlatformStateAccessor.class);
             assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
 
             // But the copy does
@@ -886,6 +890,54 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(nonKvListener);
+        }
+    }
+
+    @Nested
+    @DisplayName("Platform state related tests")
+    class PlatformStateTests {
+
+        @Test
+        @DisplayName("Platform state should be registered by default")
+        void platformStateIsRegisteredByDefault() {
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            PlatformStateAccessor platformStateAccessor = stateRoot.getPlatformState();
+            assertThat(platformStateAccessor).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Test access to the platform state")
+        void testAccessToPlatformStateData() {
+            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            stateRoot.updatePlatformState(randomPlatformState);
+            ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
+                    .getReadableStates(PlatformStateAccessor.PLATFORM_NAME)
+                    .getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+            WritableSingletonState<PlatformState> writableSingletonState = stateRoot
+                    .getWritableStates(PlatformStateAccessor.PLATFORM_NAME)
+                    .getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+
+            assertThat(readableSingletonState.get()).isEqualTo(convert(randomPlatformState));
+            assertThat(writableSingletonState.get()).isEqualTo(convert(randomPlatformState));
+        }
+
+        @Test
+        @DisplayName("Test update of the platform state")
+        void testUpdatePlatformStateData() {
+            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            stateRoot.updatePlatformState(randomPlatformState);
+            WritableStates writableStates = stateRoot.getWritableStates(PlatformStateAccessor.PLATFORM_NAME);
+            WritableSingletonState<PlatformState> writableSingletonState =
+                    writableStates.getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+
+            PlatformStateAccessor newPlatformState = randomPlatformState();
+            writableSingletonState.put(convert(newPlatformState));
+            ((CommittableWritableStates) writableStates).commit();
+
+            PlatformStateAccessor stateAccessor = stateRoot.getPlatformState();
+            assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
+            assertThat(stateAccessor.getRound())
+                    .isEqualTo(newPlatformState.getSnapshot().round());
         }
     }
 }

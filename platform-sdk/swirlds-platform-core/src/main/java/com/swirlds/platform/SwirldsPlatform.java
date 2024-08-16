@@ -200,10 +200,7 @@ public class SwirldsPlatform implements Platform {
                         platformContext,
                         blocks.selfId(),
                         initialState.getRound(),
-                        initialState
-                                .getState()
-                                .getPlatformStateAccessor()
-                                .getLowestJudgeGenerationBeforeBirthRoundMode());
+                        initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
             } catch (final IOException e) {
                 throw new UncheckedIOException("Birth round migration failed during PCES migration.", e);
             }
@@ -291,9 +288,9 @@ public class SwirldsPlatform implements Platform {
                 publisher);
 
         final Hash legacyRunningEventHash =
-                initialState.getState().getPlatformStateAccessor().getLegacyRunningEventHash() == null
+                initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
                         ? platformContext.getCryptography().getNullHash()
-                        : initialState.getState().getPlatformStateAccessor().getLegacyRunningEventHash();
+                        : initialState.getState().getPlatformState().getLegacyRunningEventHash();
         final RunningEventHashOverride runningEventHashOverride =
                 new RunningEventHashOverride(legacyRunningEventHash, false);
         platformWiring.updateRunningHash(runningEventHashOverride);
@@ -323,8 +320,7 @@ public class SwirldsPlatform implements Platform {
             startingRound = 0;
             platformWiring.updateEventWindow(EventWindow.getGenesisEventWindow(ancientMode));
         } else {
-            initialAncientThreshold =
-                    initialState.getState().getPlatformStateAccessor().getAncientThreshold();
+            initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
             platformWiring.sendStateToHashLogger(initialState);
@@ -335,7 +331,7 @@ public class SwirldsPlatform implements Platform {
             savedStateController.registerSignedStateFromDisk(initialState);
 
             platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
-                    initialState.getState().getPlatformStateAccessor().getSnapshot()));
+                    initialState.getState().getPlatformState().getSnapshot()));
 
             // We only load non-ancient events during start up, so the initial expired threshold will be
             // equal to the ancient threshold when the system first starts. Over time as we get more events,
@@ -382,7 +378,7 @@ public class SwirldsPlatform implements Platform {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformStateAccessor platformState = state.getPlatformStateAccessor();
+        final PlatformStateAccessor platformState = state.getPlatformState();
 
         return new DefaultBirthRoundMigrationShim(
                 platformContext,

@@ -129,6 +129,6 @@ public record PlatformBuildingBlocks(
      */
     @NonNull
     public AddressBook initialAddressBook() {
-        return initialState.get().getState().getPlatformStateAccessor().getAddressBook();
+        return initialState.get().getState().getPlatformState().getAddressBook();
     }
 }

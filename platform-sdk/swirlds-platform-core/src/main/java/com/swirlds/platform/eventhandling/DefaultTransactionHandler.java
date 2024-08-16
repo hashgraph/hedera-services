@@ -221,7 +221,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private void updatePlatformState(@NonNull final ConsensusRound round) {
         final PlatformStateAccessor platformState =
-                swirldStateManager.getConsensusState().getPlatformStateAccessor();
+                swirldStateManager.getConsensusState().getPlatformState();
 
         platformState.setRound(round.getRoundNum());
         platformState.setConsensusTimestamp(round.getConsensusTimestamp());
@@ -238,7 +238,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
         final PlatformStateAccessor platformState =
-                swirldStateManager.getConsensusState().getPlatformStateAccessor();
+                swirldStateManager.getConsensusState().getPlatformState();
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.

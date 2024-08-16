@@ -64,18 +64,12 @@ public final class GenesisStateBuilder {
             @NonNull final MerkleRoot stateRoot) {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final PlatformStateAccessor platformState;
-        if (stateRoot instanceof MerkleStateRoot root) {
-            platformState = new PlatformStateAccessorSingleton(root);
-        } else {
-            platformState = new PlatformState();
-        }
 
-        initGenesisPlatformState(platformState, addressBook, appVersion);
+        initGenesisPlatformState(stateRoot.getPlatformState(), addressBook, appVersion);
 
         final long genesisFreezeTime = basicConfig.genesisFreezeTime();
         if (genesisFreezeTime > 0) {
-            stateRoot.getPlatformStateAccessor().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            stateRoot.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
         final SignedState signedState = new SignedState(

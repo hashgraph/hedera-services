@@ -72,7 +72,7 @@ class RoundCalculationUtilsTest {
         final MerkleRoot state = Mockito.mock(MerkleRoot.class);
         final PlatformState platformState = Mockito.mock(PlatformState.class);
         when(signedState.getState()).thenReturn(state);
-        when(state.getPlatformStateAccessor()).thenReturn(platformState);
+        when(state.getPlatformState()).thenReturn(platformState);
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());

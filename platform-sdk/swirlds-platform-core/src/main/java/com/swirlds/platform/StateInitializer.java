@@ -66,8 +66,7 @@ public final class StateInitializer {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
         } else {
-            previousSoftwareVersion =
-                    signedState.getState().getPlatformStateAccessor().getCreationSoftwareVersion();
+            previousSoftwareVersion = signedState.getState().getPlatformState().getCreationSoftwareVersion();
             trigger = RESTART;
         }
 
@@ -82,9 +81,7 @@ public final class StateInitializer {
             throw new IllegalStateException("Expected initial swirld state to be unhashed");
         }
 
-        initialState
-                .getSwirldState()
-                .init(platform, initialState.getPlatformStateAccessor(), trigger, previousSoftwareVersion);
+        initialState.getSwirldState().init(platform, initialState.getPlatformState(), trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

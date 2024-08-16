@@ -73,7 +73,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     public State() {
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-        updatePlatformStateAccessor(new PlatformState());
+        updatePlatformState(new PlatformState());
     }
 
     private State(final State that) {
@@ -84,8 +84,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         if (that.getSwirldState() != null) {
             this.setSwirldState(that.getSwirldState().copy());
         }
-        if (that.getPlatformStateAccessor() != null) {
-            this.updatePlatformStateAccessor(that.getPlatformStateAccessor().copy());
+        if (that.getPlatformState() != null) {
+            this.updatePlatformState(that.getPlatformState().copy());
         }
     }
 
@@ -101,9 +101,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
         if (version < ClassVersion.MIGRATE_PLATFORM_STATE
                 && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            PlatformState platformState = getPlatformStateAccessor().copy();
+            PlatformState platformState = getPlatformState().copy();
             setChild(ChildIndices.PLATFORM_STATE, null);
-            merkleStateRoot.updatePlatformStateAccessor(platformState);
+            merkleStateRoot.updatePlatformState(platformState);
             merkleStateRoot.setRoute(MerkleRouteFactory.getEmptyRoute());
             return merkleStateRoot.copy();
         }
@@ -146,7 +146,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @NonNull
     @Override
-    public PlatformState getPlatformStateAccessor() {
+    public PlatformState getPlatformState() {
         return getChild(ChildIndices.PLATFORM_STATE);
     }
 
@@ -156,7 +156,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * @param platformStateAccessor the platform state
      */
     @Override
-    public void updatePlatformStateAccessor(@NonNull final PlatformStateAccessor platformStateAccessor) {
+    public void updatePlatformState(@NonNull final PlatformStateAccessor platformStateAccessor) {
         if (platformStateAccessor instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);
         } else {
@@ -214,7 +214,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             return false;
         }
         final MerkleRoot state = (MerkleRoot) other;
-        return Objects.equals(getPlatformStateAccessor(), state.getPlatformStateAccessor())
+        return Objects.equals(getPlatformState(), state.getPlatformState())
                 && Objects.equals(getSwirldState(), state.getSwirldState());
     }
 
@@ -223,7 +223,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getPlatformStateAccessor(), getSwirldState());
+        return Objects.hash(getPlatformState(), getSwirldState());
     }
 
     /**
@@ -234,7 +234,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        final PlatformStateAccessor platformState = getPlatformStateAccessor();
+        final PlatformStateAccessor platformState = getPlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 

@@ -130,8 +130,7 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        this.stateAddressBook =
-                initialState.getState().getPlatformStateAccessor().getAddressBook();
+        this.stateAddressBook = initialState.getState().getPlatformState().getAddressBook();
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");
         }

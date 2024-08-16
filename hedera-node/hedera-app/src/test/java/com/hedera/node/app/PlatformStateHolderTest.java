@@ -37,12 +37,12 @@ class PlatformStateHolderTest {
         final var subject = new PlatformStateHolder();
 
         // expect:
-        assertNull(subject.getPlatformStateAccessor());
+        assertNull(subject.getPlatformState());
 
         // and when:
         subject.setPlatformStateAccessor(platformState);
 
         // expect:
-        Assertions.assertSame(platformState, subject.getPlatformStateAccessor());
+        Assertions.assertSame(platformState, subject.getPlatformState());
     }
 }

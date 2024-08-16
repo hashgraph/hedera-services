@@ -68,7 +68,7 @@ class SignedStateTests {
 
         final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getPlatformStateAccessor()).thenReturn(platformState);
+        when(state.getPlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -211,7 +211,7 @@ class SignedStateTests {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
         final PlatformState platformState = mock(PlatformState.class);
-        when(state.getPlatformStateAccessor()).thenReturn(platformState);
+        when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

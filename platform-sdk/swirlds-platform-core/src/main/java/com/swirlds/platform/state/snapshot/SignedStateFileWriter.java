@@ -169,7 +169,7 @@ public final class SignedStateFileWriter {
                     platformContext,
                     selfId,
                     directory,
-                    signedState.getState().getPlatformStateAccessor().getAncientThreshold(),
+                    signedState.getState().getPlatformState().getAncientThreshold(),
                     signedState.getRound());
         }
     }

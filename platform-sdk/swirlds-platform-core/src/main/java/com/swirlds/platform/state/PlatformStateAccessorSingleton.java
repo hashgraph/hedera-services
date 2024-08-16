@@ -421,8 +421,9 @@ public class PlatformStateAccessorSingleton implements PlatformStateAccessor {
     }
 
     private void updatePlatformState(BiFunction<PlatformState, PlatformState.Builder, PlatformState.Builder> updater) {
-        WritableStates writableStates = root.getWritableStates(PLATFORM_NAME);
-        WritableSingletonState<PlatformState> writablePlatformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
+        final WritableStates writableStates = root.getWritableStates(PLATFORM_NAME);
+        final WritableSingletonState<PlatformState> writablePlatformState =
+                writableStates.getSingleton(PLATFORM_STATE_KEY);
         final PlatformState platformState = writablePlatformState.get();
         final Builder builder = platformState == null ? PlatformState.newBuilder() : platformState.copyBuilder();
         final Builder updatedBuilder = updater.apply(platformState, builder);

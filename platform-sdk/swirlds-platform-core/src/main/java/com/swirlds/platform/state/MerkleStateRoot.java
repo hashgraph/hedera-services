@@ -922,7 +922,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getPlatformStateAccessor() {
+    public PlatformStateAccessor getPlatformState() {
         return platformState;
     }
 
@@ -932,7 +932,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @param source a source of values
      */
     @Override
-    public void updatePlatformStateAccessor(@NonNull final PlatformStateAccessor source) {
+    public void updatePlatformState(@NonNull final PlatformStateAccessor source) {
         this.platformState.updatePlatformState(source);
     }
 
@@ -942,6 +942,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, getPlatformStateAccessor(), getHash(), this);
+        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }

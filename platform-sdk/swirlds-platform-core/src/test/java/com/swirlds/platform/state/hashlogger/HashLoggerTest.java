@@ -162,7 +162,7 @@ public class HashLoggerTest {
         platformState.setHash(merkleNode.getHash());
         platformState.setAddressBook(addressBook);
 
-        when(state.getPlatformStateAccessor()).thenReturn(platformState);
+        when(state.getPlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());
 

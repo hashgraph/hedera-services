@@ -153,7 +153,7 @@ public final class EventRecoveryWorkflow {
                         platformContext, signedStateFile, SignedStateFileUtils::readState)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
-                    initialState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
+                    initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
             logger.info(
                     STARTUP.getMarker(),
@@ -313,9 +313,9 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getPlatformStateAccessor(),
+                        initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
+                        initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         appMain.init(platform, platform.getSelfId());
 
@@ -380,30 +380,30 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new StatefulEventHasher().hashEvent(lastEvent);
 
-        final PlatformStateAccessor platformState = newState.getPlatformStateAccessor();
+        final PlatformStateAccessor platformState = newState.getPlatformState();
 
         platformState.setRound(round.getRoundNum());
         platformState.setLegacyRunningEventHash(getHashEventsCons(
-                previousState.get().getState().getPlatformStateAccessor().getLegacyRunningEventHash(), round));
+                previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
         platformState.setConsensusTimestamp(currentRoundTimestamp);
         platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                 round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
         platformState.setCreationSoftwareVersion(
-                previousState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
+                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
-                newState.getPlatformStateAccessor(),
+                newState.getPlatformState(),
                 round);
 
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newState.getPlatformStateAccessor().getFreezeTime());
+                newState.getPlatformState().getFreezeTime());
         if (isFreezeState) {
-            newState.getPlatformStateAccessor()
-                    .setLastFrozenTime(newState.getPlatformStateAccessor().getFreezeTime());
+            newState.getPlatformState()
+                    .setLastFrozenTime(newState.getPlatformState().getFreezeTime());
         }
 
         final ReservedSignedState signedState = new SignedState(

@@ -38,13 +38,13 @@ public interface MerkleRoot extends MerkleInternal {
      * @return the platform state
      */
     @NonNull
-    PlatformStateAccessor getPlatformStateAccessor();
+    PlatformStateAccessor getPlatformState();
     /**
      * Set the platform state.
      *
      * @param platformState the platform state
      */
-    void updatePlatformStateAccessor(@NonNull final PlatformStateAccessor platformState);
+    void updatePlatformState(@NonNull final PlatformStateAccessor platformState);
 
     /**
      * Generate a string that describes this state.

@@ -444,9 +444,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
      * and thus all schemas will be executed.
      *
-     * @param state               current state
+     * @param state current state
      * @param deserializedVersion version deserialized
-     * @param trigger             trigger that is calling migration
+     * @param trigger trigger that is calling migration
      */
     private void onMigrate(
             @NonNull final State state,

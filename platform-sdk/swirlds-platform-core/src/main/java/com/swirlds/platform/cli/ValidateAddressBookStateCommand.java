@@ -82,7 +82,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
         final AddressBook stateAddressBook;
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformStateAccessor platformState =
-                    reservedSignedState.get().getState().getPlatformStateAccessor();
+                    reservedSignedState.get().getState().getPlatformState();
             System.out.printf("Extracting the state address book for comparison %n");
             stateAddressBook = platformState.getAddressBook();
         }
