@@ -178,6 +178,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return this;
     }
 
+    public HapiContractCreate omitAdminKey(final boolean omitAdminKey) {
+        this.omitAdminKey = omitAdminKey;
+        return this;
+    }
+
     public HapiContractCreate omitAdminKey() {
         omitAdminKey = true;
         return this;
