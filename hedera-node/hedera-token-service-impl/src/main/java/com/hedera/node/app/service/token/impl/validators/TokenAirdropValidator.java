@@ -71,13 +71,16 @@ public class TokenAirdropValidator {
      */
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
-        // If there is more than one negative transfer we throw an exception
+        // If there is not exactly one debit we throw an exception
         for (var tokenTransfer : tokenTransfers) {
+            if (tokenTransfer.transfers().isEmpty()) {
+                // NFT transfers, skip this check
+                continue;
+            }
             List<AccountAmount> negativeTransfers = tokenTransfer.transfers().stream()
                     .filter(fungibleTransfer -> fungibleTransfer.amount() < 0)
                     .toList();
-
-            if (negativeTransfers.size() > 1) {
+            if (negativeTransfers.size() != 1) {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
         }
@@ -105,7 +108,7 @@ public class TokenAirdropValidator {
                         .filter(item -> item.amount() < 0)
                         .findFirst();
                 final var senderId = senderAccountAmount.orElseThrow().accountIDOrThrow();
-                final var senderAccount = accountStore.get(senderId);
+                final var senderAccount = accountStore.getAliasedAccountById(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 // 1. Validate allowances and token associations
                 validateFungibleTransfers(
@@ -117,7 +120,7 @@ public class TokenAirdropValidator {
                 // 1. validate NFT transfers
                 final var nftTransfer = xfers.nftTransfers().stream().findFirst();
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
-                final var senderAccount = accountStore.get(senderId);
+                final var senderAccount = accountStore.getAliasedAccountById(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 validateNftTransfers(
                         context.payer(),

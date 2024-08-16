@@ -18,10 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -40,6 +38,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -47,6 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor;
+import com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.PendingAirdropUpdater;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
@@ -61,6 +61,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,7 +118,6 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
     @Override
     public void handle(@NonNull HandleContext context) throws HandleException {
         final var op = context.body().tokenClaimAirdropOrThrow();
-        validateSemantics(context, op);
 
         final var pendingAirdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
@@ -125,19 +125,21 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
+        final var validatedAirdropIds = validateSemantics(context, op, accountStore);
+
         final Map<TokenID, TokenTransferList> transfers = new HashMap<>();
         final var tokensToAssociate = new LinkedHashMap<AccountID, List<Token>>();
 
         // 1. validate pending airdrops and create transfer lists
-        for (var airdrop : op.pendingAirdrops()) {
-            final var tokenId = airdrop.hasFungibleTokenType()
-                    ? airdrop.fungibleTokenTypeOrThrow()
-                    : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
-            final var senderId = airdrop.senderIdOrThrow();
-            final var receiverId = airdrop.receiverIdOrThrow();
+        for (var airdropId : validatedAirdropIds) {
+            final var tokenId = airdropId.hasFungibleTokenType()
+                    ? airdropId.fungibleTokenTypeOrThrow()
+                    : airdropId.nonFungibleTokenOrThrow().tokenIdOrThrow();
+            final var senderId = airdropId.senderIdOrThrow();
+            final var receiverId = airdropId.receiverIdOrThrow();
 
             // Merge this transfer by token id into the transfers map
-            createOrUpdateTransfers(airdrop, pendingAirdropStore, tokenId, senderId, receiverId, transfers);
+            createOrUpdateTransfers(airdropId, pendingAirdropStore, tokenId, senderId, receiverId, transfers);
 
             // check if we need new association
             if (tokenRelStore.get(receiverId, tokenId) == null) {
@@ -151,38 +153,42 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         }
         // do the crypto transfer
         transferForFree(new ArrayList<>(transfers.values()), context, recordBuilder);
-        pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), pendingAirdropStore, accountStore);
+        pendingAirdropUpdater.removePendingAirdrops(validatedAirdropIds, pendingAirdropStore, accountStore);
     }
 
     /**
      * Validates the semantics of the token claim airdrop transaction.
+     *
      * @param context the handle context
      * @param op the token claim airdrop transaction body
+     * @param accountStore the account store
+     * @return a list of validated pending airdrop ids using the {@code 0.0.X} reference for both sender and receiver
      * @throws HandleException if the transaction is invalid
      */
-    private void validateSemantics(@NonNull HandleContext context, @NonNull TokenClaimAirdropTransactionBody op)
+    private List<PendingAirdropId> validateSemantics(
+            @NonNull HandleContext context,
+            @NonNull TokenClaimAirdropTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore)
             throws HandleException {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(
                 op.pendingAirdrops().size() <= tokensConfig.maxAllowedPendingAirdropsToClaim(),
                 PENDING_AIRDROP_ID_LIST_TOO_LONG);
 
-        final var pendingAirdrops = op.pendingAirdrops();
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var pendingAirdropStore = context.storeFactory().readableStore(ReadableAirdropStore.class);
-        // We need receiver to sign the transaction in pre-handle.
-        // So no need to check if receiver is a valid account here.
-        // Sender cannot be deleted when there are pending airdrops, we don't nee to validate sender.
-        for (final var airdrop : pendingAirdrops) {
+        final var standardAirdropIds = AirdropHandlerHelper.standardizeAirdropIds(
+                accountStore,
+                pendingAirdropStore,
+                op.pendingAirdrops(),
+                EnumSet.of(AirdropHandlerHelper.IdType.RECEIVER));
+        for (final var airdrop : standardAirdropIds) {
             final var tokenId = airdrop.hasFungibleTokenType()
                     ? airdrop.fungibleTokenTypeOrThrow()
                     : airdrop.nonFungibleTokenOrThrow().tokenIdOrThrow();
             getIfUsable(tokenId, tokenStore);
-            validateTrue(pendingAirdropStore.exists(airdrop), INVALID_PENDING_AIRDROP_ID);
-            validateTrue(
-                    validator.tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore),
-                    TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
         }
+        return standardAirdropIds;
     }
 
     @Override
