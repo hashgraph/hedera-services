@@ -154,17 +154,20 @@ Block Signing Requirements
 
 ### Design Decisions
 
+Since the consensus node does not depend on TSS capabilities, a new `TSS Base Service` will be created in the
+application to manage state changes and startup behavior. The `TSS Base Service` will be responsible for:
+
+1. Keying the candidate roster with the TSS key material.
+2. On Startup: Determining whether to adopt the candidate roster as the active roster for the platform.
+
 #### New Address Book Life-Cycle
 
 The TSS-Ledger-ID proposal modifies the address book and roster lifecycle presented in TSS-Roster as follows:
 
 1. The `Roster` format does not change.
-2. The app must set the `candidate roster` early enough to allow the nodes to generate the key material for the new
-   roster before the software upgrade.
-3. If the `candidate roster` does not have enough key material after a software upgrade, it will not replace the
-   `active roster` and remain the candidate roster. The platform will continue to attempt to key the candidate
-   roster after software upgrade.
-4. The app must detect whether or not the `candidate roster` became the `active roster`.
+2. The app will generate a candidate roster and generate the TSS key material for it before setting it as the next
+   candidate roster in the platform.
+3. The keyed candidate roster is always adopted on software upgrade, consistent with the TSS-Roster proposal.
 
 ![TSS Roster Lifecycle](./TSS-Roster-Lifecycle.drawio.svg)
 
@@ -353,13 +356,12 @@ existing network. There are several options to consider in the TSS bootstrap pro
 ##### For New Networks
 
 There will be a pre-genesis phase where the genesis roster is keyed and a random ledger id is created. This will
-happen through running the platform without application transactions. After the platform keys the roster, the
-platform restarts itself with a copy of the genesis state after adding the TSS key material and ledger id
-id. After the platform restarts, application transactions are accepted and the platform starts building a new
-hashgraph, working towards consensus on round 1 with the ability to sign block 1. This ensures that the first user
-transactions handled by the network are in a block that can have a block proof as soon as possible. The
-alternative is that blocks will go without block proofs until the nodes go through TSS bootstrap, which may be
-several rounds later.
+happen through running the platform without accepting user transactions. After the roster is keyed, the platform is
+restarted with a copy of the genesis state after adding the TSS key material and ledger id to it. After the
+platform restarts, application transactions are accepted and the platform starts building a new hashgraph, working
+towards consensus on round 1 with the ability to sign block 1. This ensures that the first user transactions handled
+by the network are in a block that can have a block proof as soon as possible. The alternative is that blocks will
+go without block proofs until the nodes go through TSS bootstrap, which may be several rounds later.
 
 While this solution does not capture the TSS bootstrap communication in the history of the hashgraph after the
 platform restarts, nodes can cryptographically verify that the setup process took place correctly through using the
@@ -367,16 +369,13 @@ TSS key material to re-derive the ledger id. Each node can validate the TssMessa
 variety of nodes. With the assumption that less than 1/3 of the weight is assigned to malicious nodes, the threshold
 of 1/2 ensures that the malicious nodes will not be able to recover the ledger private key if they collude together.
 
-The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.
-This should not involve an interruption of the containing process. While we are in the pre-genesis phase the
-platform will not accept application transactions. Once the platform has restarted itself with a keyed roster, it
-will accept application transactions when it becomes active.
+The process of the platform restarting after performing a pre-genesis keying phase is new startup logic.
+This should not involve an interruption of the containing process. Once the platform has restarted with a
+keyed roster, the app will accept user transactions.
 
-A node in the pre-genesis phase cannot gossip with nodes that have restarted and are out of pre-genesis. If a
-pre-genesis node connects with a post-genesis node, the post-genesis node should provide the key material to the
-pre-genesis node. After validation of the key material, the pre-genesis node can restart in post-genesis mode and
-connect with peers as normal. Part of the handshaking process when nodes first connect to each other will need to
-include exchange of information about which mode they are in.
+A node in the pre-genesis phase must not gossip with nodes that have restarted and are out of pre-genesis. If a
+pre-genesis node connects with a post-genesis node, it must reconnect to receive the updated state containing the
+TSS key material.
 
 ##### For Existing Networks
 
@@ -527,8 +526,8 @@ The `ledgerId` is the public ledger key able to verify ledger signatures. It is 
 entities outside the consensus node. This value should not change during normal address book changes and its value does
 not change unless the network goes through another TSS bootstrap process. When the value changes, to transfer trust,
 the old ledger private key should sign the new ledger id or the nodes should sign the new ledger id with their RSA
-signing keys, or both. Quads of (ledger id, round, ledger signature, map<nodeid, node_signature>) are stored in a
-list in a singleton to record the history of ledger ids on the network.
+signing keys, or both. Quads of (ledger id, round, ledger signature, roster_signatures) are stored in a queue to record
+the history of ledger ids on the network.
 
 NOTE: The detailed processes for updating the ledger id can be found in the `TSS-Ledger-ID-Updates` proposal.
 
@@ -651,13 +650,18 @@ message TssVoteMapKey {
    * A hash of the target roster for the associated value in the map.
    */
   bytes roster_hash = 1;
+
+  /**
+   * The node id of the node that created the TssVote.
+   */
+  uint64 node_id;
 }
 ```
 
 The values in the `TssVoteMap` are of type `TssVoteTransaction` where the `target_roster_hash` in the value is the
-`roster_hash` in the key. The order in which votes come to consensus is not important. Greater than 1/3 of the weight
+`roster_hash` in the key. The order in which votes come to consensus is not important. At least 1/2 of the weight
 must contribute yes votes that have the same vote structure for the candidate roster to be adopted. This ensures
-that at least 1 honest node has voted yes.
+that at least 1 honest node has voted yes for the majority voting pattern.
 
 Lifecycle Invariants
 
@@ -679,34 +683,15 @@ to the genesis state.
 
 The following startup sequence on new networks is modified from existing practices.
 
-1. The app will read the genesis address book and initial cryptography from disk.
-2. The app will transfer an optional state, genesis roster, and private keys to the platform.
-3. The platform will validate that its private `tssEncryptionKey` matches its public `tssEncryptionKey` in the genesis
-   roster. If there is a mismatch, a critical error will be logged and the node will shut down.
-4. The platform will copy the genesis state and start gossiping with peers in a pre-genesis mode with the following
-   behavior:
-   1. User transactions will not be accepted from the app and events containing user transactions will be ignored.
-   2. A node in pre-genesis mode can only gossip with other peers in pre-genesis mode.
-   3. If a pre-genesis node encounters a peer that is post-genesis, the post-genesis node must send the address book
-      and key material and the pre-genesis node must restart itself after successfully validating the key material.
-      - If the key material cannot be validated, the error will be logged and the node will remain in pre-genesis mode
-        connecting to other peers.
-      - If all peers are in post-genesis and no peer can provide valid key material, the node will log a critical
-        error and shut itself down.
-   4. Active nodes in pre-genesis mode will initiate the tss-bootstrap process by generating a random share for
-      themselves and creating a TssMessage with shares of shares for the total number of shares needed in the
-      genesis roster.
-   5. When a pre-genesis node has enough key-material to generate the ledger id, the node will vote `yes` to signal
-      that it is ready to adopt the key material.
-   6. When a node detects that a threshold number of pre-genesis nodes on the network are ready to adopt the key
-      material, the node will add the key material and ledger id to a copy of the genesis state, save the state to
-      disk, and restart the platform.
-5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
-   building a new hashgraph, working towards consensus on round 1. It will then be in post-genesis mode.
-6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node must provide the pre-genesis node a
-   copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes. A
-   post genesis node should count or rate limit the number of times it has provided the key material to a pre-genesis
-   node to prevent an intentional or unintentional denial of service attack.
+1. The app will read the genesis address book and initial cryptography from disk
+2. The app will generate a genesis state and genesis roster.
+3. The app will ensure that it does not accept user transactions.
+4. The app will start the platform with the above and key the genesis roster with the TSS key material.
+5. After the genesis roster is keyed, the app will adopt the ledger id and restart the platform with the key
+   material and ledger id added to the genesis state.
+6. User transactions are accepted after the platform restarts and becomes active.
+7. Nodes in the genesis roster that did not participate in the above bootstrapping process must perform a reconnect
+   to receive the updated state containing the TSS key material.
 
 #### Startup for Existing Networks
 
@@ -736,19 +721,16 @@ The following startup sequence will occur:
 
 1. The app will read the state and cryptography from disk (including support for
    reading the private `tssEncryptionKey`)
-2. The app will transfer the state and private key material to the platform.
-3. The platform will validate that its private `tssEncryptionKey` matches its
-   public `tssEncryptionKey` in the active roster. If there is a mismatch, a
-   critical error will be logged and the node will shut down.
-4. If a software upgrade is detected,
+2. The app will validate the cryptography and state.
+3. If a software upgrade is detected,
    1. If the existing active roster and candidate roster do not have complete
       key material and the network does not yet have a ledger id, the node will
       adopt the candidate roster immediately on software upgrade.
-      - This will retain the pre-ledger id behavior of the network until the
+      - This will retain the pre-ledger-id behavior of the network until the
         ledger id can be created for the first time.
    2. If the candidate roster exists, has key material, and the number of yes
       votes passes the threshold for adoption, then the candidate roster
-      will be adopted.
+      will be adopted and become the new active roster.
       1. Validation Check: if the state already has a ledger id set, the ledger
          id recovered from the key material must match the ledger id
          in the state.
@@ -757,13 +739,12 @@ The following startup sequence will occur:
          key material will be set in the state as the new ledger id.
    3. In all other cases the existing active roster will remain the
       active roster.
+4. The application will provide the platform with the active roster to use.
 5. The platform will continue through its normal startup sequence.
-6. When the platform is (`ACTIVE`) and a candidate roster is set, the platform
-   will start or continue the TSS bootstrap process to key the candidate roster.
 
 Note: If this is release N, then if all goes well and the candidate roster is successfully keyed, the next software
-upgrade (release N+1) is when the network will receive its ledger id. No additional code deployment is required to
-make this happen.
+upgrade (release N+1) is when the network will receive its ledger id.  Release N+2 should carry forward the ledger
+id into the next roster automatically.  No additional code deployment is required to make this happen.
 
 ##### The Cleanup Release
 
@@ -782,6 +763,7 @@ The TSS Base Service will be broken out into one interface and two components.
 1. `TssService` - the interface that defines the public API for the TSS Base Service.
 2. `TssStateManager` - executes on the transaction handling thread and updates state.
 3. `TssCryptographyManager` - executes on a separate thread and is responsible for cryptographic operations.
+4. Transaction Resubmission
 
 ![TSS Platform Wiring](./TSS-Wiring-Diagram.drawio.svg)
 
@@ -805,7 +787,6 @@ public interface TssService {
      * @param candidateRoster The candidate roster to set.
      */
     void setCandidateRoster(final Roster candidateRoster);
-
 }
 
 ```
@@ -813,8 +794,7 @@ public interface TssService {
 #### `TssStateManager`
 
 The TSS state manager is executed at startup and on the transaction handling thread and is capable of reading and
-writing the state during round handling. The logic will be encapsulated in a class with a well-defined API, but this
-will not be a full-fledged wiring component outside the consensus round handler.
+writing the state during round handling.
 
 Responsibilities:
 
@@ -961,160 +941,10 @@ Outputs:
       1. Rotate the candidate roster to the active roster and schedule the roster for adoption with the platform a
          safe number of rounds into the future.
 
-#### TSS Message Creator
+#### Transaction Resubmission
 
-The TSS message creator is responsible for generating a node’s TSSMessages for its shares. This runs as its own
-asynchronous thread since this may be a computationally expensive operation.
-
-Internal Elements:
-
-Inputs:
-
-1. Active Roster (Wire)
-2. Candidate Roster (Wire)
-3. private shares (Wire)
-
-`On Active Roster`:
-
-1. If the new active roster is the same as the existing one, do nothing.
-2. If the new active roster == the candidate roster,
-   1. clear the candidate roster hash.
-   2. clear the maps of the previous active roster data.
-3. If there existed a previous active roster and the candidate roster is different from the new active roster, log an
-   error.
-4. Set the new active roster
-5. If the active roster has private shares set, and there exists a candidate roster, then log an error indicating
-   something unexpected occurred and `createTssMessageTransactions` to key the candidate roster from the new active
-   roster.
-
-`On Candidate Roster`:
-
-1. If the internal candidate roster is set and equal to the input candidate roster, do nothing.
-2. Otherwise, set the internal candidate roster.
-3. If the active roster has private shares set, and there exists a candidate roster,
-   then `createTssMessageTransactions`.
-
-`On Private Shares`:
-
-1. Record the private shares in the internal private shares map for the appropriate roster hash.
-2. If the active roster has private shares set, and there exists a candidate roster,
-   then `createTssMessageTransactions`.
-
-`createTssMessageTransactions`:
-
-1. For each private share belonging to the active roster:
-   1. Use the TSS-Library to generate a TSS Message for the share private key and public keys for the candidate roster.
-   2. Submit a system `TssMessageTransaction` with the TSS Message.
-
-#### TSS Message Validator
-
-The TSS message validator is responsible for validating TSS messages and for submitting votes as to the validity of the
-candidate roster. The TSS message validator gets its input from the TSS state manager in the form of a candidate roster
-that we want to adopt, and as a sequence of TSS messages that have reached consensus.
-
-Internal Elements:
-
-1. active roster hash
-2. candidate roster hash
-3. Map<RosterHash, Roster> rosters
-4. Map<RosterHash, List<TssMessageTransaction>> tssMessages
-5. Map<RosterHash, List<TssVoteTransaction>> tssVotes
-6. Set<RosterHash> votingClosed
-7. private RSA signing key (constructor argument)
-
-Inputs:
-
-1. Active Roster (Wire)
-2. Candidate Roster (Wire)
-3. TssMessageTransaction (Wire)
-4. TssVoteTransaction (Wire)
-5. Public Shares and Ledger ID (Wire)
-
-Input Invariants
-
-1. TSS Messages for the candidate roster must be received after the candidate roster is set.
-2. TSS Votes for the candidate roster must be received after the candidate roster is set.
-3. A TSS Message must exist if a TSS Vote has a 1 in the vote vector for the corresponding share index.
-
-`On Active Roster`:
-
-1. If the new active roster is the same as the existing one, do nothing.
-2. If the new active roster == the candidate roster.
-   1. Clear the candidate roster hash.
-   2. Clear the map data for the previous active roster.
-   3. Remove the previous active roster hash from the voting closed set.
-3. If a previous active roster existed and the candidate roster is different from the new active roster, log an error.
-4. Set the new active roster.
-
-`On Candidate Roster`:
-
-1. If the input candidate roster is equal to the active roster, do nothing.
-2. If the input candidate roster is equal to the internal candidate roster, do nothing.
-3. Set the internal candidate roster.
-4. If a previous candidate roster existed.
-   1. Clear the associated `TssMessageTransaction` and `TssVoteTransaction` data.
-   2. Remove the previous candidate roster hash from the voting closed set.
-
-`On TssMessageTransaction`:
-
-1. If the voting is closed, do nothing.
-2. If a `TssVoteTransaction` exists for this node, do nothing.
-3. If a TSS Message already exists for the share index and target roster, do nothing.
-4. Validate the TssMessage and if valid, add it to the list of TssMessageTransactions for the target roster.
-5. Update the sequence number bit in the vote vector with the results of validation for the TssMessageTransaction.
-6. If there are (active roster) threshold number of valid TssMessageTransactions for the target roster, send
-   the valid TssMessageTransactions transcript to the TSS Key Manager
-
-`On TssVoteTransaction`:
-
-1. If voting is closed or the vote is a duplicate of an existing vote, do nothing.
-2. Add the vote to the total and check if the threshold is met.
-3. If the threshold is met, add the roster hash to the voting closed set.
-
-`On PublicSharesAndLedgerId`:
-
-1. If the public shares and ledger id are for the candidate roster,
-   1. Sign the ledger ID with the node's private signing key.
-   2. Send a `TssVoteTransaction` with the ledger id and the vote vector.
-
-##### Validate TSS Message List
-
-1. For the votes already cast in the vote vector.
-   1. Sum all the yes votes into a total count.
-   2. If the count is greater than or equal to the threshold in the candidate roster, do nothing and return.
-2. For each TSS message in the TSS Message list.
-   1. If the TSS Message has a yes entry in the vote vector, do nothing.
-   2. Otherwise, validate the message.
-   3. If the message is valid, update the vote vector and increment the count of yes votes.
-   4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
-      vote vector as a system transaction and exit the validation process.
-
-#### TSS Key Manager
-
-The TSS Key Manager is responsible for generating the public and private keys of the shares for a fully keyed roster.
-It receives on input the bundle of TssMessages that generate share keys and produces on output the private shares
-for the node, the public shares, and the ledger id.
-
-Internal Elements:
-
-1. Map<RosterHash, Roster> rosters
-2. Map<RosterHash, List<TssMessage>> tssMessages
-3. Map<RosterHash, Record(RosterHash, List<PairingPrivateKey>, List<PairingPublicKey>, LedgerId)> shares
-
-Inputs:
-
-1. Pair<RosterHash, Roster> (Wire)
-2. Pair<RosterHash, List<TssMessage>> (Wire)
-
-Outputs
-
-1. Record(RosterHash, List<PairingPrivateKey>, List<PairingPublicKey>, LedgerId) (Wire)
-
-#### Transaction Resubmitter
-
-The transaction resubmitter is extended to detect which of the new `TssMessageTransaction` and `TssVoteTransaction`
-system transactions have not reached consensus because the event containing them has become stale. The transaction
-resubmitter will resubmit these transactions to the transaction pool for reprocessing.
+If a stale event contains a `TssMessageTransaction` or `TssVoteTransaction`, the node will need to resubmit the
+transaction to the network.
 
 ### Configuration
 
