@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -47,12 +46,9 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -79,7 +75,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -89,7 +84,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -108,11 +102,9 @@ public class FutureSchedulableOpsTest {
 
     @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
-        final AtomicReference<byte[]> originalFeeSchedules = new AtomicReference<>();
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
-                        getFileContents(FEE_SCHEDULE).consumedBy(originalFeeSchedules::set),
-                        uploadDefaultFeeSchedules(GENESIS),
+                        uploadScheduledContractPrices(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         cryptoCreate(OTHER_PAYER),
                         cryptoCreate(PAYING_SENDER),
@@ -157,10 +149,7 @@ public class FutureSchedulableOpsTest {
                         validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
                         validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
                         validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0),
-                        sourcing(() -> updateLargeFile(
-                                GENESIS, FEE_SCHEDULE, ByteString.copyFrom(originalFeeSchedules.get()))),
-                        uploadDefaultFeeSchedules(GENESIS));
+                        validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
     }
 
     @HapiTest
