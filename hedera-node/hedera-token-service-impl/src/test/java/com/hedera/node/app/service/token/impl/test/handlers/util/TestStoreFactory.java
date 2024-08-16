@@ -19,13 +19,16 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.AIRDROPS;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -38,6 +41,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -196,5 +200,22 @@ public final class TestStoreFactory {
         }
 
         return new MapWritableKVState<>(V0490TokenSchema.NFTS_KEY, backingMap);
+    }
+
+    public static WritableAirdropStore newWritableStoreWithAirdrops(PendingAirdropId... airdrops) {
+        return new WritableAirdropStore(
+                new MapWritableStates(Map.of(AIRDROPS, newAirdropStateFromAirdrops(airdrops))),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
+    }
+
+    private static MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> newAirdropStateFromAirdrops(
+            PendingAirdropId... airdrops) {
+        final var backingMap = new HashMap<PendingAirdropId, AccountPendingAirdrop>();
+        for (final PendingAirdropId airdrop : airdrops) {
+            backingMap.put(airdrop, AccountPendingAirdrop.newBuilder().build());
+        }
+
+        return new MapWritableKVState<>(AIRDROPS, backingMap);
     }
 }
