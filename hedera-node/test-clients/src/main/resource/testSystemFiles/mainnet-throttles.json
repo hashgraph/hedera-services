@@ -96,7 +96,8 @@
             "TokenUpdateNfts",
             "TokenReject",
             "TokenAirdrop",
-            "TokenClaimAirdrop"
+            "TokenClaimAirdrop",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -161,7 +162,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]
