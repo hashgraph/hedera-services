@@ -36,6 +36,8 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -911,11 +913,11 @@ class MerkleStateRootTest extends MerkleTestBase {
             PlatformStateAccessor randomPlatformState = randomPlatformState();
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
-                    .getReadableStates(PlatformStateAccessor.PLATFORM_NAME)
-                    .getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+                    .getReadableStates(PlatformStateService.NAME)
+                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
             WritableSingletonState<PlatformState> writableSingletonState = stateRoot
-                    .getWritableStates(PlatformStateAccessor.PLATFORM_NAME)
-                    .getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+                    .getWritableStates(PlatformStateService.NAME)
+                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
 
             assertThat(readableSingletonState.get()).isEqualTo(convert(randomPlatformState));
             assertThat(writableSingletonState.get()).isEqualTo(convert(randomPlatformState));
@@ -926,9 +928,9 @@ class MerkleStateRootTest extends MerkleTestBase {
         void testUpdatePlatformStateData() {
             PlatformStateAccessor randomPlatformState = randomPlatformState();
             stateRoot.updatePlatformState(randomPlatformState);
-            WritableStates writableStates = stateRoot.getWritableStates(PlatformStateAccessor.PLATFORM_NAME);
+            WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
-                    writableStates.getSingleton(PlatformStateAccessor.PLATFORM_STATE_KEY);
+                    writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
 
             PlatformStateAccessor newPlatformState = randomPlatformState();
             writableSingletonState.put(convert(newPlatformState));

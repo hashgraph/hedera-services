@@ -126,7 +126,7 @@ class StateLifecyclesImplTest extends MerkleTestBase {
     void delegatesOnStateInitialized() {
         subject.onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
 
-        verify(hedera).onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
+        verify(hedera).onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
     }
 
     @Test

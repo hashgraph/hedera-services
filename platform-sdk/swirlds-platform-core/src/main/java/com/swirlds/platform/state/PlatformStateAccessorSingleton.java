@@ -29,7 +29,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.state.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.merkle.StateMetadata;

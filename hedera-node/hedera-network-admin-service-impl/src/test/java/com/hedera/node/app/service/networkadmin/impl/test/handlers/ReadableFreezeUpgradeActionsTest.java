@@ -56,8 +56,7 @@ import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -254,27 +253,27 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testCatchUpOnMissedSideEffects() throws IOException {
-        PlatformStateAccessor platformState = createMockPlatformState();
+        final var store = createMockPlatformStateStore();
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.minusMillis(10000));
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
-        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
-        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(store));
+        assertThat(subject.isFreezeScheduled(store)).isTrue();
 
         rmIfPresent(NOW_FROZEN_MARKER);
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         Bytes expectedContent = Bytes.wrap("expected");
         given(upgradeFileStore.getFull(any())).willReturn(expectedContent);
-        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
     }
 
     @Test
     void invokeMissedUpgradePrepException() {
-        PlatformStateAccessor platformState = createMockPlatformState();
+        final var platformState = createMockPlatformStateStore();
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
         subject.isPreparedFileHashValidGiven(null, null);
         assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
@@ -294,28 +293,28 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testIfFreezeIsScheduled() {
-        PlatformStateAccessor platformState = createMockPlatformState();
+        final var store = createMockPlatformStateStore();
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
 
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
-        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
-        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.minusMillis(10000));
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(store));
+        assertThat(subject.isFreezeScheduled(store)).isTrue();
 
-        platformState.setFreezeTime(null);
-        platformState.setLastFrozenTime(checkpoint.plusSeconds(2));
-        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
+        given(store.getFreezeTime()).willReturn(null);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.plusSeconds(2));
+        assertThat(subject.isFreezeScheduled(store)).isFalse();
 
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint);
-        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint);
+        assertThat(subject.isFreezeScheduled(store)).isFalse();
     }
 
-    private PlatformStateAccessor createMockPlatformState() {
-        final PlatformStateAccessor platformState = new PlatformState();
-        platformState.setAddressBook(mock(AddressBook.class));
-        return platformState;
+    private ReadablePlatformStateStore createMockPlatformStateStore() {
+        final var store = mock(ReadablePlatformStateStore.class);
+        given(store.getAddressBook()).willReturn(mock(AddressBook.class));
+        return store;
     }
 
     private void rmIfPresent(final String file) {

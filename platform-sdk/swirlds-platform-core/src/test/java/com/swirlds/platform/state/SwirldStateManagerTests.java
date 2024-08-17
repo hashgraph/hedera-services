@@ -117,7 +117,7 @@ class SwirldStateManagerTests {
         when(platformState.copy()).thenReturn(platformState);
         when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
 
-        state.updatePlatformStateAccessor(platformState);
+        state.updatePlatformState(platformState);
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;

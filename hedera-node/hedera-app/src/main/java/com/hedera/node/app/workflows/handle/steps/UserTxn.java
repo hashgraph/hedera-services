@@ -227,7 +227,6 @@ public record UserTxn(
                 storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 keyVerifier,
-                platformState,
                 txnInfo.functionality(),
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
@@ -257,7 +256,6 @@ public record UserTxn(
                 stack,
                 USER,
                 tokenContextImpl,
-                platformState,
                 preHandleResult);
     }
 

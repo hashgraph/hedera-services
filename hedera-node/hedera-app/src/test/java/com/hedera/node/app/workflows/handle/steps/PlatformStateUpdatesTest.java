@@ -82,11 +82,9 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> subject.handleTxBody(null, platformState, txBody))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, platformState, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -97,8 +95,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, platformState, txBody))
-                .doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
     }
 
     @Test
@@ -110,7 +107,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, platformState, txBody.build());
+        subject.handleTxBody(state, txBody.build());
 
         // then
         assertEquals(freezeTime.seconds(), platformState.getFreezeTime().getEpochSecond());

@@ -35,7 +35,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.state.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.merkle.StateMetadata;

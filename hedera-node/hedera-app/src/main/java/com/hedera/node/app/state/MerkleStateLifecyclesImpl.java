@@ -110,7 +110,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
             @NonNull final PlatformStateAccessor platformState,
             @NonNull final InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
-        hedera.onStateInitialized(state, platform, platformState, trigger, previousVersion);
+        hedera.onStateInitialized(state, platform, trigger, previousVersion);
     }
 
     @Override

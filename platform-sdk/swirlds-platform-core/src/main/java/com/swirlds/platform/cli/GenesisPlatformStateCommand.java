@@ -28,12 +28,15 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.spi.CommittableWritableStates;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -75,14 +78,19 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformStateAccessor platformState =
-                    reservedSignedState.get().getState().getPlatformState();
+            final var root = reservedSignedState.get().getState();
+            if (!(root instanceof MerkleStateRoot merkleStateRoot)) {
+                throw new IllegalStateException("Root is not a MerkleStateRoot");
+            }
+            final var writableStates = merkleStateRoot.getWritableStates(PlatformStateService.NAME);
+            final var writableStore = new WritablePlatformStateStore(writableStates);
             System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformStateAccessor.GENESIS_ROUND);
-            platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+            writableStore.setRound(PlatformStateService.GENESIS_ROUND);
+            writableStore.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
             System.out.printf("Nullifying Address Books %n");
-            platformState.setAddressBook(null);
-            platformState.setPreviousAddressBook(null);
+            writableStore.setAddressBook(null);
+            writableStore.setPreviousAddressBook(null);
+            ((CommittableWritableStates) writableStates).commit();
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

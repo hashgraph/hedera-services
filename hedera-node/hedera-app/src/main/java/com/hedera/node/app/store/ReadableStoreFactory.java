@@ -55,6 +55,8 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +64,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -108,6 +109,9 @@ public class ReadableStoreFactory {
         newMap.put(
                 ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
         newMap.put(ReadableNodeStore.class, new StoreEntry(AddressBookService.NAME, ReadableNodeStoreImpl::new));
+        newMap.put(
+                ReadablePlatformStateStore.class,
+                new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -118,7 +122,6 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link State} to use
      */
-    @Inject
     public ReadableStoreFactory(@NonNull final State state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }

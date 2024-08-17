@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.schemas;
+package com.swirlds.platform.state.service.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 public class V0540PlatformStateSchema extends Schema {
+    public static final String PLATFORM_STATE_KEY = "PLATFORM_STATE";
+
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
@@ -35,6 +36,6 @@ public class V0540PlatformStateSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.singleton(PlatformStateAccessor.PLATFORM_STATE_KEY, PlatformState.PROTOBUF));
+        return Set.of(StateDefinition.singleton(PLATFORM_STATE_KEY, PlatformState.PROTOBUF));
     }
 }

@@ -36,7 +36,7 @@ public class SignedStateUtils {
     public static SignedState randomSignedState(Random random) {
         MerkleStateRoot root = new MerkleStateRoot(
                 new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.minor()));
-        root.updatePlatformStateAccessor(randomPlatformState(random));
+        root.updatePlatformState(randomPlatformState(random));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

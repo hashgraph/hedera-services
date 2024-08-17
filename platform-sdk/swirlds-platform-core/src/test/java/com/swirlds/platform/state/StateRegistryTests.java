@@ -113,7 +113,7 @@ class StateRegistryTests {
         final PlatformStateAccessorSingleton platformState = new PlatformStateAccessorSingleton(stateToSerialize);
         platformState.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
         platformState.setLegacyRunningEventHash(new Hash());
-        stateToSerialize.updatePlatformStateAccessor(platformState);
+        stateToSerialize.updatePlatformState(platformState);
         states.add(stateToSerialize);
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
