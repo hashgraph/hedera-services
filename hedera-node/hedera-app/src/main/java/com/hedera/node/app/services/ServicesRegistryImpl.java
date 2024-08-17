@@ -62,6 +62,16 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         this.entries = new TreeSet<>();
     }
 
+    @Override
+    public ServicesRegistry forService(@NonNull final String serviceName) {
+        requireNonNull(serviceName);
+        final var subRegistry = new ServicesRegistryImpl(constructableRegistry, bootstrapConfig);
+        subRegistry.entries.addAll(entries.stream()
+                .filter(registration -> registration.serviceName().equals(serviceName))
+                .toList());
+        return subRegistry;
+    }
+
     /**
      * Register the given service.
      *

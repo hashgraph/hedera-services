@@ -67,4 +67,9 @@ public class FakeServicesRegistry implements ServicesRegistry {
     public SortedSet<FakeServicesRegistry.Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
     }
+
+    @Override
+    public ServicesRegistry forService(@NonNull final String serviceName) {
+        throw new UnsupportedOperationException("Embedded Hedera does not use platform builder");
+    }
 }

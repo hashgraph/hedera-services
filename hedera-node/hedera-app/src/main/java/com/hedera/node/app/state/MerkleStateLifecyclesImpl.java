@@ -28,7 +28,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -91,23 +90,24 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
+    public void initRootPlatformState(@NonNull final MerkleStateRoot root) {
+        hedera.initPlatformState(root);
+    }
+
+    @Override
     public void onPreHandle(@NonNull final Event event, @NonNull final State state) {
         hedera.onPreHandle(event, state);
     }
 
     @Override
-    public void onHandleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateAccessor platformState,
-            @NonNull final State state) {
-        hedera.onHandleConsensusRound(round, platformState, state);
+    public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state) {
+        hedera.onHandleConsensusRound(round, state);
     }
 
     @Override
     public void onStateInitialized(
             @NonNull final State state,
             @NonNull final Platform platform,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
         hedera.onStateInitialized(state, platform, trigger, previousVersion);

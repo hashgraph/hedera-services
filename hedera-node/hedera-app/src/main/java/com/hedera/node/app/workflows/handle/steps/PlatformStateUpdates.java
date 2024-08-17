@@ -29,7 +29,6 @@ import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,8 +66,10 @@ public class PlatformStateUpdates {
 
         if (txBody.hasFreeze()) {
             final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
-            final var writableStates = state.getWritableStates(PlatformStateService.NAME);
-            final var writableStore = new WritablePlatformStateStore(writableStates);
+            // Note this store immediately commits platform state changes, hence no cast and
+            // call to CommittableWritableStates.commit() is needed after setting freeze time
+            final var writableStore =
+                    new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to platform state
@@ -82,7 +83,6 @@ public class PlatformStateUpdates {
                 logger.info("Aborting freeze");
                 writableStore.setFreezeTime(null);
             }
-            ((CommittableWritableStates) writableStates).commit();
         }
     }
 }

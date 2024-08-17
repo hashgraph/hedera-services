@@ -77,5 +77,7 @@ public interface ServicesRegistry {
      * Register a service with the registry.
      * @param service The service to register
      */
-    void register(@NonNull final Service service);
+    void register(@NonNull Service service);
+
+    ServicesRegistry forService(@NonNull String serviceName);
 }

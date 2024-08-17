@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.state.service;
 
-import static com.swirlds.platform.state.service.PlatformStateService.GENESIS_ROUND;
-import static com.swirlds.platform.state.service.PlatformStateService.versionFactory;
+import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
 import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjAddressBook;
 import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjConsensusSnapshot;
 import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjTimestamp;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -35,17 +35,39 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Function;
 
 /**
  * Gives read-only access to the platform state, encapsulating conversion from PBJ types to the current types
  * in use by the platform.
  */
 public class ReadablePlatformStateStore {
-    private final ReadableSingletonState<PlatformState> state;
+    public static final Function<SemanticVersion, SoftwareVersion> UNKNOWN_VERSION_FACTORY = version -> {
+        throw new IllegalStateException("State store was not initialized with a version factory");
+    };
 
-    public ReadablePlatformStateStore(@NonNull final ReadableStates readableStates) {
+    private final ReadableSingletonState<PlatformState> state;
+    private final Function<SemanticVersion, SoftwareVersion> versionFactory;
+
+    /**
+     * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
+     * be used from within {@link com.swirlds.platform.state.MerkleStateRoot}.
+     * @param readableStates the readable states
+     * @param versionFactory a factory to create the current {@link SoftwareVersion} from a {@link SemanticVersion}
+     */
+    public ReadablePlatformStateStore(
+            @NonNull final ReadableStates readableStates,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.state = requireNonNull(readableStates).getSingleton(PLATFORM_STATE_KEY);
-        requireNonNull(versionFactory, "Software version factory not set");
+        this.versionFactory = requireNonNull(versionFactory);
+    }
+
+    /**
+     * Constructor that does not support getting full {@link SoftwareVersion} information from the platform state.
+     * @param readableStates the readable states
+     */
+    public ReadablePlatformStateStore(@NonNull final ReadableStates readableStates) {
+        this(readableStates, UNKNOWN_VERSION_FACTORY);
     }
 
     /**

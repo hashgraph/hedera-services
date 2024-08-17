@@ -18,31 +18,65 @@ package com.swirlds.platform.state.service;
 
 import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjConsensusSnapshot;
+import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjTimestamp;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Function;
 
 /**
  * Extends the read-only platform state store to provide write access to the platform state.
  */
-public class WritablePlatformStateStore extends ReadablePlatformStateStore {
+public class WritablePlatformStateStore extends ReadablePlatformStateStore implements PlatformStateAccessor {
+    private final WritableStates writableStates;
     private final WritableSingletonState<PlatformState> state;
 
+    /**
+     * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
+     * be used from within {@link com.swirlds.platform.state.MerkleStateRoot}.
+     * @param writableStates the writable states
+     * @param versionFactory a factory to create the current {@link SoftwareVersion} from a {@link SemanticVersion}
+     */
+    public WritablePlatformStateStore(
+            @NonNull final WritableStates writableStates,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(writableStates, versionFactory);
+        this.writableStates = writableStates;
+        this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+    }
+
+    /**
+     * Constructor that does not support getting full {@link SoftwareVersion} information from the platform state,
+     * but can be used to change and access any part of state that does not require the full {@link SoftwareVersion}.
+     * @param writableStates the writable states
+     */
     public WritablePlatformStateStore(@NonNull final WritableStates writableStates) {
         super(writableStates);
-        this.state = requireNonNull(writableStates).getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+        this.writableStates = writableStates;
+        this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+    }
+
+    /**
+     * Set the entire state from another accessor.
+     * @param accessor the other accessor
+     */
+    public void setAllFrom(@NonNull final PlatformStateAccessor accessor) {
+        this.putAndCommit(toPbjPlatformState(accessor));
     }
 
     /**
@@ -50,10 +84,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      *
      * @param creationVersion the creation version
      */
-    public void setCreationSoftwareVersion(@NonNull SoftwareVersion creationVersion) {
+    public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         requireNonNull(creationVersion);
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
+        putAndCommit(new PlatformState(
                 creationVersion.getPbjSemanticVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -73,8 +107,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -94,8 +128,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -116,8 +150,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
     public void setRound(final long round) {
         final var previousState = stateOrThrow();
         final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 new ConsensusSnapshot(
                         round,
@@ -142,8 +176,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -166,8 +200,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
         requireNonNull(consensusTimestamp);
         final var previousState = stateOrThrow();
         final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 new ConsensusSnapshot(
                         previousSnapshot.round(),
@@ -192,8 +226,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setRoundsNonAncient(final int roundsNonAncient) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 roundsNonAncient,
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -213,8 +247,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
     public void setSnapshot(@NonNull com.swirlds.platform.consensus.ConsensusSnapshot snapshot) {
         requireNonNull(snapshot);
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 toPbjConsensusSnapshot(snapshot),
                 previousState.freezeTime(),
@@ -236,8 +270,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setFreezeTime(@Nullable final Instant freezeTime) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 toPbjTimestamp(freezeTime),
@@ -257,8 +291,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -279,8 +313,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
     public void setFirstVersionInBirthRoundMode(@NonNull final SoftwareVersion firstVersionInBirthRoundMode) {
         requireNonNull(firstVersionInBirthRoundMode);
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -300,8 +334,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -322,8 +356,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      */
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        state.put(new PlatformState(
-                previousState.creationSoftwareVersionOrThrow(),
+        putAndCommit(new PlatformState(
+                previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
                 previousState.freezeTime(),
@@ -338,5 +372,17 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
 
     private @NonNull PlatformState stateOrThrow() {
         return requireNonNull(state.get());
+    }
+
+    private void putAndCommit(@NonNull final PlatformState state) {
+        this.state.put(state);
+        commit();
+    }
+
+    private void commit() {
+        if (!(writableStates instanceof CommittableWritableStates committableWritableStates)) {
+            throw new IllegalStateException("Writable states are not committable");
+        }
+        committableWritableStates.commit();
     }
 }

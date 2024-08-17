@@ -20,7 +20,6 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
@@ -34,16 +33,10 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
-import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.StringLeaf;
-import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
@@ -85,33 +78,6 @@ class SerializationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        StateMetadata md = new StateMetadata<>(
-                PlatformStateAccessor.PLATFORM_NAME,
-                new V0540PlatformStateSchema(),
-                new V0540PlatformStateSchema().statesToCreate().iterator().next());
-        Supplier<SingletonNode> platformSingletonSupplier = () -> new SingletonNode<>(
-                md.serviceName(),
-                md.stateDefinition().stateKey(),
-                md.singletonClassId(),
-                md.stateDefinition().valueCodec(),
-                PlatformState.newBuilder().build());
-        try {
-            registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, platformSingletonSupplier));
-            registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            registry.registerConstructable(new ClassConstructorPair(
-                    ValueLeaf.class,
-                    () -> new ValueLeaf<>(
-                            md.singletonClassId(), md.stateDefinition().valueCodec())));
-        } catch (ConstructableRegistryException e) {
-            // This is a fatal error.
-            throw new IllegalStateException(
-                    "Failed to register with the system '"
-                            + PlatformStateAccessor.PLATFORM_NAME
-                            + ":"
-                            + PlatformStateAccessor.PLATFORM_STATE_KEY
-                            + "'",
-                    e);
-        }
 
         this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
         this.config = new TestConfigBuilder()

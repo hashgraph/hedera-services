@@ -35,6 +35,8 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -134,7 +136,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     private final MerkleStateLifecycles lifecycles;
 
-    private final Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier;
+    private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -163,11 +165,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
     /**
-     * A singleton node for a platform state
-     */
-    private final PlatformStateAccessorSingleton platformState;
-
-    /**
      * Used to track the lifespan of this state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -176,15 +173,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Create a new instance. This constructor must be used for all creations of this class.
      *
      * @param lifecycles            The lifecycle callbacks. Cannot be null.
-     * @param softwareVersionSupplier a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
+     * @param versionFactory a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
      */
     public MerkleStateRoot(
             @NonNull final MerkleStateLifecycles lifecycles,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.lifecycles = requireNonNull(lifecycles);
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-        this.softwareVersionSupplier = softwareVersionSupplier;
-        this.platformState = new PlatformStateAccessorSingleton(this);
+        this.versionFactory = requireNonNull(versionFactory);
     }
 
     /**
@@ -213,7 +209,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
-        lifecycles.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
+        lifecycles.onStateInitialized(this, platform, trigger, deserializedVersion);
     }
 
     /**
@@ -238,7 +234,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
         this.lifecycles = from.lifecycles;
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-        this.softwareVersionSupplier = from.softwareVersionSupplier;
+        this.versionFactory = from.versionFactory;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -254,8 +250,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 setChild(childIndex, childToCopy.copy());
             }
         }
-
-        this.platformState = new PlatformStateAccessorSingleton(this);
     }
 
     @Override
@@ -349,7 +343,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
         throwIfImmutable();
-        lifecycles.onHandleConsensusRound(round, platformState, this);
+        lifecycles.onHandleConsensusRound(round, this);
     }
 
     /**
@@ -366,7 +360,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public MerkleNode migrate(final int version) {
         if (version < VERSION_2) {
-            platformState.migrateToPlatformStateAccessorSingleton();
+            // TODO - manage this migration via the Schema and MigrationContext
         }
 
         // Always return this node, we never want to replace MerkleStateRoot node in the tree
@@ -902,8 +896,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     @NonNull
-    Function<SemanticVersion, SoftwareVersion> getSoftwareVersionSupplier() {
-        return softwareVersionSupplier;
+    public Function<SemanticVersion, SoftwareVersion> getVersionFactory() {
+        return versionFactory;
     }
 
     @NonNull
@@ -923,17 +917,17 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformStateAccessor getPlatformState() {
-        return platformState;
+        return writablePlatformStateStore();
     }
 
     /**
      * Updates the platform state with the values from the provided instance of {@link PlatformStateAccessor}
      *
-     * @param source a source of values
+     * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor source) {
-        this.platformState.updatePlatformState(source);
+    public void updatePlatformState(@NonNull final PlatformStateAccessor accessor) {
+        writablePlatformStateStore().setAllFrom(accessor);
     }
 
     /**
@@ -943,5 +937,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public String getInfoString(final int hashDepth) {
         return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+    }
+
+    private WritablePlatformStateStore writablePlatformStateStore() {
+        if (!services.containsKey(PlatformStateService.NAME)) {
+            lifecycles.initRootPlatformState(this);
+        }
+        return new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
     }
 }

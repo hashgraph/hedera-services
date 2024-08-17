@@ -16,12 +16,14 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
@@ -82,7 +84,6 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
@@ -287,7 +288,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new PlatformStateService(v -> new HederaSoftwareVersion(version.getHapiVersion(), v)))
+                        PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
             // And the factory for the MerkleStateRoot class id must be our constructor
@@ -323,9 +324,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     /**
      * {@inheritDoc}
      *
-     * <p>Called by the platform to either build a genesis state, or to deserialize a Merkle node in a saved state
-     * with the stable class id of the Services Merkle tree root during genesis (c.f. our constructor, in which
-     * we register this method as the factory for the {@literal 0x8e300b0dfdafbb1a} class id).
+     * <p>Called by the platform to either build a genesis state.
      *
      * @return a Services state object
      */
@@ -358,6 +357,22 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     * Includes migration when needed.
     *
     =================================================================================================================*/
+
+    /**
+     * Invoked by the platform when the platform state should be initialized.
+     * @param root the root of the state to be initialized
+     */
+    public void initPlatformState(@NonNull final MerkleStateRoot root) {
+        requireNonNull(root);
+        serviceMigrator.doMigrations(
+                root,
+                servicesRegistry.forService(PlatformStateService.NAME),
+                null,
+                version.getPbjSemanticVersion(),
+                bootstrapConfigProvider.getConfiguration(),
+                UNAVAILABLE_NETWORK_INFO,
+                metrics);
+    }
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
@@ -609,12 +624,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    public void onHandleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateAccessor platformState,
-            @NonNull final State state) {
+    public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state) {
         daggerApp.workingStateAccessor().setState(state);
-        daggerApp.handleWorkflow().handleRound(state, platformState, round);
+        daggerApp.handleWorkflow().handleRound(state, round);
     }
 
     /*==================================================================================================================

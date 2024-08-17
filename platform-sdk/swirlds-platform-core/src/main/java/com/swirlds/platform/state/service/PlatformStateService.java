@@ -18,23 +18,20 @@ package com.swirlds.platform.state.service;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Function;
+import java.util.Collection;
+import java.util.List;
 
-public class PlatformStateService implements Service {
-    public static final long GENESIS_ROUND = 0;
+public enum PlatformStateService implements Service {
+    PLATFORM_STATE_SERVICE;
+
+    private static final Collection<Schema> SCHEMAS = List.of(new V0540PlatformStateSchema());
+
     public static final String NAME = "PlatformStateService";
-
-    static Function<SemanticVersion, SoftwareVersion> versionFactory;
-
-    public PlatformStateService(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
-        PlatformStateService.versionFactory = requireNonNull(versionFactory);
-    }
 
     @NonNull
     @Override
@@ -45,6 +42,6 @@ public class PlatformStateService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540PlatformStateSchema());
+        SCHEMAS.forEach(registry::register);
     }
 }

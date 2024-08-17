@@ -184,7 +184,7 @@ class HandleWorkflowTest {
         given(configProvider.getConfiguration())
                 .willReturn(new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1));
 
-        subject.handleRound(state, platformState, round);
+        subject.handleRound(state, round);
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();

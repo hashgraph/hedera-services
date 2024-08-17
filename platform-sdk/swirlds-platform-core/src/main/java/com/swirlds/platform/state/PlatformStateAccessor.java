@@ -29,9 +29,6 @@ import java.time.Instant;
  * This interface represents the platform state and provide access to the state's properties.
  */
 public interface PlatformStateAccessor {
-
-    String PLATFORM_NAME = "PlatformState";
-    String PLATFORM_STATE_KEY = "PLATFORM_STATE";
     /**
      * The round of the genesis state.
      */

@@ -57,7 +57,6 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -253,7 +252,7 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testCatchUpOnMissedSideEffects() throws IOException {
-        final var store = createMockPlatformStateStore();
+        final var store = mock(ReadablePlatformStateStore.class);
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
         given(store.getFreezeTime()).willReturn(checkpoint);
@@ -273,12 +272,12 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void invokeMissedUpgradePrepException() {
-        final var platformState = createMockPlatformStateStore();
+        final var store = mock(ReadablePlatformStateStore.class);
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
         subject.isPreparedFileHashValidGiven(null, null);
-        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
         given(writableFreezeStore.updateFileHash()).willReturn(null);
-        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
     }
 
     @Test
@@ -293,7 +292,7 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testIfFreezeIsScheduled() {
-        final var store = createMockPlatformStateStore();
+        final var store = mock(ReadablePlatformStateStore.class);
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
 
@@ -309,12 +308,6 @@ class ReadableFreezeUpgradeActionsTest {
         given(store.getFreezeTime()).willReturn(checkpoint);
         given(store.getLastFrozenTime()).willReturn(checkpoint);
         assertThat(subject.isFreezeScheduled(store)).isFalse();
-    }
-
-    private ReadablePlatformStateStore createMockPlatformStateStore() {
-        final var store = mock(ReadablePlatformStateStore.class);
-        given(store.getAddressBook()).willReturn(mock(AddressBook.class));
-        return store;
     }
 
     private void rmIfPresent(final String file) {

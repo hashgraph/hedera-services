@@ -20,12 +20,15 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.state.MinimumJudgeInfo;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,11 +44,38 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This class handles conversion from PBJ objects related to the platform state to the corresponding Java objects, and vice versa.
  */
 public class PbjConverter {
+    /**
+     * Converts an instance of {@link PlatformStateAccessor} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
+     * @param accessor the source of the data
+     * @return the platform state as PBJ object
+     */
+    @NonNull
+    public static com.hedera.hapi.platform.state.PlatformState toPbjPlatformState(
+            @NonNull final PlatformStateAccessor accessor) {
+        requireNonNull(accessor);
+        return new PlatformState(
+                accessor.getCreationSoftwareVersion().getPbjSemanticVersion(),
+                accessor.getRoundsNonAncient(),
+                toPbjConsensusSnapshot(accessor.getSnapshot()),
+                toPbjTimestamp(accessor.getFreezeTime()),
+                toPbjTimestamp(accessor.getLastFrozenTime()),
+                Optional.ofNullable(accessor.getLegacyRunningEventHash())
+                        .map(Hash::getBytes)
+                        .orElse(null),
+                accessor.getLowestJudgeGenerationBeforeBirthRoundMode(),
+                accessor.getLastRoundBeforeBirthRoundMode(),
+                Optional.ofNullable(accessor.getFirstVersionInBirthRoundMode())
+                        .map(SoftwareVersion::getPbjSemanticVersion)
+                        .orElse(null),
+                toPbjAddressBook(accessor.getAddressBook()),
+                toPbjAddressBook(accessor.getPreviousAddressBook()));
+    }
     /**
      * Converts an instance of {@link AddressBook} to the corresponding {@link com.hedera.hapi.platform.state.AddressBook}.
      * @param addressBook source of the data
