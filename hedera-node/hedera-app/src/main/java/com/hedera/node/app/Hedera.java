@@ -23,6 +23,7 @@ import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STR
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
+import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -366,12 +367,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         requireNonNull(root);
         serviceMigrator.doMigrations(
                 root,
-                servicesRegistry.forService(PlatformStateService.NAME),
+                servicesRegistry.forServices(EntityIdService.NAME, PlatformStateService.NAME),
                 null,
                 version.getPbjSemanticVersion(),
                 bootstrapConfigProvider.getConfiguration(),
                 UNAVAILABLE_NETWORK_INFO,
-                metrics);
+                UNAVAILABLE_METRICS);
     }
 
     /**

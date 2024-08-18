@@ -36,6 +36,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -76,6 +77,7 @@ import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -123,7 +125,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
     // Migrates from `PlatformState` to `PlatformStateAccessorSingleton`
-    private static final int VERSION_2 = 31;
+    public static final int VERSION_2 = 31;
     private static final int CURRENT_VERSION = VERSION_2;
 
     // This is a temporary fix to deal with the inefficient implementation of findNodeIndex(). It caches looked up
@@ -168,6 +170,13 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Used to track the lifespan of this state.
      */
     private final RuntimeObjectRecord registryRecord;
+
+    /**
+     * If set, the platform state from a deserialized state prior to version 0.54; used to initialize
+     * the platform state as a States API singleton after migration.
+     */
+    @Nullable
+    private PlatformState preV054PlatformState;
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
@@ -235,6 +244,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.lifecycles = from.lifecycles;
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = from.versionFactory;
+        this.preV054PlatformState = from.preV054PlatformState;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -360,9 +370,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public MerkleNode migrate(final int version) {
         if (version < VERSION_2) {
-            // TODO - manage this migration via the Schema and MigrationContext
+            preV054PlatformState = getChild(0);
         }
-
         // Always return this node, we never want to replace MerkleStateRoot node in the tree
         return this;
     }
@@ -917,7 +926,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformStateAccessor getPlatformState() {
-        return writablePlatformStateStore();
+        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
     }
 
     /**
@@ -939,10 +948,19 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 
+    private ReadablePlatformStateStore readablePlatformStateStore() {
+        return new ReadablePlatformStateStore(getReadableStates(PlatformStateService.NAME), versionFactory);
+    }
+
     private WritablePlatformStateStore writablePlatformStateStore() {
         if (!services.containsKey(PlatformStateService.NAME)) {
             lifecycles.initRootPlatformState(this);
         }
-        return new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
+        final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
+        if (preV054PlatformState != null) {
+            store.setAllFrom(preV054PlatformState);
+            preV054PlatformState = null;
+        }
+        return store;
     }
 }

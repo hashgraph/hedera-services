@@ -25,6 +25,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.inject.Inject;
@@ -63,11 +64,12 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     }
 
     @Override
-    public ServicesRegistry forService(@NonNull final String serviceName) {
-        requireNonNull(serviceName);
+    public ServicesRegistry forServices(@NonNull final String... serviceNames) {
+        requireNonNull(serviceNames);
+        final var selections = Set.of(serviceNames);
         final var subRegistry = new ServicesRegistryImpl(constructableRegistry, bootstrapConfig);
         subRegistry.entries.addAll(entries.stream()
-                .filter(registration -> registration.serviceName().equals(serviceName))
+                .filter(registration -> selections.contains(registration.serviceName()))
                 .toList());
         return subRegistry;
     }

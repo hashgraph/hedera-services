@@ -126,13 +126,12 @@ public interface PlatformStateAccessor {
      * the ancient threshold at the moment after this state's round reached consensus. All events with an ancient
      * indicator that is greater than or equal to this value are non-ancient. All events with an ancient indicator less
      * than this value are ancient.
-     *
      * <p>
      * When running in {@link AncientMode#GENERATION_THRESHOLD}, this value is the minimum generation non-ancient. When
      * running in {@link AncientMode#BIRTH_ROUND_THRESHOLD}, this value is the minimum birth round non-ancient.
      * </p>
-     *
      * @return the ancient threshold after this round has reached consensus
+     * @throws IllegalStateException if no minimum judge info is found in the state
      */
     long getAncientThreshold();
 

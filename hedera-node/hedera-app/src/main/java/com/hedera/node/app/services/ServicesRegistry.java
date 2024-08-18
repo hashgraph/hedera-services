@@ -79,5 +79,5 @@ public interface ServicesRegistry {
      */
     void register(@NonNull Service service);
 
-    ServicesRegistry forService(@NonNull String serviceName);
+    ServicesRegistry forServices(@NonNull String... serviceNames);
 }

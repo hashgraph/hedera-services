@@ -71,23 +71,15 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
         this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
     }
 
-    /**
-     * Set the entire state from another accessor.
-     * @param accessor the other accessor
-     */
     public void setAllFrom(@NonNull final PlatformStateAccessor accessor) {
-        this.putAndCommit(toPbjPlatformState(accessor));
+        this.update(toPbjPlatformState(accessor));
     }
 
-    /**
-     * Set the software version of the application that created this state.
-     *
-     * @param creationVersion the creation version
-     */
+    @Override
     public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         requireNonNull(creationVersion);
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 creationVersion.getPbjSemanticVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -101,13 +93,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the address book.
-     * @param addressBook an address book
-     */
+    @Override
     public void setAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -121,14 +110,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the previous address book.
-     *
-     * @param addressBook an address book
-     */
+    @Override
     public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -142,15 +127,11 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 toPbjAddressBook(addressBook)));
     }
 
-    /**
-     * Set the round when this state was generated.
-     *
-     * @param round a round number
-     */
+    @Override
     public void setRound(final long round) {
         final var previousState = stateOrThrow();
         final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 new ConsensusSnapshot(
@@ -169,14 +150,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the legacy running event hash. Used by the consensus event stream.
-     *
-     * @param legacyRunningEventHash a running hash of events
-     */
+    @Override
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -190,17 +167,12 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
-     * the round that created the state.
-     *
-     * @param consensusTimestamp a consensus timestamp
-     */
+    @Override
     public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         requireNonNull(consensusTimestamp);
         final var previousState = stateOrThrow();
         final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 new ConsensusSnapshot(
@@ -219,14 +191,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Sets the number of non-ancient rounds.
-     *
-     * @param roundsNonAncient the number of non-ancient rounds
-     */
+    @Override
     public void setRoundsNonAncient(final int roundsNonAncient) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 roundsNonAncient,
                 previousState.consensusSnapshot(),
@@ -240,14 +208,11 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the consensus snapshot for this round.
-     * @param snapshot the consensus snapshot for this round
-     */
-    public void setSnapshot(@NonNull com.swirlds.platform.consensus.ConsensusSnapshot snapshot) {
+    @Override
+    public void setSnapshot(@NonNull final com.swirlds.platform.consensus.ConsensusSnapshot snapshot) {
         requireNonNull(snapshot);
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 toPbjConsensusSnapshot(snapshot),
@@ -261,16 +226,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Sets the instant after which the platform will enter FREEZING status. When consensus timestamp of a signed state
-     * is after this instant, the platform will stop creating events and accepting transactions. This is used to safely
-     * shut down the platform for maintenance.
-     *
-     * @param freezeTime an Instant in UTC
-     */
+    @Override
     public void setFreezeTime(@Nullable final Instant freezeTime) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -284,14 +243,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Sets the last freezeTime based on which the nodes were frozen.
-     *
-     * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
-     */
+    @Override
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -305,15 +260,11 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the first software version where the birth round migration happened.
-     *
-     * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
-     */
+    @Override
     public void setFirstVersionInBirthRoundMode(@NonNull final SoftwareVersion firstVersionInBirthRoundMode) {
         requireNonNull(firstVersionInBirthRoundMode);
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -327,14 +278,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the last round before the birth round mode was enabled.
-     *
-     * @param lastRoundBeforeBirthRoundMode the last round before the birth round mode was enabled
-     */
+    @Override
     public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -348,15 +295,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 previousState.previousAddressBook()));
     }
 
-    /**
-     * Set the lowest judge generation before the birth round mode was enabled.
-     *
-     * @param lowestJudgeGenerationBeforeBirthRoundMode the lowest judge generation before the birth round mode was
-     *                                                  enabled
-     */
+    @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        putAndCommit(new PlatformState(
+        update(new PlatformState(
                 previousState.creationSoftwareVersion(),
                 previousState.roundsNonAncient(),
                 previousState.consensusSnapshot(),
@@ -374,15 +316,10 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
         return requireNonNull(state.get());
     }
 
-    private void putAndCommit(@NonNull final PlatformState state) {
+    private void update(@NonNull final PlatformState state) {
         this.state.put(state);
-        commit();
-    }
-
-    private void commit() {
-        if (!(writableStates instanceof CommittableWritableStates committableWritableStates)) {
-            throw new IllegalStateException("Writable states are not committable");
+        if (writableStates instanceof CommittableWritableStates committableWritableStates) {
+            committableWritableStates.commit();
         }
-        committableWritableStates.commit();
     }
 }

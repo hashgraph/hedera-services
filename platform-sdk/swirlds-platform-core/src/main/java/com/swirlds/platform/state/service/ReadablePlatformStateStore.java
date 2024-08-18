@@ -25,9 +25,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -41,7 +42,7 @@ import java.util.function.Function;
  * Gives read-only access to the platform state, encapsulating conversion from PBJ types to the current types
  * in use by the platform.
  */
-public class ReadablePlatformStateStore {
+public class ReadablePlatformStateStore implements PlatformStateAccessor {
     public static final Function<SemanticVersion, SoftwareVersion> UNKNOWN_VERSION_FACTORY = version -> {
         throw new IllegalStateException("State store was not initialized with a version factory");
     };
@@ -70,37 +71,25 @@ public class ReadablePlatformStateStore {
         this(readableStates, UNKNOWN_VERSION_FACTORY);
     }
 
-    /**
-     * Get the software version of the application that created this state.
-     * @return the creation version
-     */
+    @Override
     @NonNull
     public SoftwareVersion getCreationSoftwareVersion() {
         return versionFactory.apply(stateOrThrow().creationSoftwareVersionOrThrow());
     }
 
-    /**
-     * Get the address book, if available.
-     * @return the address book, or null if not available
-     */
+    @Override
     @Nullable
     public AddressBook getAddressBook() {
         return fromPbjAddressBook(stateOrThrow().addressBook());
     }
 
-    /**
-     * Get the previous address book, if available.
-     * @return the previous address book, or null if not available
-     */
+    @Override
     @Nullable
     public AddressBook getPreviousAddressBook() {
         return fromPbjAddressBook(stateOrThrow().previousAddressBook());
     }
 
-    /**
-     * Get the round when this state was generated.
-     * @return a round number
-     */
+    @Override
     public long getRound() {
         final var consensusSnapshot = stateOrThrow().consensusSnapshot();
         if (consensusSnapshot == null) {
@@ -110,22 +99,14 @@ public class ReadablePlatformStateStore {
         }
     }
 
-    /**
-     * Get the legacy running event hash, if available. Used by the consensus event stream.
-     * @return a running hash of events or null if not available
-     */
+    @Override
     @Nullable
     public Hash getLegacyRunningEventHash() {
         final var hash = stateOrThrow().legacyRunningEventHash();
         return hash.length() == 0 ? null : new Hash(hash.toByteArray());
     }
 
-    /**
-     * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
-     * the round that created the state. Returns null if no rounds have been created.
-     *
-     * @return a consensus timestamp
-     */
+    @Override
     @Nullable
     public Instant getConsensusTimestamp() {
         final var consensusSnapshot = stateOrThrow().consensusSnapshot();
@@ -135,18 +116,7 @@ public class ReadablePlatformStateStore {
         return fromPbjTimestamp(consensusSnapshot.consensusTimestamp());
     }
 
-    /**
-     * For the oldest non-ancient round, get the lowest ancient indicator out of all of those round's judges. This is
-     * the ancient threshold at the moment after this state's round reached consensus. All events with an ancient
-     * indicator that is greater than or equal to this value are non-ancient. All events with an ancient indicator less
-     * than this value are ancient.
-     * <p>
-     * When running in {@link AncientMode#GENERATION_THRESHOLD}, this value is the minimum generation non-ancient. When
-     * running in {@link AncientMode#BIRTH_ROUND_THRESHOLD}, this value is the minimum birth round non-ancient.
-     * </p>
-     * @return the ancient threshold after this round has reached consensus
-     * @throws IllegalStateException if no minimum judge info is found in the state
-     */
+    @Override
     public long getAncientThreshold() {
         final var consensusSnapshot = stateOrThrow().consensusSnapshot();
         requireNonNull(consensusSnapshot, "No minimum judge info found in state for round, snapshot is null");
@@ -158,69 +128,113 @@ public class ReadablePlatformStateStore {
         return minimumJudgeInfos.getFirst().minimumJudgeAncientThreshold();
     }
 
-    /**
-     * Gets the number of non-ancient rounds.
-     *
-     * @return the number of non-ancient rounds
-     */
+    @Override
     public int getRoundsNonAncient() {
         return stateOrThrow().roundsNonAncient();
     }
 
-    /**
-     * @return the consensus snapshot for this round
-     */
+    @Override
     @Nullable
     public ConsensusSnapshot getSnapshot() {
         return fromPbjConsensusSnapshot(stateOrThrow().consensusSnapshot());
     }
 
-    /**
-     * Gets the time when the next freeze is scheduled to start. If null then there is no freeze scheduled.
-     * @return the time when the freeze starts
-     */
+    public com.hedera.hapi.platform.state.ConsensusSnapshot pbjSnapshot() {
+        return stateOrThrow().consensusSnapshot();
+    }
+
     @Nullable
+    @Override
     public Instant getFreezeTime() {
         return fromPbjTimestamp(stateOrThrow().freezeTime());
     }
 
-    /**
-     * Gets the last freezeTime based on which the nodes were frozen. If null then there has never been a freeze.
-     *
-     * @return the last freezeTime based on which the nodes were frozen
-     */
     @Nullable
+    @Override
     public Instant getLastFrozenTime() {
         return fromPbjTimestamp(stateOrThrow().lastFrozenTime());
     }
 
-    /**
-     * Get the first software version where the birth round migration happened, or null if birth round migration has not
-     * yet happened.
-     *
-     * @return the first software version where the birth round migration happened
-     */
     @Nullable
+    @Override
     public SoftwareVersion getFirstVersionInBirthRoundMode() {
         final var version = stateOrThrow().firstVersionInBirthRoundMode();
         return version == null ? null : versionFactory.apply(version);
     }
 
-    /**
-     * Get the last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
-     * @return the last round before the birth round mode was enabled
-     */
+    @Override
     public long getLastRoundBeforeBirthRoundMode() {
         return stateOrThrow().lastRoundBeforeBirthRoundMode();
     }
 
-    /**
-     * Get the lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet
-     * been enabled.
-     * @return the lowest judge generation before the birth round mode was enabled
-     */
+    @Override
     public long getLowestJudgeGenerationBeforeBirthRoundMode() {
         return stateOrThrow().lowestJudgeGenerationBeforeBirthRoundMode();
+    }
+
+    @Override
+    public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setAddressBook(@Nullable AddressBook addressBook) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setPreviousAddressBook(@Nullable AddressBook addressBook) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setRound(long round) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setLegacyRunningEventHash(@Nullable Hash legacyRunningEventHash) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setConsensusTimestamp(@NonNull Instant consensusTimestamp) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setRoundsNonAncient(int roundsNonAncient) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setSnapshot(@NonNull ConsensusSnapshot snapshot) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setFreezeTime(@Nullable Instant freezeTime) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setLastFrozenTime(@Nullable Instant lastFrozenTime) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setLastRoundBeforeBirthRoundMode(long lastRoundBeforeBirthRoundMode) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    @Override
+    public void setLowestJudgeGenerationBeforeBirthRoundMode(long lowestJudgeGenerationBeforeBirthRoundMode) {
+        throw new MutabilityException("Platform state is read-only");
     }
 
     private @NonNull PlatformState stateOrThrow() {
