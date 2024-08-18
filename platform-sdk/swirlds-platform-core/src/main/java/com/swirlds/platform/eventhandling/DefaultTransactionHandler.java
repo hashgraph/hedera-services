@@ -39,13 +39,11 @@ import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
-import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -227,13 +225,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
         platformState.setCreationSoftwareVersion(softwareVersion);
         platformState.setRoundsNonAncient(roundsNonAncient);
         platformState.setSnapshot(round.getSnapshot());
-        if (platformState instanceof ReadablePlatformStateStore readablePlatformStateStore) {
-            BootstrapUtils.logger.info(
-                    STARTUP.getMarker(),
-                    "Updated round {} snapshot to {}",
-                    round.getRoundNum(),
-                    readablePlatformStateStore.pbjSnapshot());
-        }
     }
 
     /**

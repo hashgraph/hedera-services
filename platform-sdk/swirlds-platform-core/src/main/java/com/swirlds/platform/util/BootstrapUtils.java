@@ -84,7 +84,7 @@ public final class BootstrapUtils {
     /**
      * The logger for this class
      */
-    public static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
+    private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 

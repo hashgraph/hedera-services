@@ -74,9 +74,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         if (modified) {
             return value;
         }
-
-        value = super.get();
-        return value;
+        return super.get();
     }
 
     @Override
