@@ -66,8 +66,6 @@ public class PlatformStateUpdates {
 
         if (txBody.hasFreeze()) {
             final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
-            // Note this store immediately commits platform state changes, hence no cast and
-            // call to CommittableWritableStates.commit() is needed after setting freeze time
             final var writableStore =
                     new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
