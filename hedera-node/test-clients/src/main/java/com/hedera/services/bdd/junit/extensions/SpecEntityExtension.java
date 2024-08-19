@@ -63,7 +63,7 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
             if (!parameter.isAnnotationPresent(Contract.class)) {
                 throw new IllegalArgumentException("Missing @ContractSpec annotation");
             }
-            return contractFrom(parameter.getAnnotation(Contract.class));
+            return SpecContract.contractFrom(parameter.getAnnotation(Contract.class));
         } else if (entityType == SpecFungibleToken.class) {
             if (!parameter.isAnnotationPresent(FungibleToken.class)) {
                 throw new IllegalArgumentException("Missing @FungibleTokenSpec annotation");
@@ -88,7 +88,7 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
         // Inject spec contracts into static fields annotated with @ContractSpec
         for (final var field : findAnnotatedFields(
                 context.getRequiredTestClass(), Contract.class, staticFieldSelector(SpecContract.class))) {
-            final var contract = contractFrom(field.getAnnotation(Contract.class));
+            final var contract = SpecContract.contractFrom(field.getAnnotation(Contract.class));
             injectValueIntoField(field, contract);
         }
 
@@ -121,11 +121,6 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
             final var key = keyFrom(field.getAnnotation(Key.class), field.getName());
             injectValueIntoField(field, key);
         }
-    }
-
-    private SpecContract contractFrom(@NonNull final Contract annotation) {
-        final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
-        return new SpecContract(name, annotation.contract(), annotation.creationGas());
     }
 
     private SpecNonFungibleToken nonFungibleTokenFrom(

@@ -420,6 +420,7 @@ public class TokenCreateSpecs {
                 .when(
                         tokenCreate(commonNoFees)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
@@ -430,6 +431,7 @@ public class TokenCreateSpecs {
                                 .via(txnFor(commonNoFees)),
                         tokenCreate(commonWithFees)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
@@ -443,6 +445,7 @@ public class TokenCreateSpecs {
                         tokenCreate(uniqueNoFees)
                                 .payingWith(civilian)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)
@@ -456,6 +459,7 @@ public class TokenCreateSpecs {
                         tokenCreate(uniqueWithFees)
                                 .payingWith(civilian)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)

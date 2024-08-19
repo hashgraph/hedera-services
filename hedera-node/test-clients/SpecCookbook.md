@@ -31,6 +31,8 @@ throughout.
   - [DON'T extract string literals to constants, even if they are repeated](#dont-extract-string-literals-to-constants-even-if-they-are-repeated)
   - [DON'T add any `HapiSpecOperation` modifier not essential to the test](#dont-add-any-hapispecoperation-modifier-not-essential-to-the-test)
   - [DON'T start by copying a test that uses `withOpContext()`](#dont-start-by-copying-a-test-that-uses-withopcontext)
+- [Rare techniques](#rare-techniques)
+  - [Predicting an entity number](#predicting-an-entity-number)
 
 ## Patterns
 
@@ -266,3 +268,31 @@ Though this approach offers flexibility, it makes the resulting tests significan
 and search. Therefore, avoid starting by copying a test that uses `withOpContext()`. Only use this
 device when truly necessary, and even then, adhere to the limits prescribed by the
 [`@HapiTest checklist`](README.md#the-hapitest-checklist).
+
+## Rare Techniques
+
+### Predicting an entity number
+
+It can happen you need the entity number of something created within a contract, e.g., another contract,
+or a token created via use of the HTS system contract.  You can't actually _get_ this number from
+anywhere.  You have to _predict_ it, knowing that entity numbers are generated in compact ascending
+order.  The problem is that when declaring entities using the annotations (e.g., `@Account` or
+`@Contract`) they're actually created _lazily_ only when they're first used.  So it's very fragile
+to know what order they're created in.  For this use case (contract will create an entity) you'd really
+like the contract to be created last of all the entities you're declaring, then the entities it
+creates (when you call methods on it) can be predicted.
+
+Use `SpecEntity.forceCreateAndRegister` to enumerate all the entities you're creating for the test,
+in the specific order you want to create them.  Then you can do something to predict the _next_
+entity number, such as:
+
+```java
+withOpContext((spec, opLog) -> {
+    final var fromNum = spec.registry().getContractId(contract.name()).getContractNum();
+    final var nextId = "0.0." + (fromNum + 1);
+    ... getContractInfo(nextId) ...
+})
+```
+
+See `SelfDestructSuite` for examples, e.g., `selfDestructedContractIsDeletedInSameTx` and helper
+method `getNthNextContractInfoFrom`.

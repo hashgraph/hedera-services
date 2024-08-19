@@ -26,11 +26,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
-import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +78,7 @@ public class CustomFixedFeeAssessorTest {
     void delegatesToHbarWhenDenomIsNull() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
         final var hbarFee = withFixedFee(hbarFixedFee, otherCollector, false);
-        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+        final var feeMeta = withCustomToken(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isNotEmpty();
@@ -89,7 +89,7 @@ public class CustomFixedFeeAssessorTest {
     void delegatesToHtsWhenDenomIsNonNull() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
         final var hbarFee = withFixedFee(htsFixedFee, otherCollector, false);
-        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+        final var feeMeta = withCustomToken(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isNotEmpty();
@@ -100,7 +100,7 @@ public class CustomFixedFeeAssessorTest {
     void fixedCustomFeeExemptIsOk() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
         final var hbarFee = withFixedFee(htsFixedFee, payer, false);
-        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+        final var feeMeta = withCustomToken(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isEmpty();
@@ -110,7 +110,7 @@ public class CustomFixedFeeAssessorTest {
     void exemptsAssessmentWhenSenderSameAsCollector() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
         final var hbarFee = withFixedFee(htsFixedFee, payer, false);
-        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+        final var feeMeta = withCustomToken(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFees(feeMeta, payer, result);
         assertThat(result.getAssessedCustomFees()).isEmpty();
@@ -120,13 +120,18 @@ public class CustomFixedFeeAssessorTest {
     void ignoresIfPayerExempt() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
         final var hbarFee = withFixedFee(htsFixedFee, payer, false);
-        final var feeMeta = withCustomFeeMeta(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
+        final var feeMeta = withCustomToken(List.of(hbarFee), TokenType.FUNGIBLE_COMMON);
 
         subject.assessFixedFee(feeMeta, payer, hbarFee, result);
         assertThat(result.getAssessedCustomFees()).isEmpty();
     }
 
-    private CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
-        return new CustomFeeMeta(firstFungibleTokenId, minter, customFees, tokenType);
+    public Token withCustomToken(List<CustomFee> customFees, TokenType tokenType) {
+        return Token.newBuilder()
+                .customFees(customFees)
+                .tokenId(firstFungibleTokenId)
+                .tokenType(tokenType)
+                .treasuryAccountId(minter)
+                .build();
     }
 }

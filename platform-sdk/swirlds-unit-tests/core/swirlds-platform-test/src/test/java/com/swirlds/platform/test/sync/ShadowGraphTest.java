@@ -45,7 +45,6 @@ import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -71,7 +70,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisplayName("Shadowgraph Tests")
 class ShadowgraphTest {
 
-    private List<IndexedEvent> generatedEvents;
+    private List<EventImpl> generatedEvents;
     private HashMap<Hash, Set<Hash>> ancestorsMap;
     private Shadowgraph shadowgraph;
     private Map<Long, Set<ShadowEvent>> genToShadows;
@@ -108,7 +107,7 @@ class ShadowgraphTest {
         shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
 
         for (int i = 0; i < numEvents; i++) {
-            final IndexedEvent event = emitter.emitEvent();
+            final EventImpl event = emitter.emitEvent();
 
             final Hash hash = event.getBaseHash();
             ancestorsMap.put(hash, ancestorsOf(event.getBaseEvent().getAllParents()));
@@ -440,7 +439,7 @@ class ShadowgraphTest {
     void testShadow() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertNull(shadowgraph.shadow((EventDescriptorWrapper) null), "Passing null should return null.");
-        final IndexedEvent event = emitter.emitEvent();
+        final EventImpl event = emitter.emitEvent();
         assertDoesNotThrow(() -> shadowgraph.addEvent(event), "Adding an tip event should succeed.");
         assertEquals(
                 event.getBaseHash(),
@@ -460,7 +459,7 @@ class ShadowgraphTest {
     @Test
     void testShadows() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
-        final List<IndexedEvent> events = emitter.emitEvents(10);
+        final List<EventImpl> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowgraph.addEvent(e), "Adding new tip events should succeed."));
 
         final List<Hash> hashes = events.stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
@@ -480,7 +479,7 @@ class ShadowgraphTest {
     @Test
     void testShadowsWithUnknownEvents() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
-        final List<IndexedEvent> events = emitter.emitEvents(10);
+        final List<EventImpl> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowgraph.addEvent(e), "Adding new tip events should succeed."));
 
         final List<Hash> knownHashes =
@@ -525,7 +524,7 @@ class ShadowgraphTest {
     void testAddDuplicateEvent() {
         final Random random = RandomUtils.getRandomPrintSeed();
         initShadowgraph(random, 10, 4);
-        final IndexedEvent randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
+        final EventImpl randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertThrows(
                 ShadowgraphInsertionException.class,
                 () -> shadowgraph.addEvent(randomDuplicateEvent),
@@ -536,7 +535,7 @@ class ShadowgraphTest {
     void testAddEventWithUnknownOtherParent() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        final IndexedEvent newEvent = emitter.emitEvent();
+        final EventImpl newEvent = emitter.emitEvent();
         newEvent.setOtherParent(emitter.emitEvent());
 
         assertDoesNotThrow(
@@ -547,7 +546,7 @@ class ShadowgraphTest {
     void testAddEventWithUnknownSelfParent() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        final IndexedEvent newEvent = emitter.emitEvent();
+        final EventImpl newEvent = emitter.emitEvent();
         newEvent.setSelfParent(emitter.emitEvent());
 
         assertDoesNotThrow(() -> shadowgraph.addEvent(newEvent), "Events with an unknown self parent should be added.");
@@ -557,7 +556,7 @@ class ShadowgraphTest {
     void testAddEventWithExpiredParents() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        final IndexedEvent newEvent = emitter.emitEvent();
+        final EventImpl newEvent = emitter.emitEvent();
         final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 0 /* ignored by shadowgraph */,
@@ -576,7 +575,7 @@ class ShadowgraphTest {
         final int additionalEvents = 100;
 
         for (int i = 0; i < additionalEvents; i++) {
-            final IndexedEvent newTip = emitter.emitEvent();
+            final EventImpl newTip = emitter.emitEvent();
             assertNull(
                     shadowgraph.shadow(newTip.getBaseEvent().getDescriptor()),
                     "The shadow graph should not contain the new event.");
@@ -608,7 +607,7 @@ class ShadowgraphTest {
         final Random random = RandomUtils.getRandomPrintSeed();
         initShadowgraph(random, 100, 4);
 
-        final IndexedEvent randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
+        final EventImpl randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertEquals(
                 randomExistingEvent,
                 shadowgraph.hashgraphEvent(randomExistingEvent.getBaseHash()),
@@ -629,7 +628,7 @@ class ShadowgraphTest {
         shadowgraph.updateEventWindow(EventWindow.getGenesisEventWindow(GENERATION_THRESHOLD));
 
         assertEquals(0, shadowgraph.getTips().size(), "Shadow graph should not have any tips after being cleared.");
-        for (final IndexedEvent generatedEvent : generatedEvents) {
+        for (final EventImpl generatedEvent : generatedEvents) {
             assertNull(
                     shadowgraph.shadow(generatedEvent.getBaseEvent().getDescriptor()),
                     "Shadow graph should not have any events after being cleared.");
