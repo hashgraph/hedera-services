@@ -1564,8 +1564,8 @@ enum ResponseCodeEnum {
     ACCOUNT_HAS_PENDING_AIRDROPS = 365;
 
     /**
-     * Consensus throttle did not allow execution of this transaction. The transaction is throttled at
-     * consensus level.
+     * Consensus throttle did not allow execution of this transaction.<br/>
+     * The transaction should be retried after a modest delay.
      */
     THROTTLED_AT_CONSENSUS = 366;
 
