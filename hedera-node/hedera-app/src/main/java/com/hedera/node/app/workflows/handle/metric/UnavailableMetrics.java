@@ -23,6 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 
+/**
+ * A {@link Metrics} implementation that throws {@link UnsupportedOperationException} for all methods,
+ * needed as a non-null placeholder for {@link com.hedera.node.app.services.ServiceMigrator} calls made to
+ * initialize platform state before the metrics are available.
+ */
 public enum UnavailableMetrics implements Metrics {
     UNAVAILABLE_METRICS;
 

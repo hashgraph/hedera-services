@@ -79,5 +79,10 @@ public interface ServicesRegistry {
      */
     void register(@NonNull Service service);
 
+    /**
+     * Returns a sub-registry containing only the services with the given names.
+     * @param serviceNames the names of the services to include in the sub-registry
+     * @return the sub-registry
+     */
     ServicesRegistry subRegistryFor(@NonNull String... serviceNames);
 }

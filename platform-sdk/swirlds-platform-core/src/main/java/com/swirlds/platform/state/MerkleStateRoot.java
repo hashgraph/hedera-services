@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
+import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -124,7 +125,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
-    // Migrates from `PlatformState` to `PlatformStateAccessorSingleton`
+    // Migrates from `PlatformState` to State API singleton
     public static final int VERSION_2 = 31;
     private static final int CURRENT_VERSION = VERSION_2;
 
@@ -172,8 +173,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final RuntimeObjectRecord registryRecord;
 
     /**
-     * If set, the platform state from a deserialized state prior to version 0.54; used to initialize
-     * the platform state as a States API singleton after migration.
+     * If set, the platform state from a deserialized state created prior to version 0.54, and used to initialize
+     * the platform state as a State API singleton after migration.
      */
     @Nullable
     private PlatformState preV054PlatformState;
@@ -370,7 +371,18 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public MerkleNode migrate(final int version) {
         if (version < VERSION_2) {
-            preV054PlatformState = getChild(0);
+            final var zerothChild = getChild(0);
+            if (!(zerothChild instanceof PlatformState platformState)) {
+                throw new IllegalStateException("Expected a PlatformState as the first child");
+            }
+            preV054PlatformState = platformState;
+            logger.info("Migrating PlatformState {} to State API singleton", toPbjPlatformState(preV054PlatformState));
+            INDEX_LOOKUP.clear();
+            for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
+                final var child = getChild(i);
+                setChild(i - 1, child.copy());
+                setChild(i, null);
+            }
         }
         // Always return this node, we never want to replace MerkleStateRoot node in the tree
         return this;

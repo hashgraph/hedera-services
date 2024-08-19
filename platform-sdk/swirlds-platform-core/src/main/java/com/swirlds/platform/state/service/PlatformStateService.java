@@ -55,6 +55,11 @@ public enum PlatformStateService implements Service {
         SCHEMAS.forEach(registry::register);
     }
 
+    /**
+     * Given a {@link MerkleStateRoot}, returns the creation version of the platform state if it exists.
+     * @param root the root to extract the creation version from
+     * @return the creation version of the platform state, or null if the state is a genesis state
+     */
     @SuppressWarnings("unchecked")
     public SemanticVersion creationVersionOf(@NonNull final MerkleStateRoot root) {
         requireNonNull(root);
@@ -67,7 +72,7 @@ public enum PlatformStateService implements Service {
             if (zerothChild instanceof com.swirlds.platform.state.PlatformState platformState) {
                 return platformState.getCreationSoftwareVersion().getPbjSemanticVersion();
             } else {
-                throw new IllegalStateException("Root without platform state (zeroth child " + zerothChild + ")");
+                throw new IllegalArgumentException("Root without platform state (zeroth child " + zerothChild + ")");
             }
         } else {
             return ((SingletonNode<PlatformState>) root.getChild(index))

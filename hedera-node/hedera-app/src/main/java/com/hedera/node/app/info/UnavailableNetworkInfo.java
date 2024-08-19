@@ -24,6 +24,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
+/**
+ * A {@link NetworkInfo} implementation that throws {@link UnsupportedOperationException} for all methods,
+ * needed as a non-null placeholder for {@link com.hedera.node.app.services.ServiceMigrator} calls made to
+ * initialize platform state before the network information is known.
+ */
 public enum UnavailableNetworkInfo implements NetworkInfo {
     UNAVAILABLE_NETWORK_INFO;
 
