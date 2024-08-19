@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -24,10 +23,8 @@ import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -42,10 +39,7 @@ public class SignedStateSynchronizationTests {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds");
-        registry.registerConstructable(new ClassConstructorPair(
-                MerkleStateRoot.class,
-                () -> new MerkleStateRoot(
-                        new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()))));
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @Test

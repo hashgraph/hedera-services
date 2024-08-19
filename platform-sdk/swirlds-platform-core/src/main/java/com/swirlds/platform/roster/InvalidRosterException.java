@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.swirlds.platform.roster;
 
-import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.system.Round;
-import com.swirlds.state.State;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-/** Listener invoked for each consensus round that occurs. */
-@FunctionalInterface
-public interface HandleConsensusRoundListener {
-    void onConsensusRound(@NonNull Round round, @NonNull PlatformStateAccessor platformState, @NonNull State state);
+/**
+ * An exception thrown by the RosterValidator when a given Roster is invalid.
+ */
+public class InvalidRosterException extends RuntimeException {
+    /**
+     * A default constructor.
+     * @param message a message
+     */
+    public InvalidRosterException(String message) {
+        super(message);
+    }
 }

@@ -121,7 +121,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
-    exports com.swirlds.platform.state.schemas;
+    exports com.swirlds.platform.state.service.schemas;
+    exports com.swirlds.platform.state.service;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;

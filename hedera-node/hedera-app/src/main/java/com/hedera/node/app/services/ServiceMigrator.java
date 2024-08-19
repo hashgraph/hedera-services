@@ -49,4 +49,12 @@ public interface ServiceMigrator {
             @NonNull Configuration config,
             @NonNull NetworkInfo networkInfo,
             @NonNull Metrics metrics);
+
+    /**
+     * Given a {@link State}, returns the creation version of the state if it was deserialized, or null otherwise.
+     * @param state the state
+     * @return the version of the state if it was deserialized, otherwise null
+     */
+    @Nullable
+    SemanticVersion creationVersionOf(@NonNull State state);
 }

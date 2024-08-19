@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,7 +36,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +64,7 @@ class SignedStateTests {
      */
     private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
         final MerkleStateRoot state = spy(new MerkleStateRoot(
-                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
 
         final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
@@ -209,7 +209,7 @@ class SignedStateTests {
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
         final MerkleRoot state = spy(new MerkleStateRoot(
-                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);

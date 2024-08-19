@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessorSingleton;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates the logic for calling
- * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformStateAccessorSingleton, InitTrigger, SoftwareVersion)} at
+ * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformStateAccessor, InitTrigger, SoftwareVersion)}
  * startup time.
  */
 public final class StateInitializer {

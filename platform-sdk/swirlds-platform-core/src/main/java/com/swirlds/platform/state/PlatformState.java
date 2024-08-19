@@ -34,7 +34,7 @@ import java.util.Objects;
 
 /**
  * State managed and used by the platform.
- * @deprecated Use {@link PlatformStateAccessorSingleton}. This object should be accessed via the State API.
+ * @deprecated Implementation of {@link PlatformStateAccessor} before moving platform state into State API.
  */
 @Deprecated(since = "0.54.0", forRemoval = true)
 public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, PlatformStateAccessor {

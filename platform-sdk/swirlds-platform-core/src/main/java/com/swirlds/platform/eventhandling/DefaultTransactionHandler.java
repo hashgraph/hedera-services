@@ -222,7 +222,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
     private void updatePlatformState(@NonNull final ConsensusRound round) {
         final PlatformStateAccessor platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
-
         platformState.setRound(round.getRoundNum());
         platformState.setConsensusTimestamp(round.getConsensusTimestamp());
         platformState.setCreationSoftwareVersion(softwareVersion);

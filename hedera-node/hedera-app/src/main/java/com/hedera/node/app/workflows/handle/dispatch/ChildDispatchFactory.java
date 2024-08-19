@@ -77,7 +77,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -139,7 +138,6 @@ public class ChildDispatchFactory {
      * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
      * @param creatorInfo the node info of the creator
-     * @param platformState        the platform state accessor
      * @param topLevelFunction the top level functionality
      * @param consensusNow the consensus time
      * @param blockRecordInfo the block record info
@@ -157,7 +155,6 @@ public class ChildDispatchFactory {
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final NodeInfo creatorInfo,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
@@ -180,7 +177,6 @@ public class ChildDispatchFactory {
                 consensusNow,
                 creatorInfo,
                 config,
-                platformState,
                 topLevelFunction,
                 throttleAdviser,
                 authorizer,
@@ -207,7 +203,6 @@ public class ChildDispatchFactory {
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             // @Singleton
@@ -244,7 +239,6 @@ public class ChildDispatchFactory {
                 storeFactory,
                 payerId,
                 keyVerifier,
-                platformState,
                 topLevelFunction,
                 Key.DEFAULT,
                 exchangeRateManager,
@@ -278,7 +272,6 @@ public class ChildDispatchFactory {
                 childStack,
                 category,
                 childTokenContext,
-                platformState,
                 preHandleResult);
     }
 

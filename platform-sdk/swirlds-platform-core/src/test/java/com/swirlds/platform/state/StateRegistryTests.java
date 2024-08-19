@@ -17,6 +17,8 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -30,7 +32,6 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -55,18 +56,16 @@ class StateRegistryTests {
     @TempDir
     Path testDirectory;
 
-    private static Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier;
+    private static final Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier =
+            version -> new BasicSoftwareVersion(version.major());
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         registry = ConstructableRegistry.getInstance();
         version = SemanticVersion.newBuilder().major(nextInt(1, 100)).build();
-        softwareVersionSupplier = version -> new BasicSoftwareVersion(version.major());
-        registry.registerConstructable(new ClassConstructorPair(
-                MerkleStateRoot.class,
-                () -> new MerkleStateRoot(new NoOpMerkleStateLifecycles(), softwareVersionSupplier)));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
         registry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
+        registerMerkleStateRootClassIds();
     }
 
     @AfterAll
@@ -88,7 +87,7 @@ class StateRegistryTests {
         final List<MerkleRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
-            states.add(new MerkleStateRoot(new NoOpMerkleStateLifecycles(), softwareVersionSupplier));
+            states.add(new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
             assertEquals(
                     states.size(),
                     RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
@@ -96,7 +95,7 @@ class StateRegistryTests {
         }
 
         // Fast copy a state
-        final MerkleRoot stateToCopy = new MerkleStateRoot(new NoOpMerkleStateLifecycles(), softwareVersionSupplier);
+        final MerkleRoot stateToCopy = new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         states.add(stateToCopy);
         final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
@@ -109,11 +108,10 @@ class StateRegistryTests {
 
         // Deserialize a state
         final MerkleStateRoot stateToSerialize =
-                new MerkleStateRoot(new NoOpMerkleStateLifecycles(), softwareVersionSupplier);
-        final PlatformStateAccessorSingleton platformState = new PlatformStateAccessorSingleton(stateToSerialize);
+                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final var platformState = stateToSerialize.getPlatformState();
         platformState.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
         platformState.setLegacyRunningEventHash(new Hash());
-        stateToSerialize.updatePlatformStateAccessor(platformState);
         states.add(stateToSerialize);
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);

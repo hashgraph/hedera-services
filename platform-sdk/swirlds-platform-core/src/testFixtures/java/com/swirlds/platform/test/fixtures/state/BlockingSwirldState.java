@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -61,7 +62,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
     /**
      * In this version, serialization was performed by serialize/deserialize.
      */
-    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = 2;
+    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = MerkleStateRoot.VERSION_2;
 
     private static final int CLASS_VERSION = VERSION_MIGRATE_TO_SERIALIZABLE;
 
@@ -73,7 +74,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
      * Constructs a new instance of {@link BlockingSwirldState}.
      */
     public BlockingSwirldState() {
-        super(new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()));
+        super(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         value = new BlockingStringLeaf();
         setChild(1, value);
     }

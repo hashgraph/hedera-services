@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -32,7 +33,6 @@ import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -88,7 +88,7 @@ class StateTest {
         Random random = new Random(0);
         State root = new State();
         root.setSwirldState(new MerkleStateRoot(
-                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

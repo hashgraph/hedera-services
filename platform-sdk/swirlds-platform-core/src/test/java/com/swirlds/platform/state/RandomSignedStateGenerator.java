@@ -19,6 +19,8 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -39,7 +41,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -121,12 +122,13 @@ public class RandomSignedStateGenerator {
         }
 
         final MerkleRoot stateInstance;
+        registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
                 stateInstance = new MerkleStateRoot(
-                        new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()));
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
         } else {
             stateInstance = state;

@@ -64,7 +64,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
@@ -84,7 +83,6 @@ public class StandaloneDispatchFactory {
     private final FeeManager feeManager;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
-    private final PlatformStateAccessor platformState;
     private final ConfigProvider configProvider;
     private final DispatchProcessor dispatchProcessor;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -100,7 +98,6 @@ public class StandaloneDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final ConfigProvider configProvider,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
@@ -113,7 +110,6 @@ public class StandaloneDispatchFactory {
         this.feeManager = requireNonNull(feeManager);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
-        this.platformState = requireNonNull(platformState);
         this.configProvider = requireNonNull(configProvider);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -181,7 +177,6 @@ public class StandaloneDispatchFactory {
                 storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 NO_OP_KEY_VERIFIER,
-                platformState,
                 txnInfo.functionality(),
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
@@ -211,7 +206,6 @@ public class StandaloneDispatchFactory {
                 stack,
                 USER,
                 tokenContext,
-                platformState,
                 preHandleResult);
     }
 

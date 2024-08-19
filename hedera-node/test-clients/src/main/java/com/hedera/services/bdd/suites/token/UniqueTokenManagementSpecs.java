@@ -371,7 +371,9 @@ public class UniqueTokenManagementSpecs {
                         mintToken(
                                 NFT,
                                 List.of(metadata("1"), metadata("2"), metadata("3"), metadata("4"), metadata("5"))))
-                .when(burnToken(NFT, List.of(3L, 4L, 5L)).via(BURN_TXN))
+                .when(burnToken(NFT, List.of(3L, 4L, 5L))
+                        .payingWith(TOKEN_TREASURY)
+                        .via(BURN_TXN))
                 .then(
                         getTokenNftInfo(NFT, 1).hasSerialNum(1).hasCostAnswerPrecheck(OK),
                         getTokenNftInfo(NFT, 2).hasSerialNum(2).hasCostAnswerPrecheck(OK),
