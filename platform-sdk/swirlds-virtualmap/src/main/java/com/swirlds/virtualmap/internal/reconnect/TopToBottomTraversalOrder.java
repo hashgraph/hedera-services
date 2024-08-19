@@ -63,10 +63,23 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     public void start(final long firstLeafPath, final long lastLeafPath) {
         this.reconnectFirstLeafPath = firstLeafPath;
         this.reconnectLastLeafPath = lastLeafPath;
+
+        // If the tree has at least three ranks, skip some top-most ranks
+        if (firstLeafPath > 2) {
+            final int leafParentRank = Path.getRank(firstLeafPath) - 1;
+            final int startRank = Math.min(16, leafParentRank);
+            final long firstPathAtStartRank = Path.getLeftGrandChildPath(0, startRank);
+            assert firstPathAtStartRank > 0;
+            lastPath.set(firstPathAtStartRank - 1);
+        }
     }
+
+    // Debug
+    final AtomicLong lastPathReceived = new AtomicLong(0);
 
     @Override
     public void nodeReceived(final long path, final boolean isClean) {
+        lastPathReceived.set(path);
         final boolean isLeaf = path >= reconnectFirstLeafPath;
         if (isClean && !isLeaf && !hasCleanParent(path)) {
             cleanNodes.add(new MutableLong(path));
@@ -105,6 +118,8 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
             // If the next clean path is a leaf, return INVALID_PATH. It will trigger a call to
             // getNextLeafPathToSend() below
             if (result == Path.INVALID_PATH) {
+                System.err.println("DEBUG Last path received: " + lastPathReceived.get() + " "
+                        + Path.getRank(lastPathReceived.get()) + "/" + Path.getRank(reconnectLastLeafPath));
                 return Path.INVALID_PATH;
             }
         } while (!lastPath.compareAndSet(wasLastPath, result));
