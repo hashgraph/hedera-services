@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.sign.test;
+package com.hedera.services.cli.test.sign;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
