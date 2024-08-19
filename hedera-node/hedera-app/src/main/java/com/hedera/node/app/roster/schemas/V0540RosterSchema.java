@@ -52,8 +52,8 @@ public class V0540RosterSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(ROSTER_KEY, RosterState.PROTOBUF),
-                StateDefinition.onDisk(ROSTER_STATES_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
+                StateDefinition.singleton(ROSTER_STATES_KEY, RosterState.PROTOBUF),
+                StateDefinition.onDisk(ROSTER_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
     }
 
     @Override
