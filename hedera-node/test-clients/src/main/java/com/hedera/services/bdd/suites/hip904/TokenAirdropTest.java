@@ -77,7 +77,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
@@ -1078,45 +1077,6 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("with missing crypto allowance")
-        final Stream<DynamicTest> missingSpenderAllowancesFails() {
-            var spender = "spender";
-            return hapiTest(
-                    cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
-                    tokenAssociate(spender, NON_FUNGIBLE_TOKEN),
-                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
-                                    .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            .signedByPayerAnd(spender, OWNER)
-                            .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
-        }
-
-        @HapiTest
-        @DisplayName("spender has more allowances more that the owner balance")
-        final Stream<DynamicTest> spenderHasMoreAllowancesThatTheOwner() {
-            final String ALICE = "alice";
-            final String BOB = "bob";
-            final String CAROL = "carol";
-            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
-            return hapiTest(
-                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
-                    tokenCreate(FUNGIBLE_TOKEN_A)
-                            .treasury(ALICE)
-                            .tokenType(FUNGIBLE_COMMON)
-                            .initialSupply(15L),
-                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
-                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_A),
-                    cryptoApproveAllowance().payingWith(ALICE).addTokenAllowance(ALICE, FUNGIBLE_TOKEN_A, BOB, 10L),
-                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
-                            .signedByPayerAnd(ALICE),
-                    tokenAirdrop(movingWithAllowance(6L, FUNGIBLE_TOKEN_A).between(ALICE, CAROL))
-                            .signedBy(BOB)
-                            .payingWith(BOB)
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
-        }
-
-        @HapiTest
         @DisplayName("FT to deleted ECDSA account")
         final Stream<DynamicTest> ftOnDeletedECDSAAccount() {
             final var ecdsaKey = "ecdsaKey";
@@ -1217,7 +1177,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return hapiTest(
                     cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
                     tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
-                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
                                     .between(ALICE, "0.0.999999999999999"))
                             .signedByPayerAnd(ALICE, OWNER)
                             .hasKnownStatus(INVALID_ACCOUNT_ID));
@@ -1230,7 +1190,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return hapiTest(
                     cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
                     tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
-                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
                                     .between("0.0.999999999999999", ALICE))
                             .signedByPayerAnd(ALICE, OWNER)
                             .hasKnownStatus(INVALID_ACCOUNT_ID));
@@ -1248,7 +1208,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .tokenType(FUNGIBLE_COMMON)
                             .initialSupply(15L),
                     tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
-                                    .between(ALICE, "0x0000000000000000000000691752902764108185"))
+                                    .between(ALICE, "0x000000000000000000000069175290276410818578"))
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INVALID_ALIAS_KEY));
         }
@@ -1265,7 +1225,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .tokenType(FUNGIBLE_COMMON)
                             .initialSupply(15L),
                     tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
-                                    .between("0x0000000000000000000000691752902764108185", ALICE))
+                                    .between("0x000000000000000000000069175290276410818578", ALICE))
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INVALID_ACCOUNT_ID));
         }
@@ -1319,7 +1279,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                                 .setTokenNum(5555555L)
                                                 .build());
                     }),
-                    tokenAirdrop(TokenMovement.movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN_A, 1L)
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_A, 1L)
                                     .between(ALICE, BOB))
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INVALID_TOKEN_ID));
