@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -53,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 
 import com.google.protobuf.ByteString;
@@ -64,6 +66,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -519,19 +522,33 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("with missing owner's signature")
-        final Stream<DynamicTest> missingPayerSigFails() {
+        @DisplayName("fungible token with allowance")
+        final Stream<DynamicTest> airdropFtWithAllowance() {
             var spender = "spender";
-            return defaultHapiSpec("should fail - INVALID_SIGNATURE")
+            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
                     .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
                     .when(cryptoApproveAllowance()
                             .payingWith(OWNER)
                             .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100))
                     .then(tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
                                     .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            // Should be signed by owner as well
-                            .signedBy(spender)
-                            .hasPrecheck(INVALID_SIGNATURE));
+                            .signedBy(OWNER, spender)
+                            .hasPrecheck(NOT_SUPPORTED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with allowance")
+        final Stream<DynamicTest> airdropNftWithAllowance() {
+            var spender = "spender";
+            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
+                    .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
+                    .when(cryptoApproveAllowance()
+                            .payingWith(OWNER)
+                            .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, spender, true, List.of()))
+                    .then(tokenAirdrop(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                            .signedBy(OWNER, spender)
+                            .hasPrecheck(NOT_SUPPORTED));
         }
 
         @HapiTest

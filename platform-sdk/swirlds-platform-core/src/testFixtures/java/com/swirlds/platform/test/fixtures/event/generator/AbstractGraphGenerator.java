@@ -19,8 +19,8 @@ package com.swirlds.platform.test.fixtures.event.generator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -85,13 +85,13 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      *
      * @param eventIndex the index of the event to build
      */
-    protected abstract IndexedEvent buildNextEvent(long eventIndex);
+    protected abstract EventImpl buildNextEvent(long eventIndex);
 
     /**
      * {@inheritDoc}
      */
-    public final IndexedEvent generateEvent() {
-        final IndexedEvent next = generateEventWithoutIndex();
+    public final EventImpl generateEvent() {
+        final EventImpl next = generateEventWithoutIndex();
 
         next.getBaseEvent().setStreamSequenceNumber(numEventsGenerated);
         return next;
@@ -100,8 +100,8 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /**
      * The same as {@link #generateEvent()}, but does not set the stream sequence number.
      */
-    public final IndexedEvent generateEventWithoutIndex() {
-        final IndexedEvent next = buildNextEvent(numEventsGenerated);
+    public final EventImpl generateEventWithoutIndex() {
+        final EventImpl next = buildNextEvent(numEventsGenerated);
         next.getBaseEvent().signalPrehandleCompletion();
         numEventsGenerated++;
         updateMaxGeneration(next);
@@ -134,11 +134,11 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /**
      * Updates the max generation based on the latest event
      */
-    private void updateMaxGeneration(final IndexedEvent event) {
+    private void updateMaxGeneration(final EventImpl event) {
         maxGenerationPerCreator.merge(event.getCreatorId(), event.getGeneration(), Math::max);
     }
 
-    private void updateMaxBirthRound(@NonNull final IndexedEvent event) {
+    private void updateMaxBirthRound(@NonNull final EventImpl event) {
         maxBirthRoundPerCreator.merge(event.getCreatorId(), event.getBirthRound(), Math::max);
     }
 
