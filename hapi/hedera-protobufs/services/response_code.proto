@@ -1585,8 +1585,12 @@ enum ResponseCodeEnum {
     TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY = 368;
 
     /**
-     * The token in the pending airdrop that was tried to claim is deleted or the sender is no more
-     * owning the token.
+     * This airdrop claim is for a pending airdrop with an invalid token.<br/>
+     * The token might be deleted, or the sender may not have enough tokens
+     * to fulfill the offer.
+     * <p>
+     * The client SHOULD query mirror node to determine the status of the pending
+     * airdrop and whether the sender can fulfill the offer.
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
 }
