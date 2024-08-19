@@ -1570,8 +1570,11 @@ enum ResponseCodeEnum {
     THROTTLED_AT_CONSENSUS = 366;
 
     /**
-     * The provided pending airdrop id is invalid. It could be that the pending airdrop is already claimed
-     * or cancelled.
+     * The provided pending airdrop id is invalid.<br/>
+     * This pending airdrop MAY already be claimed or cancelled.
+     * <p>
+     * The client SHOULD query a mirror node to determine the current status of
+     * the pending airdrop.
      */
     INVALID_PENDING_AIRDROP_ID = 367;
 
