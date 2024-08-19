@@ -35,7 +35,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface MerkleStateLifecycles {
     /**
-     * Called when a genesis state needs to initialize platform state.
+     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateAccessor} implementation
+     * is initialized.
      * @param root the root of the state to be initialized
      */
     void initRootPlatformState(@NonNull MerkleStateRoot root);

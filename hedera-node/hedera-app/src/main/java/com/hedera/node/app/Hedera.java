@@ -215,9 +215,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private Metrics metrics;
 
     /**
-     * A factory object for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
+     * A factory object for creating {@link SoftwareVersion} based on provided {@link SemanticVersion};
+     * needed only until we remove the HAPI version from {@link HederaSoftwareVersion} (the node
+     * version alone encompasses the protobuf artifacts compiled for its deployment, so the platform
+     * doesn't need the extra detail of the HAPI version).
      */
-    private final Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier;
+    private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     /*==================================================================================================================
     *
@@ -264,7 +267,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 version::readableServicesVersion,
                 () -> HapiUtils.toString(version.getHapiVersion()));
         fileServiceImpl = new FileServiceImpl();
-        softwareVersionSupplier = v -> new HederaSoftwareVersion(this.version.getHapiVersion(), v);
+        versionFactory = v -> new HederaSoftwareVersion(version.getHapiVersion(), v);
 
         final var appContext = new AppContextImpl(
                 instantSource,
@@ -295,7 +298,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     MerkleStateRoot.class,
-                    () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), softwareVersionSupplier)));
+                    () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory)));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
@@ -332,7 +335,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     @Override
     @NonNull
     public MerkleRoot newMerkleStateRoot() {
-        return new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), softwareVersionSupplier);
+        return new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
     }
 
     @Override
@@ -360,15 +363,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     =================================================================================================================*/
 
     /**
-     * Invoked by the platform when the platform state should be initialized.
-     * @param root the root of the state to be initialized
+     * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
+     * @param root the root state to be initialized
      */
     public void initPlatformState(@NonNull final MerkleStateRoot root) {
         requireNonNull(root);
         serviceMigrator.doMigrations(
                 root,
-                servicesRegistry.forServices(EntityIdService.NAME, PlatformStateService.NAME),
-                null,
+                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                PLATFORM_STATE_SERVICE.creationVersionOf(root),
                 version.getPbjSemanticVersion(),
                 bootstrapConfigProvider.getConfiguration(),
                 UNAVAILABLE_NETWORK_INFO,
@@ -404,12 +407,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         .activeProfile(),
                 trigger,
                 previousVersion == null ? "<NONE>" : previousVersion);
-        final var platformStateStore =
-                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         logger.info(
                 "Platform state includes freeze time={} and last frozen={}",
-                platformStateStore.getFreezeTime(),
-                platformStateStore.getLastFrozenTime());
+                readableStore.getFreezeTime(),
+                readableStore.getLastFrozenTime());
 
         HederaSoftwareVersion deserializedVersion = null;
         // We do not support downgrading from one version to an older version.

@@ -69,7 +69,7 @@ public class FakeServicesRegistry implements ServicesRegistry {
     }
 
     @Override
-    public ServicesRegistry forServices(@NonNull final String... serviceNames) {
+    public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
         throw new UnsupportedOperationException("Embedded Hedera does not use platform builder");
     }
 }

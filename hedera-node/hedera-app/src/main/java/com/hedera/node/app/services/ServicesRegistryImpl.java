@@ -64,7 +64,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     }
 
     @Override
-    public ServicesRegistry forServices(@NonNull final String... serviceNames) {
+    public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
         requireNonNull(serviceNames);
         final var selections = Set.of(serviceNames);
         final var subRegistry = new ServicesRegistryImpl(constructableRegistry, bootstrapConfig);

@@ -16,9 +16,15 @@
 
 package com.swirlds.platform.state.service;
 
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
@@ -26,6 +32,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A service that provides the schema for the platform state, used by {@link MerkleStateRoot} to implement
+ * {@link MerkleRoot#getPlatformState()}.
+ */
 public enum PlatformStateService implements Service {
     PLATFORM_STATE_SERVICE;
 
@@ -43,5 +53,26 @@ public enum PlatformStateService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         SCHEMAS.forEach(registry::register);
+    }
+
+    @SuppressWarnings("unchecked")
+    public SemanticVersion creationVersionOf(@NonNull final MerkleStateRoot root) {
+        requireNonNull(root);
+        if (root.getNumberOfChildren() == 0) {
+            return null;
+        }
+        final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
+        if (index == -1) {
+            final var zerothChild = root.getChild(0);
+            if (zerothChild instanceof com.swirlds.platform.state.PlatformState platformState) {
+                return platformState.getCreationSoftwareVersion().getPbjSemanticVersion();
+            } else {
+                throw new IllegalStateException("Root without platform state (zeroth child " + zerothChild + ")");
+            }
+        } else {
+            return ((SingletonNode<PlatformState>) root.getChild(index))
+                    .getValue()
+                    .creationSoftwareVersionOrThrow();
+        }
     }
 }

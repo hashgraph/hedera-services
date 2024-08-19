@@ -139,10 +139,6 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         return fromPbjConsensusSnapshot(stateOrThrow().consensusSnapshot());
     }
 
-    public com.hedera.hapi.platform.state.ConsensusSnapshot pbjSnapshot() {
-        return stateOrThrow().consensusSnapshot();
-    }
-
     @Nullable
     @Override
     public Instant getFreezeTime() {
