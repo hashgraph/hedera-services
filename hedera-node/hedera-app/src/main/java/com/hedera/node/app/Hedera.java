@@ -39,7 +39,7 @@ import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterSchemaAwareImpl;
+import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -283,7 +283,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterSchemaAwareImpl())
+                        new RosterServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
             // And the factory for the MerkleStateRoot class id must be our constructor

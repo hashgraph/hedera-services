@@ -29,22 +29,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class RosterSchemaAwareImplTest {
-    private RosterSchemaAwareImpl rosterSchemaRegistry;
+class RosterServiceImplTest {
+    private RosterServiceImpl rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterSchemaRegistry = new RosterSchemaAwareImpl();
+        rosterService = new RosterServiceImpl();
     }
 
     @Test
     void defaultConstructor() {
-        assertThat(new RosterSchemaAwareImpl()).isNotNull();
+        assertThat(new RosterServiceImpl()).isNotNull();
     }
 
     @Test
     void registerSchemasNullArgsThrow() {
-        Assertions.assertThatThrownBy(() -> rosterSchemaRegistry.registerSchemas(mock(SchemaRegistry.class)))
+        Assertions.assertThatThrownBy(() -> rosterService.registerSchemas(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -52,11 +52,16 @@ class RosterSchemaAwareImplTest {
     void registerSchemasRegistersTokenSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        rosterSchemaRegistry.registerSchemas(schemaRegistry);
+        rosterService.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
         verify(schemaRegistry, times(1)).register(captor.capture());
         final var schemas = captor.getAllValues();
         assertThat(schemas).hasSize(1);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
+    }
+
+    @Test
+    void getServiceNameReturnsCorrectName() {
+        assertThat(rosterService.getServiceName()).isEqualTo(RosterServiceImpl.SCHEMA_NAME);
     }
 }

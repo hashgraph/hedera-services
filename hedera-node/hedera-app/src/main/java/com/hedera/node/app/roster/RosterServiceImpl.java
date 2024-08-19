@@ -19,15 +19,25 @@ package com.hedera.node.app.roster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
-import com.swirlds.state.spi.SchemaAware;
 import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link SchemaAware} interface.
+ * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link Service} interface.
  * Registers the roster schemas with the {@link SchemaRegistry}.
+ * Not exposed outside `hedera-app`.
  */
-public class RosterSchemaAwareImpl implements SchemaAware {
+public class RosterServiceImpl implements Service {
+
+    /** The name of this service */
+    public static final String SCHEMA_NAME = "RosterServiceImpl";
+
+    @NonNull
+    @Override
+    public String getServiceName() {
+        return SCHEMA_NAME;
+    }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
