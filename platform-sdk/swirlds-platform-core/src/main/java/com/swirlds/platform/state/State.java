@@ -243,6 +243,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this).append("swirldState", getSwirldState()).toString();
+        return new ToStringBuilder(this)
+                .append("platformState", getPlatformState())
+                .append("swirldState", getSwirldState())
+                .toString();
     }
 }

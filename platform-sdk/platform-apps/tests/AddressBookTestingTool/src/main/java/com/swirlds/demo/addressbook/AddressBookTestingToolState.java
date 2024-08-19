@@ -161,11 +161,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void init(
             @NonNull final Platform platform,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
         Objects.requireNonNull(platform, "the platform cannot be null");
-        Objects.requireNonNull(platformState, "the platform state accessor cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
         addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
         testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);

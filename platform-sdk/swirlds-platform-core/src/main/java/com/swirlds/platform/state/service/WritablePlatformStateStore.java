@@ -79,245 +79,115 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
     public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         requireNonNull(creationVersion);
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                creationVersion.getPbjSemanticVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().creationSoftwareVersion(creationVersion.getPbjSemanticVersion()));
     }
 
     @Override
     public void setAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                toPbjAddressBook(addressBook),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().addressBook(toPbjAddressBook(addressBook)));
     }
 
     @Override
     public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                toPbjAddressBook(addressBook)));
+        update(previousState.copyBuilder().previousAddressBook(toPbjAddressBook(addressBook)));
     }
 
     @Override
     public void setRound(final long round) {
         final var previousState = stateOrThrow();
-        final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                new ConsensusSnapshot(
-                        round,
-                        previousSnapshot.judgeHashes(),
-                        previousSnapshot.minimumJudgeInfoList(),
-                        previousSnapshot.nextConsensusNumber(),
-                        previousSnapshot.consensusTimestamp()),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .consensusSnapshot(previousState
+                        .consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT)
+                        .copyBuilder()
+                        .round(round)));
     }
 
     @Override
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                legacyRunningEventHash == null ? Bytes.EMPTY : legacyRunningEventHash.getBytes(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .legacyRunningEventHash(
+                        legacyRunningEventHash == null ? Bytes.EMPTY : legacyRunningEventHash.getBytes()));
     }
 
     @Override
     public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         requireNonNull(consensusTimestamp);
         final var previousState = stateOrThrow();
-        final var previousSnapshot = previousState.consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT);
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                new ConsensusSnapshot(
-                        previousSnapshot.round(),
-                        previousSnapshot.judgeHashes(),
-                        previousSnapshot.minimumJudgeInfoList(),
-                        previousSnapshot.nextConsensusNumber(),
-                        toPbjTimestamp(consensusTimestamp)),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .consensusSnapshot(previousState
+                        .consensusSnapshotOrElse(ConsensusSnapshot.DEFAULT)
+                        .copyBuilder()
+                        .consensusTimestamp(toPbjTimestamp(consensusTimestamp))));
     }
 
     @Override
     public void setRoundsNonAncient(final int roundsNonAncient) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                roundsNonAncient,
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().roundsNonAncient(roundsNonAncient));
     }
 
     @Override
     public void setSnapshot(@NonNull final com.swirlds.platform.consensus.ConsensusSnapshot snapshot) {
         requireNonNull(snapshot);
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                toPbjConsensusSnapshot(snapshot),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().consensusSnapshot(toPbjConsensusSnapshot(snapshot)));
     }
 
     @Override
     public void setFreezeTime(@Nullable final Instant freezeTime) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                toPbjTimestamp(freezeTime),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().freezeTime(toPbjTimestamp(freezeTime)));
     }
 
     @Override
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                toPbjTimestamp(lastFrozenTime),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState.copyBuilder().lastFrozenTime(toPbjTimestamp(lastFrozenTime)));
     }
 
     @Override
     public void setFirstVersionInBirthRoundMode(@NonNull final SoftwareVersion firstVersionInBirthRoundMode) {
         requireNonNull(firstVersionInBirthRoundMode);
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                previousState.lastRoundBeforeBirthRoundMode(),
-                firstVersionInBirthRoundMode.getPbjSemanticVersion(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .firstVersionInBirthRoundMode(firstVersionInBirthRoundMode.getPbjSemanticVersion())
+                .build());
     }
 
     @Override
     public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                previousState.lowestJudgeGenerationBeforeBirthRoundMode(),
-                lastRoundBeforeBirthRoundMode,
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .lastRoundBeforeBirthRoundMode(lastRoundBeforeBirthRoundMode)
+                .build());
     }
 
     @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
-        update(new PlatformState(
-                previousState.creationSoftwareVersion(),
-                previousState.roundsNonAncient(),
-                previousState.consensusSnapshot(),
-                previousState.freezeTime(),
-                previousState.lastFrozenTime(),
-                previousState.legacyRunningEventHash(),
-                lowestJudgeGenerationBeforeBirthRoundMode,
-                previousState.lastRoundBeforeBirthRoundMode(),
-                previousState.firstVersionInBirthRoundMode(),
-                previousState.addressBook(),
-                previousState.previousAddressBook()));
+        update(previousState
+                .copyBuilder()
+                .lowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeBirthRoundMode));
     }
 
     private @NonNull PlatformState stateOrThrow() {
         return requireNonNull(state.get());
     }
 
-    private void update(@NonNull final PlatformState state) {
-        this.state.put(state);
+    private void update(@NonNull final PlatformState.Builder stateBuilder) {
+        update(stateBuilder.build());
+    }
+
+    private void update(@NonNull final PlatformState stateBuilder) {
+        this.state.put(stateBuilder);
         if (writableStates instanceof CommittableWritableStates committableWritableStates) {
             committableWritableStates.commit();
         }

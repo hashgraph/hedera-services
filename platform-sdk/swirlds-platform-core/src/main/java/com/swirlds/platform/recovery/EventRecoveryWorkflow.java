@@ -313,7 +313,6 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
                         initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 

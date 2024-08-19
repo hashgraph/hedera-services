@@ -34,18 +34,27 @@ public final class GenesisStateBuilder {
     private GenesisStateBuilder() {}
 
     /**
-     * Construct a genesis platform state.
+     * Initializes a genesis platform state.
      *
-     * @return a genesis platform state
      */
     private static void initGenesisPlatformState(
-            PlatformStateAccessor platformState, final AddressBook addressBook, final SoftwareVersion appVersion) {
+            final PlatformContext platformContext,
+            final PlatformStateAccessor platformState,
+            final AddressBook addressBook,
+            final SoftwareVersion appVersion) {
 
         platformState.setAddressBook(addressBook.copy());
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
         platformState.setLegacyRunningEventHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
+
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
+        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+        if (genesisFreezeTime > 0) {
+            platformState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+        }
     }
 
     /**
@@ -63,14 +72,7 @@ public final class GenesisStateBuilder {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        initGenesisPlatformState(stateRoot.getPlatformState(), addressBook, appVersion);
-
-        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            stateRoot.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
+        initGenesisPlatformState(platformContext, stateRoot.getPlatformState(), addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
                 platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);

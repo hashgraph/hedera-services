@@ -130,12 +130,10 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void init(
             @NonNull final Platform platform,
-            @NonNull final PlatformStateAccessor platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         Objects.requireNonNull(platform);
-        Objects.requireNonNull(platformState);
         Objects.requireNonNull(trigger);
 
         final StateCommonConfig stateConfig =

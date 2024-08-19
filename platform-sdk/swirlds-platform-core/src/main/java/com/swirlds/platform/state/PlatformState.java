@@ -34,7 +34,8 @@ import java.util.Objects;
 
 /**
  * State managed and used by the platform.
- * @deprecated Implementation of {@link PlatformStateAccessor} before moving platform state into State API.
+ * @deprecated Implementation of {@link PlatformStateAccessor} before moving platform state into State API. This class
+ * should be moved to the platform test fixtures after migration to 0.54.0.
  */
 @Deprecated(since = "0.54.0", forRemoval = true)
 public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, PlatformStateAccessor {

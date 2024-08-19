@@ -44,17 +44,13 @@ public interface SwirldState extends MerkleNode {
      * </p>
      *
      * @param platform                the Platform that instantiated this state
-     * @param platformState   the platform state
      * @param trigger                 describes the reason why the state was created/recreated
      * @param previousSoftwareVersion the previous version of the software, {@link SoftwareVersion#NO_VERSION} if this
      *                                is genesis or if migrating from code from before the concept of an application
      *                                software version
      */
     default void init(
-            final Platform platform,
-            final PlatformStateAccessor platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
         // Override if needed
     }
 

@@ -51,6 +51,7 @@ public interface PlatformStateAccessor {
 
     /**
      * Get the address book.
+     * @return an address book
      */
     @Nullable
     AddressBook getAddressBook();
@@ -64,6 +65,7 @@ public interface PlatformStateAccessor {
 
     /**
      * Get the previous address book.
+     * @return a previous address book
      */
     @Nullable
     AddressBook getPreviousAddressBook();
@@ -206,6 +208,7 @@ public interface PlatformStateAccessor {
      *
      * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
      */
+    @NonNull
     void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode);
 
     /**

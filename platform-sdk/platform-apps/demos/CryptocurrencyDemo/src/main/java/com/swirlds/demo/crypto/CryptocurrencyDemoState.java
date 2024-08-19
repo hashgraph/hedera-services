@@ -376,10 +376,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformStateAccessor platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
         this.platform = (SwirldsPlatform) platform;
 
         if (trigger == InitTrigger.GENESIS) {

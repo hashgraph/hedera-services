@@ -124,7 +124,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
 
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
-    private static final int VERSION_1 = 30;
     // Migrates from `PlatformState` to State API singleton
     public static final int VERSION_2 = 31;
     private static final int CURRENT_VERSION = VERSION_2;
@@ -175,8 +174,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * If set, the platform state from a deserialized state created prior to version 0.54, and used to initialize
      * the platform state as a State API singleton after migration.
+     *
+     * @deprecated since 0.54.0; this field should be removed in a future release
      */
     @Nullable
+    @Deprecated(forRemoval = true)
     private PlatformState preV054PlatformState;
 
     /**
@@ -208,11 +210,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * on restart, on reconnect, or any other time indicated by the {@code trigger}.
      */
     @Override
-    public void init(
-            final Platform platform,
-            final PlatformStateAccessor platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion deserializedVersion) {
+    public void init(final Platform platform, final InitTrigger trigger, final SoftwareVersion deserializedVersion) {
         metrics = platform.getContext().getMetrics();
 
         // If we are initialized for event stream recovery, we have to register an

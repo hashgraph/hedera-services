@@ -171,7 +171,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state     the state for this registry to use.*
+     * @param state     the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion  The current version. Never null. Must be newer than {@code
      *                        previousVersion}.

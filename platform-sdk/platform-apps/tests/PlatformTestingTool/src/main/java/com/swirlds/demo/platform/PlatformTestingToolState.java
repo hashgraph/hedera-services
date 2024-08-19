@@ -76,7 +76,6 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
-import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
 import com.swirlds.logging.legacy.payload.SoftwareVersionPayload;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
@@ -1302,10 +1301,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformStateAccessor platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
@@ -1335,11 +1331,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // initialize data structures used for FCQueue transaction records expiration
         initializeExpirationQueueAndAccountsSet();
-
-        logger.info(LOGM_DEMO_INFO, "Dual state received in init function {}", () -> new ApplicationDualStatePayload(
-                        platformState.getFreezeTime(), platformState.getLastFrozenTime())
-                .toString());
-
         logger.info(LOGM_STARTUP, () -> new SoftwareVersionPayload(
                         "Trigger and PreviousSoftwareVersion state received in init function",
                         trigger.toString(),
