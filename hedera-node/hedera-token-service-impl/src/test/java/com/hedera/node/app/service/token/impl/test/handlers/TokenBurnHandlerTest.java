@@ -65,14 +65,14 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
@@ -385,8 +385,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder();
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -425,8 +425,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder();
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -706,8 +706,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder();
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -769,8 +769,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder();
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -833,8 +833,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder();
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);

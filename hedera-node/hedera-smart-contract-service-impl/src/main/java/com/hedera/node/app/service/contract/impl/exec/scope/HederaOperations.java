@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -93,6 +93,13 @@ public interface HederaOperations {
      * @return the maximum number of contracts
      */
     long contractCreationLimit();
+
+    /**
+     * Returns the maximum number of accounts that we should allow in this operation scope.
+     *
+     * @return the maximum number of accounts
+     */
+    long accountCreationLimit();
 
     /**
      * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
@@ -239,7 +246,7 @@ public interface HederaOperations {
     long getOriginalSlotsUsed(ContractID contractID);
 
     /**
-     * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
+     * Creates a {@link ContractCreateStreamBuilder}, containing information about the hollow account.
      * @param contractId    ContractId of hollow account
      * @param evmAddress    Evm address of hollow account
      */

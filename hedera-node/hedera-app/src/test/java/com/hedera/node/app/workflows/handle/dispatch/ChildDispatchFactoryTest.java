@@ -48,18 +48,18 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -130,7 +130,7 @@ class ChildDispatchFactoryTest {
     private FeeManager feeManager;
 
     @Mock
-    private RecordCache recordCache;
+    private BlockRecordInfo blockRecordInfo;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
@@ -170,8 +170,7 @@ class ChildDispatchFactoryTest {
     private final Predicate<Key> callback = key -> true;
     private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
-    private final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior =
-            SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
+    private final RecordStreamBuilder.ReversingBehavior reversingBehavior = StreamBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach
     public void setUp() {
@@ -180,9 +179,7 @@ class ChildDispatchFactoryTest {
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
-                blockRecordManager,
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager);
@@ -258,7 +255,8 @@ class ChildDispatchFactoryTest {
                         platformState,
                         CONTRACT_CALL,
                         throttleAdviser,
-                        Instant.ofEpochSecond(12345L)));
+                        Instant.ofEpochSecond(12345L),
+                        blockRecordInfo));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

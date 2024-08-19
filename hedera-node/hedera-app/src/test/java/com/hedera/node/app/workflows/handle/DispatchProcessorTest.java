@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -60,6 +61,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -68,14 +70,13 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
@@ -119,6 +120,11 @@ class DispatchProcessorTest {
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE);
     private static final TransactionInfo CONTRACT_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
+    private static final TransactionInfo ETH_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION);
+
+    @Mock
+    private EthereumTransactionHandler ethereumTransactionHandler;
 
     @Mock
     private Authorizer authorizer;
@@ -151,16 +157,13 @@ class DispatchProcessorTest {
     private TransactionDispatcher dispatcher;
 
     @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
-
-    @Mock
     private Dispatch dispatch;
 
     @Mock
     private SavepointStackImpl stack;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordStreamBuilder recordBuilder;
 
     @Mock
     private PlatformState platformState;
@@ -189,7 +192,8 @@ class DispatchProcessorTest {
                 platformStateUpdates,
                 dispatchUsageManager,
                 exchangeRateManager,
-                dispatcher);
+                dispatcher,
+                ethereumTransactionHandler);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
@@ -421,6 +425,31 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        assertFinished();
+    }
+
+    @Test
+    void consGasExhaustedForEthTxnDoesExtraWork() throws DispatchUsageManager.ThrottleException {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.handleContext()).willReturn(context);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatchValidator.validationReportFor(dispatch)).willReturn(successReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(ETH_TXN_INFO);
+        givenAuthorization(ETH_TXN_INFO);
+        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+                .when(dispatchUsageManager)
+                .screenForCapacity(dispatch);
+        given(dispatch.txnCategory()).willReturn(USER);
+
+        subject.processDispatch(dispatch);
+
+        verifyTrackedFeePayments();
+        verify(dispatcher, never()).dispatchHandle(context);
+        verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        verify(ethereumTransactionHandler).handleThrottled(context);
         assertFinished();
     }
 

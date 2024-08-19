@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -66,5 +67,11 @@ public interface TransactionConfigModule {
     @TransactionScope
     static EntitiesConfig provideEntitiesConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(EntitiesConfig.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static AccountsConfig provideAccountsConfig(@NonNull final Configuration configuration) {
+        return requireNonNull(configuration).getConfigData(AccountsConfig.class);
     }
 }

@@ -62,8 +62,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -71,7 +71,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -91,7 +91,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @Mock
-    private CryptoTransferRecordBuilder transferRecordBuilder;
+    private CryptoTransferStreamBuilder transferRecordBuilder;
 
     private static final TokenID TOKEN_1357 = asToken(1357);
     private static final TokenID TOKEN_9191 = asToken(9191);
@@ -101,7 +101,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoTransferHandler(validator, executor);
+        subject = new CryptoTransferHandler(validator);
     }
 
     @Test
@@ -121,8 +121,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_3333);
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_4444);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_3333);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_4444);
     }
 
     @Test
@@ -153,7 +153,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_3333, TOKEN_2468);
+        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_ID_3333, TOKEN_2468);
         verify(readableNftStore, times(1)).warm(any());
     }
 
@@ -164,8 +164,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .getOrCreateConfig();
         List<AccountAmount> acctAmounts = new ArrayList<>();
         List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        acctAmounts.add(aaWith(ACCOUNT_3333, -5));
-        acctAmounts.add(aaWith(ACCOUNT_4444, 5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_3333, -5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_4444, 5));
 
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
@@ -179,7 +179,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -210,11 +210,11 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .token(fungibleTokenId)
                 .transfers(
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
+                                .accountID(ACCOUNT_ID_3333)
                                 .amount(-5)
                                 .build(),
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
+                                .accountID(ACCOUNT_ID_4444)
                                 .amount(5)
                                 .build())
                 .build());
@@ -231,7 +231,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -278,7 +278,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -454,7 +454,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     void failsWhenAutoAssociatedTokenHasKycKey() {
         Assertions.setMaxStackTraceElementsDisplayed(200);
 
-        subject = new CryptoTransferHandler(validator, executor, false);
+        subject = new CryptoTransferHandler(validator, false);
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -462,7 +462,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -488,7 +488,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void happyPathWorksWithAutoCreation() {
-        subject = new CryptoTransferHandler(validator, executor, false);
+        subject = new CryptoTransferHandler(validator, false);
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
@@ -496,7 +496,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -527,8 +527,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(stack.getBaseBuilder(SingleTransactionRecordBuilder.class)).willReturn(transferRecordBuilder);
-        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
+        given(stack.getBaseBuilder(StreamBuilder.class)).willReturn(transferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferStreamBuilder.class)).willReturn(transferRecordBuilder);
 
         subject.handle(handleContext);
 
@@ -580,7 +580,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -628,7 +628,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.resubmitter;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
@@ -59,22 +59,22 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      */
     @Override
     @NonNull
-    public List<OneOf<TransactionOneOfType>> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
+    public List<EventTransaction> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
         if (eventWindow == null) {
             throw new IllegalStateException("Event window is not set");
         }
 
-        final List<OneOf<TransactionOneOfType>> transactionsToResubmit = new ArrayList<>();
+        final List<EventTransaction> transactionsToResubmit = new ArrayList<>();
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
-            final Transaction transaction = iterator.next();
-            if (Objects.equals(transaction.getTransaction().kind(), TransactionOneOfType.STATE_SIGNATURE_TRANSACTION)) {
+            final EventTransaction transaction = iterator.next().getTransaction();
+            if (Objects.equals(transaction.transaction().kind(), TransactionOneOfType.STATE_SIGNATURE_TRANSACTION)) {
                 final StateSignatureTransaction payload =
-                        transaction.getTransaction().as();
+                        transaction.transaction().as();
                 final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
                 if (transactionAge <= maxSignatureResubmitAge) {
-                    transactionsToResubmit.add(transaction.getTransaction());
+                    transactionsToResubmit.add(transaction);
                     metrics.reportResubmittedSystemTransaction();
                 } else {
                     metrics.reportAbandonedSystemTransaction();

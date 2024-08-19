@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -43,7 +42,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -62,8 +60,6 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 @Singleton
 public class CryptoTransferValidator {
-    private static final int MAX_TOKEN_TRANSFERS = 10;
-
     /**
      * Default constructor for injection.
      */
@@ -77,7 +73,7 @@ public class CryptoTransferValidator {
      * @param op the crypto transfer transaction body
      * @throws PreCheckException if any of the checks fail
      */
-    public void cryptoTransferPureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
+    public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         validateTruePreCheck(isNetZeroAdjustment(acctAmounts), INVALID_ACCOUNT_AMOUNTS);
 
@@ -90,18 +86,7 @@ public class CryptoTransferValidator {
         }
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-        validateTokenTransfers(op.tokenTransfers());
-    }
-
-    /**
-     * Performs pure checks that validates basic fields in the token airdrop transaction.
-     * @param op the token airdrop transaction body
-     * @throws PreCheckException if any of the checks fail
-     */
-    public void airdropsPureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
-        final var tokenTransfers = op.tokenTransfers();
-        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION_BODY);
-        validateTokenTransfers(op.tokenTransfers());
+        validateTokenTransfers(op.tokenTransfers(), false);
     }
 
     /**
@@ -181,7 +166,8 @@ public class CryptoTransferValidator {
         return false;
     }
 
-    private static void validateTokenTransfers(List<TokenTransferList> tokenTransfers) throws PreCheckException {
+    public static void validateTokenTransfers(final List<TokenTransferList> tokenTransfers, final boolean isAirdrop)
+            throws PreCheckException {
         // Validate token transfers
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
@@ -191,11 +177,11 @@ public class CryptoTransferValidator {
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds);
+            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds, isAirdrop);
 
             // Validate the nft transfers
             final var nftIds = new HashSet<Long>();
-            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds);
+            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds, isAirdrop);
 
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
             validateFalsePreCheck(
@@ -205,11 +191,16 @@ public class CryptoTransferValidator {
     }
 
     public static void validateFungibleTransfers(
-            final List<AccountAmount> fungibleTransfers, final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds)
+            final List<AccountAmount> fungibleTransfers,
+            final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds,
+            final boolean isAirdrop)
             throws PreCheckException {
         validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
         boolean nonZeroFungibleValueFound = false;
         for (final AccountAmount acctAmount : fungibleTransfers) {
+            if (isAirdrop) {
+                validateFalsePreCheck(acctAmount.isApproval(), NOT_SUPPORTED);
+            }
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
             if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
@@ -220,9 +211,13 @@ public class CryptoTransferValidator {
                 uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
     }
 
-    public static void validateNftTransfers(final List<NftTransfer> nftTransfers, final Set<Long> nftIds)
+    public static void validateNftTransfers(
+            final List<NftTransfer> nftTransfers, final Set<Long> nftIds, final boolean isAirdrop)
             throws PreCheckException {
         for (final NftTransfer nftTransfer : nftTransfers) {
+            if (isAirdrop) {
+                validateFalsePreCheck(nftTransfer.isApproval(), NOT_SUPPORTED);
+            }
             validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);

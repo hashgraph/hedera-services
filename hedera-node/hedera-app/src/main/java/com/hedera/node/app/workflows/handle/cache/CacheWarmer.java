@@ -66,7 +66,7 @@ public class CacheWarmer {
         final int parallelism = configProvider
                 .getConfiguration()
                 .getConfigData(CacheConfig.class)
-                .cryptoTransferWarmThreads();
+                .warmThreads();
         this.executor = new ForkJoinPool(parallelism);
     }
 
