@@ -609,7 +609,7 @@ class ShadowgraphTest {
 
         final EventImpl randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertEquals(
-                randomExistingEvent,
+                randomExistingEvent.getBaseEvent(),
                 shadowgraph.hashgraphEvent(randomExistingEvent.getBaseHash()),
                 "Unexpected event returned.");
     }

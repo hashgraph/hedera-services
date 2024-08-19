@@ -43,8 +43,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class SyncFilteringTest {
@@ -91,8 +94,10 @@ class SyncFilteringTest {
      * Find all ancestors of expected events, and add them to the list of expected events.
      *
      * @param expectedEvents the list of expected events
+     * @param eventMap       a map of event hashes to events
      */
-    private static Set<Hash> findAncestorsOfExpectedEvents(@NonNull final List<PlatformEvent> expectedEvents) {
+    private static void findAncestorsOfExpectedEvents(
+            @NonNull final List<PlatformEvent> expectedEvents, @NonNull final Map<Hash, PlatformEvent> eventMap) {
 
         final Set<Hash> expectedEventHashes = new HashSet<>();
         for (final PlatformEvent event : expectedEvents) {
@@ -106,13 +111,22 @@ class SyncFilteringTest {
             final EventDescriptorWrapper selfParent = event.getSelfParent();
             if (selfParent != null) {
                 final Hash selfParentHash = selfParent.hash();
-                expectedEventHashes.add(selfParentHash);
+                if (!expectedEventHashes.contains(selfParentHash)) {
+                    expectedEvents.add(eventMap.get(selfParentHash));
+                    expectedEventHashes.add(selfParentHash);
+                }
             }
             final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
-            otherParents.stream().map(EventDescriptorWrapper::hash).forEach(expectedEventHashes::add);
+            if (!otherParents.isEmpty()) {
+                for (final EventDescriptorWrapper otherParent : otherParents) {
+                    final Hash otherParentHash = otherParent.hash();
+                    if (!expectedEventHashes.contains(otherParentHash)) {
+                        expectedEvents.add(eventMap.get(otherParentHash));
+                        expectedEventHashes.add(otherParentHash);
+                    }
+                }
+            }
         }
-
-        return expectedEventHashes;
     }
 
     @Test
@@ -136,6 +150,9 @@ class SyncFilteringTest {
                         .map(EventImpl::getBaseEvent)
                         .sorted(Comparator.comparingLong(PlatformEvent::getGeneration))
                         .toList();
+
+        final Map<Hash, PlatformEvent> eventMap =
+                events.stream().collect(Collectors.toMap(PlatformEvent::getHash, Function.identity()));
 
         final Duration nonAncestorSendThreshold = platformContext
                 .getConfiguration()
@@ -166,7 +183,7 @@ class SyncFilteringTest {
             }
 
             // The ancestors of events that meet the above criteria are also expected to be seen.
-            final Set<Hash> expectedHashes = findAncestorsOfExpectedEvents(expectedEvents);
+            findAncestorsOfExpectedEvents(expectedEvents, eventMap);
 
             // Gather a list of hashes that were allowed through by the filter.
             final Set<Hash> filteredHashes = new HashSet<>();
@@ -175,9 +192,9 @@ class SyncFilteringTest {
             }
 
             // Make sure we see exactly the events we are expecting.
-            assertEquals(expectedHashes.size(), filteredHashes.size());
-            for (final Hash expectedHash : expectedHashes) {
-                assertTrue(filteredHashes.contains(expectedHash));
+            assertEquals(expectedEvents.size(), filteredEvents.size());
+            for (final PlatformEvent expectedEvent : expectedEvents) {
+                assertTrue(filteredHashes.contains(expectedEvent.getHash()));
             }
 
             // Verify topological ordering.

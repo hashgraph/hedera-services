@@ -560,12 +560,10 @@ class ShadowgraphByBirthRoundTests {
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
-        birthRoundToShadows
-                .get(ROUND_FIRST)
-                .forEach(shadow -> assertThrows(
-                        ShadowgraphInsertionException.class,
-                        () -> shadowGraph.addEvent(shadow.getEvent()),
-                        "Expired events should not be added."));
+        birthRoundToShadows.get(ROUND_FIRST).forEach(shadow -> {
+            shadowGraph.addEvent(shadow.getEvent());
+            assertNull(shadowGraph.getEvent(shadow.getEvent().getHash()));
+        });
     }
 
     @Test
@@ -646,7 +644,7 @@ class ShadowgraphByBirthRoundTests {
 
         final EventImpl randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertEquals(
-                randomExistingEvent,
+                randomExistingEvent.getBaseEvent(),
                 shadowGraph.hashgraphEvent(randomExistingEvent.getBaseHash()),
                 "Unexpected event returned.");
     }
