@@ -55,5 +55,5 @@ public record RecordDispatch(
         @NonNull FinalizeContext finalizeContext,
         @NonNull PlatformState platformState,
         @NonNull PreHandleResult preHandleResult,
-        @NonNull HandleContext.ThrottleStrategy throttleStrategy)
+        @NonNull HandleContext.ConsensusThrottling throttleStrategy)
         implements Dispatch {}

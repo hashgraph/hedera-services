@@ -163,7 +163,7 @@ public class ChildDispatchFactory {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final HandleContext.ThrottleStrategy throttleStrategy) {
+            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
@@ -223,7 +223,7 @@ public class ChildDispatchFactory {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HandleContext.ThrottleStrategy throttleStrategy) {
+            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack);
         final var writableStoreFactory = new WritableStoreFactory(
                 childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);

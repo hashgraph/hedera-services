@@ -85,8 +85,7 @@ public class DispatchUsageManager {
                     networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                 throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
-            } else if (isThrottled
-                    && !CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality())) {
+            } else if (isThrottled) {
                 throw new ThrottleException(THROTTLED_AT_CONSENSUS);
             }
         }
@@ -94,37 +93,32 @@ public class DispatchUsageManager {
 
     /**
      * Tracks the final work done by handling this user transaction.
-     *
-     * @param workDone the work done
      */
-    public void trackUsage(@NonNull final Dispatch dispatch, @NonNull final WorkDone workDone) {
+    public void releaseUnused(@NonNull final Dispatch dispatch) {
         // In the current system we only trackUsage utilization for user transactions
         if (dispatch.txnCategory() != USER) {
             return;
         }
-        switch (workDone) {
-            case FEES_ONLY -> networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
-            case USER_TRANSACTION -> {
-                // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
-                // in only one place; for now we have already tracked utilization for contract operations
-                // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
-                final var function = dispatch.txnInfo().functionality();
-                if (!CONTRACT_OPERATIONS.contains(function) && !isConsensusThrottled(dispatch)) {
-                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
-                } else {
-                    leakUnusedGas(dispatch);
-                }
-                if (dispatch.recordBuilder().status() != SUCCESS) {
-                    if (canAutoCreate(function)) {
-                        reclaimFailedCryptoCreateCapacity(dispatch);
-                    }
-                    if (canAutoAssociate(function)) {
-                        reclaimFailedTokenAssociate(dispatch);
-                    }
-                }
+        // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
+        // in only one place; for now we have already tracked utilization for contract operations
+        // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
+        final var function = dispatch.txnInfo().functionality();
+        if (CONTRACT_OPERATIONS.contains(function)) {
+            leakUnusedGas(dispatch);
+        }
+        if (dispatch.recordBuilder().status() != SUCCESS) {
+            if (canAutoCreate(function)) {
+                reclaimFailedCryptoCreateCapacity(dispatch);
+            }
+            if (canAutoAssociate(function)) {
+                reclaimFailedTokenAssociate(dispatch);
             }
         }
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
+    }
+
+    public void trackFeePayments(@NonNull final Dispatch dispatch) {
+        networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
     }
 
     /**
@@ -187,7 +181,7 @@ public class DispatchUsageManager {
      * Returns true if the transaction used frontend throttle capacity on this node.
      *
      * @param numUsedCapacity the number of used capacity for either create ot auto associate operations
-     * @param txnBody the transaction body
+     * @param txnBody         the transaction body
      * @return true if the transaction used frontend throttle capacity on this node
      */
     private boolean usedSelfFrontendThrottleCapacity(
@@ -200,7 +194,7 @@ public class DispatchUsageManager {
     /**
      * Returns the gas limit for a contract transaction.
      *
-     * @param txnBody the transaction body
+     * @param txnBody  the transaction body
      * @param function the functionality
      * @return the gas limit for a contract transaction
      */
@@ -221,11 +215,12 @@ public class DispatchUsageManager {
 
     /**
      * Checks if the given dispatch is a contract operation.
+     *
      * @param dispatch the dispatch
      * @return true if the dispatch is a contract operation, false otherwise
      */
     public static boolean isConsensusThrottled(@NonNull Dispatch dispatch) {
-        return dispatch.throttleStrategy() != HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
+        return dispatch.throttleStrategy() == HandleContext.ConsensusThrottling.ON;
     }
 
     /**

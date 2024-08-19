@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
@@ -88,7 +87,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 activeSignatureTestWith(strategy),
                 syntheticPayerId,
                 CHILD,
-                AT_CONSENSUS_AND_INGEST);
+                HandleContext.ConsensusThrottling.ON);
     }
 
     @Override

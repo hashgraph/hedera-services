@@ -257,7 +257,7 @@ class ChildDispatchFactoryTest {
                         throttleAdviser,
                         Instant.ofEpochSecond(12345L),
                         blockRecordInfo,
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST));
+                        HandleContext.ConsensusThrottling.ON));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

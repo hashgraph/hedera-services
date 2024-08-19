@@ -183,7 +183,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(Predicate.class),
                         any(AccountID.class),
                         any(TransactionCategory.class),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .willReturn(new RecordStreamBuilder());
 
         final var mockStack = mock(HandleContext.SavepointStack.class);

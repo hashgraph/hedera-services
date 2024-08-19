@@ -98,6 +98,6 @@ class HandleContextTest {
                         signatureTest,
                         PAYER_ID,
                         SCHEDULED,
-                        HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST);
+                        HandleContext.ConsensusThrottling.ON);
     }
 }

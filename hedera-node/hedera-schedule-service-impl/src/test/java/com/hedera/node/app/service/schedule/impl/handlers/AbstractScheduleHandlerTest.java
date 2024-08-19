@@ -30,7 +30,6 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.AbstractScheduleHandler.ScheduleKeysResult;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -134,7 +133,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyCheckTxnId() throws PreCheckException {
+    void verifyCheckTxnId() {
         assertThatThrownBy(new CallCheckValid(null, testHandler))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
         for (final Schedule next : listOfScheduledOptions) {
@@ -215,7 +214,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
                         any(Predicate.class),
                         any(AccountID.class),
                         any(TransactionCategory.class),
-                        HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                        any()))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();

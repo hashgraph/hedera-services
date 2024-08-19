@@ -30,8 +30,6 @@ import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -111,16 +109,15 @@ public class DispatchProcessor {
     public void processDispatch(@NonNull final Dispatch dispatch) {
         requireNonNull(dispatch);
         final var errorReport = validator.validationReportFor(dispatch);
-        var workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
         } else {
             chargePayer(dispatch, errorReport);
             if (!alreadyFailed(dispatch, errorReport)) {
-                workDone = tryHandle(dispatch, errorReport);
+                tryHandle(dispatch, errorReport);
             }
         }
-        dispatchUsageManager.trackUsage(dispatch, workDone);
+        dispatchUsageManager.releaseUnused(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
     }
@@ -136,8 +133,7 @@ public class DispatchProcessor {
      * @param validationResult the due diligence report for the dispatch
      * @return the work done by the dispatch
      */
-    private DispatchUsageManager.WorkDone tryHandle(
-            @NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
+    private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
@@ -146,7 +142,6 @@ public class DispatchProcessor {
             if (dispatch.txnCategory() == USER) {
                 handleSystemUpdates(dispatch);
             }
-            return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
@@ -155,16 +150,14 @@ public class DispatchProcessor {
             }
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
-            return USER_TRANSACTION;
         } catch (final ThrottleException e) {
-            final var workDone = nonHandleWorkDone(dispatch, validationResult, e.getStatus());
+            nonHandleWorkDone(dispatch, validationResult, e.getStatus());
             if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
                 ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
             }
-            return workDone;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            return nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);
+            nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);
         }
     }
 
@@ -196,16 +189,14 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
      * @param status the status to set
-     * @return the work done in handling the exception
      */
-    @NonNull
-    private DispatchUsageManager.WorkDone nonHandleWorkDone(
+    private void nonHandleWorkDone(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
             @NonNull final ResponseCodeEnum status) {
         rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
-        return FEES_ONLY;
+        dispatchUsageManager.trackFeePayments(dispatch);
     }
 
     /**

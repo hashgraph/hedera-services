@@ -214,7 +214,7 @@ public class StandaloneDispatchFactory {
                 tokenContext,
                 platformState,
                 preHandleResult,
-                HandleContext.ThrottleStrategy.GAS_ONLY_AT_CONSENSUS);
+                HandleContext.ConsensusThrottling.ON);
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {

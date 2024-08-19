@@ -42,7 +42,6 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.cre
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -602,10 +601,10 @@ class DispatchProcessorTest {
     }
 
     private void verifyTrackedFeePayments() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.FEES_ONLY);
+        verify(dispatchUsageManager).releaseUnused(dispatch);
     }
 
     private void verifyUtilization() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.USER_TRANSACTION);
+        verify(dispatchUsageManager).releaseUnused(dispatch);
     }
 }

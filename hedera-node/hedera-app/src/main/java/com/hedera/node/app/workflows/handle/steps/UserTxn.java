@@ -259,7 +259,7 @@ public record UserTxn(
                 tokenContextImpl,
                 platformState,
                 preHandleResult,
-                HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
+                HandleContext.ConsensusThrottling.ON);
     }
 
     /**

@@ -25,8 +25,8 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.AT_CONSENSUS_AND_INGEST;
-import static com.hedera.node.app.spi.workflows.HandleContext.ThrottleStrategy.ONLY_AT_INGEST;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.OFF;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
@@ -43,10 +43,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -594,20 +592,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null,
-                            StreamBuilder.class,
-                            VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
-                            CHILD,
-                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            txBody,
-                            null,
-                            VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
-                            CHILD,
-                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
                             null,
@@ -615,10 +603,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
                             NOOP_RECORD_CUSTOMIZER,
-                            ONLY_AT_INGEST))
+                            OFF))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER, ONLY_AT_INGEST))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER, OFF))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -627,19 +615,14 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody,
-                            StreamBuilder.class,
-                            VERIFIER_CALLBACK,
-                            ALICE.accountID(),
-                            CHILD,
-                            HandleContext.ThrottleStrategy.ONLY_AT_INGEST)),
+                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             txBody,
                             StreamBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID(),
                             (ignore) -> Transaction.DEFAULT,
-                            ONLY_AT_INGEST)));
+                            OFF)));
         }
 
         @ParameterizedTest
@@ -705,11 +688,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchRemovablePrecedingTransaction(
-                    txBody,
-                    StreamBuilder.class,
-                    VERIFIER_CALLBACK,
-                    ALICE.accountID(),
-                    HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -734,12 +713,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatchChildTransaction(
-                    txBody,
-                    StreamBuilder.class,
-                    VERIFIER_CALLBACK,
-                    ALICE.accountID(),
-                    SCHEDULED,
-                    HandleContext.ThrottleStrategy.ONLY_AT_INGEST);
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED, ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -827,57 +801,5 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient().when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
         given(baseState.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         given(baseState.getReadableStates(TokenService.NAME)).willReturn(defaultTokenReadableStates());
-    }
-
-    @Test
-    void defaultDispatchRemovableChildThrowsOnMissingTransactionId() {
-        final var subject = mock(DispatchHandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        AT_CONSENSUS_AND_INGEST);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        AT_CONSENSUS_AND_INGEST));
-    }
-
-    @Test
-    void defaultDispatchRemovableChildUsesTransactionIdWhenSet() {
-        final var subject = mock(DispatchHandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        AT_CONSENSUS_AND_INGEST);
-        subject.dispatchRemovableChildTransaction(
-                WITH_PAYER_ID,
-                StreamBuilder.class,
-                signatureTest,
-                PAYER_ID,
-                NOOP_RECORD_CUSTOMIZER,
-                AT_CONSENSUS_AND_INGEST);
-        verify(subject)
-                .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID,
-                        StreamBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_RECORD_CUSTOMIZER,
-                        AT_CONSENSUS_AND_INGEST);
     }
 }

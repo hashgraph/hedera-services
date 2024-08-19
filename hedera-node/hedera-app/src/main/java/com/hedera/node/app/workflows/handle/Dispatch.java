@@ -206,5 +206,5 @@ public interface Dispatch {
      */
     PreHandleResult preHandleResult();
 
-    HandleContext.ThrottleStrategy throttleStrategy();
+    HandleContext.ConsensusThrottling throttleStrategy();
 }

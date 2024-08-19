@@ -373,7 +373,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.IRREVERSIBLE,
                 true,
-                ThrottleStrategy.ONLY_AT_INGEST);
+                ConsensusThrottling.ON);
     }
 
     @NonNull
@@ -383,7 +383,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             final AccountID childSyntheticPayer,
-            @NonNull final ThrottleStrategy throttleStrategy) {
+            @NonNull final ConsensusThrottling throttleStrategy) {
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,
@@ -404,7 +404,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final ThrottleStrategy throttleStrategy) {
+            @NonNull final ConsensusThrottling throttleStrategy) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
@@ -430,7 +430,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final ThrottleStrategy throttleStrategy) {
+            @NonNull final ConsensusThrottling throttleStrategy) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
@@ -476,7 +476,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionCategory category,
             @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             final boolean commitStack,
-            @NonNull final ThrottleStrategy throttleStrategy) {
+            @NonNull final ConsensusThrottling throttleStrategy) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,
                 childVerifier,

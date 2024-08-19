@@ -327,7 +327,7 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer,
-            final ThrottleStrategy throttleStrategy);
+            final ConsensusThrottling throttleStrategy);
 
     /**
      * Dispatches a child transaction.
@@ -366,7 +366,7 @@ public interface HandleContext {
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull TransactionCategory childCategory,
-            @NonNull final ThrottleStrategy throttleStrategy);
+            @NonNull final ConsensusThrottling throttleStrategy);
 
     /**
      * Dispatches a child transaction that already has a transaction ID due to
@@ -392,14 +392,14 @@ public interface HandleContext {
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
                 SCHEDULED,
-                ThrottleStrategy.AT_CONSENSUS_AND_INGEST);
+                ConsensusThrottling.ON);
     }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID, TransactionCategory, ThrottleStrategy)}.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID, TransactionCategory, ConsensusThrottling)}.
      * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
@@ -426,7 +426,7 @@ public interface HandleContext {
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer,
-            @NonNull ThrottleStrategy throttleStrategy);
+            @NonNull ConsensusThrottling throttleStrategy);
 
     /**
      * Returns the current {@link SavepointStack}.
@@ -537,9 +537,8 @@ public interface HandleContext {
     @NonNull
     Map<AccountID, Long> dispatchPaidRewards();
 
-    enum ThrottleStrategy {
-        GAS_ONLY_AT_CONSENSUS,
-        AT_CONSENSUS_AND_INGEST,
-        ONLY_AT_INGEST
+    enum ConsensusThrottling {
+        ON,
+        OFF
     }
 }
