@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -52,20 +53,20 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -95,6 +96,7 @@ public final class IngestChecker {
     private final AccountID nodeAccount;
     private final Authorizer authorizer;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final InstantSource instantSource;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -108,6 +110,7 @@ public final class IngestChecker {
      * @param dispatcher the {@link TransactionDispatcher} that dispatches transactions
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
+     * @param instantSource the {@link InstantSource} that provides the current time
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -122,7 +125,8 @@ public final class IngestChecker {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final InstantSource instantSource) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -134,6 +138,7 @@ public final class IngestChecker {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     /**
@@ -150,17 +155,17 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
-     * @param state the {@link HederaState} to use
+     * @param state the {@link State} to use
      * @param tx the {@link Transaction} to check
      * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
     public TransactionInfo runAllChecks(
-            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
+            @NonNull final State state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
-        final var consensusTime = Instant.now();
+        final var consensusTime = instantSource.instant();
 
         // 1. Check the syntax
         final var txInfo = transactionChecker.check(tx);
@@ -187,8 +192,11 @@ public final class IngestChecker {
 
         // 4. Check throttles
         assertThrottlingPreconditions(txInfo, configuration);
-        if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
-            throw new PreCheckException(BUSY);
+        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+        if (hederaConfig.ingestThrottleEnabled()) {
+            if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
+                throw new PreCheckException(BUSY);
+            }
         }
 
         // 4a. Run pure checks
@@ -221,9 +229,10 @@ public final class IngestChecker {
                 storeFactory,
                 configuration,
                 authorizer,
-                numSigs);
+                numSigs,
+                dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, INGEST);
 
         return txInfo;
     }

@@ -45,6 +45,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -67,6 +68,9 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeCreate;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeDelete;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeUpdate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
@@ -75,6 +79,8 @@ import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCancelAirdrop;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
@@ -84,6 +90,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenPause;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenReject;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
@@ -95,7 +102,9 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -160,6 +169,17 @@ public class TxnVerbs {
         return new HapiCryptoTransfer(sources);
     }
 
+    @SafeVarargs
+    public static HapiTokenCancelAirdrop tokenCancelAirdrop(
+            final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+        return new HapiTokenCancelAirdrop(pendingAirdropIds);
+    }
+
+    @SafeVarargs
+    public static HapiTokenClaimAirdrop tokenClaimAirdrop(Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+        return new HapiTokenClaimAirdrop(pendingAirdropIds);
+    }
+
     public static HapiCryptoUpdate cryptoUpdate(String account) {
         return new HapiCryptoUpdate(account);
     }
@@ -220,6 +240,19 @@ public class TxnVerbs {
 
     public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
         return new HapiFileDelete(fileNameSupplier);
+    }
+
+    /* NODE */
+    public static HapiNodeCreate nodeCreate(String node) {
+        return new HapiNodeCreate(node);
+    }
+
+    public static HapiNodeUpdate nodeUpdate(String node) {
+        return new HapiNodeUpdate(node);
+    }
+
+    public static HapiNodeDelete nodeDelete(String node) {
+        return new HapiNodeDelete(node);
     }
 
     /* TOKEN */
@@ -293,6 +326,16 @@ public class TxnVerbs {
 
     public static HapiTokenUpdateNfts tokenUpdateNfts(String token, String metadata, List<Long> serialNumbers) {
         return new HapiTokenUpdateNfts(token, metadata, serialNumbers);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(String account, Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(account, referencesSources);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(referencesSources);
     }
 
     public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {
@@ -602,7 +645,7 @@ public class TxnVerbs {
 
     public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
+            final List<SpecOperation> ops = new ArrayList<>();
             for (String contractName : contractsNames) {
                 final var path = getResourcePath(contractName, ".bin");
                 final var file = new HapiFileCreate(contractName);
@@ -617,15 +660,15 @@ public class TxnVerbs {
     /**
      *  This method enables uploading a contract bytecode with the constructor parameters (if present) appended at the end of the file
      *  Used for ethereum create conversion when we need to pass constructor arguments
-     * @param contractName
-     * @param abi
-     * @param args
-     * @return
+     * @param contractName the name of the contract, which is to be deployed
+     * @param abi the abi of the contract
+     * @param args the constructor arguments
+     * @return HapiSpecOperation
      */
-    public static HapiSpecOperation updateInitCodeWithConstructorArgs(
+    public static SpecOperation updateInitCodeWithConstructorArgs(
             final Optional<String> payer, final String contractName, final String abi, final Object... args) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
+            List<SpecOperation> ops = new ArrayList<>();
 
             final var path = getResourcePath(contractName, ".bin");
 
@@ -641,7 +684,7 @@ public class TxnVerbs {
     public static HapiSpecOperation uploadSingleInitCode(
             final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
+            final List<SpecOperation> ops = new ArrayList<>();
             final var path = getResourcePath(contractName, ".bin");
             final var file = new HapiFileCreate(contractName)
                     .payingWith(payingWith)
@@ -657,7 +700,7 @@ public class TxnVerbs {
     public static HapiSpecOperation uploadSingleInitCode(
             final String contractName, final ResponseCodeEnum... statuses) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
+            final List<SpecOperation> ops = new ArrayList<>();
             final var path = getResourcePath(contractName, ".bin");
             final var file = new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
             final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
@@ -678,7 +721,7 @@ public class TxnVerbs {
     public static HapiSpecOperation uploadInitCodeWithConstructorArguments(
             final String contractName, final String abi, final Object... args) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
+            final List<SpecOperation> ops = new ArrayList<>();
 
             final var path = getResourcePath(contractName, ".bin");
             final var file = new HapiFileCreate(contractName);

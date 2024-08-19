@@ -19,10 +19,8 @@ package com.hedera.services.cli.signedstate;
 import static com.hedera.services.cli.utils.ThingsToStrings.quoteForCsv;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.services.cli.utils.FieldBuilder;
+import com.hedera.services.cli.utils.RichInstant;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -57,12 +55,10 @@ public class DumpBlockInfoSubcommand {
     }
 
     void doit() {
-        final var networkContext = state.getNetworkContext();
         System.out.printf("=== block info ===%n");
 
-        final var runningHashLeaf = state.getRunningHashLeaf();
-        final var blockInfo =
-                BlockInfo.combineFromMerkleNetworkContextAndRunningHashLeaf(networkContext, runningHashLeaf);
+        // (FUTURE) Get block info
+        final BlockInfo blockInfo = null;
 
         int reportSize;
         try (@NonNull final var writer = new Writer(blockInfoPath)) {
@@ -85,23 +81,7 @@ public class DumpBlockInfoSubcommand {
             @NonNull Hash runningHash,
             @NonNull Hash nMinus1RunningHash,
             @NonNull Hash nMinus2RunningHash,
-            @NonNull Hash nMinus3RunningHash) {
-        static BlockInfo combineFromMerkleNetworkContextAndRunningHashLeaf(
-                @NonNull final MerkleNetworkContext networkContext,
-                @NonNull RecordsRunningHashLeaf recordsRunningHashLeaf) {
-            return new BlockInfo(
-                    networkContext.getAlignmentBlockNo(),
-                    networkContext.stringifiedBlockHashes(),
-                    RichInstant.fromJava(networkContext.consensusTimeOfLastHandledTxn()),
-                    networkContext.areMigrationRecordsStreamed(),
-                    RichInstant.fromJava(networkContext.firstConsTimeOfCurrentBlock()),
-                    networkContext.seqNo().current(),
-                    recordsRunningHashLeaf.getRunningHash().getHash(),
-                    recordsRunningHashLeaf.getNMinus1RunningHash().getHash(),
-                    recordsRunningHashLeaf.getNMinus2RunningHash().getHash(),
-                    recordsRunningHashLeaf.getNMinus3RunningHash().getHash());
-        }
-    }
+            @NonNull Hash nMinus3RunningHash) {}
 
     void reportOnBlockInfo(@NonNull Writer writer, @NonNull BlockInfo blockInfo) {
         writer.writeln(formatHeader());

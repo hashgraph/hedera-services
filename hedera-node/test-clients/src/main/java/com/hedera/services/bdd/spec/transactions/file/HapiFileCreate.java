@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.spec.transactions.file;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.defaultExpiryNowFor;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -26,7 +27,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +50,6 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     static final Logger LOG = LogManager.getLogger(HapiFileCreate.class);
@@ -188,9 +186,14 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                             }
                             memo.ifPresent(builder::setMemo);
                             contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
-                            lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
-                            expiry.ifPresent(t -> builder.setExpirationTime(
-                                    Timestamp.newBuilder().setSeconds(t).build()));
+                            lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryNowFor(spec, s)));
+                            if (lifetime.isEmpty()) {
+                                expiry.ifPresentOrElse(
+                                        t -> builder.setExpirationTime(Timestamp.newBuilder()
+                                                .setSeconds(t)
+                                                .build()),
+                                        () -> builder.setExpirationTime(defaultExpiryNowFor(spec)));
+                            }
                         });
         return b -> {
             expiryUsed.set(opBody.getExpirationTime());
@@ -200,19 +203,18 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     @SuppressWarnings("java:S5960")
     private void generateWaclKey(HapiSpec spec) {
-        KeyGenerator generator = effectiveKeyGen();
-
         if (keyName.isPresent()) {
             waclKey = spec.registry().getKey(keyName.get());
             return;
         }
-
         if (waclControl.isPresent()) {
-            SigControl control = waclControl.get();
-            Assertions.assertEquals(SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
-            waclKey = spec.keys().generateSubjectTo(spec, control, generator);
+            final var control = waclControl.get();
+            if (control.getNature() != SigControl.Nature.LIST) {
+                throw new IllegalArgumentException("WACL must be a KeyList");
+            }
+            waclKey = spec.keys().generateSubjectTo(spec, control);
         } else {
-            waclKey = spec.keys().generate(spec, KeyFactory.KeyType.LIST, generator);
+            waclKey = spec.keys().generate(spec, KeyFactory.KeyType.LIST);
         }
     }
 
@@ -240,11 +242,6 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                             fileName, lastReceipt.getFileID().getFileNum()));
             LOG.info(banner);
         }
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::createFile;
     }
 
     @Override

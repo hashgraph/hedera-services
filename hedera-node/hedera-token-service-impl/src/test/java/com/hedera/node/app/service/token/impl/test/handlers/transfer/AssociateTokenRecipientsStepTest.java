@@ -31,9 +31,10 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,12 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private HandleContext.SavepointStack stack;
+
+    @Mock
+    private CryptoTransferStreamBuilder builder;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -70,11 +77,17 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void associatesTokenRecepients() {
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNull();
+
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", false)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(builder);
 
         subject.doIn(transferContext);
 
@@ -103,6 +116,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
+        given(handleContext.savepointStack()).willReturn(stack);
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {

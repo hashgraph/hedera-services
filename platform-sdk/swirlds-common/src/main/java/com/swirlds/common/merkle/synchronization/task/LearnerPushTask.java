@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -30,6 +31,7 @@ import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +57,8 @@ public class LearnerPushTask<T> {
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
 
+    private final ReconnectMapStats mapStats;
+
     private final Queue<MerkleNode> rootsToReceive;
 
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
@@ -76,6 +80,8 @@ public class LearnerPushTask<T> {
      * 		a view used to interface with the subtree
      * @param nodeCount
      * 		an object used to keep track of the number of nodes sent during the reconnect
+     * @param mapStats
+     *      a ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushTask(
             final StandardWorkGroup workGroup,
@@ -84,7 +90,8 @@ public class LearnerPushTask<T> {
             final Queue<MerkleNode> rootsToReceive,
             final AtomicReference<T> root,
             final LearnerTreeView<T> view,
-            final ReconnectNodeCount nodeCount) {
+            final ReconnectNodeCount nodeCount,
+            @NonNull final ReconnectMapStats mapStats) {
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
@@ -92,6 +99,7 @@ public class LearnerPushTask<T> {
         this.root = root;
         this.view = view;
         this.nodeCount = nodeCount;
+        this.mapStats = mapStats;
     }
 
     public void start() {
@@ -197,6 +205,8 @@ public class LearnerPushTask<T> {
             }
             final boolean nodeAlreadyPresent = originalHash != null && originalHash.equals(teacherHash);
             out.sendAsync(new QueryResponse(nodeAlreadyPresent));
+            mapStats.incrementTransfersFromLearner();
+            view.recordHashStats(mapStats, newParent, childIndex, nodeAlreadyPresent);
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
             in.anticipateMessage();
@@ -207,6 +217,10 @@ public class LearnerPushTask<T> {
      * Update node counts for statistics.
      */
     private void addToNodeCount(final ExpectedLesson<T> expectedLesson, final Lesson<T> lesson, final T newChild) {
+        if (lesson.isLeafLesson()) {
+            mapStats.incrementLeafData(1, expectedLesson.isNodeAlreadyPresent() ? 1 : 0);
+        }
+
         if (lesson.isCurrentNodeUpToDate()) {
             return;
         }
@@ -241,6 +255,7 @@ public class LearnerPushTask<T> {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
                 final Lesson<T> lesson = in.readAnticipatedMessage();
+                mapStats.incrementTransfersFromTeacher();
 
                 final T parent = expectedLesson.getParent();
 
@@ -270,5 +285,7 @@ public class LearnerPushTask<T> {
             logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
             throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
         }
+
+        logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");
     }
 }

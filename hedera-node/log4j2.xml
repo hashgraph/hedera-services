@@ -205,6 +205,11 @@
       <AppenderRef ref="TransactionStateLogs"/>
     </Logger>
 
+    <!-- Send state logs to their own appender   -->
+    <Logger name="com.swirlds.state.merkle.logging.StateLogger" level="info" additivity="false">
+      <AppenderRef ref="StateLogs"/>
+    </Logger>
+
     <Logger name="com.hedera" level="info" additivity="false">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFile"/>

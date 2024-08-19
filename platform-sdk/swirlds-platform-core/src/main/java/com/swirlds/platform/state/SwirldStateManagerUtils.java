@@ -34,15 +34,15 @@ public final class SwirldStateManagerUtils {
     private SwirldStateManagerUtils() {}
 
     /**
-     * Performs a fast copy on a {@link State}. The {@code state} must not be modified during execution of this method.
+     * Performs a fast copy on a {@link MerkleRoot}. The {@code state} must not be modified during execution of this method.
      *
      * @param state           the state object to fast copy
      * @param stats           object to record stats in
      * @param softwareVersion the current software version
      * @return the newly created state copy
      */
-    public static State fastCopy(
-            @NonNull final State state,
+    public static MerkleRoot fastCopy(
+            @NonNull final MerkleRoot state,
             @NonNull final SwirldStateMetrics stats,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -51,7 +51,7 @@ public final class SwirldStateManagerUtils {
         final long copyStart = System.nanoTime();
 
         // Create a fast copy
-        final State copy = state.copy();
+        final MerkleRoot copy = state.copy();
         state.getPlatformState().setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value

@@ -32,28 +32,26 @@ import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("EventCreationManager Tests")
 class EventCreationManagerTests {
     private AtomicLong intakeQueueSize;
     private EventCreator creator;
-    private List<BaseEventHashedData> eventsToCreate;
+    private List<UnsignedEvent> eventsToCreate;
     private FakeTime time;
     private EventCreationManager manager;
 
     @BeforeEach
     void setUp() {
         creator = mock(EventCreator.class);
-        eventsToCreate = List.of(
-                mock(BaseEventHashedData.class), mock(BaseEventHashedData.class), mock(BaseEventHashedData.class));
+        eventsToCreate = List.of(mock(UnsignedEvent.class), mock(UnsignedEvent.class), mock(UnsignedEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
@@ -75,32 +73,30 @@ class EventCreationManagerTests {
     }
 
     @Test
-    @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         verify(creator, times(2)).maybeCreateEvent();
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e2 = manager.maybeCreateEvent();
+        final UnsignedEvent e2 = manager.maybeCreateEvent();
         verify(creator, times(3)).maybeCreateEvent();
         assertNotNull(e2);
         assertSame(eventsToCreate.get(2), e2);
     }
 
     @Test
-    @DisplayName("Status prevents creation")
     void statusPreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -114,16 +110,19 @@ class EventCreationManagerTests {
         time.tick(Duration.ofSeconds(1));
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
     }
 
+    /**
+     * This form of backpressure is not currently enabled.
+     */
+    @Disabled
     @Test
-    @DisplayName("Backpressure prevents creation")
     void backpressurePreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -137,16 +136,15 @@ class EventCreationManagerTests {
         time.tick(Duration.ofSeconds(1));
         intakeQueueSize.set(9);
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
     }
 
     @Test
-    @DisplayName("Rate prevents creation")
     void ratePreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -159,9 +157,33 @@ class EventCreationManagerTests {
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         verify(creator, times(2)).maybeCreateEvent();
         assertNotNull(e1);
+        assertSame(eventsToCreate.get(1), e1);
+    }
+
+    @Test
+    void unhealthyNodePreventsCreation() {
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
+        assertNotNull(e0);
+        assertSame(eventsToCreate.get(0), e0);
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ofSeconds(10));
+
+        assertNull(manager.maybeCreateEvent());
+        verify(creator, times(1)).maybeCreateEvent();
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ZERO);
+
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
+        assertNotNull(e1);
+        verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
     }
 }

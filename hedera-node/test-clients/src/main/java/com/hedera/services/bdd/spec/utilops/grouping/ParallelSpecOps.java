@@ -21,25 +21,28 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class ParallelSpecOps extends UtilOp {
+public class ParallelSpecOps extends UtilOp implements GroupedOps<ParallelSpecOps> {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
     private boolean failOnErrors = false;
-    private final HapiSpecOperation[] subs;
+    private final SpecOperation[] subs;
     private final Map<String, Throwable> subErrors = new HashMap<>();
 
-    public ParallelSpecOps(HapiSpecOperation... subs) {
-        this.subs = subs;
+    public ParallelSpecOps(@NonNull final SpecOperation... subs) {
+        this.subs = Objects.requireNonNull(subs);
     }
 
     public ParallelSpecOps failOnErrors() {
@@ -83,15 +86,23 @@ public class ParallelSpecOps extends UtilOp {
     }
 
     @Override
-    public boolean requiresFinalization(HapiSpec spec) {
-        return Stream.of(subs).anyMatch(operation -> operation.requiresFinalization(spec));
+    public boolean requiresFinalization(@NonNull final HapiSpec spec) {
+        return Stream.of(subs).anyMatch(operation -> {
+            if (operation instanceof HapiSpecOperation specOperation) {
+                return specOperation.requiresFinalization(spec);
+            } else {
+                return false;
+            }
+        });
     }
 
     @Override
     public void finalizeExecFor(HapiSpec spec) throws Throwable {
-        for (HapiSpecOperation op : subs) {
-            if (op.requiresFinalization(spec)) {
-                op.finalizeExecFor(spec);
+        for (final var op : subs) {
+            if (op instanceof HapiSpecOperation specOperation) {
+                if (specOperation.requiresFinalization(spec)) {
+                    specOperation.finalizeExecFor(spec);
+                }
             }
         }
     }

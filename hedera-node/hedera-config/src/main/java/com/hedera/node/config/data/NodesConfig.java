@@ -21,4 +21,11 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("nodes")
-public record NodesConfig(@ConfigProperty(defaultValue = "1000") @NetworkProperty long maxNumber) {}
+public record NodesConfig(
+        @ConfigProperty(defaultValue = "100") @NetworkProperty long maxNumber,
+        @ConfigProperty(defaultValue = "100") @NetworkProperty int nodeMaxDescriptionUtf8Bytes,
+        @ConfigProperty(defaultValue = "10") @NetworkProperty int maxGossipEndpoint,
+        @ConfigProperty(defaultValue = "8") @NetworkProperty int maxServiceEndpoint,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean gossipFqdnRestricted,
+        @ConfigProperty(defaultValue = "253") @NetworkProperty int maxFqdnSize,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean updateAccountIdAllowed) {}

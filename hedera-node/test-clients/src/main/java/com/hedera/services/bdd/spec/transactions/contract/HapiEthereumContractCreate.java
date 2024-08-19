@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_IN_A_TINYBAR;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
@@ -35,13 +35,13 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -51,7 +51,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -60,8 +59,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private EthTxData.EthTransactionType type;
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private BigInteger gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(50L));
+    private BigInteger maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean invalidateEthData = false;
@@ -228,12 +227,12 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate gasPrice(long gasPrice) {
-        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        this.gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(gasPrice));
         return this;
     }
 
     public HapiEthereumContractCreate maxFeePerGas(long maxFeePerGas) {
-        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
+        this.maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -300,8 +299,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 null,
                 null);
 
-        final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
-        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        final byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
+        var signedEthTxData = Signing.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         final var extractedSignatures = EthTxSigs.extractSignatures(signedEthTxData);
@@ -338,7 +337,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
             return Optional.empty();
         }
         try {
-            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())));
+            return Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(balance.get())));
         } catch (ArithmeticException e) {
             return Optional.empty();
         }
@@ -352,11 +351,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                         scFees::getEthereumTransactionFeeMatrices,
                         txn,
                         numPayerSigs);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 
     private EthereumTransactionBody explicitEthereumTransaction(HapiSpec spec)

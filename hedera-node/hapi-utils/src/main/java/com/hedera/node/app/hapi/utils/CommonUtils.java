@@ -39,12 +39,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAirdrop;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -55,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreeze
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenReject;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
@@ -106,6 +111,21 @@ public final class CommonUtils {
     public static byte[] extractTransactionBodyBytes(final TransactionOrBuilder transaction)
             throws InvalidProtocolBufferException {
         return unwrapUnsafelyIfPossible(extractTransactionBodyByteString(transaction));
+    }
+
+    /**
+     * Extracts the {@link TransactionBody} from a {@link TransactionOrBuilder} and throws an unchecked exception if
+     * the extraction fails.
+     *
+     * @param transaction the {@link TransactionOrBuilder} from which to extract the {@link TransactionBody}
+     * @return the extracted {@link TransactionBody}
+     */
+    public static TransactionBody extractTransactionBodyUnchecked(final TransactionOrBuilder transaction) {
+        try {
+            return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public static TransactionBody extractTransactionBody(final TransactionOrBuilder transaction)
@@ -202,6 +222,11 @@ public final class CommonUtils {
             case SCHEDULESIGN -> ScheduleSign;
             case UTIL_PRNG -> UtilPrng;
             case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
+            case TOKENAIRDROP -> TokenAirdrop;
+            case NODECREATE -> NodeCreate;
+            case NODEDELETE -> NodeDelete;
+            case NODEUPDATE -> NodeUpdate;
+            case TOKENREJECT -> TokenReject;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
     }
@@ -220,5 +245,9 @@ public final class CommonUtils {
 
     public static Instant timestampToInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    public static Instant pbjTimestampToInstant(final com.hedera.hapi.node.base.Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
 }

@@ -23,8 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,19 +34,16 @@ public class SwirldStateManagerUtilsTests {
     @Test
     void testFastCopyIsMutable() {
 
-        final State state = new State();
+        final MerkleStateRoot state = new MerkleStateRoot();
 
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
         when(platformState.copy()).thenReturn(platformState);
         state.setPlatformState(platformState);
 
-        final SwirldState swirldState = new DummySwirldState();
-        state.setSwirldState(swirldState);
-
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
-        final State result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
+        final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
 
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(

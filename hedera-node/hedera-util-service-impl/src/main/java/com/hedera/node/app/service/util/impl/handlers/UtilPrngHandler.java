@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,6 +82,7 @@ public class UtilPrngHandler implements TransactionHandler {
         // been determined and loaded into the calculator.
         final var range = feeContext.body().utilPrngOrThrow().range();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
                 .calculate();
@@ -112,7 +113,7 @@ public class UtilPrngHandler implements TransactionHandler {
 
         // If `range` is provided then generate a random number in the given range from the pseudoRandomBytes,
         // otherwise just use the full pseudoRandomBytes as the random number.
-        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(PrngStreamBuilder.class);
         if (range > 0) {
             final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
             recordBuilder.entropyNumber(pseudoRandomNumber);

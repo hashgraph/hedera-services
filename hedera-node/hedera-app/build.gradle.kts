@@ -23,6 +23,12 @@ plugins {
 
 description = "Hedera Application - Implementation"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-cast")
+}
+
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
@@ -40,6 +46,7 @@ testModuleInfo {
     requires("com.google.jimfs")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.state.api.test.fixtures")
     requires("org.assertj.core")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
@@ -61,12 +68,13 @@ itestModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.state.api")
+    requires("com.swirlds.state.api.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")
-    requires("grpc.netty")
-    requires("grpc.stub")
     requires("io.grpc")
+    requires("io.grpc.netty")
+    requires("io.grpc.stub")
     requires("org.apache.logging.log4j")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
@@ -76,52 +84,9 @@ itestModuleInfo {
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
-xtestModuleInfo {
-    annotationProcessor("dagger.compiler")
-    requires("com.hedera.node.app")
-    requires("com.hedera.node.app.test.fixtures")
-    requires("com.hedera.node.app.hapi.fees")
-    requires("com.hedera.node.app.hapi.utils")
-    requires("com.hedera.node.app.service.consensus.impl")
-    requires("com.hedera.node.app.service.contract.impl")
-    requires("com.hedera.node.app.service.file")
-    requires("com.hedera.node.app.service.file.impl")
-    requires("com.hedera.node.app.service.mono")
-    requires("com.hedera.node.app.service.network.admin.impl")
-    requires("com.hedera.node.app.service.schedule.impl")
-    requires("com.hedera.node.app.service.token")
-    requires("com.hedera.node.app.service.token.impl")
-    requires("com.hedera.node.app.service.util.impl")
-    requires("com.hedera.node.app.spi")
-    requires("com.hedera.node.app.spi.test.fixtures")
-    requires("com.hedera.node.config")
-    requires("com.hedera.node.config.test.fixtures")
-    requires("com.hedera.node.hapi")
-    requires("com.github.spotbugs.annotations")
-    requires("com.hedera.pbj.runtime")
-    requires("com.swirlds.common")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.config.extensions.test.fixtures")
-    requires("com.swirlds.metrics.api")
-    requires("com.swirlds.platform.core")
-    requires("com.swirlds.state.api")
-    requires("dagger")
-    requires("headlong")
-    requires("javax.inject")
-    requires("org.assertj.core")
-    requires("org.hyperledger.besu.datatypes")
-    requires("org.hyperledger.besu.evm")
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-    requires("tuweni.bytes")
-    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
-    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
-}
-
 jmhModuleInfo {
     requires("com.hedera.node.app")
-    requires("com.hedera.node.app.service.mono")
+    requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.hapi")

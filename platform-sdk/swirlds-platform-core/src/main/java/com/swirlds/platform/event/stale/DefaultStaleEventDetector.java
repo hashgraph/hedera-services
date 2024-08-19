@@ -23,12 +23,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +48,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     /**
      * Self events that have not yet reached consensus.
      */
-    private final StandardSequenceMap<EventDescriptor, GossipEvent> selfEvents;
+    private final StandardSequenceMap<EventDescriptorWrapper, PlatformEvent> selfEvents;
 
     /**
      * The most recent event window we know about.
@@ -76,11 +75,11 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        final ToLongFunction<EventDescriptor> getAncientIdentifier;
+        final ToLongFunction<EventDescriptorWrapper> getAncientIdentifier;
         if (ancientMode == BIRTH_ROUND_THRESHOLD) {
-            getAncientIdentifier = EventDescriptor::getBirthRound;
+            getAncientIdentifier = ed -> ed.eventDescriptor().birthRound();
         } else {
-            getAncientIdentifier = EventDescriptor::getGeneration;
+            getAncientIdentifier = ed -> ed.eventDescriptor().generation();
         }
         selfEvents = new StandardSequenceMap<>(0, 1024, true, getAncientIdentifier);
 
@@ -92,7 +91,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      */
     @NonNull
     @Override
-    public List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull final GossipEvent event) {
+    public List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull final PlatformEvent event) {
         if (currentEventWindow == null) {
             throw new IllegalStateException("Event window must be set before adding self events");
         }
@@ -120,18 +119,18 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     @Override
     public List<RoutableData<StaleEventDetectorOutput>> addConsensusRound(
             @NonNull final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
+        for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
             if (event.getCreatorId().equals(selfId)) {
-                selfEvents.remove(event.getBaseEvent().getDescriptor());
+                selfEvents.remove(event.getDescriptor());
             }
         }
 
-        final List<GossipEvent> staleEvents = new ArrayList<>();
+        final List<PlatformEvent> staleEvents = new ArrayList<>();
         currentEventWindow = consensusRound.getEventWindow();
         selfEvents.shiftWindow(currentEventWindow.getAncientThreshold(), (descriptor, event) -> staleEvents.add(event));
 
         final List<RoutableData<StaleEventDetectorOutput>> output = new ArrayList<>(staleEvents.size());
-        for (final GossipEvent event : staleEvents) {
+        for (final PlatformEvent event : staleEvents) {
             handleStaleEvent(event);
             output.add(new RoutableData<>(StaleEventDetectorOutput.STALE_SELF_EVENT, event));
         }
@@ -162,7 +161,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
      *
      * @param event the stale event
      */
-    private void handleStaleEvent(@NonNull final GossipEvent event) {
+    private void handleStaleEvent(@NonNull final PlatformEvent event) {
         metrics.reportStaleEvent(event);
     }
 }

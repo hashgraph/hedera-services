@@ -23,16 +23,6 @@ on:
         type: boolean
         required: false
         default: false
-      enable-e2e-tests:
-        description: "End to End Testing Enabled"
-        type: boolean
-        required: false
-        default: false
-      enable-integration-tests:
-        description: "Integration Testing Enabled"
-        type: boolean
-        required: false
-        default: false
       enable-hapi-tests-misc:
         description: "HAPI Testing (misc) Enabled"
         type: boolean
@@ -166,7 +156,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           cache-read-only: false
 
@@ -214,7 +204,7 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble --scan
+        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
@@ -246,53 +236,14 @@ jobs:
           path: "**/build/test-results/test/TEST-*.xml"
           retention-days: 7
 
-      - name: Setup Docker BuildX
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
-        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          version: v0.11.0
-
-      - name: Build Docker Image # build the image for hedera-node
-        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} createDockerImage --scan
-
-      - name: Integration Testing
-        id: gradle-itest
-        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} itest --scan
-
-      - name: Publish Integration Test Report
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
-        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          check_name: 'Node: Integration Test Results'
-          check_run_disabled: false
-          json_thousands_separator: ','
-          junit_files: "**/build/test-results/itest/TEST-*.xml"
-
-      - name: Upload Integration Test Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          name: Integration Test Report
-          path: "**/build/test-results/itest/TEST-*.xml"
-          retention-days: 7
-
-      - name: Upload Integration Test Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        if: ${{ inputs.enable-integration-tests && inputs.enable-network-log-capture && steps.gradle-itest.conclusion == 'failure' && !cancelled() }}
-        with:
-          name: Integration Test Network Logs
-          path: |
-            hedera-node/test-clients/build/network/itest/output/**
-
       - name: HAPI Testing (Misc)
         id: gradle-hapi-misc
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestMisc --scan --no-daemon
+        # Run each tasks in isolation because we dynamically reconfigure Log4j for each mode
+        run: ${GRADLE_EXEC} hapiTestMisc --scan --no-daemon && ${GRADLE_EXEC} hapiEmbeddedMisc --scan --no-daemon && ${GRADLE_EXEC} hapiRepeatableMisc --scan --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -526,40 +477,9 @@ jobs:
             hedera-node/test-clients/build/hapi-test/*.log
           retention-days: 7
 
-      - name: E2E Testing
-        id: gradle-eet
-        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} eet --scan
-
-      - name: Publish E2E Test Report
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
-        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          check_name: 'Node: E2E Test Results'
-          check_run_disabled: false
-          json_thousands_separator: ','
-          junit_files: "**/build/test-results/eet/TEST-*.xml"
-
-      - name: Upload E2E Test Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          name: E2E Test Report
-          path: "**/build/test-results/eet/TEST-*.xml"
-          retention-days: 7
-
-      - name: Upload E2E Test Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        if: ${{ inputs.enable-e2e-tests && inputs.enable-network-log-capture && steps.gradle-eet.conclusion == 'failure' && !cancelled() }}
-        with:
-          name: E2E Test Network Logs
-          path: |
-            hedera-node/test-clients/build/network/eet/output/**
-          retention-days: 7
-
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         env:
           CODECOV_TOKEN: ${{ secrets.codecov-token }}
         with:

@@ -39,10 +39,11 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
@@ -92,8 +93,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -136,16 +137,17 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final ReconnectMetrics reconnectMetrics;
 
     protected final StatusActionSubmitter statusActionSubmitter;
-    protected final Supplier<PlatformStatus> platformStatusSupplier;
+    protected final AtomicReference<PlatformStatus> currentPlatformStatus =
+            new AtomicReference<>(PlatformStatus.STARTING_UP);
 
     private final List<Startable> thingsToStart = new ArrayList<>();
 
-    private Consumer<GossipEvent> receivedEventHandler;
+    private Consumer<PlatformEvent> receivedEventHandler;
 
     /**
      * The old style intake queue (if enabled), null if not enabled.
      */
-    private QueueThread<GossipEvent> oldStyleIntakeQueue;
+    private QueueThread<PlatformEvent> oldStyleIntakeQueue;
 
     private final ThreadManager threadManager;
 
@@ -153,7 +155,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
-     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
@@ -162,16 +163,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param statusActionSubmitter         submits status actions
-     * @param platformStatusSupplier        provides the current platform status
+     * @param statusActionSubmitter         for submitting updates to the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
-     * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
@@ -181,7 +179,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
@@ -194,14 +191,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+
+        topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
@@ -231,7 +227,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
-                topology.getConnectionGraph(),
+                topology,
                 statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
@@ -313,7 +309,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
 
-        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
+        syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
 
         buildSyncProtocolThreads(
                 platformContext,
@@ -323,7 +319,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
-                platformStatusSupplier,
+                currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -351,6 +347,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 syncShadowgraphSynchronizer,
                 fallenBehindManager,
                 syncPermitProvider,
+                intakeEventCounter,
                 gossipHalted::get,
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
@@ -390,7 +387,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
-                                    syncProtocolFactory.build(otherId)))))
+                                    syncProtocolFactory.build(otherId))),
+                            platformContext.getTime()))
                     .build());
         }
     }
@@ -424,7 +422,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
@@ -456,11 +454,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             throw new IllegalStateException("Gossip not started");
         }
         gossipHalted.set(true);
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
     }
 
     /**
-     * Resume gossiping. If called when already running then this has no effect.
+     * Resume gossiping. Undoes the effect of {@link #pause()}. Should be called exactly once after each call to
+     * {@link #pause()}.
      */
     private void resume() {
         if (!started) {
@@ -468,6 +467,11 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         }
         intakeEventCounter.reset();
         gossipHalted.set(false);
+
+        // Revoke all permits when we begin gossiping again. Presumably we are behind the pack,
+        // and so we want to avoid talking to too many peers at once until we've had a chance
+        // to properly catch up.
+        syncPermitProvider.revokeAll();
     }
 
     /**
@@ -484,12 +488,14 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     @Override
     public void bind(
             @NonNull final WiringModel model,
-            @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull final BindableInputWire<PlatformEvent, Void> eventInput,
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
-            @NonNull final StandardOutputWire<GossipEvent> eventOutput,
+            @NonNull final StandardOutputWire<PlatformEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
+            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
@@ -507,13 +513,16 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             shadowgraph.updateEventWindow(eventWindow);
         });
 
+        systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
+        platformStatusInput.bindConsumer(currentPlatformStatus::set);
+
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .useOldStyleIntakeQueue();
 
         if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(threadManager)
+            oldStyleIntakeQueue = new QueueThreadConfiguration<PlatformEvent>(threadManager)
                     .setCapacity(10_000)
                     .setThreadName("old_style_intake_queue")
                     .setComponent("platform")

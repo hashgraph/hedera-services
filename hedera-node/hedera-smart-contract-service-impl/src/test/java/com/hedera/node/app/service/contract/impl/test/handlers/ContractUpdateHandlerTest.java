@@ -22,14 +22,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -56,21 +58,23 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.Builder;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.test.utils.KeyUtils;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +92,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Mock
     private HandleContext context;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private Account contract;
@@ -117,10 +124,10 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     private TokensConfig tokensConfig;
 
     @Mock
-    private ContractsConfig contractsConfig;
+    private ContractUpdateStreamBuilder recordBuilder;
 
     @Mock
-    private ContractUpdateRecordBuilder recordBuilder;
+    private HandleContext.SavepointStack stack;
 
     private ContractUpdateHandler subject;
 
@@ -188,7 +195,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void handleWithNonExistingContractIdFails() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(
                         ContractUpdateTransactionBody.newBuilder().contractID(targetContract))
@@ -245,7 +253,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         doThrow(HandleException.class).when(attributeValidator).validateExpiry(expirationTime);
         when(contract.expiredAndPendingRemoval()).thenReturn(true);
 
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -263,7 +272,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void handleModifyImmutableContract() {
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
 
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -285,7 +295,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(contract.expirationSecond()).thenReturn(expirationTime + 1);
 
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -305,12 +316,15 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var maxAutomaticTokenAssociations = 10;
 
         when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
         when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
 
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -326,17 +340,70 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     }
 
     @Test
+    void maxAutomaticTokenAssociationsNegativeWithDisabledFlag() {
+        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(false);
+        when(context.configuration()).thenReturn(configuration);
+
+        when(accountStore.getContractById(targetContract)).thenReturn(contract);
+
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .adminKey(adminKey)
+                        .memo("memo")
+                        .maxAutomaticTokenAssociations(-1))
+                .transactionID(transactionID)
+                .build();
+
+        when(context.body()).thenReturn(txn);
+
+        assertFailsWith(INVALID_MAX_AUTO_ASSOCIATIONS, () -> subject.handle(context));
+    }
+
+    @Test
+    void maxAutomaticTokenAssociationsNegativeWithEnabledFlag() {
+        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
+        when(context.configuration()).thenReturn(configuration);
+
+        when(accountStore.getContractById(targetContract)).thenReturn(contract);
+
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .adminKey(adminKey)
+                        .memo("memo")
+                        .maxAutomaticTokenAssociations(-5))
+                .transactionID(transactionID)
+                .build();
+
+        when(context.body()).thenReturn(txn);
+
+        assertFailsWith(INVALID_MAX_AUTO_ASSOCIATIONS, () -> subject.handle(context));
+    }
+
+    @Test
     void maxAutomaticTokenAssociationsSmallerThenContractLimitFails() {
         final var maxAutomaticTokenAssociations = 10;
 
         when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
         when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
 
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -365,7 +432,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -381,37 +449,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     }
 
     @Test
-    void maxAutomaticTokenAssociationsWhenItIsNotAllowedFails() {
-        final var maxAutomaticTokenAssociations = 10;
-
-        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
-        when(configuration.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
-        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
-        when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
-        when(entitiesConfig.limitTokenAssociations()).thenReturn(true);
-        when(tokensConfig.maxPerAccount()).thenReturn(maxAutomaticTokenAssociations + 1);
-        when(contractsConfig.allowAutoAssociations()).thenReturn(false);
-        when(context.configuration()).thenReturn(configuration);
-
-        when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
-        when(accountStore.getContractById(targetContract)).thenReturn(contract);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        final var txn = TransactionBody.newBuilder()
-                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
-                        .contractID(targetContract)
-                        .adminKey(adminKey)
-                        .memo("memo")
-                        .maxAutomaticTokenAssociations(maxAutomaticTokenAssociations))
-                .transactionID(transactionID)
-                .build();
-
-        when(context.body()).thenReturn(txn);
-
-        assertFailsWith(NOT_SUPPORTED, () -> subject.handle(context));
-    }
-
-    @Test
     void verifyTheCorrectOutsideValidatorsAndUpdateContractAPIAreCalled() {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
@@ -419,8 +456,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .thenReturn(AccountID.newBuilder().accountNum(666).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
-        when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        when(storeFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -433,7 +471,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(ContractUpdateStreamBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -448,7 +487,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void adminKeyUpdated() {
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .adminKey(KeyUtils.A_COMPLEX_KEY)
+                .adminKey(A_COMPLEX_KEY)
                 .build();
 
         final var updatedContract = subject.update(contract, context, op);
@@ -458,7 +497,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void adminKeyNotUpdatedWhenKeyIsEmpty() {
-        final var contract = Account.newBuilder().key(KeyUtils.A_COMPLEX_KEY).build();
+        final var contract = Account.newBuilder().key(A_COMPLEX_KEY).build();
         final var op = ContractUpdateTransactionBody.newBuilder()
                 .adminKey(EMPTY_KEY_LIST)
                 .build();
@@ -504,6 +543,24 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         assertEquals(op.memo(), updatedContract.memo());
         verify(attributeValidator, times(1)).validateMemo(op.memo());
+    }
+
+    @Test
+    void testCalculateFeesWithNoContractIDAndMemo() {
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder())
+                .transactionID(transactionID)
+                .build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+        given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
     }
 
     @Test
@@ -596,7 +653,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .adminKey(KeyUtils.A_COMPLEX_KEY)
+                .adminKey(A_COMPLEX_KEY)
                 .expirationTime(Timestamp.newBuilder().seconds(10))
                 .autoRenewPeriod(Duration.newBuilder().seconds(10))
                 .memo("memo")
@@ -630,8 +687,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .thenReturn(AccountID.newBuilder().accountNum(999L).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
-        when(context.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        when(storeFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContractWithEvmAddress)
@@ -644,7 +702,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(ContractUpdateStreamBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 

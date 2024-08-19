@@ -35,12 +35,14 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Utility class for working with the HAPI. We might move this to the HAPI project.
  */
 public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
+    public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
     public static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
@@ -96,15 +98,6 @@ public class HapiUtils {
     /** A simple {@link Comparator} for {@link Timestamp}s. */
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
-
-    /** A {@link Comparator} for {@link SemanticVersion}s that ignores
-     * any semver part that cannot be parsed as an integer. */
-    public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
-                    SemanticVersion::major)
-            .thenComparingInt(SemanticVersion::minor)
-            .thenComparingInt(SemanticVersion::patch)
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.pre()))
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.build()));
 
     private HapiUtils() {}
 
@@ -187,8 +180,7 @@ public class HapiUtils {
             HederaFunctionality.TOKEN_GET_NFT_INFOS,
             HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
             HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-            HederaFunctionality.GET_ACCOUNT_DETAILS,
-            HederaFunctionality.NODE_GET_INFO);
+            HederaFunctionality.GET_ACCOUNT_DETAILS);
 
     public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         return switch (txn.data().kind()) {
@@ -241,6 +233,10 @@ public class HapiUtils {
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
+            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
+            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
@@ -272,7 +268,6 @@ public class HapiUtils {
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
-            case NODE_GET_INFO -> HederaFunctionality.NODE_GET_INFO;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
@@ -293,7 +288,9 @@ public class HapiUtils {
                 .append(version.minor())
                 .append(".")
                 .append(version.patch());
-        if (version.pre() != null && !version.pre().isBlank()) {
+        if (version.pre() != null
+                && !version.pre().isBlank()
+                && alphaNumberOrMaxValue(version.pre()) != Integer.MAX_VALUE) {
             baseVersion.append("-").append(version.pre());
         }
         if (version.build() != null && !version.build().isBlank()) {
@@ -344,7 +341,7 @@ public class HapiUtils {
     }
 
     private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null) {
+        if (s == null || s.isBlank()) {
             return 0;
         } else {
             try {
@@ -353,5 +350,22 @@ public class HapiUtils {
                 return 0;
             }
         }
+    }
+
+    /**
+     * Given a pre-release version, returns the numeric part of the version or {@link Integer#MAX_VALUE} if the
+     * pre-release version is not a number. (Which implies the version is not an alpha version, and comes after
+     * any alpha version.)
+     *
+     * @param pre the pre-release version
+     * @return the numeric part of the pre-release version or {@link Integer#MAX_VALUE}
+     */
+    public static int alphaNumberOrMaxValue(@Nullable final String pre) {
+        if (pre == null) {
+            return Integer.MAX_VALUE;
+        }
+        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
+        // alpha versions come before everything else
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 }

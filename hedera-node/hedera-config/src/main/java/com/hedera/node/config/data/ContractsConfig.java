@@ -36,11 +36,7 @@ public record ContractsConfig(
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "4096") @NetworkProperty
                 int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,
-        // @ConfigProperty(defaultValue =
-        // "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long maxNumWithHapiSigsAccess,
-        // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
         @ConfigProperty(value = "nonces.externalization.enabled", defaultValue = "true") @NetworkProperty
                 boolean noncesExternalizationEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enforceCreationThrottle,
@@ -65,18 +61,28 @@ public record ContractsConfig(
                 long precompileExchangeRateGasCost,
         @ConfigProperty(value = "precompile.htsDefaultGasCost", defaultValue = "10000") @NetworkProperty
                 long precompileHtsDefaultGasCost,
+
+        // Default value of `sigVerificationCost` from fee schedule's CryptoTransfer servicedata vpt field
+        // FUTURE: Fees for system contracts need to be in the fee schedule
+        @ConfigProperty(value = "precompile.sigVerificationCost", defaultValue = "605466012") @NetworkProperty
+                long sigVerificationCostInFeeScheduleUnits,
         @ConfigProperty(value = "precompile.exportRecordResults", defaultValue = "true") @NetworkProperty
                 boolean precompileExportRecordResults,
         @ConfigProperty(value = "precompile.htsEnableTokenCreate", defaultValue = "true") @NetworkProperty
                 boolean precompileHtsEnableTokenCreate,
         // @ConfigProperty(value = "precompile.unsupportedCustomFeeReceiverDebits", defaultValue = "")
         // Set<CustomFeeType> precompileUnsupportedCustomFeeReceiverDebits,
-        @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileHrcFacadeAssociateEnabled,
-        @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
+        @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractAccountServiceIsAuthorizedRawEnabled,
+        @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractUpdateCustomFeesEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty

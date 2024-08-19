@@ -21,6 +21,12 @@ plugins {
     id("com.hedera.gradle.java-test-fixtures")
 }
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-overloads,-text-blocks,-dep-ann,-varargs")
+}
+
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
     annotationProcessor("com.google.auto.service.processor")
@@ -28,12 +34,12 @@ mainModuleInfo {
 }
 
 jmhModuleInfo {
-    requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.test")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.hedera.node.hapi")
     requires("jmh.core")
 }
 
@@ -46,9 +52,10 @@ testModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.platform.test")
     requires("jakarta.inject")
     requires("org.assertj.core")
-    requires("io.github.classgraph")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

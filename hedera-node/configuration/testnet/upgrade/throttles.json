@@ -12,6 +12,7 @@
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
+            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",
@@ -93,7 +94,9 @@
             "TokenRevokeKycFromAccount",
             "TokenPause",
             "TokenUnpause",
-            "TokenUpdateNfts"
+            "TokenUpdateNfts",
+            "TokenClaimAirdrop",
+            "TokenReject"
           ]
         }
       ]

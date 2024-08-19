@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH_MNEMONIC;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
@@ -43,8 +42,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SavedStateMetadata;
@@ -114,8 +113,6 @@ class SavedStateMetadataTests {
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
-        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -131,9 +128,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -151,8 +146,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     @Test
@@ -172,8 +165,6 @@ class SavedStateMetadataTests {
         final List<NodeId> signingNodes = new ArrayList<>();
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
-        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -189,9 +180,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -207,8 +196,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     @Test
@@ -218,7 +205,7 @@ class SavedStateMetadataTests {
 
         final SignedState signedState = mock(SignedState.class);
         final SigSet sigSet = mock(SigSet.class);
-        final State state = mock(State.class);
+        final MerkleRoot state = mock(MerkleRoot.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
@@ -275,9 +262,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -293,8 +278,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     private interface FileUpdater {
@@ -357,9 +340,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHash.toMnemonic());
+                totalWeight);
 
         final Path path = testDirectory.resolve("metadata.txt");
         metadata.write(path);
@@ -414,16 +395,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        if (invalidFields.contains(EPOCH_HASH)) {
-            assertNull(deserialized.epochHash());
-        } else {
-            assertEquals(epochHash, deserialized.epochHash());
-        }
-        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH_MNEMONIC)) {
-            assertNull(deserialized.epochHashMnemonic());
-        } else {
-            assertEquals(epochHash.toMnemonic(), deserialized.epochHashMnemonic());
-        }
     }
 
     @Test
@@ -602,11 +573,5 @@ class SavedStateMetadataTests {
         testMalformedFile(
                 random, (s, m) -> s.replace(SIGNING_WEIGHT_SUM.name(), "notARealKey"), Set.of(SIGNING_WEIGHT_SUM));
         testMalformedFile(random, (s, m) -> s.replace(TOTAL_WEIGHT.name(), "notARealKey"), Set.of(TOTAL_WEIGHT));
-        testMalformedFile(
-                random, (s, m) -> s.replace("\n" + EPOCH_HASH.name() + ":", "\nnotARealKey:"), Set.of(EPOCH_HASH));
-        testMalformedFile(
-                random,
-                (s, m) -> s.replace(SavedStateMetadataField.EPOCH_HASH_MNEMONIC.name(), "notARealKey"),
-                Set.of(SavedStateMetadataField.EPOCH_HASH_MNEMONIC));
     }
 }

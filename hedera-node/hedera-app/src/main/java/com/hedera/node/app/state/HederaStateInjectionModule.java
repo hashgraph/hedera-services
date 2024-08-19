@@ -31,9 +31,6 @@ import javax.inject.Singleton;
 @Module
 public interface HederaStateInjectionModule {
     @Binds
-    LedgerValidator provideLedgerValidator(LedgerValidatorImpl impl);
-
-    @Binds
     RecordCache provideRecordCache(RecordCacheImpl cache);
 
     @Binds

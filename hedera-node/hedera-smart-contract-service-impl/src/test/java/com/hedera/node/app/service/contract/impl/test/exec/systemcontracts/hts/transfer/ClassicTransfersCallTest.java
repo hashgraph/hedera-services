@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.tuweniEncodedRc;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.V2_TRANSFER_DISABLED_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Optional;
@@ -72,7 +73,7 @@ class ClassicTransfersCallTest extends CallTestBase {
     private ApprovalSwitchHelper approvalSwitchHelper;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private SystemAccountCreditScreen systemAccountCreditScreen;
@@ -92,7 +93,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
@@ -125,7 +126,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(systemContractOperations.activeSignatureTestWith(verificationStrategy))
@@ -149,7 +150,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status())
                 .willReturn(INVALID_SIGNATURE)
@@ -208,7 +209,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(A_NEW_ACCOUNT_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 
@@ -283,7 +284,7 @@ class ClassicTransfersCallTest extends CallTestBase {
                 A_NEW_ACCOUNT_ID,
                 null,
                 PRETEND_TRANSFER,
-                DEFAULT_CONFIG,
+                V2_TRANSFER_DISABLED_CONFIG,
                 null,
                 callStatusStandardizer,
                 verificationStrategy,

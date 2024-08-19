@@ -25,7 +25,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,10 +37,10 @@ class TransactionPoolTests {
 
     @Test
     void addTransactionTest() {
-        final List<ConsensusTransactionImpl> transactionList = new ArrayList<>();
+        final List<EventTransaction> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
         when(transactionPoolNexus.submitTransaction(any(), anyBoolean())).thenAnswer(invocation -> {
-            final ConsensusTransactionImpl transaction = invocation.getArgument(0);
+            final EventTransaction transaction = invocation.getArgument(0);
             final boolean isPriority = invocation.getArgument(1);
             assertTrue(isPriority);
             transactionList.add(transaction);
@@ -46,11 +48,15 @@ class TransactionPoolTests {
         });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
-        final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
+        final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()
+                .round(1)
+                .signature(Bytes.EMPTY)
+                .build();
 
-        transactionPool.submitSystemTransaction(transaction);
+        transactionPool.submitSystemTransaction(signatureTransaction);
         assertEquals(1, transactionList.size());
-        assertSame(transaction, transactionList.getFirst());
+        assertSame(
+                signatureTransaction, transactionList.getFirst().transaction().as());
     }
 
     @Test

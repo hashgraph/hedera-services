@@ -64,7 +64,7 @@ import org.junit.jupiter.api.Tag;
 public class CryptoDeleteSuite {
     private static final long TOKEN_INITIAL_SUPPLY = 500;
     private static final String TRANSFER_ACCOUNT = "transferAccount";
-    private static final String TREASURY = "treasury";
+    public static final String TREASURY = "treasury";
     private static final String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
 
     @HapiTest
@@ -76,7 +76,7 @@ public class CryptoDeleteSuite {
                         .transfer(TRANSFER_ACCOUNT)));
     }
 
-    @LeakyHapiTest(ContextRequirement.SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = ContextRequirement.SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> deletedAccountCannotBePayer() {
         final var submittingNodeAccount = "0.0.3";
         final var beneficiaryAccount = "beneficiaryAccountForDeletedAccount";

@@ -61,6 +61,7 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.component;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
@@ -140,6 +141,7 @@ module com.swirlds.common {
     exports com.swirlds.common.threading.atomic;
     exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
+    exports com.swirlds.common.merkle.synchronization.stats;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
@@ -161,5 +163,5 @@ module com.swirlds.common {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

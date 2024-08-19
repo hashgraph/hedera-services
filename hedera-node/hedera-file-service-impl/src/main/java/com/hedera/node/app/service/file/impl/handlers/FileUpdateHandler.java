@@ -21,9 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.file.impl.FileServiceImpl.DEFAULT_MEMO;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -36,12 +38,15 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -51,9 +56,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.LongPair;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.KeyList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -124,7 +132,7 @@ public class FileUpdateHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
 
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
@@ -191,13 +199,15 @@ public class FileUpdateHandler implements TransactionHandler {
             return Fees.FREE;
         }
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
-        });
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj, CommonPbjConverters.fromPbj(file)));
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableUpgradeFileStore.class);
         // empty old upgrade file
         FileID fileId = fileUpdate.fileIDOrThrow();
 
@@ -250,13 +260,23 @@ public class FileUpdateHandler implements TransactionHandler {
 
     private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
         if (op.hasExpirationTime()) {
-            final long startSeconds =
-                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final var category = handleContext
+                    .savepointStack()
+                    .getBaseBuilder(StreamBuilder.class)
+                    .category();
+            final var isInternalDispatch = category == CHILD || category == PRECEDING;
+            final long startSeconds = isInternalDispatch
+                    ? handleContext.consensusNow().getEpochSecond()
+                    : handleContext
+                            .body()
+                            .transactionID()
+                            .transactionValidStart()
+                            .seconds();
             final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
 
-            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
-            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+            final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = ledgerConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = ledgerConfig.autoRenewPeriodMinDuration();
 
             validateTrue(
                     effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,
@@ -279,5 +299,34 @@ public class FileUpdateHandler implements TransactionHandler {
         if (op.hasMemo()) {
             attributeValidator.validateMemo(op.memo());
         }
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final com.hederahashgraph.api.proto.java.File file) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        if (file != null) {
+            final var contents = file.getContents();
+            final var ctx = ExtantFileContext.newBuilder()
+                    .setCurrentSize(contents == null ? 0 : contents.size())
+                    .setCurrentWacl(file.getKeys())
+                    .setCurrentMemo(file.getMemo())
+                    .setCurrentExpiry(file.getExpirationSecond())
+                    .build();
+            return fileOpsUsage.fileUpdateUsage(txn, sigUsage, ctx);
+        } else {
+            final long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
+            return fileOpsUsage.fileUpdateUsage(txn, sigUsage, missingCtx(now));
+        }
+    }
+
+    static ExtantFileContext missingCtx(final long now) {
+        return ExtantFileContext.newBuilder()
+                .setCurrentExpiry(now)
+                .setCurrentMemo(DEFAULT_MEMO)
+                .setCurrentWacl(KeyList.getDefaultInstance())
+                .setCurrentSize(0)
+                .build();
     }
 }

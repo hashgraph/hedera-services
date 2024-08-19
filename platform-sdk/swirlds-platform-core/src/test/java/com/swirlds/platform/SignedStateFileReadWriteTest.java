@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.StateCommonConfig_;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -43,8 +44,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
@@ -69,7 +71,11 @@ class SignedStateFileReadWriteTest {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
+        final var registry = ConstructableRegistry.getInstance();
+        registry.registerConstructables("com.swirlds.common");
+        registry.registerConstructables("com.swirlds.platform");
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
     }
 
     @BeforeEach
@@ -81,7 +87,7 @@ class SignedStateFileReadWriteTest {
     @DisplayName("writeHashInfoFile() Test")
     void writeHashInfoFileTest() throws IOException {
 
-        final State state = new RandomSignedStateGenerator().build().getState();
+        final MerkleRoot state = new RandomSignedStateGenerator().build().getState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         writeHashInfoFile(platformContext, testDirectory, state);
@@ -115,7 +121,7 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(stateFile), "signed state file should be present");
 
         final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile, SignedStateFileUtils::readState);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());

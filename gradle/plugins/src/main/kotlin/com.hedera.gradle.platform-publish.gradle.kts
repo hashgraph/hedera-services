@@ -31,6 +31,14 @@ if (
     apply(plugin = "com.google.cloud.artifactregistry.gradle-plugin")
 }
 
+// Publishing tasks are only enabled if we publish to the matching group.
+// Otherwise, Nexus configuration and credentials do not fit.
+val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    enabled = publishingPackageGroup == "com.swirlds"
+}
+
 publishing.publications.named<MavenPublication>("maven") {
     pom.description =
         "Swirlds is a software platform designed to build fully-distributed " +

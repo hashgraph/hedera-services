@@ -25,14 +25,14 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -255,7 +255,7 @@ public final class SyncUtils {
      */
     public static Callable<Integer> readEventsINeed(
             final Connection connection,
-            final Consumer<GossipEvent> eventHandler,
+            final Consumer<PlatformEvent> eventHandler,
             final int maxEventCount,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
@@ -283,12 +283,13 @@ public final class SyncUtils {
                                 }
                             }
 
-                            final GossipEvent gossipEvent = connection.getDis().readEventData();
+                            final PlatformEvent platformEvent =
+                                    connection.getDis().readEventData();
 
-                            gossipEvent.setSenderId(connection.getOtherId());
+                            platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
 
-                            eventHandler.accept(gossipEvent);
+                            eventHandler.accept(platformEvent);
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
@@ -401,12 +402,9 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
-                if (selfParentHash != null) {
-                    parentHashesOfEventsToSend.add(selfParentHash);
-                }
-                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-                    parentHashesOfEventsToSend.add(otherParent.getHash());
+                for (final EventDescriptorWrapper otherParent :
+                        event.getBaseEvent().getAllParents()) {
+                    parentHashesOfEventsToSend.add(otherParent.hash());
                 }
             }
         }

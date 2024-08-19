@@ -26,7 +26,6 @@ import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.logging.legacy.payload.PlatformStatusPayload;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
@@ -66,16 +65,19 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
      */
     private Instant currentStatusStartTime;
 
+    private final PlatformStatusMetrics metrics;
+
     /**
      * Constructor
      *
-     * @param context the platform context
+     * @param platformContext the platform context
      */
-    public DefaultStatusStateMachine(@NonNull final PlatformContext context) {
-        this.time = context.getTime();
+    public DefaultStatusStateMachine(@NonNull final PlatformContext platformContext) {
+        this.time = platformContext.getTime();
         this.currentStatusLogic =
-                new StartingUpStatusLogic(context.getConfiguration().getConfigData(PlatformStatusConfig.class));
+                new StartingUpStatusLogic(platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class));
         this.currentStatusStartTime = time.now();
+        this.metrics = new PlatformStatusMetrics(platformContext);
     }
 
     /**
@@ -99,9 +101,6 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
                 return currentStatusLogic.processCatastrophicFailureAction((CatastrophicFailureAction) action);
             } else if (actionClass == DoneReplayingEventsAction.class) {
                 return currentStatusLogic.processDoneReplayingEventsAction((DoneReplayingEventsAction) action);
-            } else if (actionClass == EmergencyReconnectStartedAction.class) {
-                return currentStatusLogic.processEmergencyReconnectStartedAction(
-                        (EmergencyReconnectStartedAction) action);
             } else if (actionClass == FallenBehindAction.class) {
                 return currentStatusLogic.processFallenBehindAction((FallenBehindAction) action);
             } else if (actionClass == FreezePeriodEnteredAction.class) {
@@ -164,6 +163,7 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
         final PlatformStatus newStatus = currentStatusLogic.getStatus();
         currentStatusStartTime = time.now();
 
+        metrics.setCurrentStatus(newStatus);
         return newStatus;
     }
 

@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -149,22 +148,19 @@ public class TokenAssociationSpecs {
                                 withSuccessivelyVariedBodyIds(), () -> tokenDissociate(DEFAULT_PAYER, "a", "b")));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.maxPerAccount", "entities.limitTokenAssociations"})
     final Stream<DynamicTest> canLimitMaxTokensPerAccountTransactions() {
         final String alice = "ALICE";
         final String treasury2 = "TREASURY_2";
-        return propertyPreservingHapiSpec("CanHandleInvalidAssociateTransactions")
-                .preserving("tokens.maxPerAccount", "entities.limitTokenAssociations")
-                .given(
-                        overridingTwo("tokens.maxPerAccount", "1", "entities.limitTokenAssociations", "true"),
-                        cryptoCreate(alice),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(treasury2),
-                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
-                        tokenCreate(KNOWABLE_TOKEN).treasury(treasury2),
-                        tokenAssociate(alice, KNOWABLE_TOKEN))
-                .when()
-                .then(tokenAssociate(alice, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+        return hapiTest(
+                overridingTwo("tokens.maxPerAccount", "1", "entities.limitTokenAssociations", "true"),
+                cryptoCreate(alice),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(treasury2),
+                tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                tokenCreate(KNOWABLE_TOKEN).treasury(treasury2),
+                tokenAssociate(alice, KNOWABLE_TOKEN),
+                tokenAssociate(alice, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
     }
 
     @HapiTest

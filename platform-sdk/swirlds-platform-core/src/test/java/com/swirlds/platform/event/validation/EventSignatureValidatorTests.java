@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -32,12 +33,10 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
@@ -74,7 +73,7 @@ class EventSignatureValidatorTests {
     private EventSignatureValidator validatorWithTrueVerifier;
     private EventSignatureValidator validatorWithFalseVerifier;
 
-    private SoftwareVersion defaultVersion;
+    private SemanticVersion defaultVersion;
 
     /**
      * This address belongs to a node that is placed in the previous address book.
@@ -119,7 +118,7 @@ class EventSignatureValidatorTests {
         final AddressBook previousAddressBook = new AddressBook(List.of(previousNodeAddress));
         currentAddressBook = new AddressBook(List.of(currentNodeAddress));
 
-        defaultVersion = new BasicSoftwareVersion(2);
+        defaultVersion = SemanticVersion.newBuilder().major(2).build();
 
         validatorWithTrueVerifier = new DefaultEventSignatureValidator(
                 platformContext,
@@ -141,9 +140,9 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Events with higher version than the app should always fail validation")
     void irreconcilableVersions() {
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
-                .setSoftwareVersion(new BasicSoftwareVersion(3))
+                .setSoftwareVersion(SemanticVersion.newBuilder().major(3).build())
                 .build();
 
         assertNull(validatorWithTrueVerifier.validateSignature(event));
@@ -156,9 +155,9 @@ class EventSignatureValidatorTests {
         final EventSignatureValidator signatureValidator = new DefaultEventSignatureValidator(
                 platformContext, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
-                .setSoftwareVersion(new BasicSoftwareVersion(3))
+                .setSoftwareVersion(SemanticVersion.newBuilder().major(3).build())
                 .build();
 
         assertNull(signatureValidator.validateSignature(event));
@@ -169,7 +168,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Node is missing from the applicable address book")
     void applicableAddressBookMissingNode() {
         // this creator isn't in the current address book, so verification will fail
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -186,7 +185,7 @@ class EventSignatureValidatorTests {
 
         currentAddressBook.add(nodeAddress);
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(nodeId)
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -199,7 +198,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Event passes validation if the signature verifies")
     void validSignature() {
         // both the event and the app have the same version, so the currentAddressBook will be selected
-        final GossipEvent event1 = new TestingEventBuilder(random)
+        final PlatformEvent event1 = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -208,9 +207,9 @@ class EventSignatureValidatorTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         // event2 is from a previous version, so the previous address book will be selected
-        final GossipEvent event2 = new TestingEventBuilder(random)
+        final PlatformEvent event2 = new TestingEventBuilder(random)
                 .setCreatorId(previousNodeAddress.getNodeId())
-                .setSoftwareVersion(new BasicSoftwareVersion(1))
+                .setSoftwareVersion(SemanticVersion.newBuilder().major(1).build())
                 .build();
 
         assertNotEquals(null, validatorWithTrueVerifier.validateSignature(event2));
@@ -220,7 +219,7 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Event fails validation if the signature does not verify")
     void verificationFails() {
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setSoftwareVersion(defaultVersion)
                 .build();
@@ -251,7 +250,7 @@ class EventSignatureValidatorTests {
                 currentAddressBook,
                 intakeEventCounter);
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(currentNodeAddress.getNodeId())
                 .setBirthRound(EventConstants.MINIMUM_ROUND_CREATED)
                 .setSoftwareVersion(defaultVersion)

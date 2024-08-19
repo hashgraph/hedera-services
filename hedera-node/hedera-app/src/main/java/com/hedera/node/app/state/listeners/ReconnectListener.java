@@ -16,17 +16,19 @@
 
 package com.hedera.node.app.state.listeners;
 
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.state.PlatformStateAccessor;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -40,14 +42,14 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectListener implements ReconnectCompleteListener {
     private static final Logger log = LogManager.getLogger(ReconnectListener.class);
 
-    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
     private final PlatformStateAccessor platformStateAccessor;
 
     @Inject
     public ReconnectListener(
-            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final PlatformStateAccessor platformStateAccessor) {
@@ -71,9 +73,18 @@ public class ReconnectListener implements ReconnectCompleteListener {
             final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
             final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
             final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
-            final var upgradeActions =
-                    new ReadableFreezeUpgradeActions(networkAdminConfig, freezeStore, executor, upgradeFileStore);
+            final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
+            final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
+            final var upgradeActions = new ReadableFreezeUpgradeActions(
+                    networkAdminConfig,
+                    freezeStore,
+                    executor,
+                    upgradeFileStore,
+                    upgradeNodeStore,
+                    upgradeStakingInfoStore);
             upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
+        } catch (Exception e) {
+            log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }
     }
 }

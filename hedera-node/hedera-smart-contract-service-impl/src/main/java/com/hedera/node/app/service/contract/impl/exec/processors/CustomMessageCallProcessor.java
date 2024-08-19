@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
@@ -38,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -156,7 +156,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         // as a special case eligible for staking rewards
         if (isTopLevelTransaction(frame)) {
             final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
-            if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
+            if (maybeCalledContract instanceof ProxyEvmContract a) {
                 recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
             }
         }
@@ -265,7 +265,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private void doHaltIfInvalidSystemCall(
             @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
         if (transfersValue(frame)) {
-            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
+            doHalt(frame, INVALID_CONTRACT_ID, operationTracer);
         }
     }
 

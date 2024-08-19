@@ -16,10 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -30,7 +28,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -45,12 +42,7 @@ public class PushZeroOperationSuite {
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String CONTRACT = "OpcodesContract";
     private static final String BOB = "bob";
-
     private static final String OP_PUSH_ZERO = "opPush0";
-
-    public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
-
-    public static final String EVM_VERSION_0_34 = "v0.34";
 
     @HapiTest
     final Stream<DynamicTest> pushZeroHappyPathWorks() {
@@ -73,19 +65,16 @@ public class PushZeroOperationSuite {
                                                 isLiteralResult((new Object[] {BigInteger.valueOf(0x5f)}))))));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return propertyPreservingHapiSpec("pushZeroDisabledInV034", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(CONTRACTS_EVM_VERSION)
-                .given(
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
-                        cryptoCreate(BOB),
-                        uploadInitCode(pushZeroContract),
-                        contractCreate(pushZeroContract))
-                .when()
-                .then(sourcing(() -> contractCall(pushZeroContract, OP_PUSH_ZERO)
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.34"),
+                cryptoCreate(BOB),
+                uploadInitCode(pushZeroContract),
+                contractCreate(pushZeroContract),
+                sourcing(() -> contractCall(pushZeroContract, OP_PUSH_ZERO)
                         .gas(GAS_TO_OFFER)
                         .payingWith(BOB)
                         .via(pushResult)

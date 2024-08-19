@@ -25,10 +25,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static java.util.Collections.swap;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,14 +50,14 @@ public class RandomFileUpdate implements OpProvider {
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE, INVALID_SIGNATURE);
 
-    private final EntityNameProvider<FileID> files;
+    private final EntityNameProvider files;
 
-    public RandomFileUpdate(EntityNameProvider<FileID> files) {
+    public RandomFileUpdate(EntityNameProvider files) {
         this.files = files;
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return List.of(
                 newKeyNamed("NEW-WACL-1").shape(listOf(1)),
                 newKeyNamed("NEW-WACL-2").shape(listOf(2)),

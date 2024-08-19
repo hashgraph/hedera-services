@@ -32,8 +32,8 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final State state) {
+    private SignedState generateSignedState(final Random random, final MerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -57,17 +57,13 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private State buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+    private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
 
-        final State state = spy(new State());
-        final SwirldState swirldState = mock(SwirldState.class);
+        final MerkleStateRoot state = spy(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
 
         final PlatformState platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
         when(state.getPlatformState()).thenReturn(platformState);
-
-        when(state.getSwirldState()).thenReturn(swirldState);
-
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -97,7 +93,7 @@ class SignedStateTests {
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final State state = buildMockState(
+        final MerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -158,7 +154,7 @@ class SignedStateTests {
 
         final Thread mainThread = Thread.currentThread();
 
-        final State state = buildMockState(
+        final MerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -207,7 +203,7 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final State state = spy(new State());
+        final MerkleRoot state = spy(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
@@ -216,6 +212,7 @@ class SignedStateTests {
                 mock(SignatureVerifier.class),
                 state,
                 "test",
+                false,
                 false,
                 false);
 

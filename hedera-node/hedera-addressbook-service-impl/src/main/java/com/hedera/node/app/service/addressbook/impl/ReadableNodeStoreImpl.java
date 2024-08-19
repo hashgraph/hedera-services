@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -26,6 +26,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Iterator;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -70,5 +71,10 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
 
     protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
         return (T) nodesState;
+    }
+
+    @NonNull
+    public Iterator<EntityNumber> keys() {
+        return nodesState().keys();
     }
 }

@@ -51,6 +51,7 @@ import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.internal.AbstractMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -955,6 +956,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 } else {
                     // We removed the second to last leaf, so the first & last leaf paths are now the same.
                     state.setLastLeafPath(FIRST_LEFT_PATH);
+                    // One of the two remaining leaves is removed. When this virtual root copy is hashed,
+                    // the root hash will be a product of the remaining leaf hash and a null hash at
+                    // path 2. However, rehashing is only triggered, if there is at least one dirty leaf,
+                    // while leaf 1 is not marked as such: neither its contents nor its path are changed.
+                    // To fix it, mark it as dirty explicitly
+                    final VirtualLeafRecord<K, V> leaf = records.findLeafRecord(1, true);
+                    cache.putLeaf(leaf);
                 }
             } else {
                 final long lastLeafSibling = getSiblingPath(lastLeafPath);
@@ -1316,13 +1324,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
+        // There are no remaining changes to be made to the cache, so we can seal it.
+        cache.seal();
+
+        // Make sure the copy is marked as hashed after the cache is sealed, otherwise the chances
+        // are an attempt to merge the cache will fail because the cache hasn't been sealed yet
         setHashPrivate(virtualHash);
 
         final long end = System.currentTimeMillis();
         statistics.recordHash(end - start);
-
-        // There are no remaining changes to be made to the cache, so we can seal it.
-        cache.seal();
     }
 
     /*
@@ -1447,7 +1457,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<Long> buildLearnerView(final ReconnectConfig reconnectConfig) {
+    public LearnerTreeView<Long> buildLearnerView(
+            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();
@@ -1455,7 +1466,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
@@ -1465,7 +1476,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         originalState,
                         reconnectState,
                         nodeRemover,
-                        topToBottom);
+                        topToBottom,
+                        mapStats);
             }
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> {
                 final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
@@ -1476,7 +1488,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         originalState,
                         reconnectState,
                         nodeRemover,
-                        twoPhasePessimistic);
+                        twoPhasePessimistic,
+                        mapStats);
             }
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
         };
@@ -1547,17 +1560,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     public void endLearnerReconnect() {
         try {
+            logger.info(RECONNECT.getMarker(), "call reconnectIterator.close()");
             reconnectIterator.close();
             if (reconnectHashingStarted.get()) {
                 // Only block on future if the hashing thread is known to have been started.
+                logger.info(RECONNECT.getMarker(), "call setHashPrivate()");
                 setHashPrivate(reconnectHashingFuture.get());
             } else {
                 logger.warn(RECONNECT.getMarker(), "virtual map hashing thread was never started");
             }
             nodeRemover = null;
             originalMap = null;
+            logger.info(RECONNECT.getMarker(), "call postInit()");
             postInit(fullyReconnectedState);
             // Start up data source compaction now
+            logger.info(RECONNECT.getMarker(), "call dataSource.enableBackgroundCompaction()");
             dataSource.enableBackgroundCompaction();
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during learner reconnect";
@@ -1567,6 +1584,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final var message = "VirtualMap@" + getRoute() + " interrupted while ending learner reconnect";
             throw new MerkleSynchronizationException(message, e);
         }
+        logger.info(RECONNECT.getMarker(), "endLearnerReconnect() complete");
     }
 
     /**

@@ -71,6 +71,11 @@ public class BaseTokenHandler {
     protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
+
+    /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
      * @param treasuryRel the treasury relation for the token
@@ -323,7 +328,8 @@ public class BaseTokenHandler {
         final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
-        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        final var existingRel = tokenRelStore.get(accountId, tokenId);
+        validateTrue(existingRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
@@ -336,8 +342,11 @@ public class BaseTokenHandler {
 
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
-        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
+        // only validate remaining associations if unlimitedAutoAssociations is disabled for the account
+        if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
+            validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        }
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenId(tokenId)
@@ -461,5 +470,21 @@ public class BaseTokenHandler {
                 .tokenId(tokenId)
                 .accountId(accountId)
                 .build();
+    }
+
+    /**
+     * Checks if the given account has unlimited auto-associations enabled.
+     *
+     * @param account        the account to check; must not be null
+     * @param entitiesConfig the configuration settings to check against; must not be null
+     * @return               {@code true} if unlimited auto-associations is enabled and the account's
+     *                       max auto-associations is set to {@code UNLIMITED_AUTOMATIC_ASSOCIATIONS},
+     *                       otherwise {@code false}
+     * @throws NullPointerException if either {@code account} or {@code entitiesConfig} is null
+     */
+    public static boolean hasUnlimitedAutoAssociations(
+            @NonNull final Account account, @NonNull EntitiesConfig entitiesConfig) {
+        return entitiesConfig.unlimitedAutoAssociationsEnabled()
+                && account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }

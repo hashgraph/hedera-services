@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
 import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -39,6 +38,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -46,7 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -122,11 +122,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var op = txn.tokenCreationOrThrow();
         // Create or get needed config and stores
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenCreateStreamBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(
@@ -138,7 +139,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
 
         // build a new token
-        final var newTokenNum = context.newEntityNum();
+        final var newTokenNum = context.entityNumGenerator().newEntityNum();
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
         final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 
@@ -192,7 +193,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             final List<CustomFee> requireCollectorAutoAssociation,
-            final TokenCreateRecordBuilder recordBuilder) {
+            final TokenCreateStreamBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -424,7 +425,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
-        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(body));
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(CommonPbjConverters.fromPbj(body));
         final var op = body.tokenCreationOrThrow();
         final var type = op.tokenType();
 
@@ -433,6 +434,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(tokenSubTypeFrom(
                         type, op.hasFeeScheduleKey() || !op.customFees().isEmpty()))
                 .addBytesPerTransaction(meta.getBaseSize())

@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
 import com.hedera.services.yahcli.config.ConfigManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -70,7 +69,7 @@ public class StakeSetupSuite extends HapiSuite {
         return HapiSpec.customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(specConfig)
                 .given(
-                        overriding(StakingSuite.STAKING_REWARD_RATE, String.valueOf(stakingRewardRate)),
+                        overriding("staking.perHbarRewardRate", String.valueOf(stakingRewardRate)),
                         TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(
                                 HapiSuite.DEFAULT_PAYER, HapiSuite.STAKING_REWARD, rewardAccountBalance)))
                 .when()

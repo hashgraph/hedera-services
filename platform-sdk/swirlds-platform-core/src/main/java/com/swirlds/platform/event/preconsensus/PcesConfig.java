@@ -83,6 +83,10 @@ import java.time.Duration;
  *                                             has been stuck for too long
  * @param suspiciousRoundDurabilityDuration    the duration after which a round is considered stuck in the round
  *                                             durability buffer component
+ * @param replayHealthThreshold                if the system is unhealthy (i.e. overloaded) for more than this amount of
+ *                                             time, pause PCES replay until the system is able to catch up.
+ * @param limitReplayFrequency                 if true, then directly limit the replay frequency of preconsensus events
+ * @param maxEventReplayFrequency              the maximum number of events that can be replayed per second
  */
 @ConfigData("event.preconsensus")
 public record PcesConfig(
@@ -102,4 +106,7 @@ public record PcesConfig(
         @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup,
         @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures,
         @ConfigProperty(defaultValue = "1m") Duration roundDurabilityBufferHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "1m") Duration suspiciousRoundDurabilityDuration) {}
+        @ConfigProperty(defaultValue = "1m") Duration suspiciousRoundDurabilityDuration,
+        @ConfigProperty(defaultValue = "1ms") Duration replayHealthThreshold,
+        @ConfigProperty(defaultValue = "true") boolean limitReplayFrequency,
+        @ConfigProperty(defaultValue = "5000") int maxEventReplayFrequency) {}

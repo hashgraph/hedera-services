@@ -21,13 +21,20 @@ import net.swiftzer.semver.SemVer
 plugins {
     id("com.hedera.gradle.lifecycle")
     id("com.hedera.gradle.repositories")
-    id("com.hedera.hashgraph.nexus-publish")
-    id("com.hedera.gradle.aggregate-reports")
+    id("com.hedera.gradle.nexus-publish")
     id("com.hedera.gradle.spotless-kotlin")
+    id("com.hedera.gradle.spotless-markdown")
     id("com.autonomousapps.dependency-analysis")
 }
 
-spotless { kotlinGradle { target("gradle/plugins/**/*.gradle.kts") } }
+spotless {
+    kotlinGradle { target("gradle/plugins/**/*.gradle.kts") }
+    kotlin {
+        // For the Kotlin classes (*.kt files)
+        ktfmt().kotlinlangStyle()
+        target("gradle/plugins/**/*.kt")
+    }
+}
 
 val productVersion = layout.projectDirectory.versionTxt().asFile.readText().trim()
 
@@ -35,18 +42,14 @@ tasks.register("githubVersionSummary") {
     group = "github"
 
     inputs.property("version", productVersion)
-    outputs.file(
-        providers
-            .environmentVariable("GITHUB_STEP_SUMMARY")
-            .orElse(
-                provider {
-                    throw IllegalArgumentException(
-                        "This task may only be run in a Github Actions CI environment! " +
-                            "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
-                    )
-                }
-            )
-    )
+
+    if (!providers.environmentVariable("GITHUB_STEP_SUMMARY").isPresent) {
+        throw IllegalArgumentException(
+            "This task may only be run in a Github Actions CI environment! " +
+                "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
+        )
+    }
+    outputs.file(providers.environmentVariable("GITHUB_STEP_SUMMARY"))
 
     doLast {
         generateProjectVersionReport(
@@ -108,19 +111,14 @@ tasks.register("versionAsSnapshot") {
 tasks.register("versionAsSpecified") {
     group = "versioning"
 
-    inputs.property(
-        "newVersion",
-        providers
-            .gradleProperty("newVersion")
-            .orElse(
-                provider {
-                    throw IllegalArgumentException(
-                        "No newVersion property provided! " +
-                            "Please add the parameter -PnewVersion=<version> when running this task."
-                    )
-                }
-            )
-    )
+    inputs.property("newVersion", providers.gradleProperty("newVersion").orNull)
+
+    if (inputs.properties["newVersion"] == null) {
+        throw IllegalArgumentException(
+            "No newVersion property provided! " +
+                "Please add the parameter -PnewVersion=<version> when running this task."
+        )
+    }
     outputs.file(layout.projectDirectory.versionTxt())
 
     doLast {

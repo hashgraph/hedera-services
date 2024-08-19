@@ -38,10 +38,13 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -85,6 +88,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Nullable
     private Consumer<byte[]> aliasObserver = null;
+
+    @Nullable
+    private Consumer<Key> keyObserver = null;
 
     @Nullable
     private Consumer<ByteString> ledgerIdObserver = null;
@@ -153,6 +159,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
         this.aliasObserver = obs;
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingKeyTo(Consumer<Key> obs) {
+        this.keyObserver = obs;
         return this;
     }
 
@@ -292,9 +303,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getAccountInfoQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         final var infoResponse = response.getCryptoGetInfo();
         if (loggingHexedCryptoKeys) {
             log.info("Constituent crypto keys are:");
@@ -310,7 +319,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
         if (protoSaveLoc != null) {
             final var info = infoResponse.getAccountInfo();
-            Files.write(Paths.get(protoSaveLoc), info.toByteArray());
+            try {
+                Files.write(Paths.get(protoSaveLoc), info.toByteArray());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
         if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
             exposingExpiryTo.ifPresent(cb ->
@@ -321,6 +334,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             Optional.ofNullable(aliasObserver)
                     .ifPresent(cb ->
                             cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
+            Optional.ofNullable(keyObserver)
+                    .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getKey()));
             Optional.ofNullable(ledgerIdObserver)
                     .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getLedgerId()));
             contractAccountIdObserver.ifPresent(
@@ -336,12 +351,15 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getAccountInfoQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

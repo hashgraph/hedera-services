@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -49,6 +52,8 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
@@ -57,6 +62,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
@@ -80,7 +86,7 @@ public record TransactionHandlers(
         @NonNull ContractDeleteHandler contractDeleteHandler,
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
-        @NonNull EthereumTransactionHandler etherumTransactionHandler,
+        @NonNull EthereumTransactionHandler ethereumTransactionHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,
@@ -116,4 +122,10 @@ public record TransactionHandlers(
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
+        @NonNull TokenRejectHandler tokenRejectHandler,
+        @NonNull TokenCancelAirdropHandler tokenCancelAirdropHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull TokenClaimAirdropHandler tokenClaimAirdropHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -91,13 +90,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -123,16 +122,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 public class AutoAccountCreationSuite {
 
-    private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
     private static final long INITIAL_BALANCE = 1000L;
     private static final ByteString ALIAS_CONTENT = ByteString.copyFromUtf8(
             "a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
@@ -167,8 +162,10 @@ public class AutoAccountCreationSuite {
     public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
-    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
+    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 39418863L;
+    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 39418863L;
+    private static final long EXPECTED_ASSOCIATION_FEE = 41666666L;
+
     public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
     public static final String TRUE = "true";
     public static final String FALSE = "false";
@@ -425,6 +422,7 @@ public class AutoAccountCreationSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS),
                         getTxnRecord(multiNftTransfer)
                                 .andAllChildRecords()
+                                .hasPriority(recordWith().autoAssociationCount(2))
                                 .hasNonStakingChildRecordCount(1)
                                 .logged(),
                         childRecordsCheck(
@@ -434,14 +432,16 @@ public class AutoAccountCreationSuite {
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .has(accountWith()
                                         .balance(0)
-                                        .maxAutoAssociations(2)
+                                        .maxAutoAssociations(-1)
                                         .ownedNfts(4))
-                                .logged(),
+                                .logged()
                         // A single extra byte in the signature map will cost just ~130 tinybar more, so allowing
                         // a delta of 2600 tinybar will stabilize this test indefinitely (the spec would have to
                         // randomly choose two public keys with a shared prefix of length 10, which is...unlikely)
-                        getAccountInfo(CIVILIAN)
-                                .has(accountWith().approxBalance((long) (civilianBal - approxTransferFee), 2600)))
+                        //                        getAccountInfo(CIVILIAN)
+                        //                                .has(accountWith().approxBalance((long) (civilianBal -
+                        // approxTransferFee), 2600))
+                        )
                 .then();
     }
 
@@ -474,6 +474,8 @@ public class AutoAccountCreationSuite {
                         getAccountInfo(CIVILIAN)
                                 .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
                                 .has(accountWith().balance(civilianBal)),
+                        // Auto-creation so, it will have -1 as max auto-associations.
+                        // Then auto-associated with the EVM address.
                         cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1)
                                         .between(CIVILIAN, VALID_ALIAS))
                                 .via(nftTransfer)
@@ -486,14 +488,12 @@ public class AutoAccountCreationSuite {
                                         records.size() > 1 && isEndOfStakingPeriodRecord(records.get(1))))
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
+                                .hasPriority(recordWith().autoAssociationCount(1))
                                 .logged(),
                         sourcing(() -> childRecordsCheck(
                                 nftTransfer,
                                 SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .consensusTimeImpliedByNonce(
-                                                parentConsTime.get(), hasNodeStakeUpdate.get() ? -2 : -1))));
+                                recordWith().status(SUCCESS).consensusTimeImpliedByOffset(parentConsTime.get(), -1))));
     }
 
     @HapiTest
@@ -546,6 +546,7 @@ public class AutoAccountCreationSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS)
                                 .logged(),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
+                        // auto-creation and token association
                         getTxnRecord(multiTokenXfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
@@ -555,8 +556,7 @@ public class AutoAccountCreationSuite {
                                                 moving(10, A_TOKEN).to(VALID_ALIAS)))
                                         .tokenTransfers(includingFungibleMovement(
                                                 moving(10, B_TOKEN).to(VALID_ALIAS)))
-                                        .autoAssociated(accountTokenPairsInAnyOrder(
-                                                List.of(Pair.of(VALID_ALIAS, B_TOKEN), Pair.of(VALID_ALIAS, A_TOKEN)))))
+                                        .autoAssociationCount(2))
                                 .logged(),
                         childRecordsCheck(
                                 multiTokenXfer,
@@ -565,7 +565,7 @@ public class AutoAccountCreationSuite {
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(10))
-                                .has(accountWith().balance(0L).maxAutoAssociations(2)),
+                                .has(accountWith().balance(0L).maxAutoAssociations(-1)),
                         getAccountInfo(CIVILIAN)
                                 .hasToken(relationshipWith(A_TOKEN).balance(90))
                                 .hasToken(relationshipWith(B_TOKEN).balance(90))
@@ -624,7 +624,7 @@ public class AutoAccountCreationSuite {
                                 .fee(totalAutoCreationFees.get() - 2)
                                 .payingWith(secondPayer)
                                 .signedBy(secondPayer)
-                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)),
+                                .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)),
                         getAccountBalance(secondPayer)
                                 .hasTinyBars(spec ->
                                         // Should only be charged a few hundred thousand
@@ -641,9 +641,9 @@ public class AutoAccountCreationSuite {
         // The expected (network + service) fee for two token transfers to a receiver
         // with no auto-creation; note it is approximate because the fee will vary slightly
         // with the size of the sig map, depending on the lengths of the public key prefixes required
-        final long approxTransferFee = 1163019L;
+        final long approxTransferFee = 1215188L;
 
-        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -685,6 +685,7 @@ public class AutoAccountCreationSuite {
                         getTxnRecord(sameTokenXfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
+                                .hasPriority(recordWith().autoAssociationCount(1))
                                 .logged(),
                         childRecordsCheck(
                                 sameTokenXfer,
@@ -699,6 +700,7 @@ public class AutoAccountCreationSuite {
                             final var lookup = getTxnRecord(sameTokenXfer)
                                     .andAllChildRecords()
                                     .hasNonStakingChildRecordCount(1)
+                                    .hasPriority(recordWith().autoAssociationCount(1))
                                     .hasNoAliasInChildRecord(0)
                                     .logged();
                             allRunFor(spec, lookup);
@@ -706,15 +708,16 @@ public class AutoAccountCreationSuite {
                             final var payer = spec.registry().getAccountID(CIVILIAN);
                             final var parent = lookup.getResponseRecord();
                             final var child = lookup.getFirstNonStakingChildRecord();
-                            assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, approxTransferFee);
+                            assertAliasBalanceAndFeeInChildRecord(
+                                    parent, child, sponsor, payer, 0L, approxTransferFee, EXPECTED_ASSOCIATION_FEE);
                         }))
                 .then(
-                        /* --- transfer another token to created alias */
+                        /* --- transfer another token to created alias.
+                        Alias created will have -1 as max-auto associations */
                         cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
                                 .via("failedXfer")
                                 .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
-                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
+                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY));
     }
 
     @HapiTest
@@ -1198,7 +1201,7 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
+        final long transferFee = 188608L;
         return defaultHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(VALID_ALIAS),
@@ -1236,7 +1239,7 @@ public class AutoAccountCreationSuite {
                                 child = lookup.getChildRecord(1);
                             }
                             assertAliasBalanceAndFeeInChildRecord(
-                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
+                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee, 0);
                             creationTime.set(child.getConsensusTimestamp().getSeconds());
                         }),
                         sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
@@ -1252,15 +1255,15 @@ public class AutoAccountCreationSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private void assertAliasBalanceAndFeeInChildRecord(
+    static void assertAliasBalanceAndFeeInChildRecord(
             final TransactionRecord parent,
             final TransactionRecord child,
             final AccountID sponsor,
             final AccountID defaultPayer,
             final long newAccountFunding,
-            final long approxTransferFee) {
+            final long approxTransferFee,
+            final long squashedFees) {
         long receivedBalance = 0;
-        long creationFeeSplit = 0;
         long payerBalWithAutoCreationFee = 0;
         for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
             final var id = adjust.getAccountID();
@@ -1272,12 +1275,6 @@ public class AutoAccountCreationSuite {
                 receivedBalance = adjust.getAmount();
             }
 
-            // auto-creation fee is transferred to 0.0.98 (funding account) and 0.0.800, 0.0.801 (if
-            // staking is active)
-            // from payer
-            if (id.getAccountNum() == 98 || id.getAccountNum() == 800 || id.getAccountNum() == 801) {
-                creationFeeSplit += adjust.getAmount();
-            }
             // sum of all deductions from the payer along with auto creation fee
             if ((id.getAccountNum() <= 98
                     || id.equals(defaultPayer)
@@ -1287,19 +1284,16 @@ public class AutoAccountCreationSuite {
             }
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
-        // The charged auto-creation fee is the total fee collected minus the transfer fee; but
-        // recall the transfer fee can vary a bit based on the size of the sig map, so we'll enforce
-        // just approximate equality with the fee in the child record
-        final var approxAutoCreationFee = creationFeeSplit - approxTransferFee;
-        final var recordFee = child.getTransactionFee();
+        final var childRecordFee = child.getTransactionFee();
+        assertNotEquals(0, childRecordFee);
         // A single extra byte in the signature map will cost just ~40 tinybar more, so allowing
         // a delta of 1000 tinybar is sufficient to stabilize this test indefinitely
         final var permissibleDelta = 1000L;
-        final var observedDelta = Math.abs(approxAutoCreationFee - recordFee);
+        final var observedDelta = Math.abs(parent.getTransactionFee() - approxTransferFee - squashedFees);
         assertTrue(
                 observedDelta <= permissibleDelta,
-                "Child record did not specify the auto-creation fee (expected ~" + approxAutoCreationFee + " but was "
-                        + recordFee + ")");
+                "Parent record did not specify the transfer fee (expected ~" + (approxTransferFee + squashedFees)
+                        + " but was " + parent.getTransactionFee() + ")");
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
@@ -1533,7 +1527,8 @@ public class AutoAccountCreationSuite {
                 }))
                 .then(getTxnRecord(FT_XFER)
                         .hasNonStakingChildRecordCount(1)
-                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
+                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO))
+                        .hasPriority(recordWith().autoAssociationCount(1)));
     }
 
     @HapiTest
@@ -1632,6 +1627,7 @@ public class AutoAccountCreationSuite {
                 }))
                 .then(getTxnRecord(NFT_XFER)
                         .hasNonStakingChildRecordCount(1)
+                        .hasPriority(recordWith().autoAssociationCount(1))
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 

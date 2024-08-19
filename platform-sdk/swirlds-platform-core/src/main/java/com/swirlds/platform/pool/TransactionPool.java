@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.pool;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 
 /**
  * Coordinates and manages a pool of transactions waiting to be submitted.
@@ -32,7 +34,24 @@ public interface TransactionPool {
      * @param transaction the system transaction to submit
      */
     @InputWireLabel("submit transaction")
-    void submitSystemTransaction(@NonNull ConsensusTransactionImpl transaction);
+    void submitSystemTransaction(@NonNull StateSignatureTransaction transaction);
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
+    /**
+     * Report the amount of time that the system has been in an unhealthy state. Will receive a report of
+     * {@link Duration#ZERO} when the system enters a healthy state.
+     *
+     * @param duration the amount of time that the system has been in an unhealthy state
+     */
+    @InputWireLabel("health info")
+    void reportUnhealthyDuration(@NonNull final Duration duration);
 
     /**
      * Clear the transaction pool.

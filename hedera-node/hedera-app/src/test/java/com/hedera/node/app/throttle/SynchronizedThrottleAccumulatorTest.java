@@ -26,7 +26,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
+import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,17 +43,19 @@ class SynchronizedThrottleAccumulatorTest {
     @Mock
     private TransactionInfo transactionInfo;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     SynchronizedThrottleAccumulator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SynchronizedThrottleAccumulator(throttleAccumulator);
+        subject = new SynchronizedThrottleAccumulator(instantSource, throttleAccumulator);
     }
 
     @Test
     void verifyShouldThrottleIsCalled() {
         // given
-        final var state = mock(HederaState.class);
+        final var state = mock(State.class);
 
         // when
         subject.shouldThrottle(transactionInfo, state);

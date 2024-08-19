@@ -51,18 +51,20 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -82,14 +84,23 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext context;
 
+    @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
     @Mock
     private PreHandleContext preHandleContext;
 
     @Mock(strictness = LENIENT)
-    private TokenBaseRecordBuilder recordBuilder;
+    private TokenBaseStreamBuilder recordBuilder;
 
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private TransactionDispatcher transactionDispatcher;
+
+    @Mock(strictness = LENIENT)
+    private HandleContext.SavepointStack stack;
 
     @BeforeEach
     void setup() {
@@ -102,10 +113,12 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .withValue("tokens.maxCustomFeesAllowed", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
-        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(context.recordBuilder(any())).willReturn(recordBuilder);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
     }
 
     @Test
@@ -182,7 +195,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
-        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -195,7 +208,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
-        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -281,7 +294,16 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);
 
         final var feeContext = new FeeContextImpl(
-                consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory, configuration, null, -1);
+                consensusInstant,
+                txnInfo,
+                payerKey,
+                payerId,
+                feeManager,
+                storeFactory,
+                configuration,
+                null,
+                -1,
+                transactionDispatcher);
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);

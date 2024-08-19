@@ -24,7 +24,8 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -49,9 +50,9 @@ class StateRegistryTests {
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        registry.registerConstructable(new ClassConstructorPair(DummySwirldState.class, DummySwirldState::new));
+        registry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
     }
 
     @AfterAll
@@ -70,50 +71,49 @@ class StateRegistryTests {
 
         assertEquals(0, RuntimeObjectRegistry.getActiveObjectsCount(State.class), "no states have been created yet");
 
-        final List<State> states = new LinkedList<>();
+        final List<MerkleRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
-            states.add(new State());
+            states.add(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(State.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
                     "actual count should match expected count");
         }
 
         // Fast copy a state
-        final State stateToCopy = new State();
+        final MerkleRoot stateToCopy = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
         states.add(stateToCopy);
-        final State copyOfStateToCopy = stateToCopy.copy();
+        final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(State.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
                 "actual count should match expected count");
 
         final Path dir = testDirectory;
 
         // Deserialize a state
-        final State stateToSerialize = new State();
+        final MerkleStateRoot stateToSerialize = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
         stateToSerialize.setPlatformState(new PlatformState());
-        stateToSerialize.setSwirldState(new DummySwirldState());
         states.add(stateToSerialize);
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final State deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final MerkleRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(State.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
                 "actual count should match expected count");
 
         // Deleting states in a random order should cause the number of states to decrease
         final Random random = new Random();
-        while (states.size() > 0) {
+        while (!states.isEmpty()) {
             states.remove(random.nextInt(states.size())).release();
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(State.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
                     "actual count should match expected count");
         }
     }

@@ -25,17 +25,21 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
@@ -59,7 +63,15 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     private final PhaseTimer<EventCreationStatus> phase;
 
+    /**
+     * The current platform status.
+     */
     private PlatformStatus platformStatus;
+
+    /**
+     * The duration that the system has been unhealthy.
+     */
+    private Duration unhealthyDuration = Duration.ZERO;
 
     /**
      * Constructor.
@@ -77,10 +89,19 @@ public class DefaultEventCreationManager implements EventCreationManager {
 
         this.creator = Objects.requireNonNull(creator);
 
-        this.eventCreationRules = AggregateEventCreationRules.of(
-                new MaximumRateRule(platformContext),
-                new BackpressureRule(platformContext, eventIntakeQueueSize),
-                new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
+        final EventCreationConfig config = platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+        final boolean useLegacyBackpressure = config.useLegacyBackpressure();
+
+        final List<EventCreationRule> rules = new ArrayList<>();
+        rules.add(new MaximumRateRule(platformContext));
+        rules.add(new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
+        if (useLegacyBackpressure) {
+            rules.add(new BackpressureRule(platformContext, eventIntakeQueueSize));
+        } else {
+            rules.add(new PlatformHealthRule(config.maximumPermissibleUnhealthyDuration(), this::getUnhealthyDuration));
+        }
+
+        this.eventCreationRules = AggregateEventCreationRules.of(rules);
 
         phase = new PhaseTimerBuilder<>(
                         platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)
@@ -95,7 +116,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     @Override
     @Nullable
-    public BaseEventHashedData maybeCreateEvent() {
+    public UnsignedEvent maybeCreateEvent() {
         if (!eventCreationRules.isEventCreationPermitted()) {
             phase.activatePhase(eventCreationRules.getEventCreationStatus());
             return null;
@@ -103,7 +124,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
 
         phase.activatePhase(ATTEMPTING_CREATION);
 
-        final BaseEventHashedData newEvent = creator.maybeCreateEvent();
+        final UnsignedEvent newEvent = creator.maybeCreateEvent();
         if (newEvent == null) {
             // The only reason why the event creator may choose not to create an event
             // is if there are no eligible parents.
@@ -121,7 +142,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
         creator.registerEvent(event);
     }
 
@@ -151,6 +172,14 @@ public class DefaultEventCreationManager implements EventCreationManager {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportUnhealthyDuration(@NonNull final Duration duration) {
+        unhealthyDuration = Objects.requireNonNull(duration);
+    }
+
+    /**
      * Get the current platform status.
      *
      * @return the current platform status
@@ -158,5 +187,14 @@ public class DefaultEventCreationManager implements EventCreationManager {
     @NonNull
     private PlatformStatus getPlatformStatus() {
         return platformStatus;
+    }
+
+    /**
+     * Get the duration that the system has been unhealthy.
+     *
+     * @return the duration that the system has been unhealthy
+     */
+    private Duration getUnhealthyDuration() {
+        return unhealthyDuration;
     }
 }

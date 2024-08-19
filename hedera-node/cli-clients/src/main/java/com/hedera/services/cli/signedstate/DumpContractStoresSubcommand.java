@@ -16,30 +16,16 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Map.Entry.comparingByKey;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
-import com.hedera.node.app.service.mono.state.migration.ContractStateMigrator;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithMigration;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithSlots;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithValidation;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.merkle.memory.InMemoryKey;
-import com.swirlds.platform.state.merkle.memory.InMemoryValue;
-import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -54,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -63,8 +48,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
-    private SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
-
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path storePath,
@@ -116,11 +99,7 @@ public class DumpContractStoresSubcommand {
         this.verbosity = verbosity;
     }
 
-    record ContractKeyLocal(long contractId, UInt256 key) {
-        public static ContractKeyLocal from(@NonNull final ContractKey ckey) {
-            return new ContractKeyLocal(ckey.getContractId(), toUint256FromPackedIntArray(ckey.getKey()));
-        }
-    }
+    record ContractKeyLocal(long contractId, UInt256 key) {}
 
     @SuppressWarnings(
             "java:S3864") // "Remove Stream.peek - should be used with caution" - conflicts with an IntelliJ inspection
@@ -202,29 +181,7 @@ public class DumpContractStoresSubcommand {
      * multiple concurrent calls.)
      */
     boolean iterateThroughContractStorage(BiConsumer<ContractKeyLocal, UInt256> visitor) {
-
-        final int THREAD_COUNT = 8; // size it for a laptop, why not?
-        final var contractStorageVMap = state.getRawContractStorage();
-
-        final var nSlotsSeen = new AtomicLong();
-
-        boolean didRunToCompletion = true;
-        try {
-            contractStorageVMap.extractVirtualMapData(
-                    getStaticThreadManager(),
-                    entry -> {
-                        final var contractKey = ContractKeyLocal.from(entry.left());
-                        final var iterableContractValue = entry.right();
-                        nSlotsSeen.incrementAndGet();
-                        visitor.accept(contractKey, iterableContractValue.asUInt256());
-                    },
-                    THREAD_COUNT);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            didRunToCompletion = false;
-        }
-
-        return didRunToCompletion;
+        return false;
     }
 
     /** Iterate through a _migrated_ contract store that is in modular-service's representation */
@@ -236,8 +193,9 @@ public class DumpContractStoresSubcommand {
         if (contractStorageStore == null) return false;
         contractStorageStore.keys().forEachRemaining(key -> {
             // (Not sure how many temporary _copies_ of a byte arrays are made here ... best not to ask ...)
-            final var contractKeyLocal = ContractKeyLocal.from(
-                    new ContractKey(key.contractID().contractNum(), key.key().toByteArray()));
+            final var contractKeyLocal = new ContractKeyLocal(
+                    key.contractID().contractNumOrThrow(),
+                    uint256FromByteArray(key.key().toByteArray()));
             final var slotValue = contractStorageStore.get(key);
             assert (slotValue != null);
             final var value = uint256FromByteArray(slotValue.value().toByteArray());
@@ -255,64 +213,7 @@ public class DumpContractStoresSubcommand {
     @SuppressWarnings("unchecked")
     @Nullable
     WritableKVState<SlotKey, SlotValue> getMigratedContractStore() {
-
-        final var fromStore = state.getRawContractStorage();
-        final var expectedNumberOfSlots = Math.toIntExact(fromStore.size());
-
-        // Start the migration with a clean, writable KV store.  Using the in-memory store here.
-
-        final var contractSchema = new InitialModServiceContractSchema(CURRENT_VERSION);
-        final var contractSchemas = contractSchema.statesToCreate();
-        final StateDefinition<SlotKey, SlotValue> contractStoreStateDefinition = contractSchemas.stream()
-                .filter(sd -> sd.stateKey().equals(InitialModServiceContractSchema.STORAGE_KEY))
-                .findFirst()
-                .orElseThrow();
-        final var contractStoreSchemaMetadata =
-                new StateMetadata<>(ContractService.NAME, contractSchema, contractStoreStateDefinition);
-        final var contractMerkleMap =
-                new NonAtomicReference<MerkleMap<InMemoryKey<SlotKey>, InMemoryValue<SlotKey, SlotValue>>>(
-                        new MerkleMap<>(expectedNumberOfSlots));
-        final var toStore = new NonAtomicReference<WritableKVState<SlotKey, SlotValue>>(new InMemoryWritableKVState<>(
-                contractStoreStateDefinition.stateKey(),
-                contractStoreSchemaMetadata.inMemoryValueClassId(),
-                contractStoreStateDefinition.keyCodec(),
-                contractStoreStateDefinition.valueCodec(),
-                contractMerkleMap.get()));
-
-        final var flushCounter = new AtomicInteger();
-
-        final ContractStateMigrator.StateFlusher stateFlusher = ignored -> {
-            // Commit all the new leafs to the underlying map
-            ((WritableKVStateBase<SlotKey, SlotValue>) (toStore.get())).commit();
-            // Copy the underlying map, which does the flush
-            contractMerkleMap.set(contractMerkleMap.get().copy());
-            // Create a new store to go on with
-            toStore.set(new InMemoryWritableKVState<>(
-                    contractStoreStateDefinition.stateKey(),
-                    contractStoreSchemaMetadata.inMemoryValueClassId(),
-                    contractStoreStateDefinition.keyCodec(),
-                    contractStoreStateDefinition.valueCodec(),
-                    contractMerkleMap.get()));
-
-            flushCounter.incrementAndGet();
-
-            return toStore.get();
-        };
-
-        final var validationFailures = new ArrayList<String>();
-        try {
-            final var migrationStatus = ContractStateMigrator.migrateFromContractStorageVirtualMap(
-                    fromStore, toStore.get(), stateFlusher, validationFailures);
-            assert (migrationStatus == ContractStateMigrator.Status.SUCCESS);
-        } catch (final RuntimeException ex) {
-            System.err.printf("*** Error(s) transforming mono-state to modular state: %n%s", ex);
-            if (!validationFailures.isEmpty()) {
-                validationFailures.forEach(s -> System.err.printf("   %s%n", s));
-            }
-            return null;
-        }
-
-        return toStore.get();
+        return null;
     }
 
     // Produce a report, one line per contract, summarizing the #slot pairs and the min/max slot#

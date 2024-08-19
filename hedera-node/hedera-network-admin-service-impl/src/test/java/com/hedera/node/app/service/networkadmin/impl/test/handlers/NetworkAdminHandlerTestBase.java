@@ -41,8 +41,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -50,8 +50,6 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
@@ -65,16 +63,21 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
@@ -185,7 +188,9 @@ public class NetworkAdminHandlerTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    FeeCalculator feeCalculator;
+    protected FeeCalculator feeCalculator;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @BeforeEach
     void commonSetUp() {
@@ -208,12 +213,12 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void refreshRecordCache() {
-        final var state = new FakeHederaState();
+        final var state = new FakeState();
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry, TestSchema.CURRENT_VERSION);
+        svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
-        lenient().when(wsa.getHederaState()).thenReturn(state);
+        lenient().when(wsa.getState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);
@@ -322,7 +327,7 @@ public class NetworkAdminHandlerTestBase {
 
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
-        dedupeCache = new DeduplicationCacheImpl(props);
+        dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 
@@ -428,6 +433,7 @@ public class NetworkAdminHandlerTestBase {
                 tokenAllowances,
                 2,
                 false,
+                null,
                 null);
     }
 

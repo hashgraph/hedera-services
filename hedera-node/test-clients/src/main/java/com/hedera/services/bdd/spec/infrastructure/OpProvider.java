@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Collections;
 import java.util.List;
@@ -64,7 +65,7 @@ public interface OpProvider {
         PAYER_ACCOUNT_DELETED
     };
 
-    default List<HapiSpecOperation> suggestedInitializers() {
+    default List<SpecOperation> suggestedInitializers() {
         return Collections.emptyList();
     }
 

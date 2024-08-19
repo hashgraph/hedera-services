@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.StateCommonConfig_;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,6 +50,7 @@ import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -62,7 +64,7 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -99,6 +101,8 @@ class StateFileManagerTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
     }
 
     @BeforeEach
@@ -145,7 +149,7 @@ class StateFileManagerTests {
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
         final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile, SignedStateFileUtils::readState);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -193,8 +197,9 @@ class StateFileManagerTests {
     @Test
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
-        ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
+        final SignedState signedState =
+                new RandomSignedStateGenerator().setUseBlockingState(true).build();
+        ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -210,7 +215,7 @@ class StateFileManagerTests {
         // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((DummySwirldState) signedState.getSwirldState()).unblockSerialization();
+        ((BlockingSwirldState) signedState.getSwirldState()).unblockSerialization();
         thread.join(1000);
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
@@ -334,7 +339,9 @@ class StateFileManagerTests {
 
                     final SignedState stateFromDisk = assertDoesNotThrow(
                             () -> SignedStateFileReader.readStateFile(
-                                            TestPlatformContextBuilder.create().build(), savedStateInfo.stateFile())
+                                            TestPlatformContextBuilder.create().build(),
+                                            savedStateInfo.stateFile(),
+                                            SignedStateFileUtils::readState)
                                     .reservedSignedState()
                                     .get(),
                             "should be able to read state on disk");

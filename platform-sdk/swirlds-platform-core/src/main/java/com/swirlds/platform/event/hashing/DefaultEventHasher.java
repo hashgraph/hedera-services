@@ -16,34 +16,43 @@
 
 package com.swirlds.platform.event.hashing;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.platform.event.GossipEvent;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Default implementation of the {@link EventHasher}.
- *
  */
 public class DefaultEventHasher implements EventHasher {
-    private final Cryptography cryptography;
+    private final SemanticVersion currentSoftwareVersion;
+    private final boolean migrateEventHashing;
 
     /**
-     * Constructs a new event hasher.
+     * Constructs a new {@link DefaultEventHasher} with the given {@link SemanticVersion} and migration flag.
      *
-     * @param platformContext the platform context
+     * @param currentSoftwareVersion the current software version
+     * @param migrateEventHashing    if true then use the new event hashing algorithm for new events, events created by
+     *                               previous software versions will still need to be hashed using the old algorithm.
      */
-    public DefaultEventHasher(@NonNull final PlatformContext platformContext) {
-        this.cryptography = platformContext.getCryptography();
+    public DefaultEventHasher(
+            @NonNull final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
+        this.migrateEventHashing = migrateEventHashing;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
-    public GossipEvent hashEvent(@NonNull final GossipEvent event) {
-        cryptography.digestSync(event.getHashedData());
+    public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
+        Objects.requireNonNull(event);
+        if (migrateEventHashing
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, event.getSoftwareVersion())
+                        == 0) {
+            new PbjStreamHasher().hashEvent(event);
+            return event;
+        }
+        new StatefulEventHasher().hashEvent(event);
         return event;
     }
 }

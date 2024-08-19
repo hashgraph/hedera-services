@@ -25,8 +25,8 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -99,7 +99,7 @@ public record CallOutcome(
      * @param externalizeAbortResult whether to externalize the result of aborted calls
      */
     public void addCallDetailsTo(
-            @NonNull final ContractCallRecordBuilder recordBuilder,
+            @NonNull final ContractCallStreamBuilder recordBuilder,
             @NonNull final ExternalizeAbortResult externalizeAbortResult) {
         requireNonNull(recordBuilder);
         requireNonNull(externalizeAbortResult);
@@ -118,7 +118,7 @@ public record CallOutcome(
      * @param recordBuilder the record builder
      */
     public void addCreateDetailsTo(
-            @NonNull final ContractCreateRecordBuilder recordBuilder,
+            @NonNull final ContractCreateStreamBuilder recordBuilder,
             @NonNull final ExternalizeAbortResult externalizeAbortResult) {
         requireNonNull(recordBuilder);
         requireNonNull(externalizeAbortResult);

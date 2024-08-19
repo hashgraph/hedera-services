@@ -20,7 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -38,12 +39,12 @@ import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.util.MarkerFileWriter;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -72,7 +73,7 @@ public class DefaultIssDetector implements IssDetector {
     /**
      * The current software version
      */
-    private final SoftwareVersion currentSoftwareVersion;
+    private final SemanticVersion currentSoftwareVersion;
 
     /**
      * Prevent log messages about a lack of signatures from spamming the logs.
@@ -128,7 +129,7 @@ public class DefaultIssDetector implements IssDetector {
     public DefaultIssDetector(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final SemanticVersion currentSoftwareVersion,
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
         Objects.requireNonNull(platformContext);
@@ -296,8 +297,8 @@ public class DefaultIssDetector implements IssDetector {
      */
     @NonNull
     private List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<StateSignaturePayload>> stateSignatureTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
 
         if (stateSignatureTransactions == null) {
             return List.of();
@@ -324,10 +325,10 @@ public class DefaultIssDetector implements IssDetector {
      */
     @Nullable
     private IssNotification handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignaturePayload> transaction) {
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
         final NodeId signerId = transaction.submitterId();
-        final StateSignaturePayload signaturePayload = transaction.transaction();
-        final SoftwareVersion eventVersion = transaction.softwareVersion();
+        final StateSignatureTransaction signaturePayload = transaction.transaction();
+        final SemanticVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {
             // Illegal event version, ignore.
@@ -339,7 +340,7 @@ public class DefaultIssDetector implements IssDetector {
             return null;
         }
 
-        if (currentSoftwareVersion.compareTo(eventVersion) != 0) {
+        if (HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, eventVersion) != 0) {
             // this is a signature from a different software version, ignore it
             return null;
         }

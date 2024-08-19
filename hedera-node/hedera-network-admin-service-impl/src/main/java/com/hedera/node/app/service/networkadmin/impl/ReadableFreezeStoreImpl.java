@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore.effectiveUpdateFileHash;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -59,7 +60,6 @@ public class ReadableFreezeStoreImpl implements ReadableFreezeStore {
     @Override
     @Nullable
     public Bytes updateFileHash() {
-        ProtoBytes hash = updateFileHash.get();
-        return (hash == null ? null : hash.value());
+        return effectiveUpdateFileHash(updateFileHash.get());
     }
 }

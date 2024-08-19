@@ -57,8 +57,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -67,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -215,7 +216,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
         this.createdIdsObserver = creationObserver;
-        return this;
+        return andAllChildRecords();
     }
 
     public HapiGetTxnRecord exposingCreationDetailsTo(final Consumer<List<AccountCreationDetails>> observer) {
@@ -882,9 +883,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     @SuppressWarnings("java:S1874")
-    protected void submitWith(final HapiSpec spec, final Transaction payment) throws InvalidProtocolBufferException {
-        final Query query = maybeModified(getRecordQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
@@ -1018,12 +1017,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
-        final Query query = maybeModified(getRecordQuery(spec, payment, true), spec);
-        final Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getRecordQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getRecordQuery(final HapiSpec spec, final Transaction payment, final boolean costOnly) {

@@ -21,9 +21,10 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
@@ -493,13 +494,15 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 birthRound);
         next.setGeneratorIndex(eventIndex);
 
-        // The event given to the internal consensus needs its own EventImpl for metadata to be kept separate from
-        // the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl and links it.
-        // The event must be hashed and have a descriptor built for its use in the InOrderLinker.
+        // The event given to the internal consensus needs its own EventImpl & PlatformEvent for metadata to be kept
+        // separate from the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl
+        // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
-        CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
-        consensus.addEvent(inOrderLinker.linkEvent(next.getBaseEvent()));
+        new StatefulEventHasher().hashEvent(next.getBaseEvent());
+        final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
+        tmp.setHash(next.getBaseEvent().getHash());
+        consensus.addEvent(inOrderLinker.linkEvent(tmp));
 
         return next;
     }

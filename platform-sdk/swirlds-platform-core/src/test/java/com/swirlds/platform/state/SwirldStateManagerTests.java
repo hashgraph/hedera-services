@@ -29,8 +29,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private State initialState;
+    private MerkleRoot initialState;
 
     @BeforeEach
     void setup() {
@@ -107,9 +107,8 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static State newState() {
-        final State state = new State();
-        state.setSwirldState(new DummySwirldState());
+    private static MerkleRoot newState() {
+        final MerkleStateRoot state = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
 
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);

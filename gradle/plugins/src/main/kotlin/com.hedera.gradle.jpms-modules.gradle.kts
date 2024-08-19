@@ -22,11 +22,6 @@ plugins {
 // Fix or enhance the metadata of third-party Modules. This is about the metadata in the
 // repositories: '*.pom' and '*.module' files.
 jvmDependencyConflicts.patch {
-    val grpcModule = "io.helidon.grpc:io.grpc"
-    // The following 'io.grpc' libraries are replaced with a singe dependency to
-    // 'io.helidon.grpc:io.grpc', which is a re-packaged Modular Jar of all the 'grpc' libraries.
-    val grpcComponents = listOf("io.grpc:grpc-api", "io.grpc:grpc-context", "io.grpc:grpc-core")
-
     // These compile time annotation libraries are not of interest in our setup and are thus removed
     // from the dependencies of all components that bring them in.
     val annotationLibraries =
@@ -36,7 +31,6 @@ jvmDependencyConflicts.patch {
             "com.google.code.findbugs:jsr305",
             "com.google.errorprone:error_prone_annotations",
             "com.google.guava:listenablefuture",
-            "com.google.j2objc:j2objc-annotations",
             "org.checkerframework:checker-compat-qual",
             "org.checkerframework:checker-qual",
             "org.codehaus.mojo:animal-sniffer-annotations"
@@ -46,43 +40,22 @@ jvmDependencyConflicts.patch {
         addFeature("linux-x86_64")
         addFeature("linux-aarch_64")
     }
-    module("io.grpc:grpc-netty") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-protobuf") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
+    module("io.grpc:grpc-api") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-core") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-context") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-netty") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-protobuf") { annotationLibraries.forEach { removeDependency(it) } }
     module("io.grpc:grpc-protobuf-lite") {
         annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
         removeDependency("com.google.protobuf:protobuf-javalite")
         addApiDependency("com.google.protobuf:protobuf-java")
     }
-    module("io.grpc:grpc-services") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-stub") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-testing") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
+    module("io.grpc:grpc-services") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-stub") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-testing") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-util") { annotationLibraries.forEach { removeDependency(it) } }
     module("com.github.ben-manes.caffeine:caffeine") {
         annotationLibraries.forEach { removeDependency(it) }
-    }
-    module("com.github.spotbugs:spotbugs-annotations") {
-        removeDependency("com.google.code.findbugs:jsr305")
     }
     module("com.google.dagger:dagger-compiler") {
         annotationLibraries.forEach { removeDependency(it) }
@@ -91,11 +64,16 @@ jvmDependencyConflicts.patch {
         annotationLibraries.forEach { removeDependency(it) }
     }
     module("com.google.dagger:dagger-spi") { annotationLibraries.forEach { removeDependency(it) } }
-    module("com.google.guava:guava") { annotationLibraries.forEach { removeDependency(it) } }
+    module("com.google.guava:guava") {
+        (annotationLibraries -
+                "com.google.code.findbugs:jsr305" -
+                "com.google.errorprone:error_prone_annotations" -
+                "org.checkerframework:checker-qual")
+            .forEach { removeDependency(it) }
+    }
     module("com.google.protobuf:protobuf-java-util") {
         annotationLibraries.forEach { removeDependency(it) }
     }
-    module("io.helidon.grpc:io.grpc") { annotationLibraries.forEach { removeDependency(it) } }
     module("org.apache.tuweni:tuweni-bytes") { removeDependency("com.google.code.findbugs:jsr305") }
     module("org.apache.tuweni:tuweni-units") { removeDependency("com.google.code.findbugs:jsr305") }
     module("io.prometheus:simpleclient") {
@@ -106,6 +84,7 @@ jvmDependencyConflicts.patch {
         removeDependency("org.jetbrains.kotlin:kotlin-stdlib-common")
     }
     module("junit:junit") { removeDependency("org.hamcrest:hamcrest-core") }
+    module("org.hyperledger.besu:secp256k1") { addApiDependency("net.java.dev.jna:jna") }
 }
 
 // Fix or enhance the 'module-info.class' of third-party Modules. This is about the
@@ -114,22 +93,31 @@ jvmDependencyConflicts.patch {
 extraJavaModuleInfo {
     failOnAutomaticModules = true // Only allow Jars with 'module-info' on all module paths
 
-    module("io.grpc:grpc-netty", "grpc.netty") {
+    module("io.grpc:grpc-api", "io.grpc")
+    module("io.grpc:grpc-core", "io.grpc.internal")
+    module("io.grpc:grpc-context", "io.grpc.context")
+    module("io.grpc:grpc-netty", "io.grpc.netty") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("io.grpc:grpc-stub", "grpc.stub") {
+    module("io.grpc:grpc-stub", "io.grpc.stub") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("io.grpc:grpc-testing", "grpc.testing")
-    module("io.grpc:grpc-services", "grpc.services")
-    module("io.grpc:grpc-protobuf", "grpc.protobuf")
-    module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
-    module("javax.annotation:javax.annotation-api", "java.annotation")
+    module("io.grpc:grpc-testing", "io.grpc.testing")
+    module("io.grpc:grpc-services", "io.grpc.services")
+    module("io.grpc:grpc-util", "io.grpc.util")
+    module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
+    module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
+    module("com.google.code.findbugs:jsr305", "java.annotation") {
+        exportAllPackages()
+        mergeJar("javax.annotation:javax.annotation-api")
+    }
+    module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")
+    module("com.google.j2objc:j2objc-annotations", "com.google.j2objc.annotations")
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -149,6 +137,7 @@ extraJavaModuleInfo {
     module("org.apache.commons:commons-math3", "org.apache.commons.math3")
     module("org.apache.commons:commons-collections4", "org.apache.commons.collections4")
     module("com.esaulpaugh:headlong", "headlong")
+    module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
     module("org.connid:framework", "org.connid.framework")
     module("org.connid:framework-internal", "org.connid.framework.internal") {
         exportAllPackages()
@@ -183,7 +172,11 @@ extraJavaModuleInfo {
     module("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.nativelib.blake2bf")
     module("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.nativelib.bls12_381")
     module("org.hyperledger.besu:besu-datatypes", "org.hyperledger.besu.datatypes")
-    module("org.hyperledger.besu:evm", "org.hyperledger.besu.evm")
+    module("org.hyperledger.besu:evm", "org.hyperledger.besu.evm") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requiresStatic("com.fasterxml.jackson.annotation")
+    }
     module("org.hyperledger.besu:plugin-api", "org.hyperledger.besu.plugin.api")
     module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.nativelib.secp256k1")
     module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.nativelib.secp256r1")
@@ -207,11 +200,11 @@ extraJavaModuleInfo {
     // Need to use Jar file names here as there is currently no other way to address Jar with
     // classifier directly for patching
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-x86_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-x86_64.jar",
         "io.netty.transport.epoll.linux.x86_64"
     )
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-aarch_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-aarch_64.jar",
         "io.netty.transport.epoll.linux.aarch_64"
     )
 

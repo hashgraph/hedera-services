@@ -16,48 +16,34 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.Supplier;
+import java.time.InstantSource;
 
 /**
  * Implementation of the {@link ContractService}.
  */
-public enum ContractServiceImpl implements ContractService {
-    CONTRACT_SERVICE;
+public class ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
+    public static final String LAZY_MEMO = "lazy-created account";
+
     private final ContractServiceComponent component;
 
-    private InitialModServiceContractSchema initialContractSchema;
-
-    ContractServiceImpl() {
-        this.component = DaggerContractServiceComponent.create();
-    }
-
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        initialContractSchema.setStorageFromState(storageFromState);
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        initialContractSchema.setBytecodeFromState(bytecodeFromState);
+    public ContractServiceImpl(@NonNull final InstantSource instantSource) {
+        requireNonNull(instantSource);
+        this.component = DaggerContractServiceComponent.factory().create(instantSource);
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialContractSchema = new InitialModServiceContractSchema(version);
-        registry.register(initialContractSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490ContractSchema());
+        registry.register(new V0500ContractSchema());
     }
 
     public ContractHandlers handlers() {

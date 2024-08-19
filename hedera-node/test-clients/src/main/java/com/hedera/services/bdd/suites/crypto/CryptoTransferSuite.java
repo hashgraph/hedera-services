@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -35,9 +36,11 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -85,6 +88,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -105,6 +109,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -112,6 +118,9 @@ import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -125,11 +134,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -148,7 +158,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -190,7 +199,7 @@ public class CryptoTransferSuite {
     private static final String WIPE_KEY = "wipeKey";
     private static final String PAUSE_KEY = "pauseKey";
     private static final String PARTY = "party";
-    private static final String COUNTERPARTY = "counterparty";
+    public static final String COUNTERPARTY = "counterparty";
     private static final String MULTI_KEY = "multi";
     private static final String NOT_TO_BE = "notToBe";
     private static final String TOKEN = "token";
@@ -200,21 +209,21 @@ public class CryptoTransferSuite {
     private static final String PAYEE_SIG_REQ = "payeeSigReq";
     private static final String TOKENS_INVOLVED_LOG_MESSAGE =
             """
-0 tokens involved,
-  2 account adjustments: {} tb, ${}"
-1 tokens involved,
-  2 account adjustments: {} tb, ${} (~{}x pure crypto)
-  3 account adjustments: {} tb, ${} (~{}x pure crypto)
-  4 account adjustments: {} tb, ${} (~{}x pure crypto)
-  5 account adjustments: {} tb, ${} (~{}x pure crypto)
-  6 account adjustments: {} tb, ${} (~{}x pure crypto)
-2 tokens involved,
-  4 account adjustments: {} tb, ${} (~{}x pure crypto)
-  5 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                          6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                        3 tokens involved,
-                                          6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                                                                                  """;
+                    0 tokens involved,
+                      2 account adjustments: {} tb, ${}"
+                    1 tokens involved,
+                      2 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      3 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      4 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      5 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                    2 tokens involved,
+                      4 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      5 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                              6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                            3 tokens involved,
+                                                              6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                                                                                      """;
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
     private static final String HBAR_XFER = "hbarXfer";
@@ -1321,114 +1330,6 @@ public class CryptoTransferSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> royaltyCollectorsCanUseAutoAssociation() {
-        final var uniqueWithRoyalty = "uniqueWithRoyalty";
-        final var firstFungible = "firstFungible";
-        final var secondFungible = "secondFungible";
-        final var firstRoyaltyCollector = "firstRoyaltyCollector";
-        final var secondRoyaltyCollector = "secondRoyaltyCollector";
-        final var plentyOfSlots = 10;
-        final var exchangeAmount = 12 * 15;
-        final var firstRoyaltyAmount = exchangeAmount / 12;
-        final var secondRoyaltyAmount = exchangeAmount / 15;
-        final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
-
-        return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(firstRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(secondRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(plentyOfSlots),
-                        cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(plentyOfSlots),
-                        newKeyNamed(MULTI_KEY),
-                        getAccountInfo(PARTY).savingSnapshot(PARTY),
-                        getAccountInfo(COUNTERPARTY).savingSnapshot(COUNTERPARTY),
-                        getAccountInfo(firstRoyaltyCollector).savingSnapshot(firstRoyaltyCollector),
-                        getAccountInfo(secondRoyaltyCollector).savingSnapshot(secondRoyaltyCollector))
-                .when(
-                        tokenCreate(firstFungible)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(123456789),
-                        tokenCreate(secondFungible)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(123456789),
-                        cryptoTransfer(
-                                moving(1000, firstFungible).between(TOKEN_TREASURY, COUNTERPARTY),
-                                moving(1000, secondFungible).between(TOKEN_TREASURY, COUNTERPARTY)),
-                        tokenCreate(uniqueWithRoyalty)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(MULTI_KEY)
-                                .withCustom(royaltyFeeNoFallback(1, 12, firstRoyaltyCollector))
-                                .withCustom(royaltyFeeNoFallback(1, 15, secondRoyaltyCollector))
-                                .initialSupply(0L),
-                        mintToken(uniqueWithRoyalty, List.of(copyFromUtf8("HODL"))),
-                        cryptoTransfer(movingUnique(uniqueWithRoyalty, 1L).between(TOKEN_TREASURY, PARTY)))
-                .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueWithRoyalty, 1L).between(PARTY, COUNTERPARTY),
-                                        moving(12 * 15L, firstFungible).between(COUNTERPARTY, PARTY),
-                                        moving(12 * 15L, secondFungible).between(COUNTERPARTY, PARTY))
-                                .fee(ONE_HBAR)
-                                .via(HODL_XFER),
-                        getTxnRecord(HODL_XFER)
-                                .hasPriority(recordWith()
-                                        .autoAssociated(accountTokenPairsInAnyOrder(List.of(
-                                                /* The counterparty auto-associates to the non-fungible type */
-                                                Pair.of(COUNTERPARTY, uniqueWithRoyalty),
-                                                /* The sending party auto-associates to both fungibles */
-                                                Pair.of(PARTY, firstFungible),
-                                                Pair.of(PARTY, secondFungible),
-                                                /* Both royalty collectors auto-associate to both fungibles */
-                                                Pair.of(firstRoyaltyCollector, firstFungible),
-                                                Pair.of(secondRoyaltyCollector, firstFungible),
-                                                Pair.of(firstRoyaltyCollector, secondFungible),
-                                                Pair.of(secondRoyaltyCollector, secondFungible))))),
-                        getAccountInfo(PARTY)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                PARTY,
-                                                List.of(
-                                                        relationshipWith(uniqueWithRoyalty)
-                                                                .balance(0),
-                                                        relationshipWith(firstFungible)
-                                                                .balance(netExchangeAmount),
-                                                        relationshipWith(secondFungible)
-                                                                .balance(netExchangeAmount)))),
-                        getAccountInfo(COUNTERPARTY)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                PARTY,
-                                                List.of(
-                                                        relationshipWith(uniqueWithRoyalty)
-                                                                .balance(1),
-                                                        relationshipWith(firstFungible)
-                                                                .balance(1000L - exchangeAmount),
-                                                        relationshipWith(secondFungible)
-                                                                .balance(1000L - exchangeAmount)))),
-                        getAccountInfo(firstRoyaltyCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                PARTY,
-                                                List.of(
-                                                        relationshipWith(firstFungible)
-                                                                .balance(exchangeAmount / 12),
-                                                        relationshipWith(secondFungible)
-                                                                .balance(exchangeAmount / 12)))),
-                        getAccountInfo(secondRoyaltyCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                PARTY,
-                                                List.of(
-                                                        relationshipWith(firstFungible)
-                                                                .balance(exchangeAmount / 15),
-                                                        relationshipWith(secondFungible)
-                                                                .balance(exchangeAmount / 15)))));
-    }
-
-    @HapiTest
     final Stream<DynamicTest> royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var someFungible = "firstFungible";
@@ -1882,8 +1783,8 @@ public class CryptoTransferSuite {
                 .given(
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
-                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        UtilVerbs.inParallel(
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        inParallel(
                                 cryptoCreate(PAYER),
                                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
                                 cryptoCreate(PAYEE_NO_SIG_REQ)))
@@ -2177,8 +2078,82 @@ public class CryptoTransferSuite {
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
-                .when(opsArray)
-                .then();
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testTransferToExistingSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[existingSystemAccounts.size() * 3];
+
+        for (int i = 0; i < existingSystemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(existingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(SUCCESS);
+
+            opsArray[existingSystemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(existingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(SUCCESS);
+
+            opsArray[existingSystemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(existingSystemAccounts.get(i)))
+                    .payingWith(SENDER)
+                    .sending(ONE_HBAR * 10)
+                    .gas(100000)
+                    .hasKnownStatus(SUCCESS);
+        }
+
+        return defaultHapiSpec("testTransferToExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testTransferToNonExistingSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
+
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaTransfer" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
+
+            opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaSend" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
+
+            opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaCall" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
+        }
+        return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(opsArray);
     }
 
     @HapiTest
@@ -2296,5 +2271,68 @@ public class CryptoTransferSuite {
                 .when()
                 .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
+        final var tokenA = "tokenA";
+        final var hollowAccountKey = "hollowAccountKey";
+        final var transferTokenAAndBToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
+        final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
+
+        return defaultHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
+                .given(
+                        newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        tokenCreate(tokenA)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Mint NFTs
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var treasuryAccountId = registry.getAccountID(TREASURY);
+                            treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(hollowAccountKey)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                            hollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(A_TOKEN));
+                        }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Create hollow account
+                        cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                        .setToken(tokenIdA.get())
+                                        .addNftTransfers(ocWith(
+                                                accountId(treasuryAlias.get()),
+                                                accountId(hollowAccountAlias.get()),
+                                                1L))))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenAAndBToHollowAccountTxn),
+                        // Verify hollow account creation
+                        getAliasedAccountInfo(hollowAccountKey)
+                                .hasToken(relationshipWith(tokenA))
+                                .has(accountWith().hasEmptyKey())
+                                .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
+                        // Transfer some hbars to the hollow account so that it could pay the next transaction
+                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(movingUnique(tokenA, 1L).between(hollowAccountKey, TREASURY))
+                                .payingWith(hollowAccountKey)
+                                .signedBy(hollowAccountKey, TREASURY)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)))))
+                .then(getAliasedAccountInfo(hollowAccountKey).has(accountWith().key(hollowAccountKey)));
     }
 }

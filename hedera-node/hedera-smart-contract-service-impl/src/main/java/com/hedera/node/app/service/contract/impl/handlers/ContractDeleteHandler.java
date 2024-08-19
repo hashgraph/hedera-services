@@ -24,8 +24,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -39,8 +39,7 @@ import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractDeleteResourceUsage;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
@@ -61,6 +60,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractDeleteHandler implements TransactionHandler {
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
+
     @Inject
     public ContractDeleteHandler() {
         // Exists for injection
@@ -103,7 +104,7 @@ public class ContractDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().contractDeleteInstanceOrThrow();
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var toBeDeleted = requireNonNull(accountStore.getContractById(op.contractIDOrThrow()));
         validateFalse(toBeDeleted.deleted(), CONTRACT_DELETED);
         final var obtainer = getObtainer(accountStore, op);
@@ -112,9 +113,10 @@ public class ContractDeleteHandler implements TransactionHandler {
             throw new HandleException(obtainer.smartContract() ? INVALID_CONTRACT_ID : OBTAINER_DOES_NOT_EXIST);
         }
         validateFalse(toBeDeleted.accountIdOrThrow().equals(obtainer.accountIdOrThrow()), OBTAINER_SAME_CONTRACT_ID);
-        final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(ContractDeleteStreamBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(
                         deletedId,
                         obtainer.accountIdOrThrow(),
@@ -136,8 +138,10 @@ public class ContractDeleteHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractDeleteResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(
+                        sigValueObj -> usageEstimator.getContractDeleteTxFeeMatrices(fromPbj(op), sigValueObj));
     }
 }

@@ -1,4 +1,0 @@
-name: pendingXfer
-schedule:
-  signatories: [sender]
-  simpleXfer: {amount: 1, from: sender, to: receiver}

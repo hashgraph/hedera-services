@@ -18,16 +18,18 @@ package com.hedera.node.app.state.listeners;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -46,13 +48,13 @@ import org.apache.logging.log4j.Logger;
 public class WriteStateToDiskListener implements StateWriteToDiskCompleteListener {
     private static final Logger log = LogManager.getLogger(WriteStateToDiskListener.class);
 
-    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
 
     @Inject
     public WriteStateToDiskListener(
-            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider) {
         requireNonNull(stateAccessor);
@@ -76,11 +78,18 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 final var readableStoreFactory = new ReadableStoreFactory(wrappedState.get());
                 final var readableFreezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
+                final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
+                final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
                 final var networkAdminConfig =
                         configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
 
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
-                        networkAdminConfig, readableFreezeStore, executor, readableUpgradeFileStore);
+                        networkAdminConfig,
+                        readableFreezeStore,
+                        executor,
+                        readableUpgradeFileStore,
+                        readableNodeStore,
+                        readableStakingInfoStore);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
             }

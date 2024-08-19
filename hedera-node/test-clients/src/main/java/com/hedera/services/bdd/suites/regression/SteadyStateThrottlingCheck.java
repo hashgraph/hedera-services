@@ -34,8 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
-import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -54,7 +52,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import java.util.Collections;
@@ -76,10 +74,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(LONG_RUNNING)
 @OrderedInIsolation
 public class SteadyStateThrottlingCheck {
-    private static final String TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";
-    private static final String DEFAULT_NFT_SCALING =
-            HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR);
-
     private static final int REGRESSION_NETWORK_SIZE = 4;
 
     private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
@@ -152,17 +146,13 @@ public class SteadyStateThrottlingCheck {
     @HapiTest
     @Order(7)
     final Stream<DynamicTest> restoreDevLimits() {
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+        final var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(Map.of(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR, DEFAULT_NFT_SCALING))
-                                .payingWith(ADDRESS_BOOK_CONTROL));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(defaultThrottles.toByteArray()));
     }
 
     final Stream<DynamicTest> checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
@@ -260,7 +250,7 @@ public class SteadyStateThrottlingCheck {
     private Function<HapiSpec, OpProvider> xferOps() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         cryptoCreate(CIVILIAN)
                                 .payingWith(GENESIS)
@@ -276,9 +266,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .payingWith(CIVILIAN)
                         .hasPrecheckFrom(OK, BUSY)
-                        /* In my local environment spec has been flaky with the first few
-                        operations here...doesn't seem to happen with other specs? */
-                        .hasKnownStatusFrom(OK, SUCCESS);
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS);
                 return Optional.of(op);
             }
         };
@@ -289,7 +278,7 @@ public class SteadyStateThrottlingCheck {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)
@@ -312,7 +301,7 @@ public class SteadyStateThrottlingCheck {
         final var contract = "Multipurpose";
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -336,7 +325,7 @@ public class SteadyStateThrottlingCheck {
     private Function<HapiSpec, OpProvider> fungibleMintOps() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         newKeyNamed(SUPPLY),
                         cryptoCreate(TOKEN_TREASURY).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
@@ -352,7 +341,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }
@@ -365,7 +355,7 @@ public class SteadyStateThrottlingCheck {
                 + "01234567890123456789012345678901234567890123456789";
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         newKeyNamed(SUPPLY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
@@ -384,7 +374,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }

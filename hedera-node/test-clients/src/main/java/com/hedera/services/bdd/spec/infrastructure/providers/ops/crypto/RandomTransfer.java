@@ -29,11 +29,11 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.LookupUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Optional;
@@ -56,12 +56,12 @@ public class RandomTransfer implements OpProvider {
 
     public double recordProb = DEFAULT_RECORD_PROBABILITY;
 
-    protected final EntityNameProvider<AccountID> accounts;
+    protected final EntityNameProvider accounts;
 
     private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
     private final SplittableRandom r = new SplittableRandom();
 
-    public RandomTransfer(EntityNameProvider<AccountID> accounts, ResponseCodeEnum[] customOutcomes) {
+    public RandomTransfer(EntityNameProvider accounts, ResponseCodeEnum[] customOutcomes) {
         this.customOutcomes = customOutcomes;
         this.accounts = accounts;
     }
@@ -87,7 +87,7 @@ public class RandomTransfer implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return stableAccounts(numStableAccounts).stream()
                 .map(account -> cryptoCreate(my(account))
                         .noLogging()

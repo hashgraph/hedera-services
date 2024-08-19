@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
@@ -31,7 +30,9 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -51,13 +52,16 @@ import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -98,13 +102,16 @@ class EthereumTransactionHandlerTest {
     private TransactionComponent.Factory factory;
 
     @Mock
-    private EthereumTransactionRecordBuilder recordBuilder;
+    private EthereumTransactionStreamBuilder recordBuilder;
 
     @Mock
-    private ContractCallRecordBuilder callRecordBuilder;
+    private ContractCallStreamBuilder callRecordBuilder;
 
     @Mock
-    private ContractCreateRecordBuilder createRecordBuilder;
+    private ContractCreateStreamBuilder createRecordBuilder;
+
+    @Mock
+    private HandleContext.SavepointStack stack;
 
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
@@ -177,9 +184,9 @@ class EthereumTransactionHandlerTest {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         setUpTransactionProcessing();
-        given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
-                .willReturn(recordBuilder);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCallStreamBuilder.class)).willReturn(callRecordBuilder);
         givenSenderAccount();
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
@@ -204,9 +211,9 @@ class EthereumTransactionHandlerTest {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         setUpTransactionProcessing();
-        given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
-                .willReturn(recordBuilder);
-        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCreateStreamBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
@@ -277,6 +284,20 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
+    void testCalculateFeesWithNoEthereumTransactionBody() {
+        final var txn = TransactionBody.newBuilder().build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
+    }
+
+    @Test
     void validatePureChecks() throws PreCheckException {
         // check bad eth txn body
         final var txn1 = ethTxWithNoTx();
@@ -288,13 +309,6 @@ class EthereumTransactionHandlerTest {
             given(ethTxDataReturned.gasLimit()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
             given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                     .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
-            assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));
-        }
-
-        // check less than max gas
-        try (MockedStatic<EthTxData> ethTxData = Mockito.mockStatic(EthTxData.class)) {
-            ethTxData.when(() -> EthTxData.populateEthTxData(any())).thenReturn(ethTxDataReturned);
-            given(ethTxDataReturned.gasLimit()).willReturn(MAX_GAS_LIMIT + 1);
             assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));
         }
     }

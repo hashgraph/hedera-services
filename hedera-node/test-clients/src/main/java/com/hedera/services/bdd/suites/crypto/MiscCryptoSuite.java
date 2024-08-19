@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getExecutionTimeNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
@@ -93,6 +94,7 @@ public class MiscCryptoSuite {
                         getStakersNotSupported(),
                         getFastRecordNotSupported(),
                         getBySolidityIdNotSupported(),
+                        getExecutionTimeNotSupported(),
                         getTokenNftInfosNotSupported(),
                         getAccountNftInfosNotSupported());
     }
@@ -182,9 +184,12 @@ public class MiscCryptoSuite {
     @HapiTest
     final Stream<DynamicTest> getRecordsIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getRecordsIdVariantsTreatedAsExpected")
-                .given()
+                .given(
+                        // Getting account records for the default payer can fail if we hit
+                        // ConcurrentModificationException when iterating in the record cache
+                        cryptoCreate("inert"))
                 .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords(DEFAULT_PAYER)));
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords("inert")));
     }
 
     @HapiTest

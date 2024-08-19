@@ -33,11 +33,12 @@ import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
@@ -62,10 +63,10 @@ class SimulatedGossipTests {
      * @param events the list of events
      * @return the set of unique event descriptors
      */
-    private static Set<EventDescriptor> getUniqueDescriptors(@NonNull final List<GossipEvent> events) {
-        final HashSet<EventDescriptor> uniqueDescriptors = new HashSet<>();
-        for (final GossipEvent event : events) {
-            uniqueDescriptors.add(event.getHashedData().getDescriptor());
+    private static Set<EventDescriptorWrapper> getUniqueDescriptors(@NonNull final List<PlatformEvent> events) {
+        final HashSet<EventDescriptorWrapper> uniqueDescriptors = new HashSet<>();
+        for (final PlatformEvent event : events) {
+            uniqueDescriptors.add(event.getDescriptor());
         }
         return uniqueDescriptors;
     }
@@ -97,10 +98,10 @@ class SimulatedGossipTests {
                 new SimulatedNetwork(randotron, addressBook, averageDelay, standardDeviationDelay);
 
         // Each node will add received events to the appropriate list
-        final Map<NodeId, List<GossipEvent>> receivedEvents = new HashMap<>();
+        final Map<NodeId, List<PlatformEvent>> receivedEvents = new HashMap<>();
 
         // Passing an event to one of these consumers causes the node to gossip the event to the network
-        final Map<NodeId, Consumer<GossipEvent>> eventSubmitters = new HashMap<>();
+        final Map<NodeId, Consumer<PlatformEvent>> eventSubmitters = new HashMap<>();
 
         // Wire things up
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
@@ -113,13 +114,14 @@ class SimulatedGossipTests {
                     .build()
                     .cast();
 
-            final List<GossipEvent> receivedEventsForNode = new ArrayList<>();
+            final List<PlatformEvent> receivedEventsForNode = new ArrayList<>();
             receivedEvents.put(nodeId, receivedEventsForNode);
-            final StandardOutputWire<GossipEvent> eventOutputWire =
+            final StandardOutputWire<PlatformEvent> eventOutputWire =
                     new StandardOutputWire<>((TraceableWiringModel) model, "eventOutputWire");
             eventOutputWire.solderTo("handleOutputEvent", "event", receivedEventsForNode::add);
 
-            final BindableInputWire<GossipEvent, Void> eventInputWire = eventInputShim.buildInputWire("eventInputWire");
+            final BindableInputWire<PlatformEvent, Void> eventInputWire =
+                    eventInputShim.buildInputWire("eventInputWire");
             eventSubmitters.put(nodeId, eventInputWire::inject);
 
             network.getGossipInstance(nodeId)
@@ -130,28 +132,30 @@ class SimulatedGossipTests {
                             eventOutputWire,
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
                             mock(BindableInputWire.class));
         }
 
         // For each event, choose a random subset of nodes that will submit the event. Our end goal is to see
         // each event distributed at least once to each node in the network.
         final int eventCount = networkSize * 100;
-        final List<GossipEvent> eventsToGossip = new ArrayList<>();
+        final List<PlatformEvent> eventsToGossip = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             final NodeId creator = addressBook.getNodeId(randotron.nextInt(networkSize));
-            final GossipEvent event =
+            final PlatformEvent event =
                     new TestingEventBuilder(randotron).setCreatorId(creator).build();
-            context.getCryptography().digestSync(event.getHashedData());
+            new StatefulEventHasher().hashEvent(event);
 
             eventsToGossip.add(event);
         }
 
         // Gossip all of the events. Each event is guaranteed to be gossiped by at least one node.
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-            final GossipEvent event = eventsToGossip.get(eventIndex);
+            final PlatformEvent event = eventsToGossip.get(eventIndex);
 
             for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-                if (event.getHashedData().getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
+                if (event.getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
                     eventSubmitters.get(nodeId).accept(event);
 
                     // When a node sends out an event, add it to the list of events that node knows about.
@@ -172,9 +176,9 @@ class SimulatedGossipTests {
         network.tick(time.now());
 
         // Verify that all nodes received all events.
-        final Set<EventDescriptor> expectedDescriptors = getUniqueDescriptors(eventsToGossip);
+        final Set<EventDescriptorWrapper> expectedDescriptors = getUniqueDescriptors(eventsToGossip);
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-            final Set<EventDescriptor> uniqueDescriptors = getUniqueDescriptors(receivedEvents.get(nodeId));
+            final Set<EventDescriptorWrapper> uniqueDescriptors = getUniqueDescriptors(receivedEvents.get(nodeId));
             assertEquals(expectedDescriptors, uniqueDescriptors);
         }
     }

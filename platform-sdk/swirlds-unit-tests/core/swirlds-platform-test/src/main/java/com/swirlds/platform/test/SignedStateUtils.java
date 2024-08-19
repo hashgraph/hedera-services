@@ -21,10 +21,8 @@ import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import java.util.Random;
 
 public class SignedStateUtils {
@@ -34,9 +32,7 @@ public class SignedStateUtils {
     }
 
     public static SignedState randomSignedState(Random random) {
-        SwirldState state = new DummySwirldState();
-        State root = new State();
-        root.setSwirldState(state);
+        MerkleStateRoot root = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
         root.setPlatformState(randomPlatformState(random));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
@@ -45,6 +41,7 @@ public class SignedStateUtils {
                 root,
                 "test",
                 shouldSaveToDisk,
+                false,
                 false);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -30,7 +29,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -60,11 +61,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<GossipEvent> receivedEventQueue;
+    private final BlockingQueue<PlatformEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
     private final List<IndexedEvent> discardedEvents;
 
-    private final List<GossipEvent> receivedEvents;
+    private final List<PlatformEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -222,7 +223,8 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync((e).getHashedData()));
+        final EventHasher hasher = new StatefulEventHasher();
+        receivedEvents.forEach(hasher::hashEvent);
     }
 
     /**
@@ -230,7 +232,7 @@ public class SyncNode {
      * it.
      */
     public ShadowgraphSynchronizer getSynchronizer() {
-        final Consumer<GossipEvent> eventHandler = event -> {
+        final Consumer<PlatformEvent> eventHandler = event -> {
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
@@ -315,7 +317,7 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<GossipEvent> getReceivedEvents() {
+    public List<PlatformEvent> getReceivedEvents() {
         return receivedEvents;
     }
 

@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -78,7 +78,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenUnpause();
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
@@ -86,7 +86,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(false);
         tokenStore.put(copyBuilder.build());
-        final var recordBuilder = context.recordBuilder(TokenBaseRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
         recordBuilder.tokenType(token.tokenType());
     }
 
@@ -103,6 +103,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(meta.getBpt())
                 .calculate();

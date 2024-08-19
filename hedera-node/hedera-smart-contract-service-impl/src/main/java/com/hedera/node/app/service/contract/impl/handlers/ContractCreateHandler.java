@@ -19,10 +19,8 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -33,8 +31,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCreateResourceUsage;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -57,6 +54,7 @@ public class ContractCreateHandler implements TransactionHandler {
     private static final AccountID REMOVE_AUTO_RENEW_ACCOUNT_SENTINEL =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(0).build();
     private final Provider<TransactionComponent.Factory> provider;
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
     private final GasCalculator gasCalculator;
 
     @Inject
@@ -76,7 +74,8 @@ public class ContractCreateHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
+        outcome.addCreateDetailsTo(
+                context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }
@@ -85,7 +84,6 @@ public class ContractCreateHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.contractCreateInstanceOrThrow();
 
-        validateTruePreCheck(op.gas() <= MAX_GAS_LIMIT, MAX_GAS_LIMIT_EXCEEDED);
         // FUTURE:Consider reading the init code from a file but this may be too much to do for pure checks
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.wrap(new byte[0]), true);
         validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
@@ -121,8 +119,10 @@ public class ContractCreateHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractCreateResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(
+                        sigValueObj -> usageEstimator.getContractCreateTxFeeMatrices(fromPbj(op), sigValueObj));
     }
 }

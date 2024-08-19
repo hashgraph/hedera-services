@@ -29,7 +29,7 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -56,7 +56,7 @@ public class ReconnectLearner {
 
     private final Connection connection;
     private final AddressBook addressBook;
-    private final State currentState;
+    private final MerkleRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
@@ -88,7 +88,7 @@ public class ReconnectLearner {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             @NonNull final AddressBook addressBook,
-            @NonNull final State currentState,
+            @NonNull final MerkleRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -152,15 +152,21 @@ public class ReconnectLearner {
     @NonNull
     public ReservedSignedState execute(@NonNull final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
+        ReservedSignedState reservedSignedState = null;
         try {
             receiveSignatures();
-            final ReservedSignedState reservedSignedState = reconnect();
+            reservedSignedState = reconnect();
             validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
             return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
+            if (reservedSignedState != null) {
+                // if the state was received, we need to release it or it will be leaked
+                reservedSignedState.close();
+            }
             throw new ReconnectException(e);
         } catch (final InterruptedException e) {
+            // an interrupt can only occur in the reconnect() method, so we don't need to close the reservedSignedState
             Thread.currentThread().interrupt();
             throw new ReconnectException("interrupted while attempting to reconnect", e);
         } finally {
@@ -186,13 +192,25 @@ public class ReconnectLearner {
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        final LearningSynchronizer synchronizer =
-                new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect, reconnectConfig);
+        final LearningSynchronizer synchronizer = new LearningSynchronizer(
+                threadManager,
+                in,
+                out,
+                currentState,
+                connection::disconnect,
+                reconnectConfig,
+                platformContext.getMetrics());
         synchronizer.synchronize();
 
-        final State state = (State) synchronizer.getRoot();
+        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
-                platformContext, CryptoStatic::verifySignature, state, "ReconnectLearner.reconnect()", false, false);
+                platformContext,
+                CryptoStatic::verifySignature,
+                state,
+                "ReconnectLearner.reconnect()",
+                false,
+                false,
+                false);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

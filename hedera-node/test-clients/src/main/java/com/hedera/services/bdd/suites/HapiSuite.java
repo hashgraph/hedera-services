@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -104,7 +104,7 @@ public abstract class HapiSuite {
             .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
     // Useful for testing overflow scenarios when an ERC-20/721 ABI specifies
     // a uint256, but a valid value on Hedera will be an 8-byte long only
     public static final BigInteger MAX_UINT256_VALUE =
@@ -116,10 +116,9 @@ public abstract class HapiSuite {
     public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
     public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
+    public static final long ONE_BILLION_HBARS = 1_000 * ONE_MILLION_HBARS;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
@@ -182,7 +181,7 @@ public abstract class HapiSuite {
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
 
-    private Map<String, Object> overrides = Collections.emptyMap();
+    private Map<String, String> overrides = Collections.emptyMap();
 
     public String name() {
         String simpleName = this.getClass().getSimpleName();
@@ -249,10 +248,6 @@ public abstract class HapiSuite {
             if (!overrides.isEmpty()) {
                 spec.addOverrideProperties(overrides);
             }
-            if (spec.isOnlySpecToRunInSuite()) {
-                specs = List.of(spec);
-                break;
-            }
         }
         if (autoSnapshotManagementOn) {
             // Coerce to sequential spec runner if auto-snapshot management is on for any spec
@@ -265,7 +260,7 @@ public abstract class HapiSuite {
         finalSpecs = specs;
         summarizeResults(getResultsLogger());
         if (tearDownClientsAfter) {
-            HapiApiClients.tearDown();
+            HapiClients.tearDown();
         }
         return finalOutcomeFor(finalSpecs);
     }

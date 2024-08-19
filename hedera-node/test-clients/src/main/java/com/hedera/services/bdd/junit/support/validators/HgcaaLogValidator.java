@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Assertions;
 public class HgcaaLogValidator {
     private static final String WARN = "WARN";
     private static final String ERROR = "ERROR";
-    private static final String POSSIBLY_CATASTROPHIC = "ERROR";
+    private static final String POSSIBLY_CATASTROPHIC = "Possibly CATASTROPHIC";
     private final String logFileLocation;
 
     public HgcaaLogValidator(final String logFileLocation) {
@@ -42,8 +42,8 @@ public class HgcaaLogValidator {
                     .forEach(problemLines::add);
         }
         if (!problemLines.isEmpty()) {
-            Assertions.fail(
-                    "Found problems in log file '" + logFileLocation + "':\n" + String.join("\n", problemLines));
+            Assertions.fail("Found " + problemTracker.numProblems + " problems in log file '" + logFileLocation + "':\n"
+                    + String.join("\n", problemLines));
         }
     }
 
@@ -53,17 +53,13 @@ public class HgcaaLogValidator {
         private static final String PROBLEM_DELIMITER = "\n========================================\n";
 
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
-                List.of("active throttles, but", "Not performing a reset!"),
-                List.of(
-                        "Could not start Helidon gRPC with TLS support on port",
-                        "Resource on path: /opt/hedera/services/hedera.crt does not exist"),
-                List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
-                List.of("Could not start Netty with TLS support on port 50212"),
-                List.of("CryptoTransfer throughput congestion has no throttle buckets"),
-                // (UNDESIRABLE) Remove when precompiles all return null on invalid input
-                List.of("Internal precompile failure"),
-                List.of("payerReqSig not expected to be null"));
+                List.of("not in the address book"),
+                List.of("Specified TLS cert", "doesn't exist"),
+                List.of("Could not start TLS server, will continue without it"),
+                List.of("Properties file", "does not exist and won't be used as configuration source"),
+                List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"));
 
+        private int numProblems = 0;
         private int linesSinceInitialProblem = -1;
         private int linesToReportAfterInitialProblem = -1;
 
@@ -83,6 +79,7 @@ public class HgcaaLogValidator {
                         return false;
                     }
                 }
+                numProblems++;
                 linesSinceInitialProblem = 0;
                 linesToReportAfterInitialProblem = isPossiblyCatastrophicProblem(line)
                         ? LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT

@@ -22,7 +22,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
@@ -33,7 +33,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,9 +81,6 @@ import java.util.function.Supplier;
  * @param notificationEngine                     for sending notifications to the application (legacy pattern)
  * @param firstPlatform                          if this is the first platform being built (there is static setup that
  *                                               needs to be done, long term plan is to stop using static variables)
- * @param platformStatusSupplierReference        a reference to a supplier that supplies the platform status, this can
- *                                               be deleted once the distribution of the platform status is fully
- *                                               managed by the wiring framework
  * @param statusActionSubmitterReference         a reference to the status action submitter, this can be deleted once
  *                                               platform status management is handled by the wiring framework
  * @param getLatestCompleteStateReference        a reference to a supplier that supplies the latest immutable state,
@@ -108,7 +104,7 @@ public record PlatformBuildingBlocks(
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
         @NonNull ApplicationCallbacks applicationCallbacks,
-        @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
+        @Nullable Consumer<PlatformEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
@@ -119,7 +115,6 @@ public record PlatformBuildingBlocks(
         @NonNull PcesFileTracker initialPcesFiles,
         @NonNull Scratchpad<IssScratchpad> issScratchpad,
         @NonNull NotificationEngine notificationEngine,
-        @NonNull AtomicReference<Supplier<PlatformStatus>> platformStatusSupplierReference,
         @NonNull AtomicReference<StatusActionSubmitter> statusActionSubmitterReference,
         @NonNull SwirldStateManager swirldStateManager,
         @NonNull AtomicReference<Supplier<ReservedSignedState>> getLatestCompleteStateReference,

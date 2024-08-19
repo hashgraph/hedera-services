@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.hapi.utils.throttles;
 
+import static com.hedera.node.app.hapi.utils.throttles.DeterministicThrottleTest.instantFrom;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,14 +165,14 @@ class GasLimitDeterministicThrottleTest {
         final var state = subject.usageSnapshot();
 
         assertEquals(1234, state.used());
-        assertEquals(originalDecision, state.lastDecisionTime());
+        assertEquals(originalDecision, instantFrom(requireNonNull(state.lastDecisionTime())));
     }
 
     @Test
     void resetsUsageToAsExpected() {
         final long used = DEFAULT_CAPACITY / 2;
-        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
-        final var snapshot = new DeterministicThrottle.UsageSnapshot(used, originalDecision);
+        final var originalDecision = new Timestamp(1_234_567L, 0);
+        final var snapshot = new ThrottleUsageSnapshot(used, originalDecision);
 
         subject.resetUsageTo(snapshot);
 

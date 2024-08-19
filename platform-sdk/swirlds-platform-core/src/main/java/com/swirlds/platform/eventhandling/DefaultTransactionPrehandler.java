@@ -21,8 +21,7 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -75,11 +74,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public void prehandleApplicationTransactions(@NonNull final GossipEvent event) {
-        // FUTURE WORK: As a temporary workaround, convert to EventImpl. This workaround will be removed as part of the
-        // event refactor
-        final EventImpl eventImpl = new EventImpl(event, null, null);
-
+    public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
 
         ReservedSignedState latestImmutableState = null;
@@ -90,10 +85,9 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getSwirldState().preHandle(eventImpl);
+                latestImmutableState.get().getSwirldState().preHandle(event);
             } catch (final Throwable t) {
-                logger.error(
-                        EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", eventImpl, t);
+                logger.error(EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", event, t);
             }
         } finally {
             event.signalPrehandleCompletion();

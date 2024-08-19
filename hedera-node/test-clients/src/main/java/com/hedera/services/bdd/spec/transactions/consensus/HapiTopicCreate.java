@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.spec.transactions.consensus;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -153,11 +152,11 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     private void genKeysFor(final HapiSpec spec) {
         if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
-            adminKey = netOf(spec, adminKeyName, adminKeyShape, Optional.of(this::effectiveKeyGen));
+            adminKey = netOf(spec, adminKeyName, adminKeyShape);
         }
 
         if (submitKeyName.isPresent() || submitKeyShape.isPresent()) {
-            submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape, Optional.of(this::effectiveKeyGen)));
+            submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape));
         }
     }
 
@@ -195,11 +194,6 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
                             topic, lastReceipt.getTopicID().getTopicNum()));
             log.info(banner);
         }
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
     }
 
     @Override
