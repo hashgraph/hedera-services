@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.crypto;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -23,9 +24,11 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -43,20 +46,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Get the info of a account.
@@ -64,12 +61,18 @@ import org.junit.jupiter.api.Assertions;
  * if there are any assertions about token relationships for internal testing.
  */
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
+    public static final com.hedera.hapi.node.base.Key IMMUTABILITY_SENTINEL_KEY =
+            com.hedera.hapi.node.base.Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
-    private String account;
+    private enum ExpectedHollowStatus {
+        NA,
+        HOLLOW,
+        NOT_HOLLOW
+    }
 
-    @Nullable
-    private String protoSaveLoc = null;
+    private String account;
 
     private boolean loggingHexedCryptoKeys = false;
     private String hexedAliasSource = null;
@@ -78,16 +81,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private List<String> absentRelationships = new ArrayList<>();
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     Optional<AccountInfoAsserts> expectations = Optional.empty();
-    Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
     Optional<LongConsumer> exposingExpiryTo = Optional.empty();
-    Optional<LongConsumer> exposingBalanceTo = Optional.empty();
     Optional<Long> ownedNfts = Optional.empty();
     Optional<Integer> maxAutomaticAssociations = Optional.empty();
     Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> idObserver = Optional.empty();
-
-    @Nullable
-    private Consumer<byte[]> aliasObserver = null;
 
     @Nullable
     private Consumer<Key> keyObserver = null;
@@ -101,6 +99,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private boolean assertAccountIDIsNotAlias = false;
     private ReferenceType referenceType;
     private ByteString literalAlias;
+    private ExpectedHollowStatus expectedHollowStatus = ExpectedHollowStatus.NA;
 
     public HapiGetAccountInfo(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
@@ -132,6 +131,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
+    public HapiGetAccountInfo isNotHollow() {
+        expectedHollowStatus = ExpectedHollowStatus.NOT_HOLLOW;
+        return this;
+    }
+
+    public HapiGetAccountInfo isHollow() {
+        expectedHollowStatus = ExpectedHollowStatus.HOLLOW;
+        return this;
+    }
+
     public HapiGetAccountInfo hasExpectedAliasKey() {
         assertAliasKeyMatches = true;
         return this;
@@ -142,11 +151,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
-    public HapiGetAccountInfo plusCustomLog(BiConsumer<AccountInfo, Logger> custom) {
-        customLog = Optional.of(custom);
-        return this;
-    }
-
     public HapiGetAccountInfo exposingExpiry(LongConsumer obs) {
         this.exposingExpiryTo = Optional.of(obs);
         return this;
@@ -154,11 +158,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
         this.idObserver = Optional.of(obs);
-        return this;
-    }
-
-    public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
-        this.aliasObserver = obs;
         return this;
     }
 
@@ -174,11 +173,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingContractAccountIdTo(Consumer<String> obs) {
         this.contractAccountIdObserver = Optional.of(obs);
-        return this;
-    }
-
-    public HapiGetAccountInfo exposingBalance(LongConsumer obs) {
-        this.exposingBalanceTo = Optional.of(obs);
         return this;
     }
 
@@ -222,11 +216,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         return this;
     }
 
-    public HapiGetAccountInfo savingProtoTo(final String loc) {
-        this.protoSaveLoc = loc;
-        return this;
-    }
-
     @Override
     protected HapiGetAccountInfo self() {
         return this;
@@ -235,6 +224,14 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         var actualInfo = response.getCryptoGetInfo().getAccountInfo();
+        if (expectedHollowStatus != ExpectedHollowStatus.NA) {
+            final var key = toPbj(actualInfo.getKey());
+            if (expectedHollowStatus == ExpectedHollowStatus.HOLLOW) {
+                assertEquals(IMMUTABILITY_SENTINEL_KEY, key);
+            } else {
+                assertNotEquals(IMMUTABILITY_SENTINEL_KEY, key);
+            }
+        }
         if (assertAliasKeyMatches) {
             Objects.requireNonNull(aliasKeySource);
             final var expected = spec.registry().getKey(aliasKeySource).toByteString();
@@ -245,8 +242,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             final var expectedKeyForAccount =
                     spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
             final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
-            Assertions.assertNotEquals(
-                    actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
+            assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
             assertEquals(expectedID, actualInfo.getAccountID());
         }
         // Since we don't return token relationships from getAccountInfo query, for internal testing
@@ -317,23 +313,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                 }
             });
         }
-        if (protoSaveLoc != null) {
-            final var info = infoResponse.getAccountInfo();
-            try {
-                Files.write(Paths.get(protoSaveLoc), info.toByteArray());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
         if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
             exposingExpiryTo.ifPresent(cb ->
                     cb.accept(infoResponse.getAccountInfo().getExpirationTime().getSeconds()));
-            exposingBalanceTo.ifPresent(
-                    cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
-            Optional.ofNullable(aliasObserver)
-                    .ifPresent(cb ->
-                            cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
             Optional.ofNullable(keyObserver)
                     .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getKey()));
             Optional.ofNullable(ledgerIdObserver)
@@ -345,9 +328,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             String message = String.format(
                     "Info for '%s': %s", repr(), response.getCryptoGetInfo().getAccountInfo());
             log.info(message);
-        }
-        if (customLog.isPresent()) {
-            customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);
         }
     }
 

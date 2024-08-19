@@ -379,7 +379,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             stack,
             entityNumGenerator,
             dispatcher,
-            recordCache,
             networkInfo,
             childDispatchFactory,
             dispatchProcessor,
@@ -410,7 +409,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.networkInfo()).isSameAs(networkInfo);
         assertThat(subject.payer()).isEqualTo(payerId);
         assertThat(subject.networkInfo()).isEqualTo(networkInfo);
-        assertThat(subject.recordCache()).isEqualTo(recordCache);
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
@@ -757,7 +755,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 stack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
@@ -769,7 +766,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                        any()))
+                        any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()

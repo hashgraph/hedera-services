@@ -73,7 +73,7 @@ public class TokenInfoCall extends AbstractNonRevertibleTokenViewCall {
 
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
-        // @Future remove to revert #9072 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
         }

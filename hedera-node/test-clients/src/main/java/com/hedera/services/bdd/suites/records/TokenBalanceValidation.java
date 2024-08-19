@@ -187,7 +187,8 @@ public class TokenBalanceValidation extends HapiSuite {
                                                             ACCOUNT_DELETED,
                                                             INVALID_CONTRACT_ID,
                                                             INVALID_ACCOUNT_ID)
-                                                    .hasTokenBalance("0.0." + tokenNum, tokenAmt);
+                                                    .hasTokenBalance("0.0." + tokenNum, tokenAmt)
+                                                    .includeTokenMemoOnError();
                                         })
                                 .toArray(HapiSpecOperation[]::new))
                         .failOnErrors());

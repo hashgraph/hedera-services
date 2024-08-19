@@ -73,7 +73,8 @@
 			"TokenUpdateNfts",
 			"TokenReject",
 			"TokenAirdrop",
-			"TokenClaimAirdrop"
+				"TokenClaimAirdrop",
+				"TokenCancelAirdrop"
 		  ]
 		}
 	  ]
