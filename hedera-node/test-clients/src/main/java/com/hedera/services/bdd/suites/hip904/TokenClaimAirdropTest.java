@@ -258,7 +258,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
                 cryptoTransfer(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB))
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB));
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     @HapiTest
@@ -280,7 +281,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
                 tokenUpdate(FUNGIBLE_TOKEN_1).treasury(CAROL).payingWith(ALICE),
                 cryptoTransfer(moving(20, FUNGIBLE_TOKEN_1).between(CAROL, ALICE)),
-                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB));
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     @HapiTest
@@ -298,7 +300,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .adminKey(ALICE),
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
                 tokenAssociate(BOB, FUNGIBLE_TOKEN_1),
-                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB));
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     @HapiTest
@@ -324,7 +327,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenClaimAirdrop(pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 1))
                         .payingWith(BOB),
                 tokenClaimAirdrop(pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 2))
-                        .payingWith(BOB));
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2));
     }
 
     @HapiTest
@@ -348,9 +352,6 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 .tokenTransfers(includingFungibleMovement(
                                         moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
                 validateChargedUsd("claimTxn", 0.001, 1),
-
-                // assert balances
-                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1),
 
                 // assert token associations
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
@@ -378,9 +379,6 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                         moving(1, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
                 validateChargedUsd("claimTxn", 0.001, 1),
 
-                // assert balances
-                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1),
-
                 // assert token associations
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                 getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
@@ -405,7 +403,9 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
                                 pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_1))
                         .signedBy(BOB, CAROL)
-                        .payingWith(BOB));
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     @HapiTest
@@ -424,7 +424,9 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
                                 pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
                         .signedBy(BOB)
-                        .payingWith(BOB));
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1));
     }
 
     @HapiTest
@@ -447,6 +449,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
                         .signedBy(BOB)
                         .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1));
     }
 
