@@ -62,7 +62,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
     /**
      * In this version, serialization was performed by serialize/deserialize.
      */
-    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = 2;
+    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = MerkleStateRoot.VERSION_2;
 
     private static final int CLASS_VERSION = VERSION_MIGRATE_TO_SERIALIZABLE;
 
