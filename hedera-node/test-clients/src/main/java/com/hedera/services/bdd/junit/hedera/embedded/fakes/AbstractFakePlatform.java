@@ -31,7 +31,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractFakePlatform implements Platform {
     private static final Signature TOY_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
@@ -64,7 +63,7 @@ public abstract class AbstractFakePlatform implements Platform {
         notificationEngine.statusChangeListeners.forEach(l -> l.notify(notification));
     }
 
-    @NotNull
+    @NonNull
     @Override
     public Signature sign(@NonNull final byte[] data) {
         return TOY_SIGNATURE;
