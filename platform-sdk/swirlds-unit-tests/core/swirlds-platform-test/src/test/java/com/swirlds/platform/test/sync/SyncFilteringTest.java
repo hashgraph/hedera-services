@@ -26,10 +26,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -90,34 +92,27 @@ class SyncFilteringTest {
      *
      * @param expectedEvents the list of expected events
      */
-    private static void findAncestorsOfExpectedEvents(@NonNull final List<EventImpl> expectedEvents) {
+    private static Set<Hash> findAncestorsOfExpectedEvents(@NonNull final List<PlatformEvent> expectedEvents) {
 
         final Set<Hash> expectedEventHashes = new HashSet<>();
-        for (final EventImpl event : expectedEvents) {
-            expectedEventHashes.add(event.getBaseHash());
+        for (final PlatformEvent event : expectedEvents) {
+            expectedEventHashes.add(event.getHash());
         }
 
         for (int index = 0; index < expectedEvents.size(); index++) {
 
-            final EventImpl event = expectedEvents.get(index);
+            final PlatformEvent event = expectedEvents.get(index);
 
-            final EventImpl selfParent = event.getSelfParent();
+            final EventDescriptorWrapper selfParent = event.getSelfParent();
             if (selfParent != null) {
-                final Hash selfParentHash = selfParent.getBaseHash();
-                if (!expectedEventHashes.contains(selfParentHash)) {
-                    expectedEvents.add(selfParent);
-                    expectedEventHashes.add(selfParentHash);
-                }
+                final Hash selfParentHash = selfParent.hash();
+                expectedEventHashes.add(selfParentHash);
             }
-            final EventImpl otherParent = event.getOtherParent();
-            if (otherParent != null) {
-                final Hash otherParentHash = otherParent.getBaseHash();
-                if (!expectedEventHashes.contains(otherParentHash)) {
-                    expectedEvents.add(otherParent);
-                    expectedEventHashes.add(otherParentHash);
-                }
-            }
+            final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
+            otherParents.stream().map(EventDescriptorWrapper::hash).forEach(expectedEventHashes::add);
         }
+
+        return expectedEventHashes;
     }
 
     @Test
@@ -136,9 +131,11 @@ class SyncFilteringTest {
                 TestPlatformContextBuilder.create().build();
 
         final int eventCount = 1000;
-        final List<EventImpl> events = generateEvents(platformContext, random, addressBook, time, timeStep, eventCount);
-
-        events.sort(Comparator.comparingLong(EventImpl::getGeneration));
+        final List<PlatformEvent> events =
+                generateEvents(platformContext, random, addressBook, time, timeStep, eventCount).stream()
+                        .map(EventImpl::getBaseEvent)
+                        .sorted(Comparator.comparingLong(PlatformEvent::getGeneration))
+                        .toList();
 
         final Duration nonAncestorSendThreshold = platformContext
                 .getConfiguration()
@@ -151,18 +148,17 @@ class SyncFilteringTest {
         // Test filtering multiple times. Each iteration, move time forward. We should see more and more events
         // returned as they age.
         while (time.now().isBefore(endTime)) {
-            final List<EventImpl> filteredEvents =
+            final List<PlatformEvent> filteredEvents =
                     SyncUtils.filterLikelyDuplicates(selfId, nonAncestorSendThreshold, time.now(), events);
 
             // Gather a list of events we expect to see.
-            final List<EventImpl> expectedEvents = new ArrayList<>();
+            final List<PlatformEvent> expectedEvents = new ArrayList<>();
             for (int index = events.size() - 1; index >= 0; index--) {
-                final EventImpl event = events.get(index);
+                final PlatformEvent event = events.get(index);
                 if (event.getCreatorId().equals(selfId)) {
                     expectedEvents.add(event);
                 } else {
-                    final Duration eventAge =
-                            Duration.between(event.getBaseEvent().getTimeReceived(), time.now());
+                    final Duration eventAge = Duration.between(event.getTimeReceived(), time.now());
                     if (CompareTo.isGreaterThan(eventAge, nonAncestorSendThreshold)) {
                         expectedEvents.add(event);
                     }
@@ -170,24 +166,24 @@ class SyncFilteringTest {
             }
 
             // The ancestors of events that meet the above criteria are also expected to be seen.
-            findAncestorsOfExpectedEvents(expectedEvents);
+            final Set<Hash> expectedHashes = findAncestorsOfExpectedEvents(expectedEvents);
 
             // Gather a list of hashes that were allowed through by the filter.
             final Set<Hash> filteredHashes = new HashSet<>();
-            for (final EventImpl event : filteredEvents) {
-                filteredHashes.add(event.getBaseHash());
+            for (final PlatformEvent event : filteredEvents) {
+                filteredHashes.add(event.getHash());
             }
 
             // Make sure we see exactly the events we are expecting.
-            assertEquals(expectedEvents.size(), filteredEvents.size());
-            for (final EventImpl expectedEvent : expectedEvents) {
-                assertTrue(filteredHashes.contains(expectedEvent.getBaseHash()));
+            assertEquals(expectedHashes.size(), filteredHashes.size());
+            for (final Hash expectedHash : expectedHashes) {
+                assertTrue(filteredHashes.contains(expectedHash));
             }
 
             // Verify topological ordering.
             long maxGeneration = -1;
-            for (final EventImpl event : filteredEvents) {
-                final long generation = event.getBaseEvent().getGeneration();
+            for (final PlatformEvent event : filteredEvents) {
+                final long generation = event.getGeneration();
                 assertTrue(generation >= maxGeneration);
                 maxGeneration = generation;
             }
