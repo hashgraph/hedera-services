@@ -39,11 +39,11 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig_;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -62,8 +62,8 @@ import java.util.function.Predicate;
 public class SyncNode {
 
     private final BlockingQueue<PlatformEvent> receivedEventQueue;
-    private final List<IndexedEvent> generatedEvents;
-    private final List<IndexedEvent> discardedEvents;
+    private final List<EventImpl> generatedEvents;
+    private final List<EventImpl> discardedEvents;
 
     private final List<PlatformEvent> receivedEvents;
 
@@ -166,7 +166,7 @@ public class SyncNode {
      * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
      * @return an immutable list of the events added to the {@link Shadowgraph}
      */
-    public List<IndexedEvent> generateAndAdd(final int numEvents) {
+    public List<EventImpl> generateAndAdd(final int numEvents) {
         return generateAndAdd(numEvents, (e) -> true);
     }
 
@@ -183,7 +183,7 @@ public class SyncNode {
      * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
      * @return an immutable list of the events added to the {@link Shadowgraph}
      */
-    public List<IndexedEvent> generateAndAdd(final int numEvents, final Predicate<IndexedEvent> shouldAddToGraph) {
+    public List<EventImpl> generateAndAdd(final int numEvents, final Predicate<EventImpl> shouldAddToGraph) {
         if (eventEmitter == null) {
             throw new IllegalStateException(
                     "SyncNode.setEventGenerator(ShuffledEventGenerator) must be called prior to generateAndAdd"
@@ -191,9 +191,9 @@ public class SyncNode {
         }
         eventsEmitted += numEvents;
         eventEmitter.setCheckpoint(eventsEmitted);
-        final List<IndexedEvent> newEvents = eventEmitter.emitEvents(numEvents);
+        final List<EventImpl> newEvents = eventEmitter.emitEvents(numEvents);
 
-        for (final IndexedEvent newEvent : newEvents) {
+        for (final EventImpl newEvent : newEvents) {
 
             // Only add the event to the graphs and the list of generated events if the test passes
             if (shouldAddToGraph.test(newEvent)) {
@@ -209,7 +209,7 @@ public class SyncNode {
         return List.copyOf(newEvents);
     }
 
-    private void addToShadowGraph(final IndexedEvent newEvent) {
+    private void addToShadowGraph(final EventImpl newEvent) {
         try {
             shadowGraph.addEvent(newEvent);
         } catch (ShadowgraphInsertionException e) {
@@ -321,7 +321,7 @@ public class SyncNode {
         return receivedEvents;
     }
 
-    public List<IndexedEvent> getGeneratedEvents() {
+    public List<EventImpl> getGeneratedEvents() {
         return generatedEvents;
     }
 
