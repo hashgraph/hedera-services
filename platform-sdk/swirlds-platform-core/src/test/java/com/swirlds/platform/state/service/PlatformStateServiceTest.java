@@ -74,7 +74,7 @@ class PlatformStateServiceTest {
         given(root.getNumberOfChildren()).willReturn(1);
         given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(-1);
-        given(root.getChild(0)).willReturn(legacyState);
+        given(root.getPreV054PlatformState()).willReturn(legacyState);
         given(legacyState.getCreationSoftwareVersion()).willReturn(version);
         given(version.getPbjSemanticVersion()).willReturn(SemanticVersion.DEFAULT);
         assertSame(SemanticVersion.DEFAULT, PLATFORM_STATE_SERVICE.creationVersionOf(root));
@@ -85,8 +85,7 @@ class PlatformStateServiceTest {
         given(root.getNumberOfChildren()).willReturn(1);
         given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(-1);
-        given(root.getChild(0)).willReturn(node);
-        assertThrows(IllegalArgumentException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
+        assertThrows(NullPointerException.class, () -> PLATFORM_STATE_SERVICE.creationVersionOf(root));
     }
 
     @Test

@@ -194,6 +194,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Returns the platform state found at child index 0 of a pre-0.54 state, or null if not found.
+     * @return the pre-0.54 platform state, or null if not found
+     */
+    public @Nullable PlatformState getPreV054PlatformState() {
+        return preV054PlatformState;
+    }
+
+    /**
      * {@inheritDoc}
      * <p>
      * Called by the platform whenever the state should be initialized. This can happen at genesis startup,
@@ -376,13 +384,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 throw new IllegalStateException("Expected a PlatformState as the first child");
             }
             preV054PlatformState = platformState;
-            logger.info("Migrating PlatformState {} to State API singleton", toPbjPlatformState(preV054PlatformState));
+            logger.info("Found pre-0.54 PlatformState, will migrate to State API singleton");
             INDEX_LOOKUP.clear();
+            final List<MerkleNode> newChildren = new ArrayList<>();
             for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
                 final var child = getChild(i);
-                setChild(i - 1, child.copy());
-                setChild(i, null);
+                if (child != null) {
+                    newChildren.add(child.copy());
+                }
             }
+            addDeserializedChildren(newChildren, VERSION_2);
         }
         // Always return this node, we never want to replace MerkleStateRoot node in the tree
         return this;
@@ -971,6 +982,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {
             store.setAllFrom(preV054PlatformState);
+            logger.info("Migrated PlatformState {} to State API singleton", toPbjPlatformState(preV054PlatformState));
             preV054PlatformState = null;
         }
         return store;

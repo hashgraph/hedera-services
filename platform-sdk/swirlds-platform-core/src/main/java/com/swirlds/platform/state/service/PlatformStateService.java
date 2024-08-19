@@ -68,12 +68,8 @@ public enum PlatformStateService implements Service {
         }
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
-            final var zerothChild = root.getChild(0);
-            if (zerothChild instanceof com.swirlds.platform.state.PlatformState platformState) {
-                return platformState.getCreationSoftwareVersion().getPbjSemanticVersion();
-            } else {
-                throw new IllegalArgumentException("Root without platform state (zeroth child " + zerothChild + ")");
-            }
+            final var legacyPlatformState = requireNonNull(root.getPreV054PlatformState());
+            return legacyPlatformState.getCreationSoftwareVersion().getPbjSemanticVersion();
         } else {
             return ((SingletonNode<PlatformState>) root.getChild(index))
                     .getValue()
