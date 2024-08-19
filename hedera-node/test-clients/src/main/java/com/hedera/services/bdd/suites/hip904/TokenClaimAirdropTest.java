@@ -302,6 +302,32 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("multiple token airdrops one NFT and Than another NFT and claims them separately")
+    final Stream<DynamicTest> twoAirdropsNFTSandTwoClaims() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                newKeyNamed(NFT_SUPPLY_KEY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .name(NON_FUNGIBLE_TOKEN)
+                        .treasury(ALICE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .supplyKey(NFT_SUPPLY_KEY),
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 2).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                tokenClaimAirdrop(pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(BOB),
+                tokenClaimAirdrop(pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 2))
+                        .payingWith(BOB));
+    }
+
+    @HapiTest
     @DisplayName("Claim token airdrop - 2nd account pays")
     final Stream<DynamicTest> claimTokenAirdropOtherAccountPays() {
         return hapiTest(flattened(
