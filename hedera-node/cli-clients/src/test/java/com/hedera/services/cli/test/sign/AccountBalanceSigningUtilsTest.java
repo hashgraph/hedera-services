@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.sign.test;
+package com.hedera.services.cli.test.sign;
 
-import static com.hedera.services.cli.sign.test.TestUtils.loadResourceFile;
+import static com.hedera.services.cli.test.sign.TestUtils.loadResourceFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

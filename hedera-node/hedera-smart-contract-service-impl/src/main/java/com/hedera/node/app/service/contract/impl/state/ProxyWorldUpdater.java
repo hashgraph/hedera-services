@@ -341,8 +341,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
-        // TODO - also enforce the account creation limit here, since contracts are accounts
-        if (evmFrameState.numBytecodesInState() + 1 > enhancement.operations().contractCreationLimit()) {
+        // Enforce the contracts and accounts creation limit here, since contracts are accounts
+        final var newEntityCount = evmFrameState.numBytecodesInState() + 1;
+        if (newEntityCount > enhancement.operations().contractCreationLimit()
+                || newEntityCount > enhancement.operations().accountCreationLimit()) {
             throw new ResourceExhaustedException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);

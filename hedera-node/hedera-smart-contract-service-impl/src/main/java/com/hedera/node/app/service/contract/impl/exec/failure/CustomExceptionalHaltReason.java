@@ -57,6 +57,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
      * @return the status
      */
     // FUTURE: refactor in the future to be more readable when we start looking for cleanups
+    // Future cannot be addressed until gradle update per
+    // https://github.com/autonomousapps/dependency-analysis-gradle-plugin/issues/1150
     public static ResponseCodeEnum statusFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
         if (reason == SELF_DESTRUCT_TO_SELF) {

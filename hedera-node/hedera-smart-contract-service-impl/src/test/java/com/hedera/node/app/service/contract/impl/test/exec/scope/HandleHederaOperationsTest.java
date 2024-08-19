@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_ACCOUNTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
@@ -144,7 +145,8 @@ class HandleHederaOperationsTest {
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
                 HederaFunctionality.CONTRACT_CALL,
-                pendingCreationMetadataRef);
+                pendingCreationMetadataRef,
+                DEFAULT_ACCOUNTS_CONFIG);
     }
 
     @Test
@@ -184,6 +186,7 @@ class HandleHederaOperationsTest {
     @Test
     void usesExpectedLimit() {
         assertEquals(DEFAULT_CONTRACTS_CONFIG.maxNumber(), subject.contractCreationLimit());
+        assertEquals(DEFAULT_ACCOUNTS_CONFIG.maxNumber(), subject.accountCreationLimit());
     }
 
     @Test
@@ -535,7 +538,8 @@ class HandleHederaOperationsTest {
                 gasCalculator,
                 DEFAULT_HEDERA_CONFIG,
                 ETHEREUM_TRANSACTION,
-                pendingCreationMetadataRef);
+                pendingCreationMetadataRef,
+                DEFAULT_ACCOUNTS_CONFIG);
         final var someBody = ContractCreateTransactionBody.newBuilder()
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
