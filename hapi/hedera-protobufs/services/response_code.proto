@@ -1579,7 +1579,8 @@ enum ResponseCodeEnum {
     INVALID_PENDING_AIRDROP_ID = 367;
 
     /**
-     * The token having fallback royalty fee cannot be airdropped or claimed.
+     * The token to be airdropped has a fallback royalty fee and cannot be
+     * sent or claimed via an airdrop transaction.
      */
     TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY = 368;
 
