@@ -84,7 +84,7 @@ public class TokenAirdropValidator {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
         }
-        validateTokenTransfers(op.tokenTransfers());
+        validateTokenTransfers(op.tokenTransfers(), true);
     }
 
     public void validateSemantics(
