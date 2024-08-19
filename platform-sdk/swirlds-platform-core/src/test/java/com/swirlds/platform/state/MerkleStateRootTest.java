@@ -88,8 +88,8 @@ class MerkleStateRootTest extends MerkleTestBase {
 
     private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
-        public void initRootPlatformState(@NonNull final MerkleStateRoot root) {
-            FAKE_MERKLE_STATE_LIFECYCLES.initRootPlatformState(root);
+        public void initPlatformState(@NonNull final State state) {
+            FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         }
 
         @Override

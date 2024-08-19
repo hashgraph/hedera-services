@@ -115,6 +115,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
+        hedera.initPlatformState(state);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();

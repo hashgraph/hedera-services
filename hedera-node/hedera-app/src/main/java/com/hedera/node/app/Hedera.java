@@ -364,14 +364,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     /**
      * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
-     * @param root the root state to be initialized
+     * @param state the root state to be initialized
      */
-    public void initPlatformState(@NonNull final MerkleStateRoot root) {
-        requireNonNull(root);
+    public void initPlatformState(@NonNull final State state) {
+        requireNonNull(state);
         serviceMigrator.doMigrations(
-                root,
+                state,
                 servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
-                PLATFORM_STATE_SERVICE.creationVersionOf(root),
+                serviceMigrator.creationVersionOf(state),
                 version.getPbjSemanticVersion(),
                 bootstrapConfigProvider.getConfiguration(),
                 UNAVAILABLE_NETWORK_INFO,

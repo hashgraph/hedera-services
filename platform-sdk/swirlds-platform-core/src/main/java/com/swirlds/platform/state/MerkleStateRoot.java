@@ -954,7 +954,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private WritablePlatformStateStore writablePlatformStateStore() {
         if (!services.containsKey(PlatformStateService.NAME)) {
-            lifecycles.initRootPlatformState(this);
+            lifecycles.initPlatformState(this);
         }
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {

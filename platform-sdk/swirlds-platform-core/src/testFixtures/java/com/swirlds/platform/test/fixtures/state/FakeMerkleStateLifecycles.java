@@ -86,14 +86,17 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     }
 
     @Override
-    public void initRootPlatformState(@NonNull final MerkleStateRoot root) {
+    public void initPlatformState(@NonNull final State state) {
+        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
+            throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
+        }
         final var schema = new V0540PlatformStateSchema();
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var md = new StateMetadata<>(PlatformStateService.NAME, schema, def);
                     if (def.singleton()) {
-                        root.putServiceStateIfAbsent(
+                        merkleStateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> new SingletonNode<>(
                                         md.serviceName(),
@@ -106,7 +109,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     }
                 });
         final var mockMigrationContext = mock(MigrationContext.class);
-        final var writableStates = root.getWritableStates(PlatformStateService.NAME);
+        final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         given(mockMigrationContext.newStates()).willReturn(writableStates);
         schema.migrate(mockMigrationContext);
         ((CommittableWritableStates) writableStates).commit();

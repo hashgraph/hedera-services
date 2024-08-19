@@ -37,9 +37,10 @@ public interface MerkleStateLifecycles {
     /**
      * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateAccessor} implementation
      * is initialized.
-     * @param root the root of the state to be initialized
+     *
+     * @param state the root of the state to be initialized
      */
-    void initRootPlatformState(@NonNull MerkleStateRoot root);
+    void initPlatformState(@NonNull State state);
 
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering

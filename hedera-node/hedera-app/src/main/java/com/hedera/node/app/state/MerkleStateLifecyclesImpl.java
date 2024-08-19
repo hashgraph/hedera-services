@@ -90,8 +90,8 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
-    public void initRootPlatformState(@NonNull final MerkleStateRoot root) {
-        hedera.initPlatformState(root);
+    public void initPlatformState(@NonNull final State state) {
+        hedera.initPlatformState(state);
     }
 
     @Override
