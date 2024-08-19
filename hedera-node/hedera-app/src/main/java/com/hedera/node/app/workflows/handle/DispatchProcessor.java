@@ -117,7 +117,7 @@ public class DispatchProcessor {
                 tryHandle(dispatch, errorReport);
             }
         }
-        dispatchUsageManager.releaseUnused(dispatch);
+        dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
     }
@@ -151,13 +151,13 @@ public class DispatchProcessor {
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
         } catch (final ThrottleException e) {
-            nonHandleWorkDone(dispatch, validationResult, e.getStatus());
+            rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
             if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
                 ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
             }
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);
+            rollbackAndRechargeFee(dispatch, validationResult, FAIL_INVALID);
         }
     }
 
@@ -190,7 +190,7 @@ public class DispatchProcessor {
      * @param validationResult the due diligence report for the dispatch
      * @param status the status to set
      */
-    private void nonHandleWorkDone(
+    private void rollbackAndRechargeFee(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
             @NonNull final ResponseCodeEnum status) {

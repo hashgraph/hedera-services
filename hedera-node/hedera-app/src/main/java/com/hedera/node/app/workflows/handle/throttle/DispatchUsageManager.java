@@ -93,20 +93,14 @@ public class DispatchUsageManager {
 
     /**
      * Tracks the final work done by handling this user transaction.
+     * @param dispatch the dispatch
      */
-    public void releaseUnused(@NonNull final Dispatch dispatch) {
-        // In the current system we only trackUsage utilization for user transactions
-        if (dispatch.txnCategory() != USER) {
-            return;
-        }
-        // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
-        // in only one place; for now we have already tracked utilization for contract operations
-        // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
+    public void finalizeAndSaveUsage(@NonNull final Dispatch dispatch) {
         final var function = dispatch.txnInfo().functionality();
         if (CONTRACT_OPERATIONS.contains(function)) {
             leakUnusedGas(dispatch);
         }
-        if (dispatch.recordBuilder().status() != SUCCESS) {
+        if (dispatch.txnCategory() == USER && dispatch.recordBuilder().status() != SUCCESS) {
             if (canAutoCreate(function)) {
                 reclaimFailedCryptoCreateCapacity(dispatch);
             }

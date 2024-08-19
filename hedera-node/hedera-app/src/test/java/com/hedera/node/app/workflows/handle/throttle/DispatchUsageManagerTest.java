@@ -189,7 +189,7 @@ class DispatchUsageManagerTest {
     void tracksNoUsageIfNotUserDispatch() {
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verifyNoInteractions(networkUtilizationManager);
     }
@@ -200,7 +200,7 @@ class DispatchUsageManagerTest {
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(networkUtilizationManager).trackFeePayments(CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -216,7 +216,7 @@ class DispatchUsageManagerTest {
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.throttleStrategy()).willReturn(OFF);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(networkUtilizationManager).trackTxn(CRYPTO_TRANSFER_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -231,7 +231,7 @@ class DispatchUsageManagerTest {
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
         given(dispatch.throttleStrategy()).willReturn(OFF);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(networkUtilizationManager).trackTxn(SUBMIT_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -247,7 +247,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager).leakUnusedGasPreviouslyReserved(CONTRACT_CALL_TXN_INFO, GAS_LIMIT - GAS_USED);
@@ -264,7 +264,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -284,7 +284,7 @@ class DispatchUsageManagerTest {
         given(dispatch.readableStoreFactory()).willReturn(readableStoreFactory);
         given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -299,7 +299,7 @@ class DispatchUsageManagerTest {
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics, never()).addGasUsed(GAS_USED);
         verify(networkUtilizationManager, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
@@ -320,7 +320,7 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(CREATOR_ACCOUNT_ID);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, CRYPTO_CREATE);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -338,7 +338,7 @@ class DispatchUsageManagerTest {
         given(throttleServiceManager.numImplicitCreations(NONDESCRIPT_TXN_BODY, readableAccountStore))
                 .willReturn(0);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -358,7 +358,7 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(OTHER_NODE_ID);
 
-        subject.releaseUnused(dispatch);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);

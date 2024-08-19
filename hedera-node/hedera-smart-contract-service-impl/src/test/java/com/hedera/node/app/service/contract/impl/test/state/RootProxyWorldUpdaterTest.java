@@ -143,7 +143,6 @@ class RootProxyWorldUpdaterTest {
         given(hederaOperations.summarizeContractChanges())
                 .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
         given(context.throttleAdviser()).willReturn(throttleAdviser);
-        given(throttleAdviser.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         subject.commit();
 

@@ -601,10 +601,10 @@ class DispatchProcessorTest {
     }
 
     private void verifyTrackedFeePayments() {
-        verify(dispatchUsageManager).releaseUnused(dispatch);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 
     private void verifyUtilization() {
-        verify(dispatchUsageManager).releaseUnused(dispatch);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 }

@@ -17,12 +17,10 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * Interface which purpose is to do the work of tracking network utilization (and its impact on
@@ -87,17 +85,4 @@ public interface NetworkUtilizationManager {
      * at the instant for which throttling should be calculated
      */
     boolean shouldThrottleNOfUnscaled(int n, @NonNull HederaFunctionality function, @NonNull Instant consensusTime);
-
-    /**
-     * Returns a list of snapshots of the current usage of all active throttles.
-     * @return the active snapshots
-     */
-    List<ThrottleUsageSnapshot> getUsageSnapshots();
-
-    /**
-     * Resets the current usage of all active throttles to the given snapshots.
-     *
-     * @param snapshots the snapshots to reset to
-     */
-    void resetUsageThrottlesTo(List<ThrottleUsageSnapshot> snapshots);
 }
