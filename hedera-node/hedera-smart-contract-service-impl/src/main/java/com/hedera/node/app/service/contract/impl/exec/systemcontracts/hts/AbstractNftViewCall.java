@@ -50,8 +50,7 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
     @Override
     public @NonNull PricedResult execute() {
         if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            // (FUTURE) consider removing this pattern, but for now match
-            // mono-service by halting on invalid token type
+            // For backwards compatibility, we need to halt here per issue #8746.
             return gasOnly(
                     haltResult(
                             HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,

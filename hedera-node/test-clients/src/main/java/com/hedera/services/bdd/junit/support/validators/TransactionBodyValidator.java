@@ -16,35 +16,26 @@
 
 package com.hedera.services.bdd.junit.support.validators;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
-import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordWithSidecars;
-import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This validator checks all the transactions submitted have {@link com.hederahashgraph.api.proto.java.TransactionBody}
- * set, by comparing checking if there are any NONE functionality transactions at the end of the CI test run:
+ * set by trying to extract the {@link HederaFunctionality} of each transaction body.
  */
 public class TransactionBodyValidator implements RecordStreamValidator {
     private static final Logger log = LogManager.getLogger(TransactionBodyValidator.class);
-
-    private final TransactionBodyClassifier transactionBodyClassifier = new TransactionBodyClassifier();
 
     @Override
     public void validateRecordsAndSidecars(@NonNull final List<RecordWithSidecars> recordsWithSidecars) {
@@ -53,42 +44,13 @@ public class TransactionBodyValidator implements RecordStreamValidator {
             final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
             for (final var item : items) {
                 try {
-                    transactionBodyClassifier.incorporate(item);
-                    if (transactionBodyClassifier.isInvalid()) {
-                        log.error("Invalid TransactionBody type HederaFunctionality.NONE with record: {}", item);
-                        throw new IllegalStateException("Not a known operation - " + item);
-                    }
-                } catch (InvalidProtocolBufferException e) {
-                    log.error("Unable to parse item {}", item, e);
+                    final var txnBody = extractTransactionBody(item.getTransaction());
+                    functionOf(txnBody);
+                } catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
+                    log.error("Unable to parse and classify item {}", item, e);
                     throw new IllegalStateException(e);
                 }
             }
-        }
-    }
-
-    public static class TransactionBodyClassifier {
-        private final Set<HederaFunctionality> transactionType = new HashSet<>();
-
-        public void incorporate(@NonNull final RecordStreamItem item) throws InvalidProtocolBufferException {
-            requireNonNull(item);
-            var txnType = NONE;
-            TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
-
-            try {
-                txnType = functionOf(txnBody);
-            } catch (UnknownHederaFunctionality ex) {
-                txnType = checkNodeStakeUpdate(txnBody);
-            }
-            transactionType.add(txnType);
-        }
-
-        private HederaFunctionality checkNodeStakeUpdate(final TransactionBody txn) {
-            TransactionBody.DataCase dataCase = txn.getDataCase();
-            return dataCase.equals(NODE_STAKE_UPDATE) ? NodeStakeUpdate : NONE;
-        }
-
-        public boolean isInvalid() {
-            return transactionType.contains(NONE);
         }
     }
 }

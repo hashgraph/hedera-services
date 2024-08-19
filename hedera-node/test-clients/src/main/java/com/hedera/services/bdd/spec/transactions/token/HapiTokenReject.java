@@ -47,12 +47,14 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
     private final List<Function<HapiSpec, TokenReference>> referencesSources;
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public HapiTokenReject(final String account, final Function<HapiSpec, TokenReference>... tokenReferencesSources) {
         this.account = account;
         this.referencesSources = List.of(tokenReferencesSources);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public HapiTokenReject(final Function<HapiSpec, TokenReference>... tokenReferencesSources) {
         this.referencesSources = List.of(tokenReferencesSources);
     }

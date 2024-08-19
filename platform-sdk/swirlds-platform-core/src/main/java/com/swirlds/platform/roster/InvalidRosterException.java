@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.exception;
+package com.swirlds.platform.roster;
 
 /**
- * An exception that thrown if unknown HederaFunctionality is found.
- *
+ * An exception thrown by the RosterValidator when a given Roster is invalid.
  */
-public class UnknownHederaFunctionality extends Exception {
-
+public class InvalidRosterException extends RuntimeException {
     /**
-     * Constructs a new exception with the specified detail message.
-     *
-     * @param errMessage the detail error message.
+     * A default constructor.
+     * @param message a message
      */
-    public UnknownHederaFunctionality(String errMessage) {
-        super(errMessage);
+    public InvalidRosterException(String message) {
+        super(message);
     }
 }

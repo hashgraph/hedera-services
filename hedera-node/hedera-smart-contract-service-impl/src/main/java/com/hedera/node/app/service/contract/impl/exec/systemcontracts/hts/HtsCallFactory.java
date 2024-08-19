@@ -80,8 +80,11 @@ public class HtsCallFactory implements CallFactory {
                 // for classic transfers. In that specific case, the qualified delegate
                 // contracts need to use their own address as the authorizing id in order
                 // to have signatures waived correctly during preHandle() for the
-                // dispatched CryptoTransfer. (FUTURE - add here a link to a HashScan
-                // transaction that demonstrates this.)
+                // dispatched CryptoTransfer.
+                // As an example, following transaction show that a qualified delegate can delegate
+                // call directForToken function in the hts system contract address.  No similar
+                // transaction could be found for making a delegate to a classic transfer function.
+                // https://hashscan.io/mainnet/transaction/1722925453.690690655
                 callType == QUALIFIED_DELEGATE ? frame.getRecipientAddress() : frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,

@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.AS
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator.TRANSFER_TOKEN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
@@ -232,9 +231,7 @@ public class ClassicTransfersCall extends AbstractCall {
         final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
         for (final var tokenTransfers : op.tokenTransfers()) {
             final var unitAdjusts = tokenTransfers.transfers();
-            // (FUTURE) Remove this divisor special case, done only for mono-service fidelity
-            final var sizeDivisor = Arrays.equals(selector, TRANSFER_TOKEN.selector()) ? 2 : 1;
-            minimumTinybarPrice += (unitAdjusts.size() / sizeDivisor) * baseUnitAdjustTinybarPrice;
+            minimumTinybarPrice += unitAdjusts.size() * baseUnitAdjustTinybarPrice;
             for (final var unitAdjust : unitAdjusts) {
                 if (unitAdjust.amount() > 0
                         && unitAdjust.accountIDOrElse(AccountID.DEFAULT).hasAlias()) {
