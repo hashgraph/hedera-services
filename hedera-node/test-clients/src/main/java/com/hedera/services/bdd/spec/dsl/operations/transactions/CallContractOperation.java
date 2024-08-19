@@ -48,15 +48,6 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
         this.parameters = requireNonNull(parameters);
     }
 
-    public CallContractOperation(
-            @NonNull final SpecContract target,
-            @NonNull final String function,
-            final long value,
-            @NonNull final Object... parameters) {
-        this(target, function, parameters);
-        this.sendValue = value;
-    }
-
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {

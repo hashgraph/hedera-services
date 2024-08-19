@@ -47,7 +47,8 @@ public class InternalCallTest {
     @DisplayName("cannot transfer value to HTS")
     public Stream<DynamicTest> cannotGetNonsenseKeyType() {
         return hapiTest(internalCall
-                .callWithValue("isATokenWithCall", 100L, fungibleToken)
+                .call("isATokenWithCall", fungibleToken)
+                .sending(100L)
                 .andAssert(txn -> txn.hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 }
