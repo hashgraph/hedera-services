@@ -193,7 +193,8 @@ public class AsyncInputStream {
     public void setNeedsSharedQueue(final int viewId) {
         if (viewQueues.containsKey(viewId)) {
             throw new MerkleSynchronizationException("Can't switch view=" + viewId + " to use shared queue, as"
-                    + " a dedicated queue has been already created for it, size=" + viewQueues.get(viewId).size());
+                    + " a dedicated queue has been already created for it, size="
+                    + viewQueues.get(viewId).size());
         }
         viewQueues.remove(viewId);
         useSharedQueue.add(viewId);

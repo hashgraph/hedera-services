@@ -266,7 +266,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final long leafPath = traversalOrder.getNextLeafPathToSend();
             if (leafPath == Path.INVALID_PATH) {
                 lastLeafSent.set(true);
-            } else  {
+            } else {
                 assert isLeaf(leafPath);
                 anticipatedLeafPaths.add(leafPath);
             }

@@ -24,7 +24,6 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
@@ -161,7 +160,7 @@ public class AsyncOutputStream {
      * Send a message asynchronously. Messages are guaranteed to be delivered in the order sent.
      */
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
-        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream(64);
         try (final SerializableDataOutputStream dout = new SerializableDataOutputStream(bout)) {
             serializeMessage(message, dout);
         } catch (final IOException e) {

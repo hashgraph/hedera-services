@@ -48,7 +48,7 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     // Clean node paths, as received from the teacher. Only internal paths are recorded here,
     // there is no need to track clean leaves, since they don't have children. This set is
     // populated on the receiving thread and queried on the sending thread
-    private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
+    private final Set<MutableLong> cleanNodes = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor.
@@ -68,8 +68,8 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     @Override
     public void nodeReceived(final long path, final boolean isClean) {
         final boolean isLeaf = path >= reconnectFirstLeafPath;
-        if (isClean && !isLeaf) {
-            cleanNodes.add(path);
+        if (isClean && !isLeaf && !hasCleanParent(path)) {
+            cleanNodes.add(new MutableLong(path));
         }
         if (isLeaf) {
             nodeCount.incrementLeafCount();
@@ -127,6 +127,16 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
         return result;
     }
 
+    private boolean hasCleanParent(final long path) {
+        final MutableLong parent = new MutableLong(Path.getParentPath(path));
+        boolean clean = false;
+        while ((parent.getValue() > 0) && !clean) {
+            clean = cleanNodes.contains(parent);
+            parent.update(Path.getParentPath(parent.getValue()));
+        }
+        return clean;
+    }
+
     /**
      * Skip all clean paths starting from the given path at the same rank, un until the limit. If
      * all paths are clean to the very limit, Path.INVALID_PATH is returned
@@ -151,19 +161,19 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
      */
     private long skipCleanPaths(final long path) {
         assert path > 0;
-        long parent = Path.getParentPath(path);
+        final MutableLong parent = new MutableLong(Path.getParentPath(path));
         long cleanParent = Path.INVALID_PATH;
         int parentRanksAbove = 1;
         int cleanParentRanksAbove = 1;
-        while (parent != ROOT_PATH) {
+        while (parent.getValue() != ROOT_PATH) {
             if (cleanNodes.contains(parent)) {
-                cleanParent = parent;
+                cleanParent = parent.getValue();
                 cleanParentRanksAbove = parentRanksAbove;
             }
             parentRanksAbove++;
-            parent = Path.getParentPath(parent);
+            parent.update(Path.getParentPath(parent.getValue()));
         }
-        final long result;
+        long result;
         if (cleanParent == Path.INVALID_PATH) {
             // no clean parent found
             result = path;
@@ -174,5 +184,37 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
         }
         assert result >= path;
         return result;
+    }
+
+    // A small utility class to reduce memory allocations from Long.valueOf() in various loops
+    // with cleanNodes lookups above
+    static final class MutableLong {
+
+        private long value;
+
+        public MutableLong(final long value) {
+            this.value = value;
+        }
+
+        public void update(final long value) {
+            this.value = value;
+        }
+
+        public long getValue() {
+            return value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(value);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (!(obj instanceof MutableLong that)) {
+                return false;
+            }
+            return value == that.value;
+        }
     }
 }
