@@ -156,7 +156,7 @@ public class AddedEventMetrics {
      * @param event the event that was added
      */
     public void eventAdded(final EventImpl event) {
-        if (event.isCreatedBy(selfId)) {
+        if (Objects.equals(event.getCreatorId(), selfId)) {
             eventsCreatedPerSecond.cycle();
             if (!event.getBaseEvent().getOtherParents().isEmpty()) {
                 averageOtherParentAgeDiff.update(event.getGeneration()
@@ -207,7 +207,7 @@ public class AddedEventMetrics {
         transactionsPerSecondSys.update(numSysTrans);
 
         // count all transactions ever in the hashgraph
-        if (!event.isEmpty()) {
+        if (event.getBaseEvent().getTransactionCount() != 0) {
             numTrans.add(event.getBaseEvent().getTransactionCount());
         }
     }

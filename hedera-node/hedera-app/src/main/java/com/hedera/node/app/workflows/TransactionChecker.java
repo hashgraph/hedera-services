@@ -370,7 +370,7 @@ public class TransactionChecker {
         if (validStart.plusSeconds(validDuration).isBefore(consensusTime)) {
             throw new PreCheckException(TRANSACTION_EXPIRED);
         }
-        if (!validStart.isBefore(consensusTime)) {
+        if (validStart.isAfter(consensusTime)) {
             throw new PreCheckException(INVALID_TRANSACTION_START);
         }
     }

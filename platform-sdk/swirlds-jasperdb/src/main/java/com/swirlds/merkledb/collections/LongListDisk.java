@@ -315,18 +315,22 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /**
      *  Flushes and closes the file chanel and clears the free chunks offset list.
-     *
-     * @throws IOException if an I/O error occurs
      */
     @Override
-    protected void onClose() throws IOException {
-        // flush
-        if (currentFileChannel.isOpen()) {
-            currentFileChannel.force(false);
+    public void close() {
+        try {
+            // flush
+            if (currentFileChannel.isOpen()) {
+                currentFileChannel.force(false);
+            }
+            // now close
+            currentFileChannel.close();
+            freeChunks.clear();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
-        // now close
-        currentFileChannel.close();
-        freeChunks.clear();
+
+        super.close();
     }
 
     /** {@inheritDoc} */

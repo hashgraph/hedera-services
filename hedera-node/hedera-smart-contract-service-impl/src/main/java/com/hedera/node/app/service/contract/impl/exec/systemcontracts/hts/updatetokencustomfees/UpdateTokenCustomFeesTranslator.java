@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -54,21 +54,22 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
         return attempt.configuration().getConfigData(ContractsConfig.class).systemContractUpdateCustomFeesEnabled()
-                && (Arrays.equals(attempt.selector(), UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector())
-                        || Arrays.equals(
-                                attempt.selector(), UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector()));
+                && attempt.isSelector(
+                        UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION, UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION);
     }
 
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AccountID payerId) {
         return systemContractGasCalculator.gasRequirement(body, DispatchType.UPDATE_TOKEN_CUSTOM_FEES, payerId);
     }
 
     @Override
     public Call callFrom(@NonNull HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall(attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement);
+        return new DispatchForResponseCodeHtsCall(
+                attempt, nominalBodyFor(attempt), UpdateTokenCustomFeesTranslator::gasRequirement);
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {

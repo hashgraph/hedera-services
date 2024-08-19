@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema.AI
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.data.TokensConfig;
@@ -55,15 +54,14 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
         super(states);
         airdropState = states.get(AIRDROPS_KEY);
 
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAllowedAirdrops();
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
         final var storeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.AIRDROP, maxCapacity);
         airdropState.setMetrics(storeMetrics);
     }
 
     /**
-     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state,
-     * as well as exporting its ID to the transaction receipt. If there is existing
-     * airdrop with the same id we add the value to the existing drop.
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
+     * This always replaces the existing value.
      *
      * @param airdropId    - the airdropId to be persisted.
      * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
@@ -71,42 +69,36 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     public void put(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
         requireNonNull(airdropId);
         requireNonNull(accountAirdrop);
+        airdropState.put(airdropId, accountAirdrop);
+    }
 
+    /**
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
+     * If there is existing airdrop with the same id we add the value to the existing drop.
+     *
+     * @param airdropId    - the airdropId to be persisted.
+     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
+     */
+    public void update(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
+        requireNonNull(airdropId);
+        requireNonNull(accountAirdrop);
         if (!airdropState.contains(airdropId)) {
-            airdropState.put(airdropId, accountAirdrop);
+            put(airdropId, accountAirdrop);
             return;
         }
 
         if (airdropId.hasFungibleTokenType()) {
-            final var existingAccountAirdrop = requireNonNull(airdropState.get(airdropId));
-            final var existingAirdropValue =
-                    requireNonNull(airdropState.get(airdropId)).pendingAirdropValue();
-            requireNonNull(existingAirdropValue);
-            requireNonNull(accountAirdrop.pendingAirdropValue());
-            final var newValue = accountAirdrop.pendingAirdropValue().amount() + existingAirdropValue.amount();
-            final var newAccountAirdrop = existingAccountAirdrop
+            final var existingAirdrop = requireNonNull(airdropState.getForModify(airdropId));
+            final var existingValue = existingAirdrop.pendingAirdropValue();
+            final var newValue =
+                    requireNonNull(accountAirdrop.pendingAirdropValue()).amount()
+                            + requireNonNull(existingValue).amount();
+            final var newAccountAirdrop = existingAirdrop
                     .copyBuilder()
                     .pendingAirdropValue(
-                            PendingAirdropValue.newBuilder().amount(newValue).build())
+                            existingValue.copyBuilder().amount(newValue).build())
                     .build();
-            airdropState.put(airdropId, newAccountAirdrop);
-        }
-    }
-
-    /**
-     * Updates given {@link PendingAirdropId} with new {@link AccountPendingAirdrop} value the state,
-     * as well as exporting its ID to the transaction receipt. If there is no existing
-     * airdrop with the same id do nothing.
-     *
-     * @param airdropId    - the airdropId to be updated.
-     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be updated.
-     */
-    public void patch(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
-        requireNonNull(airdropId);
-        requireNonNull(accountAirdrop);
-
-        if (airdropState.contains(airdropId)) {
-            airdropState.put(airdropId, accountAirdrop);
+            put(airdropId, newAccountAirdrop);
         }
     }
 
@@ -131,5 +123,9 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     public AccountPendingAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
         return airdropState.getForModify(airdropId);
+    }
+
+    public boolean contains(final PendingAirdropId pendingId) {
+        return airdropState.contains(pendingId);
     }
 }

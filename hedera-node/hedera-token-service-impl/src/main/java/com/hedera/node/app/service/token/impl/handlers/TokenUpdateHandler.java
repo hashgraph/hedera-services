@@ -60,7 +60,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenKey;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -131,7 +131,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenUpdateOrThrow();
         final var tokenId = op.tokenOrThrow();
-        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenUpdateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenUpdateStreamBuilder.class);
 
         // validate fields that involve config or state
         final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
@@ -155,7 +155,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasTreasury() && isHapiCallOrNonZeroTreasuryAccount(txn.hasTransactionID(), op)) {
             final var existingTreasury = token.treasuryAccountIdOrThrow();
             final var newTreasury = op.treasuryOrThrow();
-            final var newTreasuryAccount = getIfUsable(
+            var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             final var newTreasuryRel = tokenRelStore.get(newTreasury, tokenId);
             // If there is no treasury relationship, then we need to create one if auto associations are available.
@@ -164,6 +164,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
+                newTreasuryAccount = requireNonNull(accountStore.getForModify(newTreasury));
             }
             // Treasury can be modified when it owns NFTs when the property "tokens.nfts.useTreasuryWildcards"
             // is enabled.

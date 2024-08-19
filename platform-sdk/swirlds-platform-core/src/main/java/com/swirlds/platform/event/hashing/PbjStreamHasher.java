@@ -19,12 +19,14 @@ package com.swirlds.platform.event.hashing;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -63,9 +65,11 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
         try {
             EventCore.PROTOBUF.write(event.getEventCore(), eventStream);
-            for (final EventTransaction transaction : event.getEventTransactions()) {
-                EventTransaction.PROTOBUF.write(transaction, transactionStream);
-                eventStream.writeBytes(transactionDigest.digest());
+            for (final TransactionWrapper transaction : event.getTransactions()) {
+                EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
+                byte[] hash = transactionDigest.digest();
+                transaction.setHash(Bytes.wrap(hash));
+                eventStream.writeBytes(hash);
             }
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);

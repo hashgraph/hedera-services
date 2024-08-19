@@ -99,6 +99,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 halt(frame, tracer, maybeReasonToHalt);
             } else {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
+                frame.addCreate(addressToCreate);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
         }

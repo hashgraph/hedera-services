@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.event.source;
 
 import com.swirlds.common.test.fixtures.TransactionGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.source.AbstractEventSource;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -41,7 +41,7 @@ public class ForkingEventSource extends AbstractEventSource<ForkingEventSource> 
     /**
      * An collection of branches. Each branch contains a number of recent events on that branch.
      */
-    private ArrayList<LinkedList<IndexedEvent>> branches;
+    private ArrayList<LinkedList<EventImpl>> branches;
 
     /**
      * The index of the event that was last given out as the "latest" event.
@@ -128,13 +128,13 @@ public class ForkingEventSource extends AbstractEventSource<ForkingEventSource> 
     }
 
     @Override
-    public IndexedEvent getRecentEvent(final Random random, final int index) {
+    public EventImpl getRecentEvent(final Random random, final int index) {
         if (branches.size() == 0) {
             return null;
         }
 
         currentBranch = random.nextInt(branches.size());
-        final LinkedList<IndexedEvent> events = branches.get(currentBranch);
+        final LinkedList<EventImpl> events = branches.get(currentBranch);
 
         if (events.size() == 0) {
             return null;
@@ -175,7 +175,7 @@ public class ForkingEventSource extends AbstractEventSource<ForkingEventSource> 
     }
 
     @Override
-    public void setLatestEvent(final Random random, final IndexedEvent event) {
+    public void setLatestEvent(final Random random, final EventImpl event) {
         if (shouldFork(random)) {
             fork(random);
         }
@@ -186,7 +186,7 @@ public class ForkingEventSource extends AbstractEventSource<ForkingEventSource> 
             currentBranch = 0;
         }
 
-        final LinkedList<IndexedEvent> branch = branches.get(currentBranch);
+        final LinkedList<EventImpl> branch = branches.get(currentBranch);
         branch.addFirst(event);
         pruneEventList(branch);
     }

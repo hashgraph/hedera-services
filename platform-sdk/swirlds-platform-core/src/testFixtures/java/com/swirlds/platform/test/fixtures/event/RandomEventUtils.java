@@ -17,8 +17,7 @@
 package com.swirlds.platform.test.fixtures.event;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -45,7 +44,7 @@ public class RandomEventUtils {
      * Similar to randomEvent, but the timestamp used for the event's creation timestamp
      * is provided by an argument.
      */
-    public static IndexedEvent randomEventWithTimestamp(
+    public static EventImpl randomEventWithTimestamp(
             final Random random,
             final NodeId creatorId,
             final Instant timestamp,
@@ -61,7 +60,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
+        return new EventImpl(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
     }
 
     /**
@@ -93,7 +92,7 @@ public class RandomEventUtils {
                         otherParent.getBaseEvent().getBirthRound(),
                         otherParent.getGeneration()));
 
-        final List<OneOf<TransactionOneOfType>> convertedTransactions = new ArrayList<>();
+        final List<EventTransaction> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
             Stream.of(transactions).map(TransactionWrapper::getTransaction).forEach(convertedTransactions::add);
         }

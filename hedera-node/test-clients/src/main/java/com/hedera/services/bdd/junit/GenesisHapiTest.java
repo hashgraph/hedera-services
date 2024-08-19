@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.TestTags.ONLY_EMBEDDED;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
@@ -37,6 +37,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
-@Tag(EMBEDDED)
+@Tag(ONLY_EMBEDDED)
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 public @interface GenesisHapiTest {}

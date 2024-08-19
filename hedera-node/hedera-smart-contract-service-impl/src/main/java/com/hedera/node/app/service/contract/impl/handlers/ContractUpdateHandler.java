@@ -45,7 +45,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -143,7 +143,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
         context.savepointStack()
-                .getBaseBuilder(ContractUpdateRecordBuilder.class)
+                .getBaseBuilder(ContractUpdateStreamBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());

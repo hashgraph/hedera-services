@@ -91,7 +91,8 @@ class IssDetectorTests extends PlatformTest {
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
-                            .setTransactions(List.of(new OneOf<>(STATE_SIGNATURE_TRANSACTION, signatureTransaction)))
+                            .setOneOfTransactions(
+                                    List.of(new OneOf<>(STATE_SIGNATURE_TRANSACTION, signatureTransaction)))
                             .setSoftwareVersion(SemanticVersion.DEFAULT);
 
                     return EventImplTestUtils.createEventImpl(event, null, null);

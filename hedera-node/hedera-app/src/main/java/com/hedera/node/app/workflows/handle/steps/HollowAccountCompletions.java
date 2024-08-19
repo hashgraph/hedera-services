@@ -29,7 +29,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -169,7 +169,7 @@ public class HollowAccountCompletions {
                 // Note the null key verification callback below; we bypass signature
                 // verifications when doing hollow account finalization
                 final var recordBuilder = context.dispatchPrecedingTransaction(
-                        syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
+                        syntheticUpdateTxn, CryptoUpdateStreamBuilder.class, null, context.payer());
                 // For some reason update accountId is set only for the hollow account finalization's and not
                 // for top level crypto update transactions. So we set it here.
                 recordBuilder.accountID(hollowAccount.accountIdOrThrow());

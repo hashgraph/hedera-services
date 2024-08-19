@@ -36,7 +36,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -49,7 +48,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -60,12 +58,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -90,7 +88,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionInfo txnInfo;
     private final Configuration config;
     private final Authorizer authorizer;
-    private final BlockRecordManager blockRecordManager;
+    private final BlockRecordInfo blockRecordInfo;
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
@@ -105,7 +103,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final AttributeValidator attributeValidator;
     private final ExpiryValidator expiryValidator;
     private final TransactionDispatcher dispatcher;
-    private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
@@ -119,7 +116,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Configuration config,
             @NonNull final Authorizer authorizer,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
@@ -132,7 +129,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final SavepointStackImpl stack,
             @NonNull final EntityNumGenerator entityNumGenerator,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
@@ -143,7 +139,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.txnInfo = requireNonNull(transactionInfo);
         this.config = requireNonNull(config);
         this.authorizer = requireNonNull(authorizer);
-        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.blockRecordInfo = requireNonNull(blockRecordInfo);
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.storeFactory = requireNonNull(storeFactory);
@@ -162,7 +158,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
-        this.recordCache = requireNonNull(recordCache);
         this.networkInfo = requireNonNull(networkInfo);
     }
 
@@ -217,7 +212,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
-        return blockRecordManager;
+        return blockRecordInfo;
     }
 
     @NonNull
@@ -299,12 +294,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public RecordCache recordCache() {
-        return recordCache;
-    }
-
-    @NonNull
-    @Override
     public <T> T readableStore(@NonNull final Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return storeFactory.readableStore(storeInterface);
@@ -382,7 +371,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
+                StreamBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
     }
 
@@ -400,7 +389,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayer,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                StreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -424,7 +413,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
-                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                StreamBuilder.ReversingBehavior.REVERSIBLE,
                 false);
     }
 
@@ -448,7 +437,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 customizer,
                 TransactionCategory.CHILD,
-                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                StreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -477,7 +466,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayer,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,
@@ -493,7 +482,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 platformState,
                 topLevelFunction,
                 throttleAdviser,
-                consensusNow);
+                consensusNow,
+                blockRecordInfo);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();

@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -331,9 +331,9 @@ abstract class AbstractScheduleHandler {
             final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
-            final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
+            final ScheduleStreamBuilder recordBuilder = context.dispatchChildTransaction(
                     childTransaction,
-                    ScheduleRecordBuilder.class,
+                    ScheduleStreamBuilder.class,
                     assistant,
                     scheduleToExecute.payerAccountId(),
                     TransactionCategory.SCHEDULED);
@@ -343,8 +343,8 @@ abstract class AbstractScheduleHandler {
             // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // also set the child transaction ID as scheduled transaction ID in the parent record.
-            final ScheduleRecordBuilder parentRecordBuilder =
-                    context.savepointStack().getBaseBuilder(ScheduleRecordBuilder.class);
+            final ScheduleStreamBuilder parentRecordBuilder =
+                    context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
             parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {

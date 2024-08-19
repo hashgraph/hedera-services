@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 /**
@@ -54,8 +53,9 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return selectorMatches(attempt, SET_APPROVAL_FOR_ALL)
-                || (attempt.isTokenRedirect() && selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL)
+                : attempt.isSelector(SET_APPROVAL_FOR_ALL);
     }
 
     /**
@@ -64,12 +64,11 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var result = bodyForClassic(attempt);
-        // @Future remove to revert #9214 after modularization is completed
         return new SetApprovalForAllCall(
                 attempt,
                 result,
                 SetApprovalForAllTranslator::gasRequirement,
-                selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
+                attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL));
     }
 
     public static long gasRequirement(
@@ -81,13 +80,9 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (selectorMatches(attempt, SET_APPROVAL_FOR_ALL)) {
+        if (attempt.isSelector(SET_APPROVAL_FOR_ALL)) {
             return decoder.decodeSetApprovalForAll(attempt);
         }
         return decoder.decodeSetApprovalForAllERC(attempt);
-    }
-
-    private boolean selectorMatches(final HtsCallAttempt attempt, final Function function) {
-        return Arrays.equals(attempt.selector(), function.selector());
     }
 }
