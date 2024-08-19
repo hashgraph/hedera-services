@@ -60,4 +60,10 @@ public @interface FungibleToken {
      * @return the initial supply of the token
      */
     long initialSupply() default 100;
+
+    /**
+     * The max supply of the token.
+     * @return the max supply of the token
+     */
+    long maxSupply() default 0;
 }

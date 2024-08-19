@@ -63,6 +63,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -92,10 +94,13 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private TransactionBody txn;
     private NodeCreateHandler subject;
 
+    private List<X509Certificate> certList;
+
     @BeforeEach
     void setUp() {
         final var addressBookValidator = new AddressBookValidator();
         subject = new NodeCreateHandler(addressBookValidator);
+        certList = generateX509Certificates(4);
     }
 
     @Test
@@ -159,12 +164,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey not specified")
-    void adminKeyNeedSet() {
+    void adminKeyNeedSet() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(1).getEncoded()))
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(msg.responseCode()).isEqualTo(KEY_REQUIRED);
@@ -172,12 +177,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey empty")
-    void adminKeyEmpty() {
+    void adminKeyEmpty() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withAdminKey(IMMUTABILITY_SENTINEL_KEY)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -186,12 +191,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey not valid")
-    void adminKeyNeedValid() {
+    void adminKeyNeedValid() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withAdminKey(invalidKey)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -200,12 +205,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks succeeds when expected attributes are specified")
-    void pureCheckPass() {
+    void pureCheckPass() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(2).getEncoded()))
                 .withAdminKey(key)
                 .build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
@@ -521,13 +526,13 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void hanldeWorkAsExpected() {
+    void hanldeWorkAsExpected() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withDescription("Description")
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint3))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withGrpcCertificateHash(Bytes.wrap("hash"))
                 .withAdminKey(key)
                 .build();
@@ -560,7 +565,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         assertArrayEquals(
                 (List.of(endpoint1, endpoint3)).toArray(),
                 createdNode.serviceEndpoint().toArray());
-        assertArrayEquals("cert".getBytes(), createdNode.gossipCaCertificate().toByteArray());
+        assertArrayEquals(
+                certList.get(0).getEncoded(), createdNode.gossipCaCertificate().toByteArray());
         assertArrayEquals("hash".getBytes(), createdNode.grpcCertificateHash().toByteArray());
         assertEquals(key, createdNode.adminKey());
     }

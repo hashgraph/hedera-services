@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,7 +57,6 @@ public class DefaultKeyVerifier implements AppKeyVerifier {
      * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
-    @Inject
     public DefaultKeyVerifier(
             final int legacyFeeCalcNetworkVpt,
             @NonNull final HederaConfig config,

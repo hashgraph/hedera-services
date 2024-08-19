@@ -36,19 +36,18 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -62,9 +61,9 @@ import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -174,27 +173,45 @@ public class HandleWorkflow {
     public void handleRound(
             @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
-        final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Calls StartRound on the BlockStreamManager
+        }
+        recordCache.resetRoundReceipts();
+        try {
+            handleEvents(state, platformState, round);
+        } finally {
+            // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
+            // to the state so these transactions cannot be replayed in future rounds
+            recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
+        }
+    }
+
+    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+        final var userTransactionsHandled = new AtomicBoolean(false);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
+            if (blockStreamConfig.streamBlocks()) {
+                // FUTURE: Stream EventMetadata
+            }
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
+                    // We were given an event for a node that does not exist in the address book and was not from
+                    // a strictly earlier software upgrade. This will be logged as a warning, as this should never
+                    // happen, and we will skip the event. The platform should guarantee that we never receive an event
+                    // that isn't associated with the address book, and every node in the address book must have an
+                    // account ID, since you cannot delete an account belonging to a node, and you cannot change the
+                    // address book non-deterministically.
                     logger.warn(
                             "Received event (version {} vs current {}) from node {} which is not in the address book",
                             com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
                             com.hedera.hapi.util.HapiUtils.toString(version),
                             event.getCreatorId());
                 }
-                return;
+                continue;
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
@@ -221,8 +238,11 @@ public class HandleWorkflow {
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        if (userTransactionsHandled.get()) {
+        if (userTransactionsHandled.get() && blockStreamConfig.streamRecords()) {
             blockRecordManager.endRound(state);
+        }
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Calls EndRound on the BlockStreamManager
         }
     }
 
@@ -248,52 +268,20 @@ public class HandleWorkflow {
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
-        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
-        blockRecordManager.endUserTransaction(recordStream, state);
 
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamRecords()) {
+            blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        }
+        final var recordStream = execute(userTxn);
+        if (blockStreamConfig.streamRecords()) {
+            blockRecordManager.endUserTransaction(recordStream, state);
+        }
+        if (blockStreamConfig.streamBlocks()) {
+            // FUTURE: Writes block items using BlockStreamManager
+        }
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
-    }
-
-    /**
-     * This method gets all the verification data for the current transaction. If pre-handle was previously ran
-     * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
-     * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
-     * its verification data.
-     *
-     * @param creator the node that created the transaction
-     * @param platformTxn the transaction to be verified
-     * @param storeFactory the store factory
-     * @return the verification data for the transaction
-     */
-    @NonNull
-    public PreHandleResult getCurrentPreHandleResult(
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn,
-            final ReadableStoreFactory storeFactory) {
-        final var metadata = platformTxn.getMetadata();
-        final PreHandleResult previousResult;
-        if (metadata instanceof PreHandleResult result) {
-            previousResult = result;
-        } else {
-            // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
-            // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
-            // always sets the metadata to a PreHandleResult
-            logger.error(
-                    "Received transaction without PreHandleResult metadata from node {} (was {})",
-                    creator.nodeId(),
-                    metadata);
-            previousResult = null;
-        }
-        // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
-        platformTxn.setMetadata(null);
-        return preHandleWorkflow.preHandleTransaction(
-                creator.accountId(),
-                storeFactory,
-                storeFactory.getStore(ReadableAccountStore.class),
-                platformTxn,
-                previousResult);
     }
 
     /**
@@ -314,7 +302,8 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
-                initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
+                initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
+                        .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
                 userTxn.stack().commitFullStack();
             } else {
@@ -323,7 +312,14 @@ public class HandleWorkflow {
                     systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
-                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+
+                final var streamsRecords = configProvider
+                        .getConfiguration()
+                        .getConfigData(BlockStreamConfig.class)
+                        .streamRecords();
+                if (streamsRecords) {
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
@@ -354,7 +350,7 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
         final var failInvalidRecord = failInvalidBuilder.build();
@@ -393,12 +389,12 @@ public class HandleWorkflow {
      * @return the user dispatch
      */
     private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
-        final var baseBuilder = initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo());
+        final var baseBuilder =
+                initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
         return userTxn.newDispatch(
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
                 blockRecordManager,
                 serviceScopeLookup,
@@ -417,10 +413,13 @@ public class HandleWorkflow {
      *
      * @param builder the base builder
      * @param txnInfo the transaction information
+     * @param exchangeRateSet the active exchange rate set
      * @return the initialized base builder
      */
-    private StreamBuilder initializeBuilderInfo(
-            @NonNull final StreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    public static StreamBuilder initializeBuilderInfo(
+            @NonNull final StreamBuilder builder,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final ExchangeRateSet exchangeRateSet) {
         final var transaction = txnInfo.transaction();
         // If the transaction uses the legacy body bytes field instead of explicitly
         // setting its signed bytes, the record will have the hash of its bytes as
@@ -434,7 +433,7 @@ public class HandleWorkflow {
         return builder.transaction(txnInfo.transaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())
-                .exchangeRate(exchangeRateManager.exchangeRates())
+                .exchangeRate(exchangeRateSet)
                 .memo(txnInfo.txBody().memo());
     }
 
@@ -512,7 +511,6 @@ public class HandleWorkflow {
                 blockRecordManager.consTimeOfLastHandledTxn(),
                 configProvider,
                 storeMetricsService,
-                blockRecordManager,
-                this);
+                preHandleWorkflow);
     }
 }

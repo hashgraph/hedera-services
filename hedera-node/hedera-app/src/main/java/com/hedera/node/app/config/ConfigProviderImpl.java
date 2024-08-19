@@ -35,6 +35,7 @@ import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -62,23 +63,36 @@ public class ConfigProviderImpl extends ConfigProviderBase {
      * Create a new instance, particularly from dependency injection.
      */
     public ConfigProviderImpl() {
-        this(false, null);
+        this(false, null, null);
     }
 
     /**
      * Create a new instance that does not report metrics.
      */
     public ConfigProviderImpl(final boolean useGenesisSource) {
-        this(useGenesisSource, null);
+        this(useGenesisSource, null, null);
+    }
+
+    /**
+     * Create a new instance that reports metrics but has no override values.
+     */
+    public ConfigProviderImpl(final boolean useGenesisSource, @Nullable final Metrics metrics) {
+        this(useGenesisSource, metrics, null);
     }
 
     /**
      * Create a new instance. You must specify whether to use the genesis.properties file as a source for the
      * configuration. This should only be true if the node is starting from genesis.
      */
-    public ConfigProviderImpl(final boolean useGenesisSource, @Nullable final Metrics metrics) {
+    public ConfigProviderImpl(
+            final boolean useGenesisSource,
+            @Nullable final Metrics metrics,
+            @Nullable final Map<String, String> overrideValues) {
         final var builder = createConfigurationBuilder();
         addFileSources(builder, useGenesisSource);
+        if (overrideValues != null) {
+            overrideValues.forEach(builder::withValue);
+        }
         final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
 
