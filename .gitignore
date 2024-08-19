@@ -28,7 +28,7 @@ buildNumber.properties
 
 #Mono Project Files
 *.pidb
-hedera-node/hedera-mono-service/src/test/resources/
+*.resources
 test-results/
 
 ### NotepadPP template
