@@ -83,8 +83,14 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var singleTxnRecord =
                 switch (txnType) {
+                    case CryptoCreate -> new CryptoCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ConsensusCreateTopic -> new ConsensusTopicCreateTranslator()
+                            .translate(txnWrapper, stateChanges);
                     case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
                             .translate(txnWrapper, stateChanges);
+                    case FileCreate -> new FileCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ScheduleCreate -> new ScheduleCreateTranslator().translate(txnWrapper, stateChanges);
+                    case TokenCreate -> new TokenCreateTranslator().translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
