@@ -1548,7 +1548,7 @@ enum ResponseCodeEnum {
     /**
     * The transaction attempted to use more than the allowed number of `PendingAirdropId`.
     */
-    MAX_PENDING_AIRDROP_ID_EXCEEDED = 363;
+    PENDING_AIRDROP_ID_LIST_TOO_LONG = 363;
 
     /*
     * A pending airdrop already exists for the specified NFT.
@@ -1562,4 +1562,27 @@ enum ResponseCodeEnum {
      * this transaction.
      */
     ACCOUNT_HAS_PENDING_AIRDROPS = 365;
+
+    /**
+     * Consensus throttle did not allow execution of this transaction. The transaction is throttled at
+     * consensus level.
+     */
+    THROTTLED_AT_CONSENSUS = 366;
+
+    /**
+     * The provided pending airdrop id is invalid. It could be that the pending airdrop is already claimed
+     * or cancelled.
+     */
+    INVALID_PENDING_AIRDROP_ID = 367;
+
+    /**
+     * The token having fallback royalty fee cannot be airdropped or claimed.
+     */
+    TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY = 368;
+
+    /**
+     * The token in the pending airdrop that was tried to claim is deleted or the sender is no more
+     * owning the token.
+     */
+    INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
 }
