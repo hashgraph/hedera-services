@@ -21,18 +21,7 @@ import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNCTIONS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isTopLevelTransaction;
@@ -133,7 +122,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         // actually receiving it.
         // We do not allow sending value to Hedera system contracts except in the case of token creation.
         if (systemContracts.containsKey(codeAddress)) {
-            if (!checkIfCreateScenario(frame)) {
+            if (!isTokenCreation(frame)) {
                 doHaltIfInvalidSystemCall(frame, tracer);
                 if (alreadyHalted(frame)) {
                     return;
@@ -185,7 +174,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     /**
-     * Checks if the given message frame is a create scenario.
+     * Checks if the given message frame is a token creation scenario.
      *
      * <p>This method inspects the first four bytes of the input data of the message frame
      * to determine if it matches any of the known selectors for creating fungible or non-fungible tokens.
@@ -193,26 +182,12 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      * @param frame the message frame to check
      * @return true if the input data matches any of the known create selectors, false otherwise
      */
-    private boolean checkIfCreateScenario(MessageFrame frame) {
+    private boolean isTokenCreation(MessageFrame frame) {
         if (frame.getInputData().isEmpty()) {
             return false;
         }
         var selector = frame.getInputData().slice(0, 4).toArray();
-        return Arrays.stream(new byte[][] {
-                    CREATE_FUNGIBLE_TOKEN_V1.selector(),
-                    CREATE_FUNGIBLE_TOKEN_V2.selector(),
-                    CREATE_FUNGIBLE_TOKEN_V3.selector(),
-                    CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector(),
-                    CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector(),
-                    CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_V1.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_V2.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_V3.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector(),
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.selector()
-                })
-                .anyMatch(s -> Arrays.equals(s, selector));
+        return CREATE_FUNCTIONS.stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
     }
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
