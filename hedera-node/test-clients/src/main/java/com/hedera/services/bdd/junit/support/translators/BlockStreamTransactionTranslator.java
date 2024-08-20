@@ -35,7 +35,6 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -209,7 +208,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         return Bytes.wrap(SHA384.Digest.getInstance("SHA-384").digest(bytes.toByteArray()));
     }
 
-    private TransactionRecord.Builder parseTransactionResult(
+    private void parseTransactionResult(
             final TransactionResult txnResult,
             final TransactionRecord.Builder recordBuilder,
             final TransactionReceipt.Builder receiptBuilder)
@@ -268,15 +267,13 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var responseCode = ResponseCodeEnum.valueOf(txnResult.status().name());
         receiptBuilder.setStatus(responseCode);
-
-        return recordBuilder;
     }
 
-    private TransactionRecord.Builder parseTransactionOutput(
+    private void parseTransactionOutput(
             final TransactionOutput txnOutput, final TransactionRecord.Builder trb, final TransactionReceipt.Builder rb)
             throws InvalidProtocolBufferException {
         if (txnOutput == null) {
-            return trb;
+            return;
         }
 
         // TODO: why are so many of these methods missing?
@@ -358,8 +355,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         // TODO: assign `newPendingAirdrops` (if applicable)
 
         trb.setReceipt(rb.build());
-
-        return trb;
     }
 
     private void maybeAssignEvmAddressAlias(final TransactionOutput txnOutput, final TransactionRecord.Builder trb) {
