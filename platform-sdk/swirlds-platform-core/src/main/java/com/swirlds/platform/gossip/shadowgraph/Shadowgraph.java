@@ -451,18 +451,23 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * Get the shadow event that references a hashgraph event instance.
+     * Get the shadow event that references a hashgraph otherParent instance.
      *
-     * @param e The event.
-     * @return the shadow event that references an event, or null is {@code e} is null
+     * @param otherParentsDescriptors List of event descriptors.
+     * @return the shadow event that references an event, or null if {@code otherParentsDescriptors} is empty
+     * @throws IllegalArgumentException if {@code otherParentsDescriptors} contains more than one event descriptor
      */
     @Nullable
-    public synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> e) {
-        if (e.isEmpty()) {
+    public synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> otherParentsDescriptors) {
+        if (otherParentsDescriptors.isEmpty()) {
             return null;
         }
 
-        return hashToShadowEvent.get(e.getFirst().hash());
+        if (otherParentsDescriptors.size() > 1) {
+            throw new IllegalArgumentException("Only one otherParent descriptor is supported");
+        }
+
+        return hashToShadowEvent.get(otherParentsDescriptors.getFirst().hash());
     }
 
     /**
