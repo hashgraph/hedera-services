@@ -245,7 +245,7 @@ public class ReturnTypes {
             + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
             + ")[],"
             // Expiry
-            + "(uint32,address,uint32)" // second, autoRenewAccount, autoRenewPeriod
+            + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
             + "bytes" // metadata
             + ")"
 
