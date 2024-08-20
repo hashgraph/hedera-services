@@ -85,6 +85,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 switch (txnType) {
                     case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
                             .translate(txnWrapper, stateChanges);
+                    case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
@@ -159,8 +160,8 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 .toList();
     }
 
-    private TransactionRecord.Builder parseTransaction(
-            final Transaction txn, final TransactionRecord.Builder recordBuilder) throws NoSuchAlgorithmException {
+    private void parseTransaction(final Transaction txn, final TransactionRecord.Builder recordBuilder)
+            throws NoSuchAlgorithmException {
         if (txn.body() != null) {
             final var transactionID = pbjToProto(
                     txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class);
@@ -183,8 +184,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var txnBytes = toBytesForHash(txn);
         final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
         recordBuilder.setTransactionHash(toByteString(hash));
-
-        return recordBuilder;
     }
 
     /**
@@ -299,24 +298,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasFileCreate()) {
         //                rb.fileID(txnOutput.fileCreate().fileID());
         //            }
-
-        if (txnOutput.hasContractCreate()) {
-            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
-                    .map(com.hedera.hapi.node.contract.ContractFunctionResult::contractID)
-                    .ifPresent(id -> rb.setContractID(fromPbj(id)));
-
-            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
-                    .ifPresent(id -> {
-                        try {
-                            trb.setContractCreateResult(ContractFunctionResult.parseFrom(
-                                    com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
-                                            .toBytes(txnOutput.contractCreate().contractCreateResult())
-                                            .toByteArray()));
-                        } catch (InvalidProtocolBufferException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-        }
 
         if (txnOutput.hasContractCall()) {
             final var callResult =
