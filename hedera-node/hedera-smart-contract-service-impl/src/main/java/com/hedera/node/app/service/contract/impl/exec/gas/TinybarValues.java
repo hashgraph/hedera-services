@@ -138,7 +138,7 @@ public class TinybarValues {
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 
-    public long morePRECISION() {
+    public long morePrecision() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
         }
