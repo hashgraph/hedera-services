@@ -322,7 +322,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * the credits for the receivers.
      * @param fungibleAmounts the fungible airdrop amounts
      * @param sender the sender account id
-     * @param isApproval should be false for airdrop
+     * @param isApproval is approval
      * @param transferListBuilder the transfer list builder
      */
     private void addTransfersToTransferList(
