@@ -1032,8 +1032,6 @@ public class BlockStreamBuilder
         transactionResultBuilder.scheduleRef((ScheduleID) null);
         transactionResultBuilder.automaticTokenAssociations(emptyList());
         transactionResultBuilder.congestionPricingMultiplier(0);
-        transactionResultBuilder.status(ResponseCodeEnum.OK);
-        transactionResultBuilder.parentConsensusTimestamp(Timestamp.DEFAULT);
 
         transactionOutputBuilder.cryptoTransfer((CryptoTransferOutput) null);
         transactionOutputBuilder.utilPrng((UtilPrngOutput) null);

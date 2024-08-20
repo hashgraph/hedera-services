@@ -23,9 +23,9 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 
 public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     // For explanation about this constant value, see
@@ -34,7 +34,7 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
 
     @Override
     public SingleTransactionRecord translate(
-            @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
+            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
         if (transaction.result().status().equals(SUCCESS)) {
             receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
