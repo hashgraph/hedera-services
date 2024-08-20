@@ -548,6 +548,17 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance("FT_B", 10));
             }
         }
+
+        @HapiTest
+        @DisplayName("token not associated after pending airdrop")
+        final Stream<DynamicTest> tokenNotAssociatedAfterPendingAirdrop() {
+            final var notAssociatedReceiver = "notAssociatedReceiver";
+            return hapiTest(
+                    cryptoCreate(notAssociatedReceiver).maxAutomaticTokenAssociations(0),
+                    tokenAirdrop(moveFungibleTokensTo(notAssociatedReceiver)).payingWith(OWNER),
+                    cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, notAssociatedReceiver))
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
     }
 
     // custom fees
