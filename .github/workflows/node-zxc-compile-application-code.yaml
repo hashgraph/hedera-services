@@ -481,13 +481,13 @@ jobs:
         if: ${{ !cancelled() && always()}}
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
-          token: ${{ secrets.codecov-token }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Publish to Codacy
         if: ${{ !cancelled() && always()}}
         env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY-PROJECT-TOKEN }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Upload Test Reports
