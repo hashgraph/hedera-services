@@ -328,7 +328,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     /**
      * {@inheritDoc}
      *
-     * <p>Called by the platform to either build a genesis state.
+     * <p>Called by the platform to build a genesis state.
      *
      * @return a Services state object
      */

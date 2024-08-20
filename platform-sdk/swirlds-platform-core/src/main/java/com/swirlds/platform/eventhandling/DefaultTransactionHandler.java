@@ -215,7 +215,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all needed data for this round.
+     * Populate the {@link PlatformStateAccessor} with all needed data for this round.
      *
      * @param round the consensus round
      */
