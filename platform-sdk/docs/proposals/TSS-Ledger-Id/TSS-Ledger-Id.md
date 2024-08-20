@@ -21,11 +21,9 @@ ledger id. Part of our goal is that users could write EVM smart contracts that c
 
 ## Purpose and Context
 
-The purpose of this proposal is to integrate a Threshold Signature Scheme (TSS)
-based on [BLS](https://en.wikipedia.org/wiki/BLS_digital_signature) into
-consensus nodes to produce a network ledger id and offer a mechanism for
-aggregating signature messages such that the final result can be verified
-using the ledger id.
+The purpose of this proposal is to integrate a Threshold Signature Scheme (TSS) based on
+[BLS](https://en.wikipedia.org/wiki/BLS_digital_signature) into consensus nodes to produce a network ledger id and offer
+a mechanism for aggregating signature messages such that the final result can be verified using the ledger id.
 
 In this TSS based on BLS, the network is assigned a durable private/public key
 pair where the public key is the ledger id and the private key is a secret that
@@ -38,8 +36,8 @@ signatures to meet a configured threshold on the same message, it can then
 aggregate the signatures into a final ledger signature that is space-efficient
 and is verifiable with the ledger id.
 
-The TSS effort has been broken down into 5 separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID,
-TSS-Block-Signing, and TSS-Ledger-ID-Updates.
+The TSS effort has been broken down into 6 separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID,
+TSS-Block-Signing, TSS-Ledger-ID-Updates, and TSS-Ledger-New-Networks.
 
 1. The `TSS-Library` proposal contains the cryptographic primitives and algorithms needed to implement TSS.
 2. The `TSS-Roster` proposal introduces the data structure of a consensus `Roster` to replace the platform's concept of
@@ -49,10 +47,11 @@ TSS-Block-Signing, and TSS-Ledger-ID-Updates.
    the network a ledger id that can verify network signatures.
 4. The `TSS-Block-Signing` proposal is everything needed to support the signing of blocks.
 5. The `TSS-Ledger-ID-Updates` proposal covers the process of resetting and transplanting ledger ids between networks.
+6. The `TSS-Ledger-New-Networks` proposal covers the process of setting up a new network with a ledger id.
 
 This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 
-- The process of generating the ledger key pair for new networks and existing networks.
+- The process of generating the ledger key pair for existing networks and testing environments.
 - The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
 - The new state data structures needed to store TSS Key material and the ledger id.
 - The new components needed in the framework to support creating and transferring the ledger key.
@@ -66,9 +65,10 @@ This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 The following capabilities are goals of this proposal:
 
 1. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
-2. `TSS Bootstrap for New Network` - Able to setup a new network with a ledger public/private key pair.
-3. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one
+2. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one
    set of consensus nodes to another.
+3. `TSS Bootstrap in Test Networks` - Able to setup a test network with a ledger public/private key pair without
+   restart.
 4. Testing of the TSS signing capability with verification by an EVM smart contract using the ALT_BN128
    [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
 
@@ -84,6 +84,7 @@ The following are not goals of this proposal:
    3. ISS detection.
 4. Modifying how reconnect works.
 5. Explaining how state transplants between networks or resets of the ledger id work.
+6. TSS Bootstrapping for new networks.
 
 ### Dependencies, Interactions, and Implications
 
@@ -299,12 +300,9 @@ Proof Sketch by Dr. Leemon Baird:
 
 ###### Threshold for Votes to Adopt a Candidate Roster
 
-The sum of the consensus weight of all the nodes that have voted yes to adopt the candidate roster must greater than or
-equal to 1/3 of the total consensus weight to ensure that at least one honest node has validated the TSS key
-material and voted yes.
-
-Since all votes are tabulated after reaching consensus and advancing consensus requires active nodes totalling 2/3
-consensus weight, the threshold of 1/2 consensus weight is safe and achievable.
+The threshold for votes to adopt a candidate roster will be 1/2 of the consensus weight. This is above the 1/3
+consensus weight threshold to ensure at least one honest node has validated the TSS key material, and it should be
+easily achievable since 2/3 consensus weight is required to advance consensus.
 
 ###### Impacts on Service's Calculation of Weight from Staked HBars
 
@@ -345,37 +343,13 @@ recursive proof proved too expensive for EVM smart contracts, even with elliptic
 
 #### TSS Bootstrap Process
 
-The TSS bootstrap process is the process of generating the ledger public/private key pair for a new network or an
+The TSS bootstrap process is the process of generating the ledger public/private key pair for an
 existing network. There are several options to consider in the TSS bootstrap process:
 
 1. Do we allow block number and round number to be out of sync?
 2. Do we need the initial block produced to be signed by the ledger id?
 3. For new networks, do we need to produce a signed block 1?
 4. For existing networks, does the TSS bootstrap roster sign blocks prior to its existence?
-
-##### For New Networks
-
-There will be a pre-genesis phase where the genesis roster is keyed and a random ledger id is created. This will
-happen through running the platform without accepting user transactions. After the roster is keyed, the platform is
-restarted with a copy of the genesis state after adding the TSS key material and ledger id to it. After the
-platform restarts, application transactions are accepted and the platform starts building a new hashgraph, working
-towards consensus on round 1 with the ability to sign block 1. This ensures that the first user transactions handled
-by the network are in a block that can have a block proof as soon as possible. The alternative is that blocks will
-go without block proofs until the nodes go through TSS bootstrap, which may be several rounds later.
-
-While this solution does not capture the TSS bootstrap communication in the history of the hashgraph after the
-platform restarts, nodes can cryptographically verify that the setup process took place correctly through using the
-TSS key material to re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient
-variety of nodes. With the assumption that less than 1/3 of the weight is assigned to malicious nodes, the threshold
-of 1/2 ensures that the malicious nodes will not be able to recover the ledger private key if they collude together.
-
-The process of the platform restarting after performing a pre-genesis keying phase is new startup logic.
-This should not involve an interruption of the containing process. Once the platform has restarted with a
-keyed roster, the app will accept user transactions.
-
-A node in the pre-genesis phase must not gossip with nodes that have restarted and are out of pre-genesis. If a
-pre-genesis node connects with a post-genesis node, it must reconnect to receive the updated state containing the
-TSS key material.
 
 ##### For Existing Networks
 
@@ -390,21 +364,28 @@ The setup of the bootstrap key material will be observable in the record stream 
 but this observability is not consequential. What matters is the cryptographic verification that the TSS
 material can generate the ledger key.
 
+##### For Test Networks
+
+Since restarts in test networks are complicated, a test-only configuration flag will be added to tell the system to
+key the active roster with TSS key material and immediately adopt the ledger id without waiting for a software
+upgrade to adopt the candidate roster. This will allow the test network to generate a ledger id without a restart.
+If a candidate roster is set, it will be keyed to inherit the ledger id generated for the active roster.
+
 ##### TSS Bootstrap Process - Alternatives Considered
 
-| N |                                                    Option                                                     |          1-1 round to block          |                  round # == block #                  |      Ledger signs initial block      |         Ledger signs block 1         |   TSS keying in hashgraph history    |     TSS keying in block history      |        Minimal DevOps Impact         |         Implementation Complexity         |                                       Notes                                        |
-|---|---------------------------------------------------------------------------------------------------------------|--------------------------------------|------------------------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|-------------------------------------------|------------------------------------------------------------------------------------|
-| 1 | TSS Setup in block history, initial block > 1 and not signed                                                  | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships before Block Proofs                                 |
-| 2 | TSS Setup not in block history, initial block > 1 and is signed                                               | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships with Block Proofs                                   |
-| 3 | TSS Setup not in block history, initial block == 1 and is signed                                              | <span style="color:green">YES</span> | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:orange">LOW-MED</span> | Cognitive burden to reason about block # and round # discrepancy.                  |
-| 4 | TSS Setup in block history, initial block > 1, covers all prior rounds, and is signed                         | <span style="color:red">NO</span>    | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     |                                                                                    |
-| 5 | TSS Setup in block history, initial block == 1, covers all prior rounds, and is signed                        | <span style="color:red">NO</span>    | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     | Cognitive burden to reason about block # and round # discrepancy.                  |
-| 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
-| 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
-| 8 | Instead of separate app, detect genesis, key the state, restart the network with a keyed genesis state.       | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
+| N |                                                    Option                                                     | 1-1 round to block | round # == block # | Ledger signs initial block | Ledger signs block 1 | TSS keying in hashgraph history | TSS keying in block history | Minimal DevOps Impact | Implementation Complexity |                                       Notes                                        |
+|---|---------------------------------------------------------------------------------------------------------------|--------------------|--------------------|----------------------------|----------------------|---------------------------------|-----------------------------|-----------------------|---------------------------|------------------------------------------------------------------------------------|
+| 1 | TSS Setup in block history, initial block > 1 and not signed                                                  | YES                | YES                | NO                         | NO                   | YES                             | YES                         | YES                   | LOW                       | Mainnet if Block Streams ships before Block Proofs                                 |
+| 2 | TSS Setup not in block history, initial block > 1 and is signed                                               | YES                | YES                | YES                        | NO                   | YES                             | NO                          | YES                   | LOW                       | Mainnet if Block Streams ships with Block Proofs                                   |
+| 3 | TSS Setup not in block history, initial block == 1 and is signed                                              | YES                | NO, fixed offset   | YES                        | NO                   | YES                             | NO                          | YES                   | LOW-MED                   | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 4 | TSS Setup in block history, initial block > 1, covers all prior rounds, and is signed                         | NO                 | YES                | YES                        | NO                   | YES                             | YES                         | YES                   | MED                       |                                                                                    |
+| 5 | TSS Setup in block history, initial block == 1, covers all prior rounds, and is signed                        | NO                 | NO, fixed offset   | YES                        | NO                   | YES                             | YES                         | YES                   | MED                       | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | YES                | YES                | YES                        | YES                  | YES                             | YES                         | YES                   | HIGH                      | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
+| 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | YES                | YES                | YES                        | YES                  | NO                              | NO                          | NO                    | HIGH                      | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
+| 8 | Instead of separate app, detect genesis, key the state, restart the network with a keyed genesis state.       | YES                | YES                | YES                        | YES                  | NO                              | NO                          | YES                   | HIGH                      | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 
-Option 2 was chosen for existing networks and Option 8 was selected for new networks. This decision was made to
-ensure that the first block in the block stream can be signed by the ledger.
+Option 2 was chosen for existing networks and Option 1 is chosen for test networks. Option 8 will likely be used
+for new networks, but this decision is deferred to the `TSS-Ledger-New-Networks` proposal.
 
 ---
 
@@ -453,7 +434,7 @@ message TssMessageTransaction {
   bytes target_roster_hash = 2;
 
   /**
-   * An index to order shares.<br/>
+   * An index to order shares.
    * This establishes a global ordering of shares across all shares in
    * the network.  It corresponds to the index of the public share in the
    * list returned from the TSS library when the share was created for
@@ -493,7 +474,7 @@ message TssVoteTransaction {
   bytes ledger_id = 3;
 
   /**
-   * A signature produced by the node.<br/>
+   * A signature produced by the node.
    * This is produced using the node RSA signing key to sign the ledger_id.
    * This signature is used to establish a chain of trust in the ledger id.
    */
@@ -538,17 +519,17 @@ NOTE: The detailed processes for updating the ledger id can be found in the `TSS
 message LedgerId {
 
   /**
-   * A public key.<br/>
+   * A public key.
    * This key both identifies the ledger and can be used to verify ledger signatures.
    * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
+   * This value MUST be set.
+   * This value MUST NOT be empty.
    * This value MUST contain a valid public key.
    */
   bytes ledger_id = 1;
 
   /**
-   * A round number.<br/>
+   * A round number.
    * This identifies when this ledger id becomes active.
    * <p>
    * This value is REQUIRED.
@@ -556,10 +537,10 @@ message LedgerId {
   uint64 round = 2;
 
   /**
-   * A signature from the prior ledger key.<br/>
+   * A signature from the prior ledger key.
    * This signature is the _previous_ ledger ID signing _this_ ledger ID.
    * <p>
-   * This value MAY be unset, if there is no prior ledger ID.<br/>
+   * This value MAY be unset, if there is no prior ledger ID.
    * This value SHOULD be set if a prior ledger ID exists
    * to generate the signature.
    */
@@ -628,7 +609,7 @@ message TssMessageMapKey {
   bytes roster_hash = 1;
 
   /**
-   * A number representing consensus order.<br/>
+   * A number representing consensus order.
    * This declares the order in which the mapped value came to consensus.
    */
   uint64 sequence_number = 2;
@@ -716,7 +697,7 @@ A mismatch is a critical error that will cause the node to shut down.
 This release must be at least 1 release after the `tssEncryptionKey` release.
 
 This sequence will work for this release and all subsequent releases, unless the
-startup sequence is modified by subsequent releases.<br/>
+startup sequence is modified by subsequent releases.
 The following startup sequence will occur:
 
 1. The app will read the state and cryptography from disk (including support for
@@ -743,8 +724,8 @@ The following startup sequence will occur:
 5. The platform will continue through its normal startup sequence.
 
 Note: If this is release N, then if all goes well and the candidate roster is successfully keyed, the next software
-upgrade (release N+1) is when the network will receive its ledger id.  Release N+2 should carry forward the ledger
-id into the next roster automatically.  No additional code deployment is required to make this happen.
+upgrade (release N+1) is when the network will receive its ledger id. Release N+2 should carry forward the ledger
+id into the next roster automatically. No additional code deployment is required to make this happen.
 
 ##### The Cleanup Release
 
@@ -769,6 +750,11 @@ The TSS Base Service will be broken out into one interface and two components.
 
 #### TssService
 
+The `TssService` interface provides the inter-service API for the TSS Base Service. It is responsible for setting the
+candidate roster for the TSS service to generate key material. This is a necessary step before the roster can be
+adopted. In the `TSS-Ledger-ID-Block-Signing` proposal, the `TssService` will be expanded to include the ability to
+request ledger signatures on messages.
+
 ```java
 
 /**
@@ -788,7 +774,6 @@ public interface TssService {
      */
     void setCandidateRoster(final Roster candidateRoster);
 }
-
 ```
 
 #### `TssStateManager`
@@ -852,16 +837,19 @@ Internal Elements:
 1. NodeId (constructor)
 2. TssEncryptionKey (constructor)
 3. private RSA signing key (constructor argument)
-4. boolean createNewLedgerId := default false
-5. active roster hash
-6. candidate roster hash
-7. Map<RosterHash, Roster> rosters
-8. Map<RosterHash, List<PairingPrivateKey>> privateShares
-9. Map<RosterHash, List<PairingPublicKey>> publicShares
-10. Map<RosterHash, PairingPublicKey> ledgerIds
-11. Map<RosterHash, List<TssMessageTransaction>> tssMessages
-12. Map<RosterHash, List<TssVoteTransaction>> tssVotes
-13. Set<RosterHash> votingClosed
+4. integer maxSharesPerNode (constructor argument from config)
+5. boolean keyActiveRoster (constructor argument from config)
+6. boolean createNewLedgerId := default false
+7. active roster hash
+8. candidate roster hash
+9. Map<RosterHash, Roster> rosters
+10. Map<RosterHash, Map<NodeID, Integer>> shareCounts
+11. Map<RosterHash, List<PairingPrivateKey>> privateShares
+12. Map<RosterHash, List<PairingPublicKey>> publicShares
+13. Map<RosterHash, PairingPublicKey> ledgerIds
+14. Map<RosterHash, List<TssMessageTransaction>> tssMessages
+15. Map<RosterHash, List<TssVoteTransaction>> tssVotes
+16. Set<RosterHash> votingClosed
 
 Inputs:
 
@@ -885,6 +873,11 @@ Outputs:
 1. If there is an existing active roster, log an error and throw an illegal state exception.
    - This behavior will change in the future when we have fully dynamic address book.
 2. Set the active roster.
+3. Compute the share counts per node for the active roster.
+4. If `keyActiveRoster` is true and there is no key material for the active roster, generate the key material.
+   1. Set `createNewLedgerId` to true
+   2. Create a random share for the node.
+   3. Send a `TssMessageTransaction` to the network generated from the random share targeting the active roster.
 
 `On Candidate Roster`:
 
@@ -893,11 +886,13 @@ Outputs:
       return.
    2. Otherwise, replace the candidate roster with the new candidate roster and clear out the old candidate roster
       data.
-2. If the active roster does not have TSS key material, generate key material for a new ledger id.
+2. Compute the share counts per node for the candidate roster.
+3. If the active roster does not have TSS key material and `keyActiveRoster` is not true, generate key material for a
+   new ledger id.
    1. Set `createNewLedgerId` to true
    2. Create a random share for the node.
    3. Send a `TssMessageTransaction` to the network generated from the random share targeting the candidate roster.
-3. If the active roster has TSS key material,
+4. If the active roster has TSS key material,
    1. If the candidate roster has enough votes for adoption, add the roster hash to `votingClosed` and send the
       candidate roster to the platform for adoption.
    2. If the candidate roster has key material from this node and all of its shares, do nothing and return.
@@ -936,7 +931,11 @@ Outputs:
 3. If the voting threshold is met by at least 1/2 consensus weight voting yes:
    1. add the target roster hash to the` `votingClosed` set.
    2. Non-Dynamic Address Book Semantics
-      1. Do nothing here, rely on the startup logic to rotate the candidate roster to the active roster.
+      1. if `keyActiveRoster` is false, do nothing here, rely on the startup logic to rotate the candidate roster to
+         the active roster.
+      2. if `keyActiveRoster` is true, adopt the ledger id in the state.
+         - Since this computation is not on the transaction handling thread, adoption of the ledger id must be
+           scheduled for the `TssStateManager` to handle on the next round.
    3. **(NOT IMPLEMENTED in this proposal)**: Full Dynamic Address Book Semantics
       1. Rotate the candidate roster to the active roster and schedule the roster for adoption with the platform a
          safe number of rounds into the future.
@@ -950,7 +949,9 @@ transaction to the network.
 
 The following are new configuration:
 
-1. `tss.maxSharesPerNode` - The maximum number of shares that can be assigned to a node.
+1. `tss.maxSharesPerNode` - The maximum number of shares that can be assigned to a node. The default value is 3.
+2. `tss.keyActiveRoster` - A test-only configuration set to true to key the active roster with TSS key material. The
+   default value is false.
 
 ### Metrics
 
