@@ -46,7 +46,6 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -496,10 +495,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         stopInput.bindConsumer(ignored -> stop());
         clearInput.bindConsumer(ignored -> clear());
 
-        eventInput.bindConsumer(event -> {
-            shadowgraph.addEvent(new EventImpl(event, null, null));
-        });
-
+        eventInput.bindConsumer(shadowgraph::addEvent);
         eventWindowInput.bindConsumer(shadowgraph::updateEventWindow);
 
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);

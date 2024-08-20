@@ -28,7 +28,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -325,8 +324,9 @@ public class Shadowgraph implements Clearable {
      * @deprecated planned for removal, do not add new uses
      */
     @Deprecated(forRemoval = true)
+    @NonNull
     public synchronized Collection<PlatformEvent> findByAncientIndicator(
-            final long lowerBound, final long upperBound, final Predicate<PlatformEvent> predicate) {
+            final long lowerBound, final long upperBound, @NonNull final Predicate<PlatformEvent> predicate) {
         final List<PlatformEvent> result = new ArrayList<>();
         if (lowerBound >= upperBound) {
             return result;
@@ -456,7 +456,8 @@ public class Shadowgraph implements Clearable {
      * @param e The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
-    public synchronized ShadowEvent shadow(final List<EventDescriptorWrapper> e) {
+    @Nullable
+    public synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> e) {
         if (e.isEmpty()) {
             return null;
         }
@@ -470,7 +471,8 @@ public class Shadowgraph implements Clearable {
      * @param e The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
-    public synchronized ShadowEvent shadow(final EventDescriptorWrapper e) {
+    @Nullable
+    public synchronized ShadowEvent shadow(@Nullable final EventDescriptorWrapper e) {
         if (e == null) {
             return null;
         }
@@ -500,7 +502,7 @@ public class Shadowgraph implements Clearable {
      * @return the hashgraph event, if there is one in {@code this} shadowgraph, else `null`
      */
     @Nullable
-    public synchronized PlatformEvent hashgraphEvent(final Hash h) {
+    public synchronized PlatformEvent hashgraphEvent(@Nullable final Hash h) {
         final ShadowEvent shadow = shadow(h);
         if (shadow == null) {
             return null;
@@ -521,16 +523,12 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * If Event `e` is insertable, then insert it and update the tip set, else do nothing.
+     * If Event `event` is insertable, then insert it and update the tip set, else do nothing.
      *
-     * @param e The event reference to insert.
-     * @return true iff e was inserted
+     * @param event The event reference to insert.
+     * @return {@code true} if the event was added, {@code false} otherwise
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
-    public synchronized boolean addEvent(@NonNull final EventImpl e) throws ShadowgraphInsertionException {
-        return addEvent(e.getBaseEvent());
-    }
-
     public synchronized boolean addEvent(@NonNull final PlatformEvent event) throws ShadowgraphInsertionException {
         if (eventWindow == null) {
             throw new IllegalStateException("Initial event window not set");
@@ -602,11 +600,12 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * @param h the hash of the event
+     * @param hash the hash of the event
      * @return the event that has the hash provided, or null if none exists
      */
-    public synchronized PlatformEvent getEvent(final Hash h) {
-        final ShadowEvent shadowEvent = hashToShadowEvent.get(h);
+    @Nullable
+    public synchronized PlatformEvent getEvent(@Nullable final Hash hash) {
+        final ShadowEvent shadowEvent = hashToShadowEvent.get(hash);
         return shadowEvent == null ? null : shadowEvent.getEvent();
     }
 
@@ -614,14 +613,11 @@ public class Shadowgraph implements Clearable {
      * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a parent hash matches a hash in
      * this@entry is inserted.
      *
-     * @param e The Hashgraph event shadow to be inserted
+     * @param event The Hashgraph event shadow to be inserted
      * @return the inserted shadow event
      */
-    private ShadowEvent insert(final EventImpl e) {
-        return insert(e.getBaseEvent());
-    }
-
-    private ShadowEvent insert(final PlatformEvent event) {
+    @NonNull
+    private ShadowEvent insert(@NonNull final PlatformEvent event) {
         final ShadowEvent sp = shadow(event.getSelfParent());
         final ShadowEvent op = shadow(event.getOtherParents());
 
@@ -690,7 +686,8 @@ public class Shadowgraph implements Clearable {
      * @return An insertable status, indicating whether the event can be inserted, and if not, the reason it can not be
      * inserted.
      */
-    private InsertableStatus insertable(final PlatformEvent e) {
+    @NonNull
+    private InsertableStatus insertable(@Nullable final PlatformEvent e) {
         if (e == null) {
             return InsertableStatus.NULL_EVENT;
         }
