@@ -480,9 +480,8 @@ jobs:
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
-        env:
-          CODECOV_TOKEN: ${{ secrets.codecov-token }}
         with:
+          token: ${{ secrets.codecov-token }}
           files: gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Publish to Codacy
