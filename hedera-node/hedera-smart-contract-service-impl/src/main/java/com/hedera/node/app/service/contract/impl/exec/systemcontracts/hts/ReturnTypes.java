@@ -103,9 +103,9 @@ public class ReturnTypes {
                 + ",string" // ledgerId
             + ")"
         + ")";
-    // spotless:off
+
     public static final String RESPONSE_CODE_TOKEN_INFO_V2 = "(int32,"
-            // TokenInfo
+            // TokenInfoV2
             + "("
                 // HederaTokenV2
                 + "("
@@ -166,9 +166,9 @@ public class ReturnTypes {
         + ")";
 
     public static final String RESPONSE_CODE_FUNGIBLE_TOKEN_INFO_V2 = "(int32,"
-            // FungibleTokenInfo
+            // FungibleTokenInfoV2
             + "("
-                // TokenInfo
+                // TokenInfoV2
                 + "("
                     // HederaTokenV2
                         + "("
@@ -231,9 +231,9 @@ public class ReturnTypes {
         + ")";
 
     public static final String RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO_V2 = "(int32,"
-            // NonFungibleTokenInfo
+            // NonFungibleTokenInfoV2
             + "("
-                // TokenInfo
+                // TokenInfoV2
                 + "("
                     // HederaTokenV2
                     + "("
