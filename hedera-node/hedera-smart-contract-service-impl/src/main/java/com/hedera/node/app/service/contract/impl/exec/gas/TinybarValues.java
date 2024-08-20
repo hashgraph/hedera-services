@@ -104,12 +104,14 @@ public class TinybarValues {
     }
 
     public long topLevelTinyCentsGasPrice() {
-        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas();
+        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
+                * topLevelResourcePrices.congestionMultiplier();
     }
 
     public long topLevelTinybarGasPriceFullPrecision() {
-        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
-                * topLevelResourcePrices.congestionMultiplier();
+        return asTinybars(
+                topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
+                        * topLevelResourcePrices.congestionMultiplier());
     }
 
     /**
