@@ -22,8 +22,10 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.tokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator.TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator.TOKEN_INFO_V2;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -39,16 +41,19 @@ import org.apache.tuweni.bytes.Bytes;
 public class TokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
     private final boolean isStaticCall;
+    private final Function function;
 
     public TokenInfoCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            Function function) {
         super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.isStaticCall = isStaticCall;
+        this.function = function;
     }
 
     /**
@@ -77,8 +82,17 @@ public class TokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
         }
-        return successResult(
-                TOKEN_INFO.getOutputs().encodeElements(status.protoOrdinal(), tokenInfoTupleFor(token, ledgerId)),
-                gasRequirement);
+
+        return function.getName().equals(TOKEN_INFO.getName())
+                ? successResult(
+                        TOKEN_INFO
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), tokenInfoTupleFor(token, ledgerId, 1)),
+                        gasRequirement)
+                : successResult(
+                        TOKEN_INFO_V2
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), tokenInfoTupleFor(token, ledgerId, 2)),
+                        gasRequirement);
     }
 }

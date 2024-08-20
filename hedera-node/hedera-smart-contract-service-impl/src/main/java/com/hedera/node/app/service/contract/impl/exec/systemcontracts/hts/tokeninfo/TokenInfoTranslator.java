@@ -32,6 +32,9 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     public static final Function TOKEN_INFO =
             new Function("getTokenInfo(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO);
 
+    public static final Function TOKEN_INFO_V2 =
+            new Function("getTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO_V2);
+
     @Inject
     public TokenInfoTranslator() {
         // Dagger2
@@ -43,7 +46,7 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isSelector(TOKEN_INFO);
+        return attempt.isSelector(TOKEN_INFO, TOKEN_INFO_V2);
     }
 
     /**
@@ -52,13 +55,15 @@ public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        final var args = TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
+        final var function = attempt.isSelector(TOKEN_INFO) ? TOKEN_INFO : TOKEN_INFO_V2;
+        final var args = function.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenInfoCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),
                 token,
-                attempt.configuration());
+                attempt.configuration(),
+                function);
     }
 }

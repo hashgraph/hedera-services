@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FIXED_CUSTOM_FEES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FRACTIONAL_CUSTOM_FEES;
@@ -69,8 +70,14 @@ class NftTokenInfoCallTest extends CallTestBase {
         when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow())).thenReturn(SOMEBODY);
         when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow())).thenReturn(OPERATOR);
 
-        final var subject =
-                new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
+        final var subject = new NftTokenInfoCall(
+                gasCalculator,
+                mockEnhancement(),
+                false,
+                FUNGIBLE_EVERYTHING_TOKEN,
+                2L,
+                config,
+                NON_FUNGIBLE_TOKEN_INFO);
 
         final var result = subject.execute().fullResult().result();
 
@@ -117,7 +124,8 @@ class NftTokenInfoCallTest extends CallTestBase {
         final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
-        final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, null, 0L, config);
+        final var subject = new NftTokenInfoCall(
+                gasCalculator, mockEnhancement(), false, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO);
 
         final var result = subject.execute().fullResult().result();
 
@@ -159,7 +167,8 @@ class NftTokenInfoCallTest extends CallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForMissingTokenStaticCall() {
-        final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config);
+        final var subject =
+                new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO);
 
         final var result = subject.execute().fullResult().result();
 

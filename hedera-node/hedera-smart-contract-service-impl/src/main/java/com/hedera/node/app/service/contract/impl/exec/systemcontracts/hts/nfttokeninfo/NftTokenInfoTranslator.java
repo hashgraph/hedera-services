@@ -32,6 +32,9 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
     public static final Function NON_FUNGIBLE_TOKEN_INFO =
             new Function("getNonFungibleTokenInfo(address,int64)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO);
 
+    public static final Function NON_FUNGIBLE_TOKEN_INFO_V2 = new Function(
+            "getNonFungibleTokenInfoV2(address,int64)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO_V2);
+
     @Inject
     public NftTokenInfoTranslator() {
         // Dagger2
@@ -43,7 +46,7 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO);
+        return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO, NON_FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**
@@ -52,7 +55,9 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        final var args = NON_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
+        final var function =
+                attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO) ? NON_FUNGIBLE_TOKEN_INFO : NON_FUNGIBLE_TOKEN_INFO_V2;
+        final var args = function.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new NftTokenInfoCall(
                 attempt.systemContractGasCalculator(),
@@ -60,6 +65,7 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
                 attempt.isStaticCall(),
                 token,
                 args.get(1),
-                attempt.configuration());
+                attempt.configuration(),
+                function);
     }
 }
