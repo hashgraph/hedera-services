@@ -20,18 +20,18 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class ContractCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
     private static final Logger logger = LogManager.getLogger(ContractCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
-            @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
+            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var receiptBuilder = TransactionReceipt.newBuilder();
         final var recordBuilder = TransactionRecord.newBuilder();
 
