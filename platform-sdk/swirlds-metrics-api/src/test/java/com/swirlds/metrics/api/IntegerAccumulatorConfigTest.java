@@ -50,6 +50,8 @@ class IntegerAccumulatorConfigTest {
         assertThat(config.getAccumulator().applyAsInt(2, 3)).isEqualTo(Integer.max(2, 3));
         assertThat(config.getInitializer()).isNull();
         assertThat(config.getInitialValue()).isZero();
+        assertThat(config.getLabelKeys()).isEmpty();
+        assertThat(config.getPredefinedLabels()).isEmpty();
     }
 
     @Test
@@ -92,6 +94,8 @@ class IntegerAccumulatorConfigTest {
         assertThat(config.getAccumulator().applyAsInt(2, 3)).isEqualTo(Integer.max(2, 3));
         assertThat(config.getInitializer()).isNull();
         assertThat(config.getInitialValue()).isZero();
+        assertThat(config.getLabelKeys()).isEmpty();
+        assertThat(config.getPredefinedLabels()).isEmpty();
 
         assertThat(result.getCategory()).isEqualTo(CATEGORY);
         assertThat(result.getName()).isEqualTo(NAME);
@@ -101,6 +105,8 @@ class IntegerAccumulatorConfigTest {
         assertThat(result.getAccumulator()).isEqualTo(accumulator);
         assertThat(result.getInitializer()).isEqualTo(initializer);
         assertThat(result.getInitialValue()).isEqualTo(42);
+        assertThat(result.getLabelKeys()).isEmpty();
+        assertThat(result.getPredefinedLabels()).isEmpty();
     }
 
     @Test

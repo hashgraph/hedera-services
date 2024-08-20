@@ -19,6 +19,7 @@ package com.swirlds.metrics.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +44,8 @@ class CounterConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
+        assertThat(config.getLabelKeys()).isEmpty();
+        assertThat(config.getPredefinedLabels()).isEmpty();
     }
 
     @Test
@@ -71,12 +74,16 @@ class CounterConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
+        assertThat(config.getPredefinedLabels()).isEqualTo(Set.of());
+        assertThat(config.getLabelKeys()).isEqualTo(Set.of());
 
         assertThat(result.getCategory()).isEqualTo(CATEGORY);
         assertThat(result.getName()).isEqualTo(NAME);
         assertThat(result.getDescription()).isEqualTo(DESCRIPTION);
         assertThat(result.getUnit()).isEqualTo(UNIT);
         assertThat(result.getFormat()).isEqualTo(DEFAULT_FORMAT);
+        assertThat(result.getPredefinedLabels()).isEqualTo(Set.of());
+        assertThat(result.getLabelKeys()).isEqualTo(Set.of());
     }
 
     @Test
