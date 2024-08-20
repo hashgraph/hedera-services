@@ -45,7 +45,7 @@ public class MiscTokenTest {
 
     @HapiTest
     @DisplayName("cannot transfer value to HTS")
-    public Stream<DynamicTest> cannotGetNonsenseKeyType() {
+    public Stream<DynamicTest> cannotTransferValueToHts() {
         return hapiTest(internalCall
                 .call("isATokenWithCall", fungibleToken)
                 .sending(100L)
