@@ -32,10 +32,10 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
-@DisplayName("internalCall")
+@DisplayName("token")
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
-public class InternalCallTest {
+public class MiscTokenTest {
 
     @Contract(contract = "InternalCall", creationGas = 1_000_000L)
     static SpecContract internalCall;
