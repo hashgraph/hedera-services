@@ -91,7 +91,7 @@ public class SystemContractGasCalculator {
      */
     public long canonicalGasRequirement(@NonNull final DispatchType dispatchType) {
         return gasRequirementTinyCents(
-                dispatchPrices.canonicalPriceInTinycents(dispatchType), tinybarValues.morePRECISION());
+                dispatchPrices.canonicalPriceInTinycents(dispatchType), tinybarValues.morePrecision());
     }
 
     /**
@@ -139,7 +139,7 @@ public class SystemContractGasCalculator {
     }
 
     private long asGasRequirementTinyCents(final long tinyCentPrice) {
-        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.morePRECISION());
+        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.morePrecision());
     }
 
     private long gasRequirementTinyCents(long tinyCentsPrice, final long gasPriceInCents) {
