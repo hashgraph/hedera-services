@@ -19,12 +19,13 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.IdType.SENDER;
+import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.standardizeAirdropIds;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -51,6 +52,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
 import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -76,7 +78,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var op = txn.tokenCancelAirdropOrThrow();
         final var allPendingAirdrops = op.pendingAirdrops();
         for (final var airdrop : allPendingAirdrops) {
-            validateTruePreCheck(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
             context.requireAliasedKeyOrThrow(airdrop.senderIdOrThrow(), INVALID_ACCOUNT_ID);
         }
     }
@@ -118,11 +119,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var airdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
 
-        final var pendingAirdropIds = op.pendingAirdrops();
-        for (final var pendingAirdropId : pendingAirdropIds) {
-            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_PENDING_AIRDROP_ID);
-        }
-        pendingAirdropUpdater.removePendingAirdrops(op.pendingAirdrops(), airdropStore, accountStore);
+        final var standardAirdropIds =
+                standardizeAirdropIds(accountStore, airdropStore, op.pendingAirdrops(), EnumSet.of(SENDER));
+        pendingAirdropUpdater.removePendingAirdrops(standardAirdropIds, airdropStore, accountStore);
     }
 
     /**

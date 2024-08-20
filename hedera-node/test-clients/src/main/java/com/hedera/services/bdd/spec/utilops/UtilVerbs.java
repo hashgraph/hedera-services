@@ -988,6 +988,15 @@ public class UtilVerbs {
      * @return the operation
      */
     public static SpecOperation createHollow(final int n, @NonNull final IntFunction<String> nameFn) {
+        return createHollow(n, nameFn, address -> cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS)));
+    }
+
+    public static SpecOperation createHollow(
+            final int n,
+            @NonNull final IntFunction<String> nameFn,
+            @NonNull final Function<Address, HapiCryptoTransfer> creationFn) {
+        requireNonNull(nameFn);
+        requireNonNull(creationFn);
         return withOpContext((spec, opLog) -> {
             final List<AccountID> createdIds = new ArrayList<>();
             final List<String> keyNames = new ArrayList<>();
@@ -1002,8 +1011,7 @@ public class UtilVerbs {
                             keyNames,
                             addresses -> blockingOrder(addresses.stream()
                                     .map(address -> blockingOrder(
-                                            cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS))
-                                                    .via("autoCreate" + address),
+                                            creationFn.apply(address).via("autoCreate" + address),
                                             getTxnRecord("autoCreate" + address)
                                                     .exposingCreationsTo(creations ->
                                                             createdIds.add(asAccount(creations.getFirst())))))

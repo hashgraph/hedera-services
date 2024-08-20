@@ -123,9 +123,6 @@ public class ClassicCreatesCall extends AbstractCall {
                     RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
         } else {
             operations().collectFee(spenderId, nonGasCost);
-            // (FUTURE) remove after differential testing, mono-service used the entire
-            // value in the frame for the non-gas cost even if it was only a portion
-            nonGasCost = frame.getValue().toLong();
         }
 
         final var op = syntheticCreate.tokenCreationOrThrow();

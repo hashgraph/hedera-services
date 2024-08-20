@@ -24,10 +24,10 @@ import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.jetbrains.annotations.Nullable;
 
 public class RemoteNode extends AbstractNode implements HederaNode {
     public RemoteNode(@NonNull final NodeMetadata metadata) {
