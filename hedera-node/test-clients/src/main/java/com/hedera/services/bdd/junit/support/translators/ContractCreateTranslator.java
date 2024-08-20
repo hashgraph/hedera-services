@@ -32,7 +32,6 @@ public class ContractCreateTranslator implements TransactionRecordTranslator<Sin
     @Override
     public SingleTransactionRecord translate(
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-
         final var receiptBuilder = TransactionReceipt.newBuilder();
         final var recordBuilder = TransactionRecord.newBuilder();
 

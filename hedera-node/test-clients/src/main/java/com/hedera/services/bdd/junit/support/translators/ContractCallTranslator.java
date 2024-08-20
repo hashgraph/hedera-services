@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -33,8 +34,11 @@ public class ContractCallTranslator implements TransactionRecordTranslator<Singl
             @NotNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var recordBuilder = TransactionRecord.newBuilder();
         final var txnOutput = transaction.output();
+        var contractCallOutput = CallContractOutput.DEFAULT;
+
         if (txnOutput != null && txnOutput.hasContractCall()) {
-            final var contractCallResult = txnOutput.contractCall().contractCallResult();
+            contractCallOutput = txnOutput.contractCall();
+            final var contractCallResult = contractCallOutput.contractCallResult();
             recordBuilder.contractCallResult(contractCallResult);
         } else {
             logger.info("Was not able to translate ContractCall operation");
@@ -43,7 +47,7 @@ public class ContractCallTranslator implements TransactionRecordTranslator<Singl
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),
-                txnOutput != null ? txnOutput.contractCall().sidecars() : List.of(),
+                txnOutput != null ? contractCallOutput.sidecars() : List.of(),
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
