@@ -23,11 +23,26 @@ import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * Configuration for the block stream.
+ * @param streamMode Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
+ * @param writerMode if we are writing to a file or gRPC stream
+ * @param blockFileDir directory to store block files
+ * @param compressFilesOnCreation whether to compress files on creation
+ */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-        // Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
+        // Default value of BOTH enables both record and block stream
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
         /* [FILE|GRPC] */
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation) {}
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation) {
+    public boolean streamBlocks() {
+        return streamMode == StreamMode.BLOCKS || streamMode == StreamMode.BOTH;
+    }
+
+    public boolean streamRecords() {
+        return streamMode == StreamMode.RECORDS || streamMode == StreamMode.BOTH;
+    }
+}

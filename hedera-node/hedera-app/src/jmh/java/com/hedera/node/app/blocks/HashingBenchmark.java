@@ -25,7 +25,6 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.MapUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
@@ -98,7 +97,6 @@ public class HashingBenchmark {
     private static BlockItem randomBlockItem() {
         return BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
-                        .cause(StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION)
                         .consensusTimestamp(randomTimestamp())
                         .stateChanges(randomStateChanges()))
                 .build();

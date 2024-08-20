@@ -37,6 +37,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.hedera.node.config.types.StreamMode;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
@@ -116,12 +117,13 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            final boolean isBaseBuilder) {
+            final boolean isBaseBuilder,
+            @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
         final var builder =
-                switch (HandleWorkflow.STREAM_MODE) {
+                switch (streamMode) {
                     case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BLOCKS -> new BlockStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);

@@ -33,7 +33,6 @@ import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
@@ -173,7 +172,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         pendingItems.add(roundStateChangeListener.stateChanges());
         final var blockItem = BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
-                        .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
                         .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
                         .stateChanges(StateChange.newBuilder()
                                 .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())

@@ -63,8 +63,7 @@ public class TokenUriCall extends AbstractCall {
         var metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
         if (token != null) {
             if (token.tokenType() == FUNGIBLE_COMMON) {
-                // (FUTURE) consider removing this pattern, but for now match
-                // mono-service by halting on an invalid token type
+                // For backwards compatibility, we need to halt here per issue #8746.
                 return gasOnly(
                         haltResult(
                                 HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,

@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
@@ -34,6 +33,9 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -586,6 +588,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case THROTTLE_USAGE_SNAPSHOTS_VALUE -> singletonUpdateChange.throttleUsageSnapshotsValueOrThrow();
             case TIMESTAMP_VALUE -> singletonUpdateChange.timestampValueOrThrow();
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
+            case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
         };
     }
 
@@ -593,7 +596,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         return switch (queuePushChange.value().kind()) {
             case UNSET, PROTO_STRING_ELEMENT -> throw new IllegalStateException("Queue push value is not supported");
             case PROTO_BYTES_ELEMENT -> new ProtoBytes(queuePushChange.protoBytesElementOrThrow());
-            case TRANSACTION_RECORD_ENTRY_ELEMENT -> queuePushChange.transactionRecordEntryElementOrThrow();
+            case TRANSACTION_RECEIPT_ENTRIES_ELEMENT -> queuePushChange.transactionReceiptEntriesElementOrThrow();
         };
     }
 
@@ -601,8 +604,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         return switch (mapChangeKey.keyChoice().kind()) {
             case UNSET -> throw new IllegalStateException("Key choice is not set for " + mapChangeKey);
             case ACCOUNT_ID_KEY -> mapChangeKey.accountIdKeyOrThrow();
-            case ENTITY_ID_PAIR_KEY -> mapChangeKey.entityIdPairKeyOrThrow();
-            case ENTITY_NUMBER_KEY -> mapChangeKey.entityNumberKeyOrThrow();
+            case TOKEN_RELATIONSHIP_KEY -> pairFrom(mapChangeKey.tokenRelationshipKeyOrThrow());
+            case ENTITY_NUMBER_KEY -> new EntityNumber(mapChangeKey.entityNumberKeyOrThrow());
             case FILE_ID_KEY -> mapChangeKey.fileIdKeyOrThrow();
             case NFT_ID_KEY -> mapChangeKey.nftIdKeyOrThrow();
             case PROTO_BYTES_KEY -> new ProtoBytes(mapChangeKey.protoBytesKeyOrThrow());
@@ -615,6 +618,10 @@ public class StateChangesValidator implements BlockStreamValidator {
             case CONTRACT_ID_KEY -> mapChangeKey.contractIdKeyOrThrow();
             case PENDING_AIRDROP_ID_KEY -> mapChangeKey.pendingAirdropIdKeyOrThrow();
         };
+    }
+
+    private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
+        return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
     }
 
     private static Object mapValueFor(@NonNull final MapChangeValue mapChangeValue) {

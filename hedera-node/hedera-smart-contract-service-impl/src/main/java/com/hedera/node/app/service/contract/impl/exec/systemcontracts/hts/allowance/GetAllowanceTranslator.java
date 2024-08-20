@@ -48,7 +48,7 @@ public class GetAllowanceTranslator extends AbstractCallTranslator<HtsCallAttemp
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector()) || matchesErcSelector(attempt.selector());
+        return attempt.isSelector(GET_ALLOWANCE, ERC_GET_ALLOWANCE);
     }
 
     /**
@@ -56,7 +56,7 @@ public class GetAllowanceTranslator extends AbstractCallTranslator<HtsCallAttemp
      */
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
-        if (matchesErcSelector(attempt.selector())) {
+        if (attempt.isSelector(ERC_GET_ALLOWANCE)) {
             final var call = GetAllowanceTranslator.ERC_GET_ALLOWANCE.decodeCall(attempt.inputBytes());
             return new GetAllowanceCall(
                     attempt.addressIdConverter(),
@@ -86,9 +86,5 @@ public class GetAllowanceTranslator extends AbstractCallTranslator<HtsCallAttemp
 
     private boolean matchesErcSelector(@NonNull final byte[] selector) {
         return Arrays.equals(selector, ERC_GET_ALLOWANCE.selector());
-    }
-
-    private boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, GET_ALLOWANCE.selector());
     }
 }

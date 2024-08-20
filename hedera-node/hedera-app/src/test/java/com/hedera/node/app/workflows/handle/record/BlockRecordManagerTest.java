@@ -183,7 +183,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -271,7 +271,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -422,7 +422,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
         final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
+                app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
@@ -433,7 +433,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
         final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
+                app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));

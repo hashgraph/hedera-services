@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.services;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
-
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -71,9 +69,7 @@ public class MigrationStateChanges {
             stateChanges.add(roundChanges);
         }
         return stateChanges.stream()
-                .map(changes -> StateChanges.newBuilder()
-                        .cause(STATE_CHANGE_CAUSE_MIGRATION)
-                        .stateChanges(changes))
+                .map(changes -> StateChanges.newBuilder().stateChanges(changes))
                 .toList();
     }
 }

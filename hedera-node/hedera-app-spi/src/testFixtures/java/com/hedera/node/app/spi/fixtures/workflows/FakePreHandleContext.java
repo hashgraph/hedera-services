@@ -256,18 +256,36 @@ public class FakePreHandleContext implements PreHandleContext {
         return requireKey(key);
     }
 
+    @NonNull
+    @Override
+    public PreHandleContext requireAliasedKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        requireNonNull(responseCode);
+        return requireKey(accountID, responseCode, true);
+    }
+
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
             @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);
+        return requireKey(accountID, responseCode, false);
+    }
 
+    private @NonNull PreHandleContext requireKey(
+            final @Nullable AccountID accountID, final @NonNull ResponseCodeEnum responseCode, boolean allowAliases)
+            throws PreCheckException {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
-
-        final var account = accountStore.getAccountById(accountID);
+        final Account account;
+        if (allowAliases) {
+            account = accountStore.getAliasedAccountById(accountID);
+        } else {
+            account = accountStore.getAccountById(accountID);
+        }
         if (account == null) {
             throw new PreCheckException(responseCode);
         }

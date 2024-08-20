@@ -65,7 +65,8 @@ class BlockImplUtilsTest {
             case STATE_ID_UPGRADE_FILE -> "FileService.UPGRADE_FILE";
             case STATE_ID_FREEZE_TIME -> "FreezeService.FREEZE_TIME";
             case STATE_ID_UPGRADE_FILE_HASH -> "FreezeService.UPGRADE_FILE_HASH";
-            case STATE_ID_RECORD_QUEUE -> "RecordCache.TransactionRecordQueue";
+            case STATE_ID_PLATFORM_STATE -> "PlatformStateService.PLATFORM_STATE";
+            case STATE_ID_TRANSACTION_RECEIPTS_QUEUE -> "RecordCache.TransactionReceiptQueue";
             case STATE_ID_SCHEDULES_BY_EQUALITY -> "ScheduleService.SCHEDULES_BY_EQUALITY";
             case STATE_ID_SCHEDULES_BY_EXPIRY -> "ScheduleService.SCHEDULES_BY_EXPIRY_SEC";
             case STATE_ID_SCHEDULES_BY_ID -> "ScheduleService.SCHEDULES_BY_ID";

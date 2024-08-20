@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records.impl;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
@@ -24,7 +23,6 @@ import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
-import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -43,6 +41,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -88,7 +87,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private final BlockRecordStreamProducer streamFileProducer;
 
-    private final BlockStreamManager blockStreamManager;
     /**
      * A {@link BlockInfo} of the most recently completed block. This is actually available in state, but there
      * is no reason for us to read it from state every time we need it, we can just recompute and cache this every
@@ -99,6 +97,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * True when we have completed event recovery. This is not yet implemented properly.
      */
     private boolean eventRecoveryCompleted = false;
+
+    private final ConfigProvider configProvider;
 
     /**
      * Construct BlockRecordManager
@@ -111,13 +111,10 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     public BlockRecordManagerImpl(
             @NonNull final ConfigProvider configProvider,
             @NonNull final State state,
-            @NonNull final BlockRecordStreamProducer streamFileProducer,
-            @NonNull final BlockStreamManager blockStreamManager) {
-
+            @NonNull final BlockRecordStreamProducer streamFileProducer) {
         requireNonNull(state);
-        requireNonNull(configProvider);
+        this.configProvider = requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
-        this.blockStreamManager = requireNonNull(blockStreamManager);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
         // write any new records to stream
@@ -280,6 +277,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
+        final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         final var runningHashes = new RunningHashes(
@@ -290,35 +288,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-        if (HandleWorkflow.STREAM_MODE != RECORDS) {
-            final var endOfRoundTimestamp = ((BlockStreamManagerImpl) blockStreamManager).endOfBlockTimestamp();
-            final var runningHashesBlockItem = BlockItem.newBuilder()
-                    .stateChanges(StateChanges.newBuilder()
-                            .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK)
-                            .consensusTimestamp(endOfRoundTimestamp)
-                            .stateChanges(StateChange.newBuilder()
-                                    .stateId(STATE_ID_RUNNING_HASHES.protoOrdinal())
-                                    .singletonUpdate(
-                                            new SingletonUpdateChange(singletonUpdateChangeValueFor(runningHashes)))
-                                    .build())
-                            .build())
-                    .build();
-            blockStreamManager.writeItem(runningHashesBlockItem);
-            final var blockInfo = requireNonNull(
-                    states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY).get());
-            final var blockInfoBlockItem = BlockItem.newBuilder()
-                    .stateChanges(StateChanges.newBuilder()
-                            .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK)
-                            .consensusTimestamp(endOfRoundTimestamp)
-                            .stateChanges(StateChange.newBuilder()
-                                    .stateId(STATE_ID_BLOCK_INFO.protoOrdinal())
-                                    .singletonUpdate(
-                                            new SingletonUpdateChange(singletonUpdateChangeValueFor(blockInfo)))
-                                    .build())
-                            .build())
-                    .build();
-            blockStreamManager.writeItem(blockInfoBlockItem);
-        }
     }
 
     public long lastBlockNo() {

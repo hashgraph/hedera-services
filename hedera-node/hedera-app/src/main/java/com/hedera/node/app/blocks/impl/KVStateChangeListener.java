@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -117,10 +118,10 @@ public class KVStateChangeListener implements StateChangeListener {
                     .accountIdKey(accountID)
                     .build();
             case EntityIDPair entityIDPair -> MapChangeKey.newBuilder()
-                    .entityIdPairKey(entityIDPair)
+                    .tokenRelationshipKey(new TokenAssociation(entityIDPair.tokenId(), entityIDPair.accountId()))
                     .build();
             case EntityNumber entityNumber -> MapChangeKey.newBuilder()
-                    .entityNumberKey(entityNumber)
+                    .entityNumberKey(entityNumber.number())
                     .build();
             case FileID fileID -> MapChangeKey.newBuilder().fileIdKey(fileID).build();
             case NftID nftID -> MapChangeKey.newBuilder().nftIdKey(nftID).build();

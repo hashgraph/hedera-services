@@ -127,7 +127,7 @@ public class HapiUtils {
     }
 
     /** Subtracts the given number of seconds from the given {@link Timestamp}, returning a new {@link Timestamp}. */
-    public static Timestamp minus(@NonNull final Timestamp ts, @NonNull final long seconds) {
+    public static Timestamp minus(@NonNull final Timestamp ts, final long seconds) {
         return Timestamp.newBuilder()
                 .seconds(ts.seconds() - seconds)
                 .nanos(ts.nanos())

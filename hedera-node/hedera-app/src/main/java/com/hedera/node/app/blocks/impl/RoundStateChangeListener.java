@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks.impl;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -36,7 +35,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
+import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -106,8 +105,7 @@ public class RoundStateChangeListener implements StateChangeListener {
     public BlockItem stateChanges() {
         final var stateChanges = StateChanges.newBuilder()
                 .stateChanges(allStateChanges())
-                .consensusTimestamp(endOfBlockTimestamp())
-                .cause(STATE_CHANGE_CAUSE_END_OF_BLOCK);
+                .consensusTimestamp(endOfBlockTimestamp());
         return BlockItem.newBuilder().stateChanges(stateChanges).build();
     }
 
@@ -135,9 +133,9 @@ public class RoundStateChangeListener implements StateChangeListener {
             case ProtoBytes protoBytesElement -> {
                 return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement.value());
             }
-            case TransactionRecordEntry transactionRecordEntryElement -> {
+            case TransactionReceiptEntries transactionReceiptEntriesElement -> {
                 return new OneOf<>(
-                        QueuePushChange.ValueOneOfType.TRANSACTION_RECORD_ENTRY_ELEMENT, transactionRecordEntryElement);
+                        QueuePushChange.ValueOneOfType.TRANSACTION_RECEIPT_ENTRIES_ELEMENT, transactionReceiptEntriesElement);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
