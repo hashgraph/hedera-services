@@ -235,7 +235,7 @@ public class ReturnTypes {
             + "("
                 // TokenInfo
                 + "("
-                    // HederaToken
+                    // HederaTokenV2
                     + "("
                         + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
                         // TokenKey array
