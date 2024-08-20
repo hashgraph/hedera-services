@@ -4,8 +4,7 @@
 
 ## Summary
 
-Update the architecture for the consensus node to reduce complexity, improve performance, and improve stability. This
-design document defines the next iteration of the consensus node architecture, especially as related to consensus.
+Update the architecture for the consensus node to reduce complexity, improve performance, and improve stability.
 
 | Metadata           | Entities                                                 | 
 |--------------------|----------------------------------------------------------|
@@ -19,11 +18,8 @@ design document defines the next iteration of the consensus node architecture, e
 Much of the motivation for this design can come down to paying down technical debt and simplifying the overall design.
 While the current design is full of amazing high quality solutions to various problems, it is also more complex than
 necessary, leading to hard-to-find or predict bugs, performance problems, or liveness (stability) issues while under
-load. In addition, the separation of the "platform" and "services" in the consensus node is somewhat arbitrary, based
-on an abstract concept of what the "platform" was long before Hedera was even created. This work is also necessary to
-prepare for more autonomous node operation, and community nodes.
+load. This work is also necessary to prepare for autonomous node operation, and community nodes.
 
-Principally:
 1. This design defines several high-level modules, made up of internal "components". Whereas the current implementation
    only has a logical grouping of components into systems, this design has concrete modules providing a strong
    modularization and isolation with strict contracts between modules, leading to an overall simpler to understand
@@ -35,27 +31,19 @@ Principally:
    and "execution". The Consensus module takes transactions and produces rounds. Everything required to make that happen
    (gossip, event validation, hashgraph, event creation, etc.) is part of the Consensus module. It is a library, and
    instances of the classes and interfaces within this library are created and managed by the Execution module. The
-   Consensus module has no state, no main method, and minimal dependencies.
-5. The Execution module is a mixture of what we have called "services" and some parts of "platform". The services code
-   has a `HandleWorkflow` and the platform has a number of classes that handle "post-consensus" responsibilities such
-   as managing the merkle tree, making fast copies of it, hashing it, etc. These responsibilities will be merged into
-   the `HandleWorkflow`, dramatically simplifying the interface and boundary between "consensus"/"platform" and
-   "execution"/"services".
-6. Backpressure, or dealing with a system under stress, will be radically redesigned based on
-   [PID](https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller) controller logic,
-   and known as "dynamic throttles". The key concept is that we primarily throttle using information from _the entire
-   network_, rather than throttling only based on information available to the Consensus module like we do today.
+   Consensus module does not persist state, has no main method, and has minimal dependencies.
+5. The Execution module is a mixture of what we have called "services" and some parts of "platform". The responsibility 
+   for reconnect, state saving, lifecycle, etc. will be merged with modules making up the base of the application,
+   dramatically simplifying the interface and boundary between "consensus"/"platform" and "execution"/"services".
+6. Backpressure, or dealing with a system under stress, will be radically redesigned based on "dynamic network
+   throttles" using [PID](https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller)
+   controller logic. The key concept is that we primarily throttle using information from _the entire network_, rather
+   than throttling only based on information available to the Consensus module like we do today.
 
 The purpose of this document is not to describe the implementation details of each of the different modules. Nor does
-it go into great detail about the design of the execution layer (which is primarily documented elsewhere). Instead,
+it go into great detail about the design of the Execution module (which is primarily documented elsewhere). Instead,
 it provides an overview of the whole system, with an emphasis on the Consensus module, and how the Consensus module
 interacts with the Execution module.
-
-For example, the responsibility for reconnect moves in this design from Consensus to Execution. The details on how the
-"app-base" module in the services code will be updated to support reconnect is not covered in this document, but the
-high-level description of why reconnect is moved to Execution, and how it impacts Consensus, will be covered.
-
-### Dependencies, Interactions, and Implications
 
 This document supports existing features implemented in new ways, and it provides for new features (such as the dynamic
 address book) which have not been implemented. After acceptance, a long series of changes will be required to modify
@@ -66,8 +54,7 @@ will evaluate all other feature designs and implementations.
 
 ## Design
 
-TODO: THIS IMAGE MUST BE UPDATED
-![Design](consensus-node-mid-level-arch.png)
+![Design](consensus-module-arch.png)
 
 The consensus node is made up of two parts, a Consensus layer, and an Execution layer. Each layer is represented by
 JPMS modules. The Consensus layer will actually be made up of two different modules -- an API module and an
@@ -78,19 +65,19 @@ and a runtime dependency on the Consensus layer's implementation module.
 
 Each submodule will likewise be defined by a pair of JPMS modules -- an API module and an implementation module. By
 separating the API and implementation modules, we make it possible to supply multiple implementation modules (which is
-useful for various testing or future maintenance tasks), and we also support circular dependencies between modules.
+useful for testing or future maintenance tasks), and we also support circular dependencies between modules.
 
-### Initialization of the Consensus Module
+### Lifecycle of the Consensus Module
 
 When Execution starts, it will (at the appropriate time in its startup routine) create an instance of Consensus, and
 `initialize` it with appropriate arguments, which will be defined in detail in further documents. Critically,
-Consensus **does not maintain state**. Execution is wholly responsible for the definition and management of state. To
-start Consensus from a particular moment in time, Execution will need to initialize it with some information such as the
-judges of the round it wants to start from. It is by using this `initialize` method that Execution is able to create
-a Consensus instance that starts from genesis, or from a particular round.
+Consensus **does not persist state**. Execution is wholly responsible for the management of state. To start Consensus
+from a particular moment in time, Execution will need to initialize it with some information such as the judges of the
+round it wants to start from. It is by using this `initialize` method that Execution is able to create a Consensus
+instance that starts from genesis, or from a particular round.
 
 Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus, and create a complete new one,
-and `initialize` it appropriately with information from the starting round, after having downloaded data and
+and `initialize` it appropriately with information from the starting round, after having downloaded necessary data and
 initializing itself with the correct round. Reconnect therefore is the responsibility of Execution. Consensus does not
 have to consider reconnect at all.
 
@@ -98,11 +85,11 @@ have to consider reconnect at all.
 
 The Gossip module is responsible for gossiping messages between peers. The actual gossip implementation is not described
 here, except to say, that it will be possible to define and implement both event-aware and event-agnostic gossip
-implementations either to a fully connected network or where the set of peers is a subset of the whole. Nor does this
-document dictate whether raw TCP, UDP, HTTP2, gRPC, or other network protocols are used. This will be left to the design
+implementations either to a fully connected network or where the set of peers is a subset of the whole. This document
+does not dictate whether raw TCP, UDP, HTTP2, gRPC, or other network protocols are used. This will be left to the design
 documents for Gossip.
 
-![Gossip](gossip-system.png)
+![Gossip](gossip-module.png)
 
 Gossip is the only part of Consensus that communicates over the network with gossip peers. When Gossip is initialized,
 it is supplied a "roster". This roster contains the full set of nodes participating in gossip, along with their metadata
@@ -119,56 +106,47 @@ When the Gossip module receives events through gossip, it *may* choose to perfor
 them to Event Intake, but it is not required to do so.
 
 Some gossip algorithms send events in *topological order*. A peer may still receive events out of order, because
-different events may arrive from different peers at different times. To support topological ordering, events received by
-Gossip are not retained by Gossip, they are simply passed directly to Event Intake, which after verification, also
-orders events in topological order and recorded durably to disk, and then send back to the Gossip module to be sent out
-to its gossip peers.
-
-**The key design principle here is that a node will only send valid events through gossip**. If invalid events are
-ever received, you may know the node that sent them to you is dishonest. Validating events increases latency at each
-"hop", but allows us to identify dishonest gossip peers and discipline them accordingly.
+different events may arrive from different peers at different times. Events received by Gossip are not immediately
+retransmitted to its peers. **An honest node will only send valid events through gossip**. If invalid events are ever
+received, you may know the node that sent them to you is dishonest. Validating events increases latency at each "hop",
+but allows us to identify dishonest gossip peers and discipline them accordingly. For this reason, events received by
+Gossip are sent to Event Intake, which eventually send valid, ordered events _back_ to Gossip for redistribution.
 
 During execution, for all nodes that are online and able to keep up, events are received "live" and processed
 immediately and re-gossiped. However, if a node is offline and then comes back online, or is starting back up after
 reconnect, it may be missing events. In this case, the node will need to ask its peers for any events it is missing.
 
-For this reason, every honest node needs to buffer some events, so when its peer asks it for events, it is able to
-give them. Events can be "non-ancient", "ancient", or "expired". Although the definition for these is subject to
-configuration, we will here use some example values. Non-ancient events are those events that are either not yet
-in a consensus round, or are in one of the last 26 consensus rounds. Expired events are those that are in a round
-that is older than the last most recent 500 consensus rounds. And ancient events are those that are in a round between
-26 and 500.
-
-The Gossip module may cache all non-expired events, but must cache all non-ancient events.
-
-Note that it must be a fixed
-number of rounds that defines "expired", because otherwise it is possible for a quiescent network to never recover (see the documentation for
-the tipset algorithm, and other-parent selection, for specifics on why this is true). This number must also be large
-enough in case rounds/sec increases dramatically, because reconnect requires a certain amount of time (not rounds) for
-catchup. As long as this number is large enough to meet the requirements regardless of the rounds/sec, and as long as it
-is fixed in number of rounds, then it will work.
+For this reason, every honest node needs to buffer some events, so when its peers ask it for events, it is able to
+send them. The Gossip module **may** cache all non-expired events, but **must** cache all non-ancient events.
+Non-expired events are crucial to support "catch up" after reconnect, where a node, after reconnecting, may still be
+several minutes behind its peers, and catches up by receiving those older events through gossip.
 
 #### Peer Discipline
 
-If a peer is misbehaving, the Gossip module will notify the Sheriff module that one of its peers is misbehaving. For
+If a peer misbehaves, the Gossip module will notify the Sheriff module that one of its peers is misbehaving. For
 example, if a peer is not responding to requests, even after repeated attempts to reconnect with it, it may be "bad".
 Or if the peer is sending events that exceed an acceptable rate, or exceed an acceptable size, then it is "bad". Or if
 the events it sends cannot be parsed, or are signed incorrectly, or in other ways fail validation, then it is "bad".
-There may be additional rules by the Gossip module or others (such as Event Intake detecting branching) that could lead to
-a peer being marked as "bad". A "bad" node may be dishonest, or it may be broken. The two cases may be
-indistinguishable, so punishment must be adjusted based on the severity of the attack.
+There may be additional rules by the Gossip module or others (such as Event Intake detecting branching) that could lead
+to a peer being marked as "bad". A "bad" node may be dishonest, or it may be broken. The two cases may be
+indistinguishable, so punishment must be adjusted based on the severity of the behavior.
 
 If the Sheriff decides that the peer should be penalized, then it will instruct the Gossip module to "shun" that peer.
 "Shunning" is a unilateral behavior that one node can take towards another, where it terminates the connection and
-refuses to work further with that node. If the Sheriff decides to welcome a peer back into the fold, it can instruct the
+refuses to work further with that peer. If the Sheriff decides to welcome a peer back into the fold, it can instruct the
 Gossip module to "welcome" the peer back.
 
 #### Falling Behind
 
-It may be that during gossip, the Gossip module finds that it cannot continue. Perhaps all connections have failed, or
-perhaps the node is so far behind that none of its peers are able to supply any events. In this case, the node is unable
-to operate, and must reconnect. Gossip will make a call through the Consensus module interface to notify Execution that
-gossip is "down". Execution will then initiate reconnect.
+When a node is operating, it receives events from its peers through gossip. If the node for some reason is unable to
+receive and process events fast enough, it may start to "fall behind" of other nodes. Perhaps Bob is processing round
+200 while Alice is still on round 100. If Alice continues to fall farther and farther behind, the time may come when she
+can no longer get old events from her peers. From the perspective of the peer, the events Alice says she needs may have
+expired, and Bob may no longer be holding those events.
+
+If this happens, then Alice has "fallen behind" and must reconnect. There is no longer any chance that she can get the
+events she needs through gossip alone. Gossip will detect this situation and make a call through the Consensus module
+interface to notify Execution that the node is behind. Execution will then initiate reconnect.
 
 Fundamentally, Execution is responsible for reconnect, but it cannot differentiate between a quiescent network or a
 behind node just by looking at the lack of rounds coming from Consensus. So Consensus **must** tell Execution if it
@@ -187,6 +165,8 @@ information from Hashgraph in the form of round metadata.
 The Event Intake System is responsible for receiving events, validating them, and emitting them in *topological order*.
 It also makes sure they are durably persisted before emission so as to add resilience to the node in case of certain
 catastrophic failure scenarios.
+
+![Event Intake](event-intake-module.png)
 
 #### Validation
 
@@ -216,20 +196,6 @@ If an event has a very old birth-round that is ancient, it is dropped. If a node
 it may end up being disciplined (the exact rules around this will be defined in subsequent design docs for the
 Event Intake module).
 
-#### Self Events
-
-Events are not only given to the Event Intake system through gossip. Self events (those events created by the node
-itself) are also fed to Event Intake. These events **may** bypass some steps in the pipeline. For example, self-events
-do not need validation. Likewise, when replaying events from the pre-consensus event buffer, those checks are not needed
-(since they have already been proved valid and are in topological order).
-
-#### Peer Discipline
-
-During the validation process, if an event is invalid, it is rejected, and this information is passed to the Sheriff
-module so the offending node may be disciplined. Note that the node to be disciplined will be the node that sent this
-bad event to us, not the origin node. This information (which node sent the event) must be captured by Gossip and
-passed to Event Intake as part of the event metadata.
-
 #### Topological Ordering
 
 Events are buffered if necessary to ensure that each parent event has been emitted from Event Intake before any child
@@ -243,6 +209,49 @@ so it can evict old events. In this case, the "orphan buffer" holds events until
 arrived, or the events have become ancient due to the advancement of the "non-ancient event window" and the event is
 dropped from the buffer. This document does not prescribe the existence of the orphan buffer or the method by which
 events are sorted and emitted in topological order, but it does describe a method by which old events can be dropped.
+
+#### Birth-Round Filtering
+
+When an event is created, it is assigned a "birth round". This is the most recent consensus round on the node at the
+time the event is created. Two different nodes in the same network might be working on very different moments in the
+hashgraph timeline. One node, Alice, may be working on round 100 while a better-connected or faster node, Bob is working
+on round 200. When Alice creates an event, it will be for birth-round 100, while an event created by Bob at the same
+instant would be for birth-round 200.
+
+In a sense, while both events are created at the time wall-clock time, Alice's event is actually older, because of what
+Alice understood about the state of the world at the time the event was created.
+
+It is not possible for any one node to get much farther ahead of all other nodes, since the only way to have a newer
+birth-round is to advance the hashgraph, and that requires 2/3rd of the network by stake weight. Therefore, in this
+example, Alice is not just 100 rounds behind Bob, she must be 100 rounds behind at least 2/3rd of the network by
+stake weight, or, Bob is lying. He may create events at round 200, but not actually have a hashgraph that has advanced
+to that round.
+
+Each event must be validated using the roster associated with its birth-round. If Alice is far behind Bob and receives
+an event for a birth-round she doesn't have the roster for, then she cannot validate the event. So the Event Intake
+module must either buffer incoming events until the current consensus round has advanced far enough to have a roster
+for the birth-round of buffered events, or Event Intake should just drop events with no corresponding roster.
+
+If the event has been dropped, it is possible to fetch missing events from peers using Gossip or, if the nodes has
+fallen so far behind it can no longer fetch events from peers in gossip, then the node will reconnect.
+
+While this document does not strictly define the behavior (see the design docs for Event Intake), whichever of these
+behaviors are chosen will work within the architecture of this system. Note that birth-round filtering happens before
+validation.
+
+#### Self Events
+
+Events are not only given to the Event Intake system through gossip. Self events (those events created by the node
+itself) are also fed to Event Intake. These events **may** bypass some steps in the pipeline. For example, self-events
+do not need validation. Likewise, when replaying events from the pre-consensus event buffer, those checks are not needed
+(since they have already been proved valid and are in topological order).
+
+#### Peer Discipline
+
+During the validation process, if an event is invalid, it is rejected, and this information is passed to the Sheriff
+module so the offending node may be disciplined. Note that the node to be disciplined will be the node that sent this
+bad event to us, not the origin node. This information (which node sent the event) must be captured by Gossip and
+passed to Event Intake as part of the event metadata.
 
 #### Assigning Generations
 
@@ -285,6 +294,12 @@ coordinate with the Hashgraph module or the Execution layer.
 
 (NOTE: The actual implementation of persistence is to be defined in subsequent design documents).
 
+It is essential for events to be durably persisted before being sent to the Hashgraph, and self-events must be
+persisted before being gossiped. While it may not be necessary for all code paths to have durable pre-consensus events
+before they can handle them, to simplify the understanding of the system, we simply make all events durable before
+distributing them. This leads to a nice, clean, simple understanding that, during replay, the entire system will
+behave predictably.
+
 #### Emitting Events
 
 When the Event Intake module emits valid, topologically sorted events, it sends them to:
@@ -298,26 +313,15 @@ definitely see an event via `pre-handle` prior to seeing it in `handle`. Technic
 `pre-handle` first, but that thread may be parked arbitrarily long by the system and the `handle` thread may actually
 execute first. This is extremely unlikely, but must be defended against in the Execution layer.
 
-It is essential for events to be durably persisted before being sent to the Hashgraph, and self-events must be
-persisted before being gossiped. While it may not be necessary for all code paths to have durable pre-consensus events
-before they can handle them, to simplify the understanding of the system, we simply make all events durable before
-distributing them. This leads to a nice, clean, simple understanding that, during replay, the entire system will
-behave predictably.
-
-#### Roster Changes
-
-Since Event Intake must validate events, and since event validation requires knowing the roster (to verify the event
-source is in the roster, and the gossip source is in the roster, and the signature of the event creator is correct),
-Event Intake must know about changes to the roster. It is imperative that Event Intake maintain a history of rosters,
-so it can support peers that are farther behind in consensus than it is.
-
 ### Hashgraph Module
 
 The Hashgraph module orders events into rounds, and assigns timestamps to events. It is given ordered, persisted
 events from Event Intake. Sometimes when an event is added, it turns out to be the last event that was needed to cause
 an entire "round" of events to come to consensus. When this happens, the Hashgraph module emits a `round`. The round
-includes metadata about the round (the list of judge hashes, the round number, etc.) along with the events that were
-included in the round, in order, with their consensus-assigned timestamps.
+includes metadata about the round (the list of judge hashes, the round number, the roster, etc.) along with the events
+that were included in the round, in order, with their consensus-assigned timestamps.
+
+![Hashgraph](hashgraph-module.png)
 
 Rounds are immutable. They are sent "fire and forget" style from the Hashgraph module to other modules that require
 them. Some modules only really need the metadata, or a part of the metadata. Others require the actual round data.
@@ -326,9 +330,8 @@ We will pass the full round info (metadata + events) to all listeners, and they 
 #### Roster Changes
 
 When the roster changes, the Hashgraph algorithm must be made aware. It needs roster information to be able to come
-to consensus. While several modules must respond to roster changes, it is the Hashgraph module that "owns" the roster.
-Each round has an associated roster -- the roster that was used to come to consensus on that round. While the
-Hashgraph owns the roster, it does not _determine_ the roster, this happens in the Execution layer.
+to consensus. While several modules must respond to roster changes, it is the Hashgraph module that determines the
+applicable roster for any given round.
 
 At runtime, there is a service in Execution that exposes to the world API for adding nodes to, or removing nodes from,
 the address book. At some point in time, Execution will decide the time is right to construct a new consensus roster,
@@ -336,19 +339,30 @@ and pass that roster to the consensus system. **This must be deterministic**. Ea
 same roster to the same rounds. However, Consensus and Execution run in completely different threads, and possibly,
 in different processes.
 
-With this architecture, we introduce a new concept into `EventCore`. `EventCore` has a `payload`, which is a `byte[]`
-that the Execution layer can use to carry whatever payload is meaningful to it. The consensus layer needs an analogous
-section of the `EventCore` into which messages particular to Consensus can be placed. This section will be called
-`repeated control_messages`. A `ControlMessage` is a protobuf message used to control, in some way, the consensus
-system.
+Each `EventCore` will have the ability to carry two different types of transactions: `user_transactions` and
+`system_transactions`. A "system" transaction is a transaction known by Consensus, but not Execution, while "user"
+transactions are those supplied by Execution, and unknown to Consensus. By separating these two fields, we make it very
+inexpensive for logic in Consensus to iterate over and handle "system" transactions regardless of the number of user
+transactions in the event.
 
-TODO: I'm seriously thinking of having "system_transactions" and "user_transactions" instead of "control_messages" and
-"payload".
+Each node, individually, decides deterministically at some round that it is time to adopt a new roster, and
+deterministically select the exact same roster. For example, this might happen on the first transaction after midnight,
+or it might happen every 30 minutes, or it might happen after TSS keys have been generated and messages exchanged with
+peers. However it happens, every node will deterministically decide on the same exact roster at the same consensus-time
+moment and call their respective Consensus systems to `changeRoster`. This call is then handled by the Event Intake
+system. Each node's Event Intake will take this roster and include it in the next event to be gossiped as a "system"
+transaction.
 
-`ControlMessage` has a one-of, among which is `RosterChangeMessage`. This message will have the new roster, and be
-signed by the network as a whole. Each honest node will submit a `RosterChangeMessage`, and the Hashgraph module will
-recognize these messages. When it encounters the **first** such message for a given roster in a round that has come to
-consensus, the very next round will use that new activated roster.
+Each node's Hashgraph module will watch for events containing new rosters. If it sees a new roster, it will hash it,
+and keep track in an in-memory data structure of how many nodes (and their consensus weight) have suggested this same
+new roster. When 2/3 of nodes by stake weight have suggested the same roster, it becomes effective. The Hashgraph
+module includes the current roster hash and the full roster in the metadata for every round. In this way, by simply
+observing rounds emitted from Hashgraph, every other module in the system can know all consensus information.
+
+The Hashgraph module also includes a `state` section in the metadata of the round. This is used by the Execution layer
+to persist the Consensus state, for reconnect and for restart. In the state is the roster and the judges for the round,
+and possibly other information. When `initialize` is called, this same state is made available again to the Consensus
+node.
 
 ### Event Creator Module
 
@@ -358,6 +372,8 @@ gossip". Therefore, the Event Creator has two main responsibilities:
 
 1. Create events with "other parent(s)" so as to help the hashgraph progress consensus
 2. Fill events with transactions to be sent to the network through Gossip
+
+![Event Creator](event-creator-module.png)
 
 #### Creating Events
 
@@ -375,10 +391,6 @@ exactly one "other parent" per event, but multiple "other parents" is shown to e
 traffic. While the implementation of Event Creator may choose to support only a single "other parent", the module is
 designed and intended to support multiple "other parents".
 
-TODO: How do we apply network settings!!!! It must be similar to the roster changes, it must be done in consensus and
-reported through the "round" mechanism. Because network settings are handled in Execution, but communicated back to
-Consensus. OR, whatever mechanism we settle on for communication of rounds, must also apply to config changes.
-
 #### Filling Events
 
 Events form a large amount of the network traffic between nodes. Each event has some overhead in terms of metadata,
@@ -389,13 +401,9 @@ find the optimal balance between event creation frequency and size. The particul
 algorithm, or "Enhanced Other Parent Selection" algorithm) is not defined here, but can be found in the design
 documentation for Event Creator.
 
-When new transactions are created, they are buffered here in the Event Creator until the next possible event is
-available. If the event creator cannot accept additional transactions (i.e. there is a backlog too great for it), then
-it can refuse and return an error to the Execution layer, which will then be responsible for either retrying later, or
-indicating to the client that it is busy and the client should retry later.
-
-Newly created events are sent to Event Intake, which then validates them, assigns generations, durably persists them,
-etc., before sending them out through Gossip and so forth.
+When it is time to create a new event, a call is made to Execution to fill the event with user transactions. Newly
+created events are sent to Event Intake, which then validates them, assigns generations, durably persists them, etc.,
+before sending them out through Gossip and so forth.
 
 #### Stale Self-Events
 
@@ -415,6 +423,8 @@ also sends this information to the Execution layer, so it may record misbehavior
 misbehavior to other nodes in the network, allowing the network as a whole to observe and report dishonest or broken
 nodes.
 
+![Sheriff](sheriff-module.png)
+
 A node may "shun" another node, by refusing to talk with it via Gossip. If a node were to be shunned by all its
 gossip peers, then it has been effectively removed from the network, as it can no longer submit events that will be
 spread through the network, and will therefore not contribute to consensus. Should a malicious node attempt to attack
@@ -430,11 +440,56 @@ here, but will be defined within the Sheriff's design documentation.
 
 ### Public API
 
-There are no changes to the public API as a result of this design.
+![Consensus API](consensus-api.png)
 
----
+The public API of the Consensus module forms the interface boundary between Consensus and Execution.
 
-## Implementation and Delivery Plan
+#### initialize
 
-How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
-needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability? 
+Called by the Execution layer when it creates a new Consensus instance. This call will include any required arguments
+to fully initialized Consensus. For example, it will include any initial state corresponding to the current round
+at which Consensus should begin work (such as the correct set of judges for that particular round). Each module within
+Consensus supports some kind of initialization API that will be called. For example, each module must be initialized
+with the initial roster for the starting round.
+
+#### destroy
+
+Called by the Execution layer when it destroys an existing Consensus instance. This is particularly needed to shut down
+network connections held by Gossip, but could be used to stop executors, background tasks, etc. as necessary.
+
+#### changeRoster
+
+Called by the Execution layer when a new roster is prepared and ready for use. 
+
+#### onBehind
+
+Called by Consensus to notify Execution that the Consensus system is very far behind in processing relative to its
+peers (most likely because it cannot find a peer that contains any of the events needed for advancing consensus).
+Execution will use this call to initiate a reconnect procedure.
+
+#### onBadNode
+
+Called by Consensus to notify Execution of information about bad nodes. This can include both when a node goes "bad",
+or when it is back in the good graces of the Sheriff.
+
+#### onNewEvent
+
+Called by the Event Intake module of Consensus to give the Execution layer a change to fill the event with transactions.
+Note that in the current system the control in inverted -- transactions are submitted by Execution to Consensus, which
+buffers them and includes them in events. As per this design, Consensus will reach out to Execution to ask it for all
+transactions that should be included in the next event, allowing the Execution layer (the application) to decide which
+transactions to include.
+
+#### onStaleEvent
+
+Called by Consensus to notify Execution when an event has become stale, giving Execution a chance to inspect the
+transactions of that stale event, and resubmit those transactions in the next `onNewEvent` if they are still valid.
+
+#### onPreHandleEvent
+
+Called by Consensus once for each event emitted in topological order from Event Intake, giving Execution a chance to
+perform some work before the event even comes to consensus.
+
+#### onRound
+
+Called by Consensus once for each round that comes to consensus.
