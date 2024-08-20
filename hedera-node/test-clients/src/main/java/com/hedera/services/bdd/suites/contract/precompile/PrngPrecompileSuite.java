@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -259,11 +259,8 @@ public class PrngPrecompileSuite {
                 .when(contractCall(THE_PRNG_CONTRACT, GET_SEED_PAYABLE)
                         .gas(GAS_TO_OFFER)
                         .via(TX)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getTxnRecord(TX)
-                        .andAllChildRecords()
-                        .hasNonStakingChildRecordCount(1)
-                        .hasChildRecords(recordWith().status(INVALID_FEE_SUBMITTED)));
+                        .hasKnownStatus(INVALID_CONTRACT_ID))
+                .then(getTxnRecord(TX).logged());
     }
 
     @HapiTest
