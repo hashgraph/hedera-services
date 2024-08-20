@@ -385,6 +385,22 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("multiple FT airdrops to same receiver")
+    final Stream<DynamicTest> multipleFtAirdropsSameReceiver() {
+        final String BOB = "BOB";
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, BOB, FUNGIBLE_TOKEN))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 30)));
+    }
+
+    @HapiTest
     @DisplayName("multiple pending transfers in one airdrop same token different receivers")
     final Stream<DynamicTest> multiplePendingInOneAirdropDifferentReceivers() {
         final String ALICE = "ALICE";
