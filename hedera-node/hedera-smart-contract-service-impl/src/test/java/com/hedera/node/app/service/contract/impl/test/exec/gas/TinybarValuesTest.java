@@ -66,7 +66,7 @@ class TinybarValuesTest {
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
         final var expectedRbhPrice = RBH_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
-        assertEquals(expectedRbhPrice, subject.topLevelTinybarRbhPrice());
+        assertEquals(expectedRbhPrice, subject.topLevelTinyCentRbhPrice());
     }
 
     @Test
