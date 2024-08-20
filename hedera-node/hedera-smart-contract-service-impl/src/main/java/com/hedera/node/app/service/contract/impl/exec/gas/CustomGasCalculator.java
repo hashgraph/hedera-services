@@ -79,8 +79,8 @@ public class CustomGasCalculator extends CancunGasCalculator {
         final var hevmGasCost = gasCostOfStoring(
                 logSize(numTopics, dataLength),
                 lifetime,
-                tinybarValues.topLevelTinybarRbhPrice(),
-                tinybarValues.topLevelTinybarGasPrice());
+                tinybarValues.topLevelTinyCentRbhPrice(),
+                tinybarValues.topLevelTinyCentsGasPrice());
 
         return Math.max(evmGasCost, hevmGasCost);
     }

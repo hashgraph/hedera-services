@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromTinybarsToTinycents;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromTinycentsToTinybars;
 import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREPAID_RESOURCE_PRICES;
 
@@ -84,6 +85,10 @@ public class TinybarValues {
         return fromTinycentsToTinybars(exchangeRate, tinycents);
     }
 
+    public long asTinyCents(final long tinyBars) {
+        return fromTinybarsToTinycents(exchangeRate, tinyBars);
+    }
+
     /**
      * Returns the tinybar-denominated price of a unit of gas for the current operation based on the current exchange
      * rate, the current congestion multiplier, and the tinycent-denominated price of gas in the {@code service} fee
@@ -96,6 +101,15 @@ public class TinybarValues {
                 topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
                         / FEE_SCHEDULE_UNITS_PER_TINYCENT
                         * topLevelResourcePrices.congestionMultiplier());
+    }
+
+    public long topLevelTinyCentsGasPrice() {
+        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas();
+    }
+
+    public long topLevelTinybarGasPriceFullPrecision() {
+        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
+                * topLevelResourcePrices.congestionMultiplier();
     }
 
     /**
@@ -124,6 +138,14 @@ public class TinybarValues {
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 
+    public long morePRECISION() {
+        if (childTransactionResourcePrices == null) {
+            throw new IllegalStateException("Cannot dispatch a child transaction from a query");
+        }
+        return childTransactionResourcePrices.basePrices().servicedataOrThrow().gas()
+                * childTransactionResourcePrices.congestionMultiplier();
+    }
+
     /**
      * Returns the tinybar-denominated price of a RAM-byte-hour (rbh) for the current operation based on the current
      * exchange rate, the current congestion multiplier, and the tinycent-denominated price of a rbh in the
@@ -131,10 +153,8 @@ public class TinybarValues {
      *
      * @return the tinybar-denominated price of a rbh for the current operation
      */
-    public long topLevelTinybarRbhPrice() {
-        return asTinybars(
-                topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()
-                        / FEE_SCHEDULE_UNITS_PER_TINYCENT
-                        * topLevelResourcePrices.congestionMultiplier());
+    public long topLevelTinyCentRbhPrice() {
+        return topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()
+                * topLevelResourcePrices.congestionMultiplier();
     }
 }

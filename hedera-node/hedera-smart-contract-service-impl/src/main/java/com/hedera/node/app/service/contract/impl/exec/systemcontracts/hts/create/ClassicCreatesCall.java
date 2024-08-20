@@ -113,7 +113,7 @@ public class ClassicCreatesCall extends AbstractCall {
                         .transactionValidStart(timestamp)
                         .build())
                 .build();
-        final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreateWithId, spenderId);
+        final var baseCost = gasCalculator.feeCalculatorPriceInTinyBars(syntheticCreateWithId, spenderId);
         // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
         long nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {

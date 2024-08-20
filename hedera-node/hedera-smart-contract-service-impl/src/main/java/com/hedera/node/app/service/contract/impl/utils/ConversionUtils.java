@@ -724,6 +724,11 @@ public class ConversionUtils {
                 .longValueExact();
     }
 
+    public static long fromTinybarsToTinycents(final ExchangeRate exchangeRate, final long tinyBars) {
+        return fromAToB(BigInteger.valueOf(tinyBars), exchangeRate.centEquiv(), exchangeRate.hbarEquiv())
+                .longValueExact();
+    }
+
     /**
      * Given an amount in one unit and its conversion rate to another unit, returns the equivalent amount
      * in the other unit.

@@ -58,35 +58,18 @@ public class SystemContractGasCalculator {
             @NonNull final AccountID payer) {
         requireNonNull(body);
         requireNonNull(dispatchType);
-        return gasRequirement(body, payer, canonicalPriceInTinybars(dispatchType));
+        return gasRequirementWithTinyCents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
-    /**
-     * Given a transaction body whose dispatch gas requirement must be at least equivalent to a given minimum
-     * amount of tinybars, returns the gas requirement for the transaction to be dispatched.
-     *
-     * @param body the transaction body to be dispatched
-     * @param payer the payer of the transaction
-     * @param minimumPriceInTinybars the minimum equivalent tinybar cost of the dispatch
-     * @return the gas requirement for the transaction to be dispatched
-     */
-    public long gasRequirement(
-            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
-        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
-        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
-        return asGasRequirement(priceInTinybars);
-    }
+    public long gasRequirementWithTinyCents(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
+        final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
+        // NOTE: precision loss from tinybar to tinycent conversion?
 
-    /**
-     * Given a transaction body whose, returns the gas requirement for the transaction to be
-     * dispatched using the gas price of the top-level HAPI operation and no markup.
-     *
-     * @param body the transaction body to be dispatched
-     * @param payer the payer of the transaction
-     * @return the gas requirement for the transaction to be dispatched
-     */
-    public long topLevelGasRequirement(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
-        return feeCalculator.applyAsLong(body, payer) / tinybarValues.topLevelTinybarGasPrice();
+        // crypto transfer can have nominal price more than minimum// 96688 hBar
+        final var priceInTinyCents =
+                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
+        return asGasRequirementTinyCents(priceInTinyCents);
     }
 
     /**
@@ -95,7 +78,7 @@ public class SystemContractGasCalculator {
      * @return the gas price for the top-level HAPI operation
      */
     public long topLevelGasPrice() {
-        return tinybarValues.topLevelTinybarGasPrice();
+        return tinybarValues.topLevelTinybarGasPriceFullPrecision();
     }
 
     /**
@@ -107,7 +90,8 @@ public class SystemContractGasCalculator {
      * @return the canonical gas requirement for that dispatch type
      */
     public long canonicalGasRequirement(@NonNull final DispatchType dispatchType) {
-        return asGasRequirement(canonicalPriceInTinybars(dispatchType));
+        return gasRequirementTinyCents(
+                dispatchPrices.canonicalPriceInTinycents(dispatchType), tinybarValues.morePRECISION());
     }
 
     /**
@@ -128,9 +112,9 @@ public class SystemContractGasCalculator {
      * @param dispatchType the dispatch type
      * @return the canonical price for that dispatch type
      */
-    public long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
+    public long canonicalPriceInTinyCents(@NonNull final DispatchType dispatchType) {
         requireNonNull(dispatchType);
-        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
+        return dispatchPrices.canonicalPriceInTinycents(dispatchType);
     }
 
     /**
@@ -140,7 +124,7 @@ public class SystemContractGasCalculator {
      * @param payer the payer account
      * @return the canonical price for that dispatch
      */
-    public long canonicalPriceInTinybars(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
+    public long feeCalculatorPriceInTinyBars(@NonNull final TransactionBody body, @NonNull final AccountID payer) {
         return feeCalculator.applyAsLong(body, payer);
     }
 
@@ -154,20 +138,15 @@ public class SystemContractGasCalculator {
         return gas * tinybarValues.childTransactionTinybarGasPrice();
     }
 
-    /**
-     * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
-     *
-     * @param tinybarPrice the tinybar price
-     * @return the equivalent gas requirement at the current gas price
-     */
-    private long asGasRequirement(final long tinybarPrice) {
-        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPriceFullPrecision());
+    private long asGasRequirementTinyCents(final long tinyCentPrice) {
+        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.morePRECISION());
     }
 
-    private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
+    private long gasRequirementTinyCents(long tinyCentsPrice, final long gasPriceInCents) {
         // We round up to the nearest gas unit, and then add 20% to account for the premium
         // of doing a HAPI operation from inside the EVM
-        final var gasRequirement = (tinybarPrice + gasPrice - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPrice;
+        final var gasRequirement =
+                (tinyCentsPrice + gasPriceInCents - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPriceInCents;
         return gasRequirement + (gasRequirement / 5);
     }
 }
