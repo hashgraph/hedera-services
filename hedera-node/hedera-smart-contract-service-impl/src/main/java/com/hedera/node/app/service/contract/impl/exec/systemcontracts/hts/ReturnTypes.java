@@ -107,30 +107,30 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_TOKEN_INFO_V2 = "(int32,"
             // TokenInfo
             + "("
-            // HederaTokenV2
-            + "("
-            + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
-            // TokenKey array
-            + "("
-            + "uint256," // keyType
-            // KeyValue
-            + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
-            + ")[],"
-            // Expiry
-            + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
-            + "bytes" // metadata
-            + ")"
+                // HederaTokenV2
+                + "("
+                    + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
+                    // TokenKey array
+                    + "("
+                        + "uint256," // keyType
+                        // KeyValue
+                        + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
+                    + ")[],"
+                    // Expiry
+                    + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
+                    + "bytes" // metadata
+                    + ")"
 
-            + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
+                    + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
 
-            // FixedFee array
-            + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
-            // FractionalFee array
-            + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
-            // RoyaltyFee array
-            + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
-            + ",string" // ledgerId
-            + ")"
+                    // FixedFee array
+                    + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
+                    // FractionalFee array
+                    + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
+                    // RoyaltyFee array
+                    + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
+                    + ",string" // ledgerId
+                + ")"
             + ")";
 
     public static final String RESPONSE_CODE_FUNGIBLE_TOKEN_INFO = "(int32,"
@@ -168,34 +168,34 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_FUNGIBLE_TOKEN_INFO_V2 = "(int32,"
             // FungibleTokenInfo
             + "("
-            // TokenInfo
-            + "("
-            // HederaTokenV2
-            + "("
-            + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
-            // TokenKey array
-            + "("
-            + "uint256," // keyType
-            // KeyValue
-            + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
-            + ")[],"
-            // Expiry
-            + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
-            + "bytes" // metadata
-            + ")"
+                // TokenInfo
+                + "("
+                    // HederaTokenV2
+                        + "("
+                            + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
+                            // TokenKey array
+                            + "("
+                                + "uint256," // keyType
+                                // KeyValue
+                                + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
+                            + ")[],"
+                            // Expiry
+                            + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
+                            + "bytes" // metadata
+                        + ")"
 
-            + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
+                        + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
 
-            // FixedFee array
-            + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
-            // FractionalFee array
-            + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
-            // RoyaltyFee array
-            + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
-            + ",string" // ledgerId
-            + "),"
-            + "int32" // decimals
-            + ")"
+                        // FixedFee array
+                        + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
+                        // FractionalFee array
+                        + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
+                        // RoyaltyFee array
+                        + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
+                        + ",string" // ledgerId
+                    + "),"
+                    + "int32" // decimals
+                + ")"
             + ")";
 
     public static final String RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO = "(int32,"
@@ -233,34 +233,34 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO_V2 = "(int32,"
             // NonFungibleTokenInfo
             + "("
-            // TokenInfo
-            + "("
-            // HederaToken
-            + "("
-            + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
-            // TokenKey array
-            + "("
-            + "uint256," // keyType
-            // KeyValue
-            + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
-            + ")[],"
-            // Expiry
-            + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
-            + "bytes" // metadata
-            + ")"
+                // TokenInfo
+                + "("
+                    // HederaToken
+                    + "("
+                        + "string,string,address,string,bool,int64,bool," // name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault
+                        // TokenKey array
+                        + "("
+                            + "uint256," // keyType
+                            // KeyValue
+                            + "(bool,address,bytes,bytes,address)" // inheritedAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId
+                        + ")[],"
+                        // Expiry
+                        + "(uint32,address,uint32)," // second, autoRenewAccount, autoRenewPeriod
+                        + "bytes" // metadata
+                    + ")"
 
-            + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
+                    + ",int64,bool,bool,bool," // totalSupply, deleted, defaultKycStatus, pauseStatus
 
-            // FixedFee array
-            + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
-            // FractionalFee array
-            + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
-            // RoyaltyFee array
-            + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
-            + ",string" // ledgerId
-            + "),"
-            + "int64,address,int64,bytes,address" // serialNumber, ownerId, creationTime, metadata, spenderId
-            + ")"
+                    // FixedFee array
+                    + "(uint32,address,bool,bool,address)[]," // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
+                    // FractionalFee array
+                    + "(uint32,uint32,uint32,uint32,bool,address)[]," // numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector
+                    // RoyaltyFee array
+                    + "(uint32,uint32,uint32,address,bool,address)[]" // numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector
+                    + ",string" // ledgerId
+                    + "),"
+                    + "int64,address,int64,bytes,address" // serialNumber, ownerId, creationTime, metadata, spenderId
+                + ")"
             + ")";
 
     public static final String RESPONSE_CODE_CUSTOM_FEES = "(int32,"
