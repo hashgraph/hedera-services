@@ -66,8 +66,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -883,6 +885,38 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that overrides the throttles on the target network to the values from the named resource.
+     * @param resource the resource to load the throttles from
+     * @return the operation that overrides the throttles
+     */
+    public static SpecOperation overridingThrottles(@NonNull final String resource) {
+        requireNonNull(resource);
+        return sourcing(() -> fileUpdate(THROTTLE_DEFS)
+                .noLogging()
+                .payingWith(GENESIS)
+                .contents(protoDefsFromResource(resource).toByteArray())
+                .hasKnownStatusFrom(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
+    }
+
+    /**
+     * Returns an operation that attempts overrides the throttles on the target network to the values from the
+     * named resource and expects the given failure status.
+     * @param resource the resource to load the throttles from
+     * @param status the expected status
+     * @return the operation that overrides the throttles and expects failure
+     */
+    public static SpecOperation overridingThrottlesFails(
+            @NonNull final String resource, @NonNull final ResponseCodeEnum status) {
+        requireNonNull(resource);
+        requireNonNull(status);
+        return sourcing(() -> fileUpdate(THROTTLE_DEFS)
+                .noLogging()
+                .payingWith(GENESIS)
+                .contents(protoDefsFromResource(resource).toByteArray())
+                .hasKnownStatus(status));
+    }
+
+    /**
      * Returns an operation that restores the given property to its startup value on the target network.
      *
      * @param property the property to restore
@@ -954,6 +988,15 @@ public class UtilVerbs {
      * @return the operation
      */
     public static SpecOperation createHollow(final int n, @NonNull final IntFunction<String> nameFn) {
+        return createHollow(n, nameFn, address -> cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS)));
+    }
+
+    public static SpecOperation createHollow(
+            final int n,
+            @NonNull final IntFunction<String> nameFn,
+            @NonNull final Function<Address, HapiCryptoTransfer> creationFn) {
+        requireNonNull(nameFn);
+        requireNonNull(creationFn);
         return withOpContext((spec, opLog) -> {
             final List<AccountID> createdIds = new ArrayList<>();
             final List<String> keyNames = new ArrayList<>();
@@ -968,8 +1011,7 @@ public class UtilVerbs {
                             keyNames,
                             addresses -> blockingOrder(addresses.stream()
                                     .map(address -> blockingOrder(
-                                            cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS))
-                                                    .via("autoCreate" + address),
+                                            creationFn.apply(address).via("autoCreate" + address),
                                             getTxnRecord("autoCreate" + address)
                                                     .exposingCreationsTo(creations ->
                                                             createdIds.add(asAccount(creations.getFirst())))))
@@ -1381,18 +1423,9 @@ public class UtilVerbs {
         }
     }
 
-    public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
+    public static HapiSpecOperation uploadScheduledContractPrices(@NonNull final String payer) {
         return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("FeeSchedule.json")));
-            if (!spec.tryReinitializingFees()) {
-                throw new IllegalStateException("New fee schedules won't be available, dying!");
-            }
-        });
-    }
-
-    public static HapiSpecOperation uploadGivenFeeSchedules(String payer, String feeSchedules) {
-        return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith(feeSchedules)));
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("scheduled-contract-fees.json")));
             if (!spec.tryReinitializingFees()) {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
@@ -1871,7 +1904,7 @@ public class UtilVerbs {
         });
     }
 
-    public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
+    public static SpecOperation[] takeBalanceSnapshots(String... entities) {
         return HapiSuite.flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L))
                         .noLogging(),
@@ -1880,7 +1913,7 @@ public class UtilVerbs {
                                         spec -> asAccountString(spec.registry().getAccountID(account)) + "Snapshot",
                                         account)
                                 .payingWith(EXCHANGE_RATE_CONTROL))
-                        .toArray(n -> new HapiSpecOperation[n]));
+                        .toArray(n -> new SpecOperation[n]));
     }
 
     public static HapiSpecOperation validateRecordTransactionFees(String txn) {

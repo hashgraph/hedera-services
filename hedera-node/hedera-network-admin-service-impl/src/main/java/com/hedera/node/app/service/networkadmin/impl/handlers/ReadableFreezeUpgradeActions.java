@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static java.util.Objects.requireNonNull;
@@ -350,7 +351,7 @@ public class ReadableFreezeUpgradeActions {
                 log.error("Failed to write line {} with exception : {}", line, e);
             }
             try {
-                Files.write(pemFile, node.gossipCaCertificate().toByteArray());
+                writeCertificatePemFile(pemFile, node.gossipCaCertificate().toByteArray());
             } catch (IOException e) {
                 log.error("Failed to write to {} with exception : {}", pemFile, e);
             }

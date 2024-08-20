@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -52,27 +51,11 @@ class CallOutcomeTest {
     private ContractCreateStreamBuilder contractCreateRecordBuilder;
 
     @Test
-    void doesNotSetAbortCallResultIfNotRequested() {
+    void setsAbortCallResult() {
         final var abortedCall =
                 new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
-        abortedCall.addCallDetailsTo(contractCallRecordBuilder, CallOutcome.ExternalizeAbortResult.NO);
-        verify(contractCallRecordBuilder, never()).contractCallResult(any());
-    }
-
-    @Test
-    void setsAbortCallResultIfRequested() {
-        final var abortedCall =
-                new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
-        abortedCall.addCallDetailsTo(contractCallRecordBuilder, CallOutcome.ExternalizeAbortResult.YES);
+        abortedCall.addCallDetailsTo(contractCallRecordBuilder);
         verify(contractCallRecordBuilder).contractCallResult(any());
-    }
-
-    @Test
-    void onlySetsCreateResultIfNotAborted() {
-        final var abortedCreate =
-                new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, null, 123L, null, null);
-        abortedCreate.addCreateDetailsTo(contractCreateRecordBuilder, CallOutcome.ExternalizeAbortResult.NO);
-        verify(contractCreateRecordBuilder, never()).contractCreateResult(any());
     }
 
     @Test

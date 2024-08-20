@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.system.SwirldState;
@@ -106,6 +107,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             PlatformState platformState = getPlatformState().copy();
             setChild(ChildIndices.PLATFORM_STATE, null);
             merkleStateRoot.setPlatformState(platformState);
+            merkleStateRoot.setRoute(MerkleRouteFactory.getEmptyRoute());
 
             return merkleStateRoot.copy();
         }

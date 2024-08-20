@@ -22,14 +22,20 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder.FAILURE_CUSTOMIZER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPLICITLY_IMMUTABLE_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MUTABLE_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -37,12 +43,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -63,6 +72,12 @@ class UpdateTranslatorTest extends CallTestBase {
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
 
     @Mock
     private ReadableTokenStore readableTokenStore;
@@ -155,31 +170,58 @@ class UpdateTranslatorTest extends CallTestBase {
 
     @Test
     void matchesUpdateV1Test() {
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesUpdateV2Test() {
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesUpdateV3Test() {
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesFailsOnIncorrectSelector() {
+        attempt = prepareHtsAttemptWithSelector(
+                FreezeUnfreezeTranslator.FREEZE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
     void callFromUpdateTest() {
         Tuple tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, hederaToken);
-        Bytes inputBytes = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.encodeCall(tuple));
+        Bytes inputBytes = Bytes.wrapByteBuffer(TOKEN_UPDATE_INFO_FUNCTION_V1.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
-        given(attempt.selector()).willReturn(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.selector());
+        given(attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V1)).willReturn(true);
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convertSender(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);

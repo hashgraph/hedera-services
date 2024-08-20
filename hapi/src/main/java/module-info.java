@@ -48,6 +48,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.blockrecords.schema;
     exports com.hedera.hapi.node.state.schedule;
     exports com.hedera.hapi.node.state.primitives;
+    exports com.hedera.hapi.node.state.roster;
     exports com.hedera.hapi.node.state.throttles;
     exports com.hedera.hapi.node.state.congestion;
     exports com.hedera.hapi.platform.event;

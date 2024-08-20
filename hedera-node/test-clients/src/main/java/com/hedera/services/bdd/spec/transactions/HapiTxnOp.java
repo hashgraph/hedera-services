@@ -107,6 +107,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     protected ResponseCodeEnum actualPrecheck = UNKNOWN;
     protected TransactionReceipt lastReceipt;
 
+    @Nullable
+    private Consumer<TransactionReceipt> receiptValidator;
+
     protected Optional<Function<Transaction, Transaction>> fiddler = Optional.empty();
 
     protected Optional<ResponseCodeEnum> expectedStatus = Optional.empty();
@@ -329,6 +332,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 throw new HapiTxnCheckStateException(
                         String.format("Wrong status! Expected %s, was %s", getExpectedStatus(), actualStatus));
             }
+        }
+        if (actualStatus == SUCCESS && receiptValidator != null) {
+            receiptValidator.accept(lastReceipt);
         }
         if (ensureResolvedStatusIsntFromDuplicate) {
             assertRecordHasExpectedMemo(spec);
@@ -794,6 +800,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T withSubmissionStrategy(@NonNull final SubmissionStrategy submissionStrategy) {
         this.submissionStrategy = submissionStrategy;
+        return self();
+    }
+
+    public T hasSuccessReceipt(@NonNull final Consumer<TransactionReceipt> receiptValidator) {
+        this.receiptValidator = requireNonNull(receiptValidator);
         return self();
     }
 

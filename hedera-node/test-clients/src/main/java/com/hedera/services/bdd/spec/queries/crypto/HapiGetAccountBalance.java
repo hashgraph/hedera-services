@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,7 +30,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
@@ -87,6 +87,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private boolean assertAccountIDIsNotAlias = false;
     private ByteString rawAlias;
 
+    private boolean includeTokenMemoOnError = false;
     List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
     public HapiGetAccountBalance(String account) {
@@ -123,6 +124,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     public HapiGetAccountBalance hasTinyBars(long amount) {
         expected = Optional.of(amount);
+        return this;
+    }
+
+    public HapiGetAccountBalance includeTokenMemoOnError() {
+        includeTokenMemoOnError = true;
         return this;
     }
 
@@ -228,7 +234,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             final var detailsLookup = QueryVerbs.getAccountDetails(
                             "0.0." + balanceResponse.getAccountID().getAccountNum())
                     .payingWith(GENESIS);
-            CustomSpecAssert.allRunFor(spec, detailsLookup);
+            allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
             Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
                     response.getAccountDetails().getAccountDetails().getTokenRelationshipsList().stream()
@@ -244,10 +250,24 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 var tokenId = asTokenId(tokenBalance.getKey(), spec);
                 String[] expectedParts = tokenBalance.getValue().split("-");
                 Long expectedBalance = Long.valueOf(expectedParts[0]);
-                assertEquals(
-                        expectedBalance,
-                        actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
-                        String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
+                try {
+                    assertEquals(
+                            expectedBalance,
+                            actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
+                            String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
+                } catch (AssertionError e) {
+                    if (includeTokenMemoOnError) {
+                        final var lookup = QueryVerbs.getTokenInfo("0.0." + tokenId.getTokenNum());
+                        allRunFor(spec, lookup);
+                        final var memo = lookup.getResponse()
+                                .getTokenGetInfo()
+                                .getTokenInfo()
+                                .getMemo();
+                        Assertions.fail(e.getMessage() + " - M'" + memo + "'");
+                    } else {
+                        throw e;
+                    }
+                }
                 if (!"G".equals(expectedParts[1])) {
                     Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
                     assertEquals(

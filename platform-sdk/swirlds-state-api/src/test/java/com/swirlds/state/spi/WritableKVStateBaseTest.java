@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.state.test.fixtures.MapWritableKVState;
@@ -35,11 +36,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for the base class for all mutable states. All non-abstract methods in this class are
@@ -73,6 +78,65 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
         this.state = Mockito.spy(new MapWritableKVState<>(FRUIT_STATE_KEY, map));
         return state;
+    }
+
+    @Nested
+    @DisplayName("with registered listeners")
+    @ExtendWith(MockitoExtension.class)
+    final class WithRegisteredListeners {
+        @Mock
+        private KVChangeListener<String, String> firstListener;
+
+        @Mock
+        private KVChangeListener<String, String> secondListener;
+
+        @BeforeEach
+        void setUp() {
+            state.registerListener(firstListener);
+            state.registerListener(secondListener);
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of puts in order")
+        void allAreNotifiedOfPut() {
+            final var inOrder = inOrder(firstListener, secondListener);
+            state.put("H", "Honeydew");
+            state.put("I", "Indian Fig");
+            state.commit();
+
+            inOrder.verify(firstListener).mapUpdateChange("H", "Honeydew");
+            inOrder.verify(secondListener).mapUpdateChange("H", "Honeydew");
+            inOrder.verify(firstListener).mapUpdateChange("I", "Indian Fig");
+            inOrder.verify(secondListener).mapUpdateChange("I", "Indian Fig");
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of updates in order")
+        void allAreNotifiedOfUpdates() {
+            final var inOrder = inOrder(firstListener, secondListener);
+            state.put("B", "Blackberry");
+            state.put("C", "Cantaloupe");
+            state.commit();
+
+            inOrder.verify(firstListener).mapUpdateChange("B", "Blackberry");
+            inOrder.verify(secondListener).mapUpdateChange("B", "Blackberry");
+            inOrder.verify(firstListener).mapUpdateChange("C", "Cantaloupe");
+            inOrder.verify(secondListener).mapUpdateChange("C", "Cantaloupe");
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of removes in order")
+        void allAreNotifiedOfRemoveInOrder() {
+            final var inOrder = inOrder(firstListener, secondListener);
+            state.remove("A");
+            state.remove("G");
+            state.commit();
+
+            inOrder.verify(firstListener).mapDeleteChange("A");
+            inOrder.verify(secondListener).mapDeleteChange("A");
+            inOrder.verify(firstListener).mapDeleteChange("G");
+            inOrder.verify(secondListener).mapDeleteChange("G");
+        }
     }
 
     @Nested

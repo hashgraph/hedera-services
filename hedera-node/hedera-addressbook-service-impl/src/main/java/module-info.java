@@ -7,10 +7,10 @@ module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires static transitive java.compiler;
     requires static com.github.spotbugs.annotations;
