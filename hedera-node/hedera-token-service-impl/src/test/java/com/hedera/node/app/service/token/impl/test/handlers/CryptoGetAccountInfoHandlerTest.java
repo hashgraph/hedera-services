@@ -30,9 +30,13 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -73,7 +77,9 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -97,6 +103,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private QueryContext context;
 
+    @Mock(strictness = LENIENT)
+    private Metrics metrics;
+
+    @Mock
+    private SpeedometerMetric balanceSpeedometer;
+
     @Mock
     private Token token1, token2;
     @Mock
@@ -113,7 +125,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         cryptoOpsUsage = new CryptoOpsUsage();
-        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage, instantSource);
+        given(metrics.getOrCreate(any())).willReturn(balanceSpeedometer);
+        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage, instantSource, metrics);
     }
 
     @Test
@@ -281,6 +294,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var cryptoGetInfoResponse = response.cryptoGetInfo();
         assertEquals(ResponseCodeEnum.OK, cryptoGetInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
+        if (balancesInQueriesEnabled) {
+            verify(balanceSpeedometer).update(1);
+        } else {
+            verify(balanceSpeedometer, never()).update(anyDouble());
+        }
     }
 
     @ParameterizedTest
@@ -347,6 +365,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         assertEquals(
                 balancesInQueriesEnabled ? 2 : 0,
                 cryptoGetInfoResponse.accountInfo().tokenRelationships().size());
+        if (balancesInQueriesEnabled) {
+            verify(balanceSpeedometer).update(2);
+        } else {
+            verify(balanceSpeedometer, never()).update(anyDouble());
+        }
     }
 
     @ParameterizedTest

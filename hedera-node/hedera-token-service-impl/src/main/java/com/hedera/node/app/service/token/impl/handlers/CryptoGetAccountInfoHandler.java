@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.AccountInfo;
 import com.hedera.hapi.node.token.CryptoGetInfoQuery;
@@ -56,9 +57,12 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -69,8 +73,14 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
+
+    private static final SpeedometerMetric.Config BALANCE_SPEEDOMETER_CONFIG = new SpeedometerMetric.Config(
+                    "app", "queriedAccountBalances")
+            .withDescription("Number of account balances requested in GetAccountInfo queries per second");
+
     private final CryptoOpsUsage cryptoOpsUsage;
     private final InstantSource instantSource;
+    private final SpeedometerMetric balanceSpeedometer;
 
     /**
      * Default constructor for injection.
@@ -78,9 +88,13 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      */
     @Inject
     public CryptoGetAccountInfoHandler(
-            @NonNull final CryptoOpsUsage cryptoOpsUsage, @NonNull final InstantSource instantSource) {
+            @NonNull final CryptoOpsUsage cryptoOpsUsage,
+            @NonNull final InstantSource instantSource,
+            @NonNull final Metrics metrics) {
         this.cryptoOpsUsage = requireNonNull(cryptoOpsUsage);
         this.instantSource = requireNonNull(instantSource);
+
+        this.balanceSpeedometer = metrics.getOrCreate(BALANCE_SPEEDOMETER_CONFIG);
     }
 
     @Override
@@ -182,8 +196,10 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                 info.alias(account.alias());
             }
             if (tokensConfig.balancesInQueriesEnabled()) {
-                info.tokenRelationships(tokenRelationshipsOf(
-                        account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery()));
+                final List<TokenRelationship> tokenRelationships = tokenRelationshipsOf(
+                        account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery());
+                balanceSpeedometer.update(tokenRelationships.size());
+                info.tokenRelationships(tokenRelationships);
             }
             info.stakingInfo(AccountSummariesApi.summarizeStakingInfo(
                     stakingConfig.rewardHistoryNumStoredPeriods(),
