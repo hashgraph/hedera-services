@@ -30,7 +30,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamService;

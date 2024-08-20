@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +87,7 @@ public enum BlockStreamAccess {
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
                         updateChange.valueOrThrow().nodeValueOrThrow()));
         return nodesById.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().number()))
+                .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .toList();
     }
@@ -109,7 +108,7 @@ public enum BlockStreamAccess {
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
                         updateChange.valueOrThrow().stakingNodeInfoValueOrThrow()));
         return infosById.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().number()))
+                .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .toList();
     }

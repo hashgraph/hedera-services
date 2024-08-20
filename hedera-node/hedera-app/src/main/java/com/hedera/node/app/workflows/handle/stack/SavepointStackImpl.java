@@ -40,7 +40,6 @@ import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.HandleOutput;
-import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
@@ -110,7 +109,12 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final StreamMode streamMode) {
         return new SavepointStackImpl(
-                state, maxBuildersBeforeUser, maxBuildersAfterUser, roundStateChangeListener, kvStateChangeListener, streamMode);
+                state,
+                maxBuildersBeforeUser,
+                maxBuildersAfterUser,
+                roundStateChangeListener,
+                kvStateChangeListener,
+                streamMode);
     }
 
     /**
@@ -245,13 +249,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * captures the key/value changes in the given stream builder.
      */
     private void commitFullStack(@NonNull final StreamBuilder builder) {
-        if (streamMode!= RECORDS && kvStateChangeListener != null) {
+        if (streamMode != RECORDS && kvStateChangeListener != null) {
             kvStateChangeListener.resetStateChanges();
         }
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
-        if (streamMode!= RECORDS && kvStateChangeListener != null) {
+        if (streamMode != RECORDS && kvStateChangeListener != null) {
             builder.stateChanges(kvStateChangeListener.getStateChanges());
         }
         setupFirstSavepoint(baseBuilder.category());

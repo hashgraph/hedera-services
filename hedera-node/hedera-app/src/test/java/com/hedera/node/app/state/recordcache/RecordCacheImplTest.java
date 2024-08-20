@@ -397,10 +397,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(getReceipt(cache, txId)).isEqualTo(receipt);
@@ -421,10 +418,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(getReceipts(cache, txId)).containsExactly(receipt);
@@ -445,10 +439,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(getReceipts(cache, PAYER_ACCOUNT_ID)).containsExactly(receipt);
@@ -571,10 +562,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(getRecord(cache, txId)).isEqualTo(record);
@@ -595,10 +583,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(getRecords(cache, txId)).containsExactly(record);
@@ -657,10 +642,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    0,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).containsExactly(record);
@@ -719,10 +701,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    1L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, 2L)).isEqualTo(OTHER_NODE);
@@ -742,10 +721,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    1L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, 1L)).isEqualTo(SAME_NODE);
@@ -765,18 +741,9 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    1L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
-            cache.add(
-                    2L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
-            cache.add(
-                    3L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(2L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(3L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, 11L)).isEqualTo(OTHER_NODE);
@@ -797,18 +764,9 @@ final class RecordCacheImplTest extends AppTestBase {
                     .build();
 
             // When the record is added to the cache
-            cache.add(
-                    1L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
-            cache.add(
-                    2L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
-            cache.add(
-                    3L,
-                    PAYER_ACCOUNT_ID,
-                    List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(2L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+            cache.add(3L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, currentNodeId)).isEqualTo(SAME_NODE);

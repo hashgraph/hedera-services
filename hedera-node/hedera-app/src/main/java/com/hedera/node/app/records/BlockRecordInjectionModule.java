@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
@@ -26,7 +25,6 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.impl.producers.formats.v7.BlockRecordFormatV7;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;

@@ -103,9 +103,8 @@ public class RoundStateChangeListener implements StateChangeListener {
     }
 
     public BlockItem stateChanges() {
-        final var stateChanges = StateChanges.newBuilder()
-                .stateChanges(allStateChanges())
-                .consensusTimestamp(endOfBlockTimestamp());
+        final var stateChanges =
+                StateChanges.newBuilder().stateChanges(allStateChanges()).consensusTimestamp(endOfBlockTimestamp());
         return BlockItem.newBuilder().stateChanges(stateChanges).build();
     }
 
@@ -135,7 +134,8 @@ public class RoundStateChangeListener implements StateChangeListener {
             }
             case TransactionReceiptEntries transactionReceiptEntriesElement -> {
                 return new OneOf<>(
-                        QueuePushChange.ValueOneOfType.TRANSACTION_RECEIPT_ENTRIES_ELEMENT, transactionReceiptEntriesElement);
+                        QueuePushChange.ValueOneOfType.TRANSACTION_RECEIPT_ENTRIES_ELEMENT,
+                        transactionReceiptEntriesElement);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

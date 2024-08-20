@@ -19,7 +19,6 @@ package com.hedera.node.app.state;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hederahashgraph.api.proto.java.TransactionReceiptEntries;
 import com.swirlds.state.State;
@@ -59,10 +58,7 @@ public interface HederaRecordCache extends RecordCache {
      *                           the order of items in this list.
      */
     /*HANDLE THREAD ONLY*/
-    void add(
-            long nodeId,
-            @NonNull AccountID payerAccountId,
-            @NonNull List<SingleTransactionRecord> transactionRecords);
+    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is

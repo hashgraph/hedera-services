@@ -261,8 +261,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     }
 
     private boolean isGenesisMigrationChange(@NonNull final StateChanges stateChanges) {
-        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp)
-                && stateChanges.cause() == STATE_CHANGE_CAUSE_MIGRATION;
+        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp);
     }
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {

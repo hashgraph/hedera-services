@@ -421,8 +421,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
@@ -432,8 +432,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsNotSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));

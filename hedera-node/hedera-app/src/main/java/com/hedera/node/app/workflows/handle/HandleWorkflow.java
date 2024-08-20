@@ -29,7 +29,6 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
-import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
@@ -41,8 +40,8 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -368,9 +367,7 @@ public class HandleWorkflow {
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
             recordCache.add(
-                    userTxn.creatorInfo().nodeId(),
-                    userTxn.txnInfo().payerID(),
-                    handleOutput.recordStreamItems());
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);

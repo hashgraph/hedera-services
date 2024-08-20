@@ -263,8 +263,7 @@ public class ChildDispatchFactory {
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childTokenContext =
-                new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
+        final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
         return new RecordDispatch(
                 builder,
                 config,
