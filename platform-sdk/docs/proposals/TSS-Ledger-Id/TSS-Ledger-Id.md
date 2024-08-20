@@ -635,7 +635,7 @@ message TssVoteMapKey {
   /**
    * The node id of the node that created the TssVote.
    */
-  uint64 node_id;
+  uint64 node_id = 2;
 }
 ```
 
