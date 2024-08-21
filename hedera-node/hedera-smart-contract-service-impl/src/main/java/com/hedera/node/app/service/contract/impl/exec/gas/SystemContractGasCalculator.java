@@ -103,7 +103,7 @@ public class SystemContractGasCalculator {
      * @return the minimum gas requirement for a view query
      */
     public long viewGasRequirement() {
-        return FIXED_VIEW_GAS_COST;
+        return Math.max(FIXED_VIEW_GAS_COST, canonicalGasRequirement(DispatchType.TOKEN_INFO));
     }
 
     /**
