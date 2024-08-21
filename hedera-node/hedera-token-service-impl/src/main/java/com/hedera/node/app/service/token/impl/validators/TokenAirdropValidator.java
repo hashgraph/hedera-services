@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
@@ -122,7 +122,8 @@ public class TokenAirdropValidator {
                     final var receiver = transfer.receiverAccountID();
                     if (!isExemptFromCustomFees(token, receiver)) {
                         validateTrue(
-                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore), INVALID_TRANSACTION);
+                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore),
+                                TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
                     }
                 }
 
