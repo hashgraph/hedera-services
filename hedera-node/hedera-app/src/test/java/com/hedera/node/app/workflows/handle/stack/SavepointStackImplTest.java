@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
-import com.hedera.node.app.blocks.impl.RoundStateChangeListener;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -64,7 +64,7 @@ class SavepointStackImplTest extends StateTestBase {
     private State baseState;
 
     @Mock
-    private RoundStateChangeListener roundStateChangeListener;
+    private BoundaryStateChangeListener roundStateChangeListener;
 
     @Mock
     private KVStateChangeListener kvStateChangeListener;

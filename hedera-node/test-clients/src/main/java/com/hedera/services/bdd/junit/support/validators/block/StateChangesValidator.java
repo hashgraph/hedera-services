@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -205,6 +206,9 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var networkInfo = fakeNetworkInfoFrom(addressBook);
 
         final var migrator = new OrderedServiceMigrator();
+        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
+        state = new MerkleStateRoot(
+                lifecycles, version -> new HederaSoftwareVersion(versionConfig.hapiVersion(), version));
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -213,9 +217,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
                 new NoOpMetrics());
-        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
-        state = new MerkleStateRoot(
-                lifecycles, version -> new HederaSoftwareVersion(versionConfig.hapiVersion(), version));
 
         logger.info("Registered all Service and migrated state definitions to version {}", currentVersion);
     }
@@ -436,7 +437,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
-                        new AddressBookServiceImpl())
+                        new AddressBookServiceImpl(),
+                        PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }
 
@@ -597,8 +599,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final ServicesRegistryImpl servicesRegistry) {
         return new MerkleStateLifecycles() {
             @Override
-            public void initPlatformState(@NonNull final State state) {
-                serviceMigrator.doMigrations(
+            public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+                return serviceMigrator.doMigrations(
                         state,
                         servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
                         serviceMigrator.creationVersionOf(state),
@@ -647,7 +649,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case UNSET -> throw new IllegalStateException("Singleton update value is not set");
             case BLOCK_INFO_VALUE -> singletonUpdateChange.blockInfoValueOrThrow();
             case CONGESTION_LEVEL_STARTS_VALUE -> singletonUpdateChange.congestionLevelStartsValueOrThrow();
-            case ENTITY_NUMBER_VALUE -> singletonUpdateChange.entityNumberValueOrThrow();
+            case ENTITY_NUMBER_VALUE -> new EntityNumber(singletonUpdateChange.entityNumberValueOrThrow());
             case EXCHANGE_RATE_SET_VALUE -> singletonUpdateChange.exchangeRateSetValueOrThrow();
             case NETWORK_STAKING_REWARDS_VALUE -> singletonUpdateChange.networkStakingRewardsValueOrThrow();
             case BYTES_VALUE -> new ProtoBytes(singletonUpdateChange.bytesValueOrThrow());
@@ -688,10 +690,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         };
     }
 
-    private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
-        return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
-    }
-
     private static Object mapValueFor(@NonNull final MapChangeValue mapChangeValue) {
         return switch (mapChangeValue.valueChoice().kind()) {
             case UNSET -> throw new IllegalStateException("Value choice is not set for " + mapChangeValue);
@@ -711,5 +709,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
         };
+    }
+
+    private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
+        return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
     }
 }

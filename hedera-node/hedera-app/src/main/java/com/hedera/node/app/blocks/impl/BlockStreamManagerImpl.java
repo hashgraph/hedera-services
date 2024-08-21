@@ -19,7 +19,7 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
-import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
+import static com.hedera.node.app.blocks.impl.BoundaryStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -84,6 +84,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final ExecutorService executor;
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
+    private final KVStateChangeListener kvStateChangeListener;
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
@@ -92,8 +94,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private List<BlockItem> pendingItems;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
-    private KVStateChangeListener kvStateChangeListener;
-    private RoundStateChangeListener roundStateChangeListener;
     /**
      * A future that completes after all items not in the pendingItems list have been serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
@@ -106,10 +106,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final InitTrigger initTrigger,
             @NonNull final BlockItemWriter writer,
             @NonNull final ExecutorService executor,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final KVStateChangeListener kvStateChangeListener,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writer = requireNonNull(writer);
         this.executor = requireNonNull(executor);
         this.initTrigger = requireNonNull(initTrigger);
+        this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
+        this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.nodeVersion = nodeVersionFrom(config);
@@ -122,10 +126,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         blockTimestamp = round.getConsensusTimestamp();
         // If there are no other changes to state, we can just use the round's consensus timestamp as the
         // last-assigned consensus time for externalizing the PUT to the block stream info singleton
-        roundStateChangeListener = new RoundStateChangeListener(blockTimestamp);
-        state.registerCommitListener(roundStateChangeListener);
-        kvStateChangeListener = new KVStateChangeListener();
-        state.registerCommitListener(kvStateChangeListener);
+        boundaryStateChangeListener.setLastUsedConsensusTime(blockTimestamp);
         pendingItems = new ArrayList<>();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
@@ -169,10 +170,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         blockStreamInfoState.put(blockStreamInfo);
         ((CommittableWritableStates) writableState).commit();
 
-        pendingItems.add(roundStateChangeListener.stateChanges());
+        final var endOfBlockTimestamp = boundaryStateChangeListener.endOfBlockTimestamp();
+        pendingItems.add(boundaryStateChangeListener.flushChanges());
         final var blockItem = BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
-                        .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
+                        .consensusTimestamp(endOfBlockTimestamp)
                         .stateChanges(StateChange.newBuilder()
                                 .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
                                 .singletonUpdate(
@@ -206,16 +208,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public RoundStateChangeListener roundStateChangeListener() {
-        return roundStateChangeListener;
-    }
-
-    @Override
-    public KVStateChangeListener kvStateChangeListener() {
-        return kvStateChangeListener;
-    }
-
-    @Override
     public @Nullable Bytes prngSeed() {
         final var seed = runningHashManager.nMinus3HashFuture.join();
         return seed == null ? null : Bytes.wrap(seed);
@@ -237,7 +229,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     public Timestamp endOfBlockTimestamp() {
-        return roundStateChangeListener.endOfBlockTimestamp();
+        return boundaryStateChangeListener.endOfBlockTimestamp();
     }
 
     private void schedulePendingWork() {

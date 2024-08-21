@@ -74,6 +74,8 @@ public class StreamValidationOp extends UtilOp {
     private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES =
             List.of(TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY);
 
+    public static void main(String[] args) {}
+
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         // Prepare streams for record validators that depend on querying the network and hence
@@ -92,6 +94,7 @@ public class StreamValidationOp extends UtilOp {
                         data -> {
                             final var maybeErrors = RECORD_STREAM_VALIDATORS.stream()
                                     .flatMap(v -> v.validationErrorsIn(data))
+                                    .peek(t -> log.error("Record stream validation error!", t))
                                     .map(Throwable::getMessage)
                                     .collect(joining(ERROR_PREFIX));
                             if (!maybeErrors.isBlank()) {

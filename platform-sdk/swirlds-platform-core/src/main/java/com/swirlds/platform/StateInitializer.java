@@ -61,6 +61,7 @@ public final class StateInitializer {
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
 
+        System.out.printf("Calling isGenesisState() on %d%n", System.identityHashCode(signedState));
         if (signedState.isGenesisState()) {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
@@ -80,6 +81,7 @@ public final class StateInitializer {
             throw new IllegalStateException("Expected initial swirld state to be unhashed");
         }
 
+        System.out.printf("Calling init() on %d%n", System.identityHashCode(initialState.getSwirldState()));
         initialState.getSwirldState().init(platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(

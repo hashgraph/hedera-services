@@ -42,6 +42,8 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -121,6 +123,8 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final KVStateChangeListener kvStateChangeListener;
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
 
     @Inject
@@ -148,6 +152,8 @@ public class HandleWorkflow {
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final KVStateChangeListener kvStateChangeListener,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
@@ -172,6 +178,8 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
+        this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         // Temporary flag to control stream mode during transition to block streams
         STREAM_MODE = configProvider
@@ -541,8 +549,8 @@ public class HandleWorkflow {
                 blockRecordManager.consTimeOfLastHandledTxn(),
                 configProvider,
                 storeMetricsService,
-                blockRecordManager,
-                blockStreamManager,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
                 preHandleWorkflow);
     }
 }

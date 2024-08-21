@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
-import com.hedera.node.app.blocks.impl.RoundStateChangeListener;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -83,10 +83,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     private final BuilderSink builderSink;
 
     @Nullable
-    private KVStateChangeListener kvStateChangeListener;
+    private final KVStateChangeListener kvStateChangeListener;
 
     @Nullable
-    private RoundStateChangeListener roundStateChangeListener;
+    private final BoundaryStateChangeListener roundStateChangeListener;
 
     private final StreamMode streamMode;
 
@@ -96,7 +96,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param state                 the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
      * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
-     * @param roundStateChangeListener the listener for the round state changes
+     * @param boundaryStateChangeListener the listener for the round state changes
      * @param kvStateChangeListener the listener for the key/value state changes
      * @param streamMode            the stream mode
      * @return the root {@link SavepointStackImpl}
@@ -105,14 +105,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final State state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
-            @NonNull final RoundStateChangeListener roundStateChangeListener,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final StreamMode streamMode) {
         return new SavepointStackImpl(
                 state,
                 maxBuildersBeforeUser,
                 maxBuildersAfterUser,
-                roundStateChangeListener,
+                boundaryStateChangeListener,
                 kvStateChangeListener,
                 streamMode);
     }
@@ -150,7 +150,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final State state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
-            @NonNull final RoundStateChangeListener roundStateChangeListener,
+            @NonNull final BoundaryStateChangeListener roundStateChangeListener,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final StreamMode streamMode) {
         this.state = requireNonNull(state);
@@ -339,17 +339,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
         return builderClass.cast(builder);
-    }
-
-    /**
-     * May only be called on the root stack to get the entire list of stream builders created in the course
-     * of handling a user transaction.
-     *
-     * @return all stream builders created when handling the user transaction
-     * @throws NullPointerException if called on a non-root stack
-     */
-    public List<StreamBuilder> allStreamBuilders() {
-        return requireNonNull(builderSink).allBuilders();
     }
 
     /**

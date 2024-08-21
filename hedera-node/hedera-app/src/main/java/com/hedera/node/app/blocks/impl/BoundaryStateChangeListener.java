@@ -39,9 +39,11 @@ import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -49,16 +51,68 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 
-public class RoundStateChangeListener implements StateChangeListener {
+/**
+ * A state change listener that accumulates state changes that are only reported at a block boundary (either
+ * at the beginning or end of the block); either because all that affects the root hash is the latest value in
+ * state, or it is simply more efficient to report them in bulk. In the current system, these are the singleton
+ * and queue updates.
+ */
+@Singleton
+public class BoundaryStateChangeListener implements StateChangeListener {
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 
     private final SortedMap<Integer, StateChange> singletonUpdates = new TreeMap<>();
     private final SortedMap<Integer, List<StateChange>> queueUpdates = new TreeMap<>();
+
+    @Nullable
     private Instant lastUsedConsensusTime;
 
-    public RoundStateChangeListener(@NonNull final Instant lastUsedConsensusTime) {
+    /**
+     * Returns a {@link BlockItem} containing all the state changes that have been accumulated.
+     * @return the block item
+     */
+    public BlockItem flushChanges() {
+        final var stateChanges = StateChanges.newBuilder()
+                .stateChanges(allStateChanges())
+                .consensusTimestamp(endOfBlockTimestamp())
+                .build();
+        lastUsedConsensusTime = null;
+        singletonUpdates.clear();
+        queueUpdates.clear();
+        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+    }
+
+    /**
+     * Returns all the state changes that have been accumulated.
+     * @return the state changes
+     */
+    public List<StateChange> allStateChanges() {
+        final var allStateChanges = new LinkedList<StateChange>();
+        for (final var entry : singletonUpdates.entrySet()) {
+            allStateChanges.add(entry.getValue());
+        }
+        for (final var entry : queueUpdates.entrySet()) {
+            allStateChanges.addAll(entry.getValue());
+        }
+        return allStateChanges;
+    }
+
+    /**
+     * Returns the consensus timestamp at the end of the block.
+     * @return the consensus timestamp
+     */
+    public @NonNull Timestamp endOfBlockTimestamp() {
+        return asTimestamp(lastUsedConsensusTime.plusNanos(1));
+    }
+
+    /**
+     * Sets the last used consensus time in the round.
+     * @param lastUsedConsensusTime the last used consensus time
+     */
+    public void setLastUsedConsensusTime(@NonNull final Instant lastUsedConsensusTime) {
         this.lastUsedConsensusTime = requireNonNull(lastUsedConsensusTime);
     }
 
@@ -102,31 +156,6 @@ public class RoundStateChangeListener implements StateChangeListener {
         singletonUpdates.put(stateId, stateChange);
     }
 
-    public BlockItem stateChanges() {
-        final var stateChanges =
-                StateChanges.newBuilder().stateChanges(allStateChanges()).consensusTimestamp(endOfBlockTimestamp());
-        return BlockItem.newBuilder().stateChanges(stateChanges).build();
-    }
-
-    public List<StateChange> allStateChanges() {
-        final var allStateChanges = new LinkedList<StateChange>();
-        for (final var entry : singletonUpdates.entrySet()) {
-            allStateChanges.add(entry.getValue());
-        }
-        for (final var entry : queueUpdates.entrySet()) {
-            allStateChanges.addAll(entry.getValue());
-        }
-        return allStateChanges;
-    }
-
-    public @NonNull Timestamp endOfBlockTimestamp() {
-        return asTimestamp(lastUsedConsensusTime.plusNanos(1));
-    }
-
-    public void setLastUsedConsensusTime(@NonNull final Instant nextAvailableConsensusTime) {
-        this.lastUsedConsensusTime = requireNonNull(nextAvailableConsensusTime);
-    }
-
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
         switch (value) {
             case ProtoBytes protoBytesElement -> {
@@ -153,7 +182,7 @@ public class RoundStateChangeListener implements StateChangeListener {
                         SingletonUpdateChange.NewValueOneOfType.CONGESTION_LEVEL_STARTS_VALUE, congestionLevelStarts);
             }
             case EntityNumber entityNumber -> {
-                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.ENTITY_NUMBER_VALUE, entityNumber);
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.ENTITY_NUMBER_VALUE, entityNumber.number());
             }
             case ExchangeRateSet exchangeRateSet -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.EXCHANGE_RATE_SET_VALUE, exchangeRateSet);
@@ -180,6 +209,9 @@ public class RoundStateChangeListener implements StateChangeListener {
             }
             case BlockStreamInfo blockStreamInfo -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_STREAM_INFO_VALUE, blockStreamInfo);
+            }
+            case PlatformState platformState -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.PLATFORM_STATE_VALUE, platformState);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

@@ -25,6 +25,7 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
@@ -165,6 +166,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Listeners to be notified of state changes on {@link MerkleWritableStates#commit()} calls for any service.
      */
     private final List<StateChangeListener> listeners = new ArrayList<>();
+    /**
+     * Once set, the possibly empty list of builders for state changes that occurred when initializing
+     * the platform state.
+     */
+    @Nullable
+    private List<StateChanges.Builder> platformStateInitChanges;
 
     /**
      * Used to track the lifespan of this state.
@@ -201,6 +208,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     public @Nullable PlatformState getPreV054PlatformState() {
         return preV054PlatformState;
+    }
+
+    /**
+     * Returns the list of builders for state changes that occurred during the initialization of the platform state.
+     * Must only be called after platform state is initialized.
+     * @throws NullPointerException if the platform state initialization changes have not been set
+     */
+    public @NonNull List<StateChanges.Builder> platformStateInitChangesOrThrow() {
+        return requireNonNull(platformStateInitChanges);
     }
 
     /**
@@ -252,6 +268,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = from.versionFactory;
         this.preV054PlatformState = from.preV054PlatformState;
+        this.platformStateInitChanges = from.platformStateInitChanges;
+        this.listeners.addAll(from.listeners);
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -977,7 +995,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private WritablePlatformStateStore writablePlatformStateStore() {
         if (!services.containsKey(PlatformStateService.NAME)) {
-            lifecycles.initPlatformState(this);
+            platformStateInitChanges = lifecycles.initPlatformState(this);
         }
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {

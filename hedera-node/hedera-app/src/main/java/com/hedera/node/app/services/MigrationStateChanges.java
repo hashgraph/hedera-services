@@ -19,11 +19,10 @@ package com.hedera.node.app.services;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
-import com.hedera.node.app.blocks.impl.RoundStateChangeListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,7 @@ import java.util.List;
 public class MigrationStateChanges {
     private final List<List<StateChange>> stateChanges = new ArrayList<>();
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
-    private final RoundStateChangeListener roundStateChangeListener = new RoundStateChangeListener(Instant.EPOCH);
+    private final BoundaryStateChangeListener roundStateChangeListener = new BoundaryStateChangeListener();
 
     /**
      * Constructs a new instance of {@link MigrationStateChanges} based on migration

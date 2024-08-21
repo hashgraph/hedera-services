@@ -222,6 +222,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
+        System.out.printf("Calling getPlatformState() on %d%n", System.identityHashCode(state));
         return state.getPlatformState().getRound() == GENESIS_ROUND;
     }
 
