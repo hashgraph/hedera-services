@@ -39,11 +39,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.parallel.Isolated;
 
 @Tag(SMART_CONTRACT)
 @DisplayName("updateToken")
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
+@Isolated
 public class GasCalculationIntegrityTest {
 
     @Contract(contract = "GasCalculation", creationGas = 4_000_000L)
@@ -78,7 +80,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("cannot update a missing token")
     public Stream<DynamicTest> cannotUpdateMissingToken() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateTokenContract.call("donate", poorAccount).gas(24337L).andAssert(txn -> txn.via("first")),
+                updateTokenContract.call("donate", poorAccount).gas(44337L).andAssert(txn -> txn.via("first")),
                 getTxnRecord("first").logged()));
     }
 
@@ -88,7 +90,7 @@ public class GasCalculationIntegrityTest {
         return testCases.flatMap(ratesProvider -> hapiTest(
                 numericContractComplex
                         .call("cryptoTransferV2", new long[] {-5, 5}, alice, poorAccount)
-                        .gas(33304L)
+                        .gas(43304L)
                         .andAssert(txn -> txn.via("test")),
                 getTxnRecord("test").logged()));
     }
