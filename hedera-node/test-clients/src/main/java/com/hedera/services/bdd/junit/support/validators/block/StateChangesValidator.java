@@ -23,8 +23,10 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.junit.support.BlockStreamAccess.computeSingletonValueFromUpdates;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -71,6 +73,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
+import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -140,7 +143,15 @@ public class StateChangesValidator implements BlockStreamValidator {
     private Timestamp genesisMigrationTimestamp = null;
     private MerkleStateRoot state;
 
-    public static void main(String[] args) {}
+    public static void main(String[] args) {
+        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/test-streams/";
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(loc));
+        final var lastPlatformState = computeSingletonValueFromUpdates(
+                blocks,
+                computeLabel("PlatformStateService", "PLATFORM_STATE"),
+                SingletonUpdateChange::platformStateValueOrThrow);
+        System.out.println(lastPlatformState);
+    }
 
     public static final Factory FACTORY = new Factory() {
         @NonNull
@@ -208,6 +219,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
         state = new MerkleStateRoot(
                 lifecycles, version -> new HederaSoftwareVersion(versionConfig.hapiVersion(), version));
+        state.getPlatformState();
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -268,6 +280,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {
         final var sb = new StringBuilder();
         new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
+        logger.info("Replayed hashes:\n{}", sb);
         return hashesByName(sb.toString());
     }
 
@@ -561,6 +574,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.error("Could not read hashes from {}", path, e);
             return null;
         }
+        logger.info("Read hashes:\n{}", sb);
         return sb == null ? null : hashesByName(sb.toString());
     }
 

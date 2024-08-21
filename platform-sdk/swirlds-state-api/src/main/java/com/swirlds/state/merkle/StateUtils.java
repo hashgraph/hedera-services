@@ -31,6 +31,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWO
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -235,6 +236,7 @@ public final class StateUtils {
             case "FileService.UPGRADE_FILE" -> STATE_ID_UPGRADE_FILE.protoOrdinal();
             case "FreezeService.FREEZE_TIME" -> STATE_ID_FREEZE_TIME.protoOrdinal();
             case "FreezeService.UPGRADE_FILE_HASH" -> STATE_ID_UPGRADE_FILE_HASH.protoOrdinal();
+            case "PlatformStateService.PLATFORM_STATE" -> STATE_ID_PLATFORM_STATE.protoOrdinal();
             case "RecordCache.TransactionReceiptQueue" -> STATE_ID_TRANSACTION_RECEIPTS_QUEUE.protoOrdinal();
             case "ScheduleService.SCHEDULES_BY_EQUALITY" -> STATE_ID_SCHEDULES_BY_EQUALITY.protoOrdinal();
             case "ScheduleService.SCHEDULES_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULES_BY_EXPIRY.protoOrdinal();

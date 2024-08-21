@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -56,8 +57,7 @@ public interface BlockStreamManager extends BlockRecordInfo {
     void writeItem(@NonNull BlockItem item);
 
     /**
-     * Synchronously waits for all ingredients of the block proof of the current block to be available; then
-     * produces that block and enters a terminal state that refuses to accept any other calls.
+     * Writes the final block items for the freeze round to a new block.
      */
-    void closeStream();
+    void writeFreezeRound(@NonNull State state, @NonNull Instant consensusNow);
 }
