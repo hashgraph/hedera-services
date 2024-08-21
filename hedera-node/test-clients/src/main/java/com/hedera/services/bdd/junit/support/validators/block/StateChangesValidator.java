@@ -111,7 +111,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -251,7 +250,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final var actualHashes = hashesFor(state);
             final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
-            final var onlyRootMismatch = new AtomicBoolean(true);
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
                 if (!expectedHash.equals(actualHash)) {
@@ -261,14 +259,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                             .append(expectedHash)
                             .append(", was ")
                             .append(actualHash);
-                    onlyRootMismatch.set(false);
                 }
             });
-            // Until we are streaming Platform state changes, the root hash will never match, so for now
-            // we only fail if some Services state hash does not match
-            if (!onlyRootMismatch.get()) {
-                Assertions.fail(errorMsg.toString());
-            }
+            Assertions.fail(errorMsg.toString());
         }
     }
 
@@ -557,12 +550,10 @@ public class StateChangesValidator implements BlockStreamValidator {
                     sb = new StringBuilder();
                     sawAllChildHashes = false;
                 } else if (sb != null) {
-                    if (!line.contains("PlatformState")) {
-                        final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
-                        sawAllChildHashes |= !childStateMatcher.matches();
-                        if (!sawAllChildHashes) {
-                            sb.append(line).append('\n');
-                        }
+                    final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
+                    sawAllChildHashes |= !childStateMatcher.matches();
+                    if (!sawAllChildHashes) {
+                        sb.append(line).append('\n');
                     }
                 }
             }

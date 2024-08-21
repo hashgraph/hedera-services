@@ -84,7 +84,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final ExecutorService executor;
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
-    private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     // All this state is scoped to producing the block for the last-started round
@@ -107,12 +106,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final BlockItemWriter writer,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writer = requireNonNull(writer);
         this.executor = requireNonNull(executor);
         this.initTrigger = requireNonNull(initTrigger);
-        this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);

@@ -392,7 +392,7 @@ public class HandleWorkflow {
         final List<BlockItem> blockItems = new LinkedList<>();
         if (HandleWorkflow.STREAM_MODE != RECORDS) {
             final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
             blockItems.addAll(failInvalidBuilder.build());
