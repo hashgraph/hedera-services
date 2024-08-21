@@ -89,6 +89,8 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                             .translate(txnWrapper, stateChanges);
                     case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
                     case ContractCall -> new ContractCallTranslator().translate(txnWrapper, stateChanges);
+                    case NodeCreate, NodeUpdate, NodeDelete -> new NodeIdTranslator()
+                            .translate(txnWrapper, stateChanges);
                     case FileCreate -> new FileCreateTranslator().translate(txnWrapper, stateChanges);
                     case ScheduleCreate -> new ScheduleCreateTranslator().translate(txnWrapper, stateChanges);
                     case TokenCreate -> new TokenCreateTranslator().translate(txnWrapper, stateChanges);
