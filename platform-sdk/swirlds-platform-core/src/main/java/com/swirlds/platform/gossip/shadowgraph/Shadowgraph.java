@@ -255,13 +255,9 @@ public class Shadowgraph implements Clearable {
         final HashSet<ShadowEvent> ancestors = new HashSet<>();
         for (ShadowEvent event : events) {
             // add ancestors that have not already been found and that pass the predicate
-            final Predicate<ShadowEvent> isValidShadowEvent = e -> !ancestors.contains(e)
-                    &&  ! expired(e.getEvent().getDescriptor())
-                    && predicate.test(e);
-            findAncestors(
-                    ancestors,
-                    event,
-                    isValidShadowEvent);
+            final Predicate<ShadowEvent> isValidShadowEvent =
+                    e -> !ancestors.contains(e) && !expired(e.getEvent().getDescriptor()) && predicate.test(e);
+            findAncestors(ancestors, event, isValidShadowEvent);
         }
         return ancestors;
     }
@@ -304,7 +300,9 @@ public class Shadowgraph implements Clearable {
 
             add it to ancestors and push any non-null parents to the stack
              */
-            if (!expired(testEvent.getEvent().getDescriptor()) && predicate.test(testEvent) && ancestors.add(testEvent)) {
+            if (!expired(testEvent.getEvent().getDescriptor())
+                    && predicate.test(testEvent)
+                    && ancestors.add(testEvent)) {
                 final ShadowEvent xsp = testEvent.getSelfParent();
                 if (xsp != null) {
                     todoStack.push(xsp);
