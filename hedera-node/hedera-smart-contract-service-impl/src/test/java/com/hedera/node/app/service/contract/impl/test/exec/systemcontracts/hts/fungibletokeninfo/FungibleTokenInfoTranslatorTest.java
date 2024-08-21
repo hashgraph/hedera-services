@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO_V2;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +77,18 @@ class FungibleTokenInfoTranslatorTest {
     }
 
     @Test
+    void matchesFungibleTokenInfoTranslatorTestV2() {
+        attempt = prepareHtsAttemptWithSelector(
+                FUNGIBLE_TOKEN_INFO_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
     void matchesFailsIfIncorrectSelectorTest() {
         attempt = prepareHtsAttemptWithSelector(
                 BURN_TOKEN_V2, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
@@ -86,6 +99,20 @@ class FungibleTokenInfoTranslatorTest {
     void callFromTest() {
         final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
         final Bytes inputBytes = Bytes.wrapByteBuffer(FUNGIBLE_TOKEN_INFO.encodeCall(tuple));
+        given(attempt.input()).willReturn(inputBytes);
+        given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.configuration()).willReturn(configuration);
+        given(attempt.isSelector(FUNGIBLE_TOKEN_INFO)).willReturn(true);
+
+        final var call = subject.callFrom(attempt);
+        assertThat(call).isInstanceOf(FungibleTokenInfoCall.class);
+    }
+
+    @Test
+    void callFromTestV2() {
+        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final Bytes inputBytes = Bytes.wrapByteBuffer(FUNGIBLE_TOKEN_INFO_V2.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
