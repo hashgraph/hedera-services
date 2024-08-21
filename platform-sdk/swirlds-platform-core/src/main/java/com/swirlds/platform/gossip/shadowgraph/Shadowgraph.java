@@ -255,10 +255,13 @@ public class Shadowgraph implements Clearable {
         final HashSet<ShadowEvent> ancestors = new HashSet<>();
         for (ShadowEvent event : events) {
             // add ancestors that have not already been found and that pass the predicate
+            final Predicate<ShadowEvent> isValidShadowEvent = e -> !ancestors.contains(e)
+                    &&  ! expired(e.getEvent().getDescriptor())
+                    && predicate.test(e);
             findAncestors(
                     ancestors,
                     event,
-                    e -> !ancestors.contains(e) && !expired(e.getEvent().getDescriptor()) && predicate.test(e));
+                    isValidShadowEvent);
         }
         return ancestors;
     }
@@ -287,7 +290,7 @@ public class Shadowgraph implements Clearable {
 
         // perform a depth first search of self and other parents
         while (!todoStack.isEmpty()) {
-            final ShadowEvent x = todoStack.pop();
+            final ShadowEvent testEvent = todoStack.pop();
             /*
             IF
 
@@ -301,12 +304,12 @@ public class Shadowgraph implements Clearable {
 
             add it to ancestors and push any non-null parents to the stack
              */
-            if (!expired(x.getEvent().getDescriptor()) && predicate.test(x) && ancestors.add(x)) {
-                final ShadowEvent xsp = x.getSelfParent();
+            if (!expired(testEvent.getEvent().getDescriptor()) && predicate.test(testEvent) && ancestors.add(testEvent)) {
+                final ShadowEvent xsp = testEvent.getSelfParent();
                 if (xsp != null) {
                     todoStack.push(xsp);
                 }
-                final ShadowEvent xop = x.getOtherParent();
+                final ShadowEvent xop = testEvent.getOtherParent();
                 if (xop != null) {
                     todoStack.push(xop);
                 }
@@ -459,6 +462,7 @@ public class Shadowgraph implements Clearable {
      */
     @Nullable
     public synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> otherParentsDescriptors) {
+        Objects.requireNonNull(otherParentsDescriptors, "otherParentsDescriptors is null");
         if (otherParentsDescriptors.isEmpty()) {
             return null;
         }
