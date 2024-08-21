@@ -141,10 +141,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             // Charge gas for aborted ContractCall transactions
             if (hevmTransaction.isContractCall() && contractsConfig.chargeGasOnPreEvmException()) {
                 gasCharging.chargeGasForAbortedTransaction(
-                        requireNonNull(senderId),
-                        hederaEvmContext,
-                        rootProxyWorldUpdater,
-                        hevmTransaction);
+                        requireNonNull(senderId), hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
             }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
