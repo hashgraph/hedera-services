@@ -38,8 +38,6 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
         final var receiptBuilder = TransactionReceipt.newBuilder();
         if (transaction.result().status().equals(SUCCESS)) {
             receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
-        } else {
-            receiptBuilder.status(transaction.result().status());
         }
 
         if (stateChanges != null) {
@@ -47,10 +45,16 @@ public class ConsensusSubmitMessageTranslator implements TransactionRecordTransl
                     .filter(StateChange::hasMapUpdate)
                     .findFirst()
                     .ifPresent(stateChange -> {
-                        final var topic = stateChange.mapUpdate().value().topicValue();
-                        if (topic != null) {
-                            receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                            receiptBuilder.topicRunningHash(topic.runningHash());
+                        if (stateChange.mapUpdate().hasValue()) {
+                            final var topic = stateChange.mapUpdate().value().topicValue();
+                            if (topic != null) {
+                                if (topic.sequenceNumber() > 0) {
+                                    receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
+                                }
+                                if (topic.runningHash().length() > 0) {
+                                    receiptBuilder.topicRunningHash(topic.runningHash());
+                                }
+                            }
                         }
                     });
         }

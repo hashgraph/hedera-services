@@ -90,9 +90,12 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                             .translate(txnWrapper, stateChanges);
                     case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
                     case FileCreate -> new FileCreateTranslator().translate(txnWrapper, stateChanges);
-                    case ScheduleCreate -> new ScheduleCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ScheduleCreate, ScheduleSign -> new ScheduleTranslator().translate(txnWrapper, stateChanges);
                     case TokenCreate -> new TokenCreateTranslator().translate(txnWrapper, stateChanges);
+                    case TokenBurn, TokenMint, TokenAccountWipe -> new TokenMintBurnWipeTranslator()
+                            .translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
+                        // TODO: translate `newPendingAirdrops` (if applicable)
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
                             com.hedera.hapi.node.transaction.TransactionRecord.newBuilder()
@@ -120,8 +123,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         } catch (NoSuchAlgorithmException | InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Unparseable transaction given", e);
         }
-
-        // (Near) FUTURE: parse state changes via specific transaction type parser classes
 
         recordBuilder.setReceipt(receiptBuilder.build());
         return new SingleTransactionRecord(
@@ -284,12 +285,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
             return trb;
         }
 
-        // TODO: why are so many of these methods missing?
-        //            if (txnOutput.hasCryptoCreate()) {
-        //                rb.accountID(txnOutput.cryptoCreate().accountID());
-        //                trb.alias(txnOutput.cryptoCreate().alias());
-        //            }
-
         if (txnOutput.hasCryptoTransfer()) {
             final var assessedCustomFees = txnOutput.cryptoTransfer().assessedCustomFees();
             for (int i = 0; i < assessedCustomFees.size(); i++) {
@@ -300,10 +295,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 trb.addAssessedCustomFees(i, assessedCustomFee);
             }
         }
-
-        //            if (txnOutput.hasFileCreate()) {
-        //                rb.fileID(txnOutput.fileCreate().fileID());
-        //            }
 
         if (txnOutput.hasContractCall()) {
             final var callResult =
@@ -319,56 +310,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                     .ifPresent(ethHash -> trb.setEthereumHash(toByteString(ethHash)));
         }
 
-        //            if (txnOutput.hasTopicCreate()) {
-        //                rb.topicID(txnOutput.topicCreate().topicID());
-        //            }
-
-        //            if (txnOutput.hasCreateToken()) {
-        //                rb.tokenID(txnOutput.createToken().tokenID());
-        //            }
-
-        //            if (txnOutput.hasTokenMint()) {
-        //
-        //            }
-        //            if (txnOutput.hasTokenBurn()) {
-        //
-        //            }
-        //            if (txnOutput.hasTokenWipe()) {
-        //
-        //            }
-
-        if (txnOutput.hasCreateSchedule()) {
-            //                rb.scheduleID(txnOutput.createSchedule().scheduledTransactionId());
-        }
-
-        if (txnOutput.hasCreateSchedule()) {
-            Optional.ofNullable(txnOutput.createSchedule().scheduledTransactionId())
-                    .ifPresent(id -> rb.setScheduledTransactionID(
-                            pbjToProto(id, com.hedera.hapi.node.base.TransactionID.class, TransactionID.class)));
-        }
-        if (txnOutput.hasSignSchedule()) {
-            Optional.ofNullable(txnOutput.signSchedule().scheduledTransactionId())
-                    .ifPresent(id -> rb.setScheduledTransactionID(
-                            pbjToProto(id, com.hedera.hapi.node.base.TransactionID.class, TransactionID.class)));
-        }
-
-        //            if (txnOutput.hasMintToken()) {
-        //                rb.serialNumbers(txnOutput.mintToken().serialNumbers());
-        //            }
-
-        //            if (txnOutput.hasNodeCreate()) {
-        //                rb.nodeId(txnOutput.nodeCreate().nodeID());
-        //            }
-        //            if (txnOutput.hasNodeUpdate()) {
-        //                rb.nodeId(txnOutput.nodeUpdate().nodeID());
-        //            }
-        //            if (txnOutput.hasNodeDelete()) {
-        //                rb.nodeId(txnOutput.nodeDelete().nodeID());
-        //            }
-
         maybeAssignEvmAddressAlias(txnOutput, trb);
-
-        // TODO: assign `newPendingAirdrops` (if applicable)
 
         trb.setReceipt(rb.build());
 

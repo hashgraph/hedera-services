@@ -25,7 +25,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-class TokenCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+/**
+ * Note: this class is used for both schedule creation and schedule signing translation
+ */
+class ScheduleTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     @Override
     public SingleTransactionRecord translate(
@@ -34,7 +37,7 @@ class TokenCreateTranslator implements TransactionRecordTranslator<SingleTransac
         final var recordBuilder = TransactionRecord.newBuilder();
 
         if (stateChanges != null) {
-            maybeAssignTokenID(stateChanges, receiptBuilder);
+            maybeAssignScheduleID(stateChanges, receiptBuilder);
         }
 
         return new SingleTransactionRecord(
@@ -44,14 +47,15 @@ class TokenCreateTranslator implements TransactionRecordTranslator<SingleTransac
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 
-    private void maybeAssignTokenID(final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
+    private void maybeAssignScheduleID(
+            final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
         stateChanges.stateChanges().stream()
                 .filter(StateChange::hasMapUpdate)
                 .findFirst()
                 .ifPresent(stateChange -> {
                     if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasTokenIdKey()) {
-                        receiptBuilder.tokenID(stateChange.mapUpdate().key().tokenIdKey());
+                            && stateChange.mapUpdate().key().hasScheduleIdKey()) {
+                        receiptBuilder.scheduleID(stateChange.mapUpdate().key().scheduleIdKey());
                     }
                 });
     }
