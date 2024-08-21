@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.feature.test-fixtures")
+plugins { id("java") }
+
+// Denotes a test that normally needs more than 100 ms to be executed
+@Suppress("UnstableApiUsage")
+testing.suites {
+    register<JvmTestSuite>("timeConsuming") {
+        testType.set("time-consuming")
+        targets.all {
+            testTask {
+                group = "build"
+                shouldRunAfter(tasks.test)
+                maxHeapSize = "16g"
+            }
+        }
+    }
 }

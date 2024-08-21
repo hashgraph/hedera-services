@@ -85,6 +85,9 @@ tasks.jar { setGroup(null) }
 sourceSets.all {
     // Remove 'classes' tasks from 'build' group to keep it cleaned up
     tasks.named(classesTaskName) { group = null }
+
+    // 'assemble' compiles all sources, including all test sources
+    tasks.assemble { dependsOn(tasks.named(classesTaskName)) }
 }
 
 val writeGitProperties =
@@ -199,83 +202,16 @@ tasks.withType<Javadoc>().configureEach {
     }
 }
 
-testing {
-    @Suppress("UnstableApiUsage")
-    suites {
-        named<JvmTestSuite>("test") {
-            useJUnitJupiter()
-            targets.all {
-                testTask {
-                    group = "build"
-                    maxHeapSize = "4g"
-                    // Some tests overlap due to using the same temp folders within one project
-                    // maxParallelForks = 4 <- set this, once tests can run in parallel
-                }
-            }
-        }
-
-        // Test functionally correct behavior under stress/loads with many repeated iterations.
-        register<JvmTestSuite>("hammer") {
-            testType.set("hammer")
-            targets.all {
-                testTask {
-                    group = "build"
-                    shouldRunAfter(tasks.test)
-                    usesService(
-                        gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
-                            maxParallelUsages = 1
-                        }
-                    )
-                    maxHeapSize = "8g"
-                }
-            }
-        }
-
-        // Tests that normally needs more than 100 ms to be executed.
-        register<JvmTestSuite>("timeConsuming") {
-            testType.set("time-consuming")
-            targets.all {
-                testTask {
-                    group = "build"
-                    shouldRunAfter(tasks.test)
-                    maxHeapSize = "16g"
-                }
-            }
-        }
-
-        // integration test suite
-        register<JvmTestSuite>("itest") {
-            testType.set(TestSuiteType.INTEGRATION_TEST)
-            targets.all {
-                testTask {
-                    group = "build"
-                    shouldRunAfter(tasks.test)
-                    maxHeapSize = "8g"
-                }
-            }
-        }
-
-        // EET for end-to-end tests
-        register<JvmTestSuite>("eet") {
-            testType.set("end-to-end-test")
-            targets.all {
-                testTask {
-                    group = "build"
-                    shouldRunAfter(tasks.test)
-                    maxHeapSize = "8g"
-                    jvmArgs("-XX:ActiveProcessorCount=6")
-                }
-            }
-        }
-
-        // "cross-service" tests (this suite will be removed)
-        register<JvmTestSuite>("xtest") {
-            testType.set("cross-service-test")
-            targets.all {
-                testTask {
-                    shouldRunAfter(tasks.test)
-                    maxHeapSize = "8g"
-                }
+@Suppress("UnstableApiUsage")
+testing.suites {
+    named<JvmTestSuite>("test") {
+        useJUnitJupiter()
+        targets.all {
+            testTask {
+                group = "build"
+                maxHeapSize = "4g"
+                // Some tests overlap due to using the same temp folders within one project
+                // maxParallelForks = 4 <- set this, once tests can run in parallel
             }
         }
     }
@@ -316,16 +252,7 @@ testlogger {
     showFailedStandardStreams = true
 }
 
-tasks.assemble {
-    // 'assemble' compiles all sources, including all test sources
-    dependsOn(tasks.testClasses)
-    dependsOn(tasks.javadoc)
-    dependsOn(tasks.named("hammerClasses"))
-    dependsOn(tasks.named("timeConsumingClasses"))
-    dependsOn(tasks.named("itestClasses"))
-    dependsOn(tasks.named("eetClasses"))
-    dependsOn(tasks.named("xtestClasses"))
-}
+tasks.assemble { dependsOn(tasks.javadoc) }
 
 tasks.check { dependsOn(tasks.jacocoTestReport) }
 

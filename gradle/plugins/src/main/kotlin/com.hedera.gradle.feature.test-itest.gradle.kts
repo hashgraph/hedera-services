@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.feature.test-fixtures")
+plugins { id("java") }
+
+// integration test suite
+@Suppress("UnstableApiUsage")
+testing.suites {
+    register<JvmTestSuite>("itest") {
+        testType = TestSuiteType.INTEGRATION_TEST
+        targets.all {
+            testTask {
+                group = "build"
+                shouldRunAfter(tasks.test)
+                maxHeapSize = "8g"
+            }
+        }
+    }
 }
