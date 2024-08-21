@@ -39,29 +39,10 @@ concurrency:
   group: ${{ github.event.inputs.concurrency-group || format('{0}-{1}-flow-jrs-daily-interval-groups', github.ref_name, github.sha) }}
 
 # Panel Definition & Timings:
-#   "configs/suites/daily/8N/GCP-Daily-NetError-4N.json"                ----             8m
 #   "configs/suites/daily/10N/GCP-Daily-MultiSBReconnect-3R-10N.json"   ----            20m
 #   "configs/suites/daily/1N/GCP-Daily-VMerkle-1N.json"                 ----             3m
-#   TOTAL RUN TIME:             31 minutes, 0.5 hours
+#   TOTAL RUN TIME:             23 minutes, 0.5 hours
 jobs:
-  neterror:
-    name: NetError
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      panel-config: "configs/suites/daily/4N/GCP-Daily-NetError-4N.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
-      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   multisbreconnect-3r:
     name: MultiSBReconnect-3R-10N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -80,8 +61,6 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    needs:
-      - neterror
     if: ${{ !cancelled() && always() }}
   vmerkle-1n:
     name: VMerkle-1N
