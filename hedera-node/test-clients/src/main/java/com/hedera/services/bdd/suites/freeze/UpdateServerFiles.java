@@ -45,7 +45,7 @@ import org.junit.jupiter.api.DynamicTest;
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
-    private static final String DEFAULT_SCRIPT = "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
+    private static final String DEFAULT_SCRIPT = "src/main/resources/testfiles/updateFeature/updateSettings/exec.sh";
 
     private static String uploadPath = "updateFiles/";
 
