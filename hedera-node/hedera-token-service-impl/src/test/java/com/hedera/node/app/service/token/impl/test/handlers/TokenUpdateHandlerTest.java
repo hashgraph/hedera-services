@@ -81,8 +81,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
-import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
-import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -113,10 +112,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private ConfigProvider configProvider;
 
     @Mock(strictness = LENIENT)
-    private TokenUpdateRecordBuilder recordBuilder;
+    private TokenUpdateStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private TransactionBody txn;
 
@@ -134,8 +133,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         final TokenUpdateValidator validator = new TokenUpdateValidator(new TokenAttributesValidator());
         subject = new TokenUpdateHandler(validator);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
     }

@@ -16,58 +16,51 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.inject.Inject;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
-    private final HederaState state;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
-    private final RecordListBuilder recordListBuilder;
-    private final BlockRecordManager blockRecordManager;
+    private final Instant consensusTime;
+    private final SavepointStackImpl stack;
 
-    @Inject
     public TokenContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final HederaState state,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final BlockRecordManager blockRecordManager) {
-        this.state = requireNonNull(state, "state must not be null");
+            @NonNull final Instant consensusTime) {
+        this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
-        this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
-        this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
                 new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
+        this.consensusTime = requireNonNull(consensusTime, "consensusTime must not be null");
     }
 
     @NonNull
     @Override
     public Instant consensusTime() {
-        return recordListBuilder.userTransactionRecordBuilder().consensusNow();
+        return consensusTime;
     }
 
     @NonNull
@@ -92,64 +85,36 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @NonNull
     @Override
-    public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T extends StreamBuilder> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordListBuilder.userTransactionRecordBuilder(), recordBuilderClass);
+        return stack.getBaseBuilder(recordBuilderClass);
     }
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return !recordListBuilder.childRecordBuilders().isEmpty()
-                || !recordListBuilder.precedingRecordBuilders().isEmpty();
+        return stack.hasNonBaseStreamBuilder();
     }
 
     @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
-        final var childRecordBuilders = recordListBuilder.childRecordBuilders();
-        final var precedingRecordBuilders = recordListBuilder.precedingRecordBuilders();
-
-        childRecordBuilders.forEach(child -> consumer.accept(castRecordBuilder(child, recordBuilderClass)));
-        precedingRecordBuilders.forEach(child -> consumer.accept(castRecordBuilder(child, recordBuilderClass)));
+        stack.forEachNonBaseBuilder(recordBuilderClass, consumer);
     }
 
     @NonNull
     @Override
-    public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
-    public <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), UNLIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
-        if (!recordBuilderClass.isInstance(recordBuilder)) {
-            throw new IllegalArgumentException("Not a valid record builder class");
-        }
-        return recordBuilderClass.cast(recordBuilder);
+    public <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = stack.createIrreversiblePrecedingBuilder();
+        return castBuilder(result, recordBuilderClass);
     }
 
     @Override
     public boolean isScheduleDispatch() {
-        return false;
-    }
-
-    @Override
-    public void markMigrationRecordsStreamed() {
-        blockRecordManager.markMigrationRecordsStreamed();
+        return stack.txnCategory() == SCHEDULED;
     }
 
     @Override
     public Set<Long> knownNodeIds() {
-        return new ReadableStoreFactory(state)
-                .getStore(ReadableStakingInfoStore.class)
-                .getAll();
+        return readableStoreFactory.getStore(ReadableStakingInfoStore.class).getAll();
     }
 }

@@ -43,7 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -130,7 +130,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicStore.put(updatedTopic);
 
             final var recordBuilder =
-                    handleContext.recordBuilders().getOrCreate(ConsensusSubmitMessageRecordBuilder.class);
+                    handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
             recordBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())

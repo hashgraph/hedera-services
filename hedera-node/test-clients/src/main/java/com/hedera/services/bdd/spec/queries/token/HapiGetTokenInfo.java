@@ -127,15 +127,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private boolean emptyMetadataKey = false;
     private boolean emptyPauseKey = false;
 
-    private boolean invalidAdminKey = false;
-    private boolean invalidWipeKey = false;
-    private boolean invalidKycKey = false;
-    private boolean invalidSupplyKey = false;
-    private boolean invalidFreezeKey = false;
-    private boolean invalidFeeScheduleKey = false;
-    private boolean invalidMetadataKey = false;
-    private boolean invalidPauseKey = false;
-
     @SuppressWarnings("java:S1068")
     private Optional<Boolean> expectedDeletion = Optional.empty();
 
@@ -363,6 +354,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasEmptyCustom() {
+        expectedFees = new ArrayList<>();
+        return this;
+    }
+
     public HapiGetTokenInfo searchKeysGlobally() {
         searchKeysGlobally = true;
         return this;
@@ -405,46 +401,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     public HapiGetTokenInfo hasEmptyMetadataKey() {
         emptyMetadataKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidAdminKey() {
-        invalidAdminKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidPauseKey() {
-        invalidPauseKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidFreezeKey() {
-        invalidFreezeKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidKycKey() {
-        invalidKycKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidSupplyKey() {
-        invalidSupplyKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidWipeKey() {
-        invalidWipeKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidFeeScheduleKey() {
-        invalidFeeScheduleKey = true;
-        return this;
-    }
-
-    public HapiGetTokenInfo hasInvalidMetadataKey() {
-        invalidMetadataKey = true;
         return this;
     }
 
@@ -529,8 +485,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyFreezeKey) {
             assertForRemovedKey(actualInfo.getFreezeKey());
-        } else if (invalidFreezeKey) {
-            assertForAllZerosInvalidKey(actualInfo.getFreezeKey());
         } else if (explicitFreezeKey != null) {
             assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
         } else {
@@ -544,8 +498,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyAdminKey) {
             assertForRemovedKey(actualInfo.getAdminKey());
-        } else if (invalidAdminKey) {
-            assertForAllZerosInvalidKey(actualInfo.getAdminKey());
         } else if (explicitAdminKey != null) {
             assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
         } else {
@@ -559,8 +511,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyWipeKey) {
             assertForRemovedKey(actualInfo.getWipeKey());
-        } else if (invalidWipeKey) {
-            assertForAllZerosInvalidKey(actualInfo.getWipeKey());
         } else if (explicitWipeKey != null) {
             assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
         } else {
@@ -574,8 +524,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyKycKey) {
             assertForRemovedKey(actualInfo.getKycKey());
-        } else if (invalidKycKey) {
-            assertForAllZerosInvalidKey(actualInfo.getKycKey());
         } else if (explicitKycKey != null) {
             assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
         } else {
@@ -589,8 +537,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptySupplyKey) {
             assertForRemovedKey(actualInfo.getSupplyKey());
-        } else if (invalidSupplyKey) {
-            assertForAllZerosInvalidKey(actualInfo.getSupplyKey());
         } else if (explicitSupplyKey != null) {
             assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
         } else {
@@ -604,8 +550,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyFeeScheduleKey) {
             assertForRemovedKey(actualInfo.getFeeScheduleKey());
-        } else if (invalidFeeScheduleKey) {
-            assertForAllZerosInvalidKey(actualInfo.getFeeScheduleKey());
         } else if (explicitFeeScheduleKey != null) {
             assertEquals(
                     fromPbj(explicitFeeScheduleKey), actualInfo.getFeeScheduleKey(), "Wrong token fee schedule key!");
@@ -620,8 +564,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyPauseKey) {
             assertForRemovedKey(actualInfo.getPauseKey());
-        } else if (invalidPauseKey) {
-            assertForAllZerosInvalidKey(actualInfo.getPauseKey());
         } else if (explicitPauseKey != null) {
             assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
         } else {
@@ -635,8 +577,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (emptyMetadataKey) {
             assertForRemovedKey(actualInfo.getMetadataKey());
-        } else if (invalidMetadataKey) {
-            assertForAllZerosInvalidKey(actualInfo.getMetadataKey());
         } else {
             assertFor(
                     actualInfo.getMetadataKey(),
@@ -659,13 +599,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             var expected = expectedFn.apply(possible.get(), registry);
             assertEquals(expected, actual, error);
         }
-    }
-
-    private void assertForAllZerosInvalidKey(Key actual) {
-        assertEquals(
-                TxnUtils.ALL_ZEROS_INVALID_KEY,
-                actual,
-                "Does not equal to zero address `0x0000000000000000000000000000000000000000`");
     }
 
     private void assertForRemovedKey(Key actual) {

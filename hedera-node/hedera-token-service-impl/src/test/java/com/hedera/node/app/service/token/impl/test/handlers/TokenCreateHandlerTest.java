@@ -73,16 +73,15 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -106,9 +105,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private EntityNumGenerator entityNumGenerator;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
-    private TokenCreateRecordBuilder recordBuilder;
+    private TokenCreateStreamBuilder recordBuilder;
     private TokenCreateHandler subject;
     private TransactionBody txn;
     private CustomFeesValidator customFeesValidator;
@@ -123,15 +122,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     private static final TokenID newTokenId =
             TokenID.newBuilder().tokenNum(3000L).build();
-    private static final Timestamp expiry =
-            Timestamp.newBuilder().seconds(1234600L).build();
     private final AccountID autoRenewAccountId = ownerId;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
+        recordBuilder = new RecordStreamBuilder();
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
@@ -1050,8 +1047,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private void setUpTxnContext() {
         txn = new TokenCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);

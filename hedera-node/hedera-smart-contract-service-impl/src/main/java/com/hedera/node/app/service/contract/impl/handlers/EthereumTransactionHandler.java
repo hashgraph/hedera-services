@@ -35,13 +35,12 @@ import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -67,6 +66,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
+    private final byte[] EMPTY_ADDRESS = new byte[20];
     private final EthTxSigsCache ethereumSignatures;
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
@@ -104,10 +104,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
         validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
-        // FUTURE: This was copied over from IngestChecker.  Investigate if it's still needed.
         // Do not allow sending HBars to Burn Address
         if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-            validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
         }
     }
 
@@ -145,19 +144,29 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
-        context.recordBuilders()
-                .getOrCreate(EthereumTransactionRecordBuilder.class)
+        context.savepointStack()
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            outcome.addCallDetailsTo(
-                    context.recordBuilders().getOrCreate(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
+            outcome.addCallDetailsTo(context.savepointStack().getBaseBuilder(ContractCallStreamBuilder.class));
         } else {
-            outcome.addCreateDetailsTo(
-                    context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class),
-                    ExternalizeAbortResult.YES);
+            outcome.addCreateDetailsTo(context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class));
         }
 
         throwIfUnsuccessful(outcome.status());
+    }
+
+    /**
+     * Does work needed to externalize details after an Ethereum transaction is throttled.
+     * @param context the handle context
+     */
+    public void handleThrottled(@NonNull final HandleContext context) {
+        final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+        context.savepointStack()
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
+                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
     }
 
     @NonNull

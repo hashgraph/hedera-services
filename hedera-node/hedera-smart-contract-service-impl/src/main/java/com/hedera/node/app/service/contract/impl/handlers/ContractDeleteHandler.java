@@ -39,7 +39,7 @@ import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
@@ -113,7 +113,7 @@ public class ContractDeleteHandler implements TransactionHandler {
             throw new HandleException(obtainer.smartContract() ? INVALID_CONTRACT_ID : OBTAINER_DOES_NOT_EXIST);
         }
         validateFalse(toBeDeleted.accountIdOrThrow().equals(obtainer.accountIdOrThrow()), OBTAINER_SAME_CONTRACT_ID);
-        final var recordBuilder = context.recordBuilders().getOrCreate(ContractDeleteRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(ContractDeleteStreamBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
         context.storeFactory()
                 .serviceApi(TokenServiceApi.class)

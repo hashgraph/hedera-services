@@ -12,6 +12,13 @@
 
 
 #########################
+##### HAPI protobuf #####
+#########################
+
+/hapi/                                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+
+
+#########################
 ##### Hedera Node  ######
 #########################
 
@@ -43,6 +50,11 @@
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
 /hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci
+
+###############################
+##### Hedera Cryptography #####
+###############################
+/hedera-cryptography/                           @hashgraph/platform-cryptography
 
 #########################
 ##### Platform SDK ######

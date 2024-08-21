@@ -25,7 +25,6 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -63,6 +62,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
          * Removed epoch hash fields.
          */
         public static final int REMOVED_EPOCH_HASH = 5;
+        /**
+         * Removed the uptime data.
+         */
+        public static final int REMOVED_UPTIME_DATA = 6;
     }
 
     /**
@@ -120,11 +123,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private Instant lastFrozenTime;
 
     /**
-     * Data on node uptime.
-     */
-    private UptimeDataImpl uptimeData = new UptimeDataImpl();
-
-    /**
      * Null if birth round migration has not yet happened, otherwise the software version that was first used when the
      * birth round migration was performed.
      */
@@ -160,7 +158,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.snapshot = that.snapshot;
         this.freezeTime = that.freezeTime;
         this.lastFrozenTime = that.lastFrozenTime;
-        this.uptimeData = that.uptimeData.copy();
         this.firstVersionInBirthRoundMode = that.firstVersionInBirthRoundMode;
         this.lastRoundBeforeBirthRoundMode = that.lastRoundBeforeBirthRoundMode;
         this.lowestJudgeGenerationBeforeBirthRoundMode = that.lowestJudgeGenerationBeforeBirthRoundMode;
@@ -189,7 +186,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(snapshot, false);
         out.writeInstant(freezeTime);
         out.writeInstant(lastFrozenTime);
-        out.writeSerializable(uptimeData, false);
         out.writeSerializable(firstVersionInBirthRoundMode, true);
         out.writeLong(lastRoundBeforeBirthRoundMode);
         out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
@@ -213,7 +209,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         snapshot = in.readSerializable(false, ConsensusSnapshot::new);
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
-        uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+        if (version < ClassVersion.REMOVED_UPTIME_DATA) {
+            skipUptimeData(in);
+        }
         if (version >= ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY) {
             firstVersionInBirthRoundMode = in.readSerializable();
             lastRoundBeforeBirthRoundMode = in.readLong();
@@ -224,12 +222,34 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         }
     }
 
+    private void skipUptimeData(final @NonNull SerializableDataInputStream in) throws IOException {
+        // uptime data version
+        in.readInt();
+        int numOfEntries = in.readInt();
+        for (int i = 0; i < numOfEntries; i++) {
+            // key version
+            in.readInt();
+            // nodeId
+            in.readLong();
+            // value version
+            in.readInt();
+            // lastEventRound
+            in.readLong();
+            // lastEventTime
+            in.readInstant();
+            // lastJudgeRound
+            in.readLong();
+            // lastJudgeTime
+            in.readInstant();
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public int getVersion() {
-        return ClassVersion.REMOVED_EPOCH_HASH;
+        return ClassVersion.REMOVED_UPTIME_DATA;
     }
 
     /**
@@ -450,25 +470,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         this.lastFrozenTime = lastFrozenTime;
-    }
-
-    /**
-     * Gets the uptime data.
-     *
-     * @return the uptime data
-     */
-    @Nullable
-    public UptimeDataImpl getUptimeData() {
-        return uptimeData;
-    }
-
-    /**
-     * Sets the uptime data.
-     *
-     * @param uptimeData the uptime data
-     */
-    public void setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
-        this.uptimeData = Objects.requireNonNull(uptimeData);
     }
 
     /**

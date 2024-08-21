@@ -67,6 +67,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
@@ -93,7 +94,7 @@ import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -257,7 +258,12 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher();
+            eventHasher = new DefaultEventHasher(
+                    blocks.appVersion().getPbjSemanticVersion(),
+                    blocks.platformContext()
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .migrateEventHashing());
         }
         return eventHasher;
     }
@@ -585,7 +591,7 @@ public class PlatformComponentBuilder {
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
                     consensusEventStreamName,
-                    (DetailedConsensusEvent event) -> event.isLastInRoundReceived()
+                    (CesEvent event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference()
                                     .get()
                                     .test(event.getPlatformEvent().getConsensusTimestamp()));

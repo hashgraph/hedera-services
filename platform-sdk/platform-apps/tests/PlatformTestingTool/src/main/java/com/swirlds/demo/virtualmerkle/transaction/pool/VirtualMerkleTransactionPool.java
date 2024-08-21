@@ -91,9 +91,9 @@ public class VirtualMerkleTransactionPool {
      * Builds a new transaction based on the {@link VirtualMerkleConfig} instance
      * given during the creation of this object.
      *
-     * @return A triple where {@link Triple#getLeft()} is a byte array with the contents of the transaction,
-     *        {@link Triple#getMiddle()} is a {@link PAYLOAD_TYPE} showing what is the type of the transaction,
-     *        {@link Triple#getRight()} is a {@link MapKey} to find the lifecycle of the entity produced by
+     * @return A triple where {@link Triple#left()} is a byte array with the contents of the transaction,
+     *        {@link Triple#middle()} is a {@link PAYLOAD_TYPE} showing what is the type of the transaction,
+     *        {@link Triple#right()} is a {@link MapKey} to find the lifecycle of the entity produced by
      * 		the transaction inside {@link ExpectedFCMFamily} instance given during the creation of this object.
      */
     public Triple<byte[], PAYLOAD_TYPE, MapKey> getTransaction() {

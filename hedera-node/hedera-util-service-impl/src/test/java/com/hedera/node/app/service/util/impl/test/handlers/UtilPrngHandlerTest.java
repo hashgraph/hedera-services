@@ -21,26 +21,27 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,16 +58,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UtilPrngHandlerTest {
-    @Mock
-    private PreHandleContext preHandleContext;
-
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    private FakePrngRecordBuilder recordBuilder;
+    @Mock
+    private PrngStreamBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     @Mock
     private BlockRecordInfo blockRecordInfo;
@@ -79,15 +78,14 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
-        recordBuilder = new FakePrngRecordBuilder();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(PrngStreamBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 
@@ -135,8 +133,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(hash);
     }
 
     @Test
@@ -194,8 +192,8 @@ class UtilPrngHandlerTest {
         subject.handle(handleContext);
 
         // Then we find that the random number is in the range, and isn't negative!
-        assertThat(recordBuilder.entropyNumber).isBetween(0, 19);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     /**
@@ -240,8 +238,8 @@ class UtilPrngHandlerTest {
         subject.handle(handleContext);
 
         // Then we find that the random number is in the range, and isn't negative!
-        assertThat(recordBuilder.entropyNumber).isEqualTo(expected);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(expected);
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -252,8 +250,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isBetween(0, Integer.MAX_VALUE);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -274,8 +272,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(hash);
     }
 
     @Test
@@ -285,8 +283,8 @@ class UtilPrngHandlerTest {
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -297,8 +295,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
     }
 
     @Test
@@ -309,8 +307,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
     }
 
     @Test

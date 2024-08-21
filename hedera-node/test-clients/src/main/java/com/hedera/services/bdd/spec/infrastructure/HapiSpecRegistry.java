@@ -567,6 +567,10 @@ public class HapiSpecRegistry {
         put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
     }
 
+    public boolean hasTokenRel(String account, String token) {
+        return has(tokenRelKey(account, token), TokenAccountRegistryRel.class);
+    }
+
     private String tokenRelKey(String account, String token) {
         return account + "|" + token;
     }
@@ -877,7 +881,8 @@ public class HapiSpecRegistry {
         if (txn.hasGrpcCertificateHash()) {
             builder.setGrpcCertificateHash(txn.getGossipCaCertificate().toByteString());
         }
-        //     TODO   builder.setGossipEndpoint()
+        builder.addAllGossipEndpoint(txn.getGossipEndpointList());
+        builder.addAllServiceEndpoint(txn.getServiceEndpointList());
         put(name, builder.build());
     }
 }

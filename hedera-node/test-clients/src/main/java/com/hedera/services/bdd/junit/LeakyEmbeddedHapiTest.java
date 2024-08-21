@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.TestTags.ONLY_EMBEDDED;
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
-@Tag(EMBEDDED)
+@Tag(ONLY_EMBEDDED)
 public @interface LeakyEmbeddedHapiTest {
     /**
      * The reasons the test has to run in embedded mode.
@@ -52,4 +52,25 @@ public @interface LeakyEmbeddedHapiTest {
      * @return the reasons the test cannot run concurrently with other tests
      */
     ContextRequirement[] requirement() default {};
+
+    /**
+     * If set, the names of properties this test overrides and needs automatically
+     * restored to their original values after the test completes.
+     * @return the names of properties this test overrides
+     */
+    String[] overrides() default {};
+
+    /**
+     * If not blank, the path of a JSON file containing the throttles to apply to the test. The
+     * original contents of the throttles system file will be restored after the test completes.
+     * @return the name of a resource to load throttles from
+     */
+    String throttles() default "";
+
+    /**
+     * If not blank, the path of a JSON file containing the fee schedules to apply to the test. The
+     * original contents of the fee schedules system file will be restored after the test completes.
+     * @return the name of a resource to load fee schedules from
+     */
+    String fees() default "";
 }

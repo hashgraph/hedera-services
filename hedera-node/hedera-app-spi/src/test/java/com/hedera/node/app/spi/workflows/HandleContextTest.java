@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,12 +57,11 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchPrecedingTransaction(
-                        TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchPrecedingTransaction(TransactionBody.DEFAULT, StreamBuilder.class, signatureTest);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.dispatchPrecedingTransaction(
-                        TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class, signatureTest));
+                        TransactionBody.DEFAULT, StreamBuilder.class, signatureTest));
     }
 
     @Test
@@ -70,11 +69,9 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchPrecedingTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
-        subject.dispatchPrecedingTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
-        verify(subject)
-                .dispatchPrecedingTransaction(
-                        WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID);
+                .dispatchPrecedingTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
+        subject.dispatchPrecedingTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
+        verify(subject).dispatchPrecedingTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID);
     }
 
     @Test
@@ -82,12 +79,10 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchScheduledChildTransaction(
-                        MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchScheduledChildTransaction(MISSING_PAYER_ID, StreamBuilder.class, signatureTest);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.dispatchScheduledChildTransaction(
-                        MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest));
+                () -> subject.dispatchScheduledChildTransaction(MISSING_PAYER_ID, StreamBuilder.class, signatureTest));
     }
 
     @Test
@@ -95,11 +90,10 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchScheduledChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
-        subject.dispatchScheduledChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchScheduledChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
+        subject.dispatchScheduledChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
         verify(subject)
-                .dispatchChildTransaction(
-                        WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID, SCHEDULED);
+                .dispatchChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, SCHEDULED);
     }
 
     @Test
@@ -107,12 +101,11 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchRemovableChildTransaction(TransactionBody.DEFAULT, StreamBuilder.class, signatureTest);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class, signatureTest));
+                        TransactionBody.DEFAULT, StreamBuilder.class, signatureTest));
     }
 
     @Test
@@ -120,14 +113,10 @@ class HandleContextTest {
         final var subject = mock(HandleContext.class);
         doCallRealMethod()
                 .when(subject)
-                .dispatchRemovableChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
-        subject.dispatchRemovableChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
+                .dispatchRemovableChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
+        subject.dispatchRemovableChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
         verify(subject)
                 .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID,
-                        SingleTransactionRecordBuilder.class,
-                        signatureTest,
-                        PAYER_ID,
-                        NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                        WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, NOOP_RECORD_CUSTOMIZER);
     }
 }

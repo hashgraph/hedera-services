@@ -879,7 +879,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 
     /**
@@ -2490,7 +2490,7 @@ public class ContractCallSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                        .consensusTimeImpliedByOffset(parentConsTime.get(), 1))));
     }
 
     @HapiTest

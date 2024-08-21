@@ -37,7 +37,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -161,7 +161,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Build the record with newly created topic --- */
             final var recordBuilder =
-                    handleContext.recordBuilders().getOrCreate(ConsensusCreateTopicRecordBuilder.class);
+                    handleContext.savepointStack().getBaseBuilder(ConsensusCreateTopicStreamBuilder.class);
 
             recordBuilder.topicID(topic.topicId());
         } catch (final HandleException e) {

@@ -22,9 +22,9 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,7 +77,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
     /** The default transaction generator used to create transaction for generated events. */
     protected static final TransactionGenerator DEFAULT_TRANSACTION_GENERATOR =
-            r -> TransactionUtils.randomSwirldTransactions(
+            r -> TransactionUtils.randomApplicationTransactions(
                     r, DEFAULT_AVG_TX_SIZE, DEFAULT_TX_SIZE_STD_DEV, DEFAULT_TX_COUNT_AVG, DEFAULT_TX_COUNT_STD_DEV);
 
     /**
@@ -150,7 +150,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      * Maintain the maximum size of a list of events by removing the last element (if needed). Utility method that is
      * useful for child classes.
      */
-    protected void pruneEventList(final LinkedList<IndexedEvent> events) {
+    protected void pruneEventList(final LinkedList<EventImpl> events) {
         if (events.size() > getRecentEventRetentionSize()) {
             events.removeLast();
         }
@@ -212,7 +212,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent generateEvent(
+    public EventImpl generateEvent(
             @NonNull final Random random,
             final long eventIndex,
             @Nullable final EventSource<?> otherParent,
@@ -220,7 +220,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
             final long birthRound) {
         Objects.requireNonNull(random);
         Objects.requireNonNull(timestamp);
-        final IndexedEvent event;
+        final EventImpl event;
 
         // The higher the index, the older the event. Use the oldest parent between the provided and requested value.
         final int otherParentIndex = Math.max(
@@ -229,9 +229,9 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 // event index (event age) that the other node wants to provide as an other parent to this node
                 otherParent.getProvidedOtherParentAge(random, eventIndex));
 
-        final IndexedEvent otherParentEvent =
+        final EventImpl otherParentEvent =
                 otherParent == null ? null : otherParent.getRecentEvent(random, otherParentIndex);
-        final IndexedEvent latestSelfEvent = getLatestEvent(random);
+        final EventImpl latestSelfEvent = getLatestEvent(random);
         final long generation = Math.max(
                         otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
                         latestSelfEvent == null ? (FIRST_GENERATION - 1) : latestSelfEvent.getGeneration())

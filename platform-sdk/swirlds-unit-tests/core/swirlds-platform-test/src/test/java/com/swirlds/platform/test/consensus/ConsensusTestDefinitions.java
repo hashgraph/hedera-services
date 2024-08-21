@@ -40,7 +40,6 @@ import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -558,15 +557,8 @@ public final class ConsensusTestDefinitions {
                             .getLatestRound()
                             .getSnapshot());
             final int fi = i;
-            // The following lines of code to move the events from a 4 node network to a 3 node network causes the
-            // 3 node network to reach divergent rounds of consensus from the 4 node network.
-            // On random seed 2836910334346903534L, the snapshot ends on round 315, but the 3 node network
-            // goes past the snapshot round.  round 317 has a single judge, which is how this problem was discovered.
-            // The implementation of this test needs to be redone to properly remove a node from the first orchestrator
-            // instead of trying to bootstrap a second orchestrator in the proper state.  Replaying the previously
-            // events is going to be wrong because the weight distribution by % in the 3 node network is different.
             orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
-                orchestrator2.getNodes().get(fi).getIntake().addEvent(e);
+                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
             });
             ConsensusUtils.loadEventsIntoGenerator(
                     orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
@@ -591,9 +583,9 @@ public final class ConsensusTestDefinitions {
         orchestrator.getNodes().forEach(n -> {
             final int numEvents = orchestrator.getEventFraction(0.5);
             n.getEventEmitter().setCheckpoint(numEvents);
-            final List<IndexedEvent> events = n.getEventEmitter().emitEvents(numEvents);
+            final List<EventImpl> events = n.getEventEmitter().emitEvents(numEvents);
             n.getEventEmitter().reset();
-            final Optional<IndexedEvent> maxGenEvent = events.stream()
+            final Optional<EventImpl> maxGenEvent = events.stream()
                     .max(Comparator.comparingLong(EventImpl::getGeneration).thenComparing(EventImpl::getCreatorId));
             final ConsensusSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
                     round,

@@ -21,10 +21,6 @@ plugins {
 
 description = "Default Hedera AddressBook Service Implementation"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-static") }
-
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
@@ -33,6 +29,8 @@ testModuleInfo {
     requires("com.hedera.node.app.service.token.impl")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("org.assertj.core")

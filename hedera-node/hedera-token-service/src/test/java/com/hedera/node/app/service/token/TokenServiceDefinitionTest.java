@@ -42,6 +42,7 @@ class TokenServiceDefinitionTest {
                         new RpcMethodDefinition<>("burnToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("rejectToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("deleteToken", Transaction.class, TransactionResponse.class),
+                        new RpcMethodDefinition<>("airdropTokens", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("wipeTokenAccount", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("freezeTokenAccount", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("unfreezeTokenAccount", Transaction.class, TransactionResponse.class),
@@ -59,6 +60,8 @@ class TokenServiceDefinitionTest {
                         new RpcMethodDefinition<>("getTokenNftInfos", Query.class, Response.class),
                         new RpcMethodDefinition<>("pauseToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("updateNfts", Transaction.class, TransactionResponse.class),
-                        new RpcMethodDefinition<>("unpauseToken", Transaction.class, TransactionResponse.class));
+                        new RpcMethodDefinition<>("unpauseToken", Transaction.class, TransactionResponse.class),
+                        new RpcMethodDefinition<>("claimAirdrop", Transaction.class, TransactionResponse.class),
+                        new RpcMethodDefinition<>("cancelAirdrop", Transaction.class, TransactionResponse.class));
     }
 }

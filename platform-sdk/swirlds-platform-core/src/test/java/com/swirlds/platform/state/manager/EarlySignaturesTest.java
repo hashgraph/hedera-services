@@ -20,7 +20,7 @@ import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -107,7 +107,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
             // All node 0 and 2 signatures are sent very early.
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(0),
-                    StateSignaturePayload.newBuilder()
+                    StateSignatureTransaction.newBuilder()
                             .round(round)
                             .signature(buildFakeSignatureBytes(
                                     addressBook
@@ -118,7 +118,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                             .build());
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
-                    StateSignaturePayload.newBuilder()
+                    StateSignatureTransaction.newBuilder()
                             .round(round)
                             .signature(buildFakeSignatureBytes(
                                     addressBook
@@ -132,7 +132,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
             if (round % 2 == 0) {
                 manager.handlePreconsensusSignatureTransaction(
                         addressBook.getNodeId(3),
-                        StateSignaturePayload.newBuilder()
+                        StateSignatureTransaction.newBuilder()
                                 .round(round)
                                 .signature(buildFakeSignatureBytes(
                                         addressBook

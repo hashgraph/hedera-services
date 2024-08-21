@@ -1045,17 +1045,6 @@ platform-sdk/sdk/metricsDoc.tsv
 
 # Temporary Test Folders (Poorly Behaved Tests)
 **/swirlds-tmp
-swirlds-platform-core/data/**
-hedera-node/cli-clients/testFile
-hedera-node/hedera-mono-service/temp/**
-hedera-node/hedera-mono-service/swirlds-sst-tmp/**
-hedera-node/data/
-hedera-node/settingsUsed.txt
-hedera-node/hedera-node/data/
-
-# Test Files (Poorly Behaved Tests)
-*.json.gz
-saved.txt
 
 # Preconsensus event stream files
 *.pces
@@ -1081,3 +1070,6 @@ gha-creds-*.json
 
 ### Temporary ignore for differential testing
 hedera-node/test-clients/rcdiff/diff.txt
+
+### Ignore binary files in Test-Clients root
+hedera-node/test-clients/*.bin

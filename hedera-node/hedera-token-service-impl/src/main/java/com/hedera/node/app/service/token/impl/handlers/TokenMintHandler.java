@@ -54,7 +54,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -134,7 +134,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        final var recordBuilder = context.recordBuilders().getOrCreate(TokenMintRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenMintStreamBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(op.amount() >= 0, INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.

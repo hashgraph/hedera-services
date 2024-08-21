@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -54,7 +53,7 @@ public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt
     @Override
     public boolean matches(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt);
-        return matchesApproveSelector(attempt.selector()) || matchesApproveProxySelector(attempt.selector());
+        return attempt.isSelector(HBAR_APPROVE, HBAR_APPROVE_PROXY);
     }
 
     /**
@@ -64,9 +63,9 @@ public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt
     public Call callFrom(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt);
 
-        if (matchesApproveSelector(attempt.selector())) {
+        if (attempt.isSelector(HBAR_APPROVE)) {
             return new HbarApproveCall(attempt, bodyForApprove(attempt));
-        } else if (matchesApproveProxySelector(attempt.selector())) {
+        } else if (attempt.isSelector(HBAR_APPROVE_PROXY)) {
             return new HbarApproveCall(attempt, bodyForApproveProxy(attempt));
         }
         return null;
@@ -104,7 +103,7 @@ public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt
                 .cryptoAllowances(CryptoAllowance.newBuilder()
                         .owner(owner)
                         .spender(operatorId)
-                        .amount(amount.longValue())
+                        .amount(amount.longValueExact())
                         .build())
                 .build();
     }
@@ -115,15 +114,5 @@ public class HbarApproveTranslator extends AbstractCallTranslator<HasCallAttempt
         return TransactionBody.newBuilder()
                 .cryptoApproveAllowance(approveAllowanceTransactionBody)
                 .build();
-    }
-
-    @NonNull
-    private boolean matchesApproveSelector(final byte[] selector) {
-        return Arrays.equals(selector, HBAR_APPROVE.selector());
-    }
-
-    @NonNull
-    private boolean matchesApproveProxySelector(final byte[] selector) {
-        return Arrays.equals(selector, HBAR_APPROVE_PROXY.selector());
     }
 }

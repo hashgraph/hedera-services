@@ -33,8 +33,8 @@ import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
@@ -183,8 +183,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
-            for (final EventImpl event : consensusRound.getConsensusEvents()) {
-                event.getBaseEvent().setConsensusTimestampsOnPayloads();
+            for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
+                event.setConsensusTimestampsOnTransactions();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
@@ -194,8 +194,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             if (waitForPrehandle) {
                 handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-                consensusRound.forEach(
-                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+                consensusRound.getConsensusEvents().forEach(PlatformEvent::awaitPrehandleCompletion);
             }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);

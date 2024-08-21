@@ -245,6 +245,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
             numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
+            // write metadata
+            writeMetadata(storeDir);
             logger.info(
                     MERKLE_DB.getMarker(),
                     "HalfDiskHashMap [{}] created with minimumBuckets={} and numOfBuckets={}",
@@ -256,6 +258,16 @@ public class HalfDiskHashMap<K extends VirtualKey>
         fileCollection = new DataFileCollection<>(
                 // Need: propagate MerkleDb config from the database
                 config, storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
+    }
+
+    private void writeMetadata(final Path dir) throws IOException {
+        try (DataOutputStream metaOut =
+                new DataOutputStream(Files.newOutputStream(dir.resolve(storeName + METADATA_FILENAME_SUFFIX)))) {
+            metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
+            metaOut.writeInt(minimumBuckets);
+            metaOut.writeInt(numOfBuckets);
+            metaOut.flush();
+        }
     }
 
     /**
@@ -276,13 +288,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         // snapshot files
         fileCollection.snapshot(snapshotDirectory);
         // write metadata
-        try (DataOutputStream metaOut = new DataOutputStream(
-                Files.newOutputStream(snapshotDirectory.resolve(storeName + METADATA_FILENAME_SUFFIX)))) {
-            metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
-            metaOut.writeInt(minimumBuckets);
-            metaOut.writeInt(numOfBuckets);
-            metaOut.flush();
-        }
+        writeMetadata(snapshotDirectory);
     }
 
     /**
@@ -312,8 +318,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     @Override
     public void close() throws IOException {
-        bucketIndexToBucketLocation.close();
+        // Close the files first, then the index. If done in a different order, there may be
+        // file operations still running, but the index is already closed
         fileCollection.close();
+        bucketIndexToBucketLocation.close();
     }
 
     // =================================================================================================================

@@ -33,13 +33,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.key.KeyVerifier;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -49,7 +48,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
@@ -180,16 +179,15 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(keyVerifier.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
         given(mockContext.dispatchChildTransaction(
                         any(),
-                        eq(ScheduleRecordBuilder.class),
+                        eq(ScheduleStreamBuilder.class),
                         any(Predicate.class),
                         any(AccountID.class),
                         any(TransactionCategory.class)))
-                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+                .willReturn(new RecordStreamBuilder());
 
-        final var mockRecordBuilders = mock(RecordBuilders.class);
-        given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
-        given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
-                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+        final var mockStack = mock(HandleContext.SavepointStack.class);
+        given(mockContext.savepointStack()).willReturn(mockStack);
+        given(mockStack.getBaseBuilder(ScheduleStreamBuilder.class)).willReturn(new RecordStreamBuilder());
     }
 
     private static TransactionKeys createChildKeys(

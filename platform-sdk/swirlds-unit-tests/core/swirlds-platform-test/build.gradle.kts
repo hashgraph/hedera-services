@@ -26,12 +26,12 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 testModuleInfo {
-    requires("com.hedera.node.hapi")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
+    requires("org.assertj.core")
     requires("org.mockito.junit.jupiter")
     requires("com.swirlds.metrics.api")
     requires("org.mockito")

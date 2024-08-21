@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -35,14 +36,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
@@ -72,6 +73,7 @@ public class DispatchProcessor {
     private final DispatchUsageManager dispatchUsageManager;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
+    private final EthereumTransactionHandler ethereumTransactionHandler;
 
     @Inject
     public DispatchProcessor(
@@ -82,7 +84,8 @@ public class DispatchProcessor {
             @NonNull final PlatformStateUpdates platformStateUpdates,
             @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -91,6 +94,7 @@ public class DispatchProcessor {
         this.dispatchUsageManager = requireNonNull(dispatchUsageManager);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
+        this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
     }
 
     /**
@@ -145,12 +149,7 @@ public class DispatchProcessor {
             return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-            rollback(
-                    e.shouldRollbackStack(),
-                    e.getStatus(),
-                    dispatch.stack(),
-                    dispatch.recordListBuilder(),
-                    dispatch.recordBuilder());
+            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
             }
@@ -158,10 +157,14 @@ public class DispatchProcessor {
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
             return USER_TRANSACTION;
         } catch (final ThrottleException e) {
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), e.getStatus());
+            final var workDone = nonHandleWorkDone(dispatch, validationResult, e.getStatus());
+            if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
+                ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
+            }
+            return workDone;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), FAIL_INVALID);
+            return nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);
         }
     }
 
@@ -192,7 +195,6 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @param recordListBuilder the record list builder
      * @param status the status to set
      * @return the work done in handling the exception
      */
@@ -200,9 +202,8 @@ public class DispatchProcessor {
     private DispatchUsageManager.WorkDone nonHandleWorkDone(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final ResponseCodeEnum status) {
-        rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+        rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
         return FEES_ONLY;
     }
@@ -259,24 +260,21 @@ public class DispatchProcessor {
      * {@link HandleException} that is due to a contract call revert.
      * @param status the status to set
      * @param stack the save point stack to rollback
-     * @param recordListBuilder the record list builder to revert
      */
     private void rollback(
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+            @NonNull final StreamBuilder builder) {
+        builder.status(status);
         if (rollbackStack) {
             stack.rollbackFullStack();
         }
-        recordBuilder.status(status);
-        recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
     /**
      * Checks if the transaction has already failed due to an error that can be identified before even performing
-     * the dispatch. If it has, it will set the status of the dispatch's record buidler and return true.
+     * the dispatch. If it has, it will set the status of the dispatch's record builder and return true.
      * Otherwise, it will return false.
      *
      * @param dispatch the dispatch to be processed

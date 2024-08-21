@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -30,13 +30,12 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -118,6 +117,13 @@ public interface HandleContext {
      */
     @NonNull
     AccountID payer();
+
+    /**
+     * Attempts to charge the payer in this context the given amount of tinybar.
+     * @param amount the amount to charge
+     * @return true if the entire amount was successfully charged, false otherwise
+     */
+    boolean tryToChargePayer(long amount);
 
     /**
      * Returns the current {@link Configuration} for the node.
@@ -202,10 +208,6 @@ public interface HandleContext {
      */
     SystemPrivilege hasPrivilegedAuthorization();
 
-    /** Gets the {@link RecordCache}. */
-    @NonNull
-    RecordCache recordCache();
-
     /**
      * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.
      *
@@ -221,14 +223,6 @@ public interface HandleContext {
      */
     @NonNull
     NetworkInfo networkInfo();
-
-    /**
-     * Returns the current {@link RecordBuilders} to manage record builders.
-     *
-     * @return the {@link RecordBuilders}
-     */
-    @NonNull
-    RecordBuilders recordBuilders();
 
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
@@ -266,6 +260,7 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
@@ -320,6 +315,7 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchRemovablePrecedingTransaction(
@@ -354,6 +350,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
+     * @throws HandleException if the base builder for the dispatch cannot be created
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
@@ -374,6 +371,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     default <T> T dispatchScheduledChildTransaction(
@@ -409,6 +407,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
+     * @throws HandleException if the base builder for the dispatch cannot be created
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
@@ -428,6 +427,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     default <T> T dispatchRemovableChildTransaction(
@@ -440,7 +440,7 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
-                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                NOOP_RECORD_CUSTOMIZER);
     }
 
     /**
@@ -496,6 +496,45 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+
+        /**
+         * Returns a record builder for the given record builder subtype.
+         *
+         * @param recordBuilderClass the record type
+         * @param <T> the record type
+         * @return a builder for the given record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T extends StreamBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+         * context) is rolled back, all child record builders will be reverted.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
+         * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
+         * rolled back.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {

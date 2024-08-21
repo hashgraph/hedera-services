@@ -38,9 +38,11 @@ import com.hedera.services.bdd.spec.dsl.operations.transactions.CallTokenOperati
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -54,8 +56,6 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
 
     protected final Token.Builder builder = Token.newBuilder();
 
-    private long initialSupply = 0;
-
     @Nullable
     private SpecAccount autoRenewAccount;
 
@@ -68,6 +68,20 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         super(name);
         builder.tokenType(tokenType);
         treasuryAccount = new SpecAccount(name + DEFAULT_TREASURY_NAME_SUFFIX);
+    }
+
+    /**
+     * Customizes the given token with the given keys, auto-renew account setting.
+     * @param token the token to customize
+     * @param keys the role keys to use with the token
+     * @param useAutoRenewAccount whether to use an auto-renew account
+     */
+    public static void customizeToken(
+            @NonNull final SpecToken token, @NonNull final SpecTokenKey[] keys, final boolean useAutoRenewAccount) {
+        token.setKeys(EnumSet.copyOf(List.of(keys)));
+        if (useAutoRenewAccount) {
+            token.useAutoRenewAccount();
+        }
     }
 
     /**
@@ -85,6 +99,14 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         return new CallTokenOperation(this, redirectContract, function, parameters);
     }
 
+    /**
+     * Returns an operation that static calls a redirect function on the token "contract".
+     *
+     * @param redirectContract the redirect contract
+     * @param function the function name
+     * @param parameters the function parameters
+     * @return the operation
+     */
     public StaticCallTokenOperation staticCall(
             @NonNull final TokenRedirectContract redirectContract,
             @NonNull final String function,
@@ -217,11 +239,14 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
      */
     @Override
     protected Creation<HapiTokenCreate, Token> newCreation(@NonNull final HapiSpec spec) {
+        final var model = builder.build();
         final var op = tokenCreate(name)
                 .tokenType(com.hederahashgraph.api.proto.java.TokenType.forNumber(
                         builder.build().tokenType().protoOrdinal()))
                 .treasury(requireNonNull(treasuryAccount).name())
-                .initialSupply(initialSupply);
+                .maxSupply(model.maxSupply())
+                .supplyType(model.maxSupply() == 0 ? TokenSupplyType.INFINITE : TokenSupplyType.FINITE)
+                .initialSupply(model.totalSupply());
         if (autoRenewAccount != null) {
             op.autoRenewAccount(autoRenewAccount.name());
         }

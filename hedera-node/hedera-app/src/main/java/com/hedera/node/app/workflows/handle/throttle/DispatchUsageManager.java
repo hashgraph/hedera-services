@@ -64,10 +64,10 @@ public class DispatchUsageManager {
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
-        this.networkInfo = networkInfo;
-        this.handleWorkflowMetrics = handleWorkflowMetrics;
-        this.throttleServiceManager = throttleServiceManager;
-        this.networkUtilizationManager = networkUtilizationManager;
+        this.networkInfo = requireNonNull(networkInfo);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
@@ -127,13 +127,13 @@ public class DispatchUsageManager {
      * @param dispatch the dispatch
      */
     private void leakUnusedGas(@NonNull final Dispatch dispatch) {
-        final var recordBuilder = dispatch.recordBuilder();
+        final var builder = dispatch.recordBuilder();
         // (FUTURE) There can be cases where the EVM halts and consumes all gas even though not
         // much actual work was done; in such cases, the gas used is still reported to be at
         // least 80% of the gas limit. If we want to be more precise, we can probably use the
         // EVM action tracer to get a better estimate of the actual gas used and the gas limit.
-        if (recordBuilder.hasContractResult()) {
-            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+        if (builder.hasContractResult()) {
+            final var gasUsed = builder.getGasUsedForContractTxn();
             handleWorkflowMetrics.addGasUsed(gasUsed);
             final var contractsConfig = dispatch.config().getConfigData(ContractsConfig.class);
             if (contractsConfig.throttleThrottleByGas()) {

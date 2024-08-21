@@ -41,8 +41,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -161,14 +160,14 @@ class TokenDeleteHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext() {
             final var context = mock(HandleContext.class);
-            final var recordBuilders = mock(RecordBuilders.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             final var storeFactory = mock(StoreFactory.class);
             given(context.storeFactory()).willReturn(storeFactory);
             given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
             given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.recordBuilders()).willReturn(recordBuilders);
-            given(recordBuilders.getOrCreate(any())).willReturn(mock(TokenBaseRecordBuilder.class));
+            given(context.savepointStack()).willReturn(stack);
+            given(stack.getBaseBuilder(any())).willReturn(mock(TokenBaseStreamBuilder.class));
 
             return context;
         }

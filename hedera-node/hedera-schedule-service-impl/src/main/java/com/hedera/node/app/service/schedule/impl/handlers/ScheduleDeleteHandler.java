@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -125,8 +125,8 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                             context.keyVerifier().verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
-                        final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
+                        final ScheduleStreamBuilder scheduleRecords =
+                                context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
                         scheduleRecords.scheduleID(idToDelete);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);

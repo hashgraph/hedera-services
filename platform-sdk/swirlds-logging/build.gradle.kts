@@ -23,12 +23,15 @@ plugins {
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-varargs") }
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-deprecation,-exports,-removal,-varargs")
+}
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
+    requires("org.apache.commons.lang3")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.logging.test.fixtures")
     requires("org.assertj.core")

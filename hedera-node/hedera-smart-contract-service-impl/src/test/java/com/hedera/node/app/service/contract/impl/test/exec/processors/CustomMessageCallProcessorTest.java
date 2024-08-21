@@ -31,13 +31,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
@@ -130,6 +130,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractHappyPath() {
         givenPrngCall(ZERO_GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
         given(result.getOutput()).willReturn(OUTPUT_DATA);
         given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
 
@@ -147,6 +148,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractInsufficientGas() {
         givenPrngCall(GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
 

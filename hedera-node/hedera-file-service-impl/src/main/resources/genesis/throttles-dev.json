@@ -71,7 +71,10 @@
 			"TokenGrantKycToAccount",
 			"TokenRevokeKycFromAccount",
 			"TokenUpdateNfts",
-			"TokenReject"
+			"TokenReject",
+			"TokenAirdrop",
+				"TokenClaimAirdrop",
+				"TokenCancelAirdrop"
 		  ]
 		}
 	  ]

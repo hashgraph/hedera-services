@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -80,28 +81,7 @@ public interface TokenContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Adds a preceding child record builder to the list of record builders. This does not check if the records
-     * constructed are greater than allowed number of records.
-     * This is used when adding several system account creation records on genesis start up and also while generating
-     * staking updates happening after midnight.
-     * If the current {@link HandleContext} (or any parent context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @param <T> the record type
-     * @return the new child record builder
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Signal that any records created during startup migrations have been streamed.
-     */
-    void markMigrationRecordsStreamed();
+    <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Returns the set of all known node ids, including ids that may no longer be active.
