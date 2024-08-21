@@ -25,11 +25,14 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Roster Schema
  */
 public class V0540RosterSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
     public static final String ROSTER_KEY = "ROSTER";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
     /** this can't be increased later so we pick some number large enough, 2^16. */
@@ -58,7 +61,18 @@ public class V0540RosterSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        // no-op
-        // a dedicated genesis roster will be created during a separate genesis process
+        if (ctx.previousVersion() == null) {
+            log.info("Creating genesis roster and roster state");
+            // This migration code is really, for now, a default value provider.
+            // At genesis we put empty roster and roster state into the state
+            // as serialization/deserialization fails on null.
+            // It is important to distinguish this from the Genesis Roster,
+            // which will be provided by the Execution layer depending on
+            // the desired network mode
+            final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
+            rosterState.put(RosterState.DEFAULT);
+            final var roster = ctx.newStates().get(ROSTER_KEY);
+            roster.put(ProtoBytes.DEFAULT, Roster.DEFAULT);
+        }
     }
 }
