@@ -71,8 +71,6 @@ public class V0540RosterSchema extends Schema {
             // the desired network mode
             final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
             rosterState.put(RosterState.DEFAULT);
-            final var roster = ctx.newStates().get(ROSTER_KEY);
-            roster.put(ProtoBytes.DEFAULT, Roster.DEFAULT);
         }
     }
 }
