@@ -87,7 +87,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using cryptoTransferV2 for hBar transfer")
     public Stream<DynamicTest> failToUseCryptoTransferV2() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateFile(ratesProvider.hbarEquiv, ratesProvider.centEquiv),
+             //   updateFile(ratesProvider.hbarEquiv, ratesProvider.centEquiv),
                 numericContractComplex
                         .call("cryptoTransferV2", new long[] {-5, 5}, alice, poorAccount)
                         .gas(33304L)
