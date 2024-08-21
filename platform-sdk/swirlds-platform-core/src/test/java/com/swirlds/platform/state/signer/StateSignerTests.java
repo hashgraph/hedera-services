@@ -29,9 +29,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.Test;
 
 public class StateSignerTests {

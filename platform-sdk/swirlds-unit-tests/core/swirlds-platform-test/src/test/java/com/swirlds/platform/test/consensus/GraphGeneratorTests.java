@@ -34,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
@@ -625,7 +624,6 @@ public class GraphGeneratorTests {
     @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Other Parent Age Tests")
     public void otherParentAgeTests(final boolean birthRoundAsAncientThreshold) {
 

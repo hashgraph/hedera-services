@@ -18,7 +18,6 @@ package com.swirlds.common.stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import com.swirlds.common.utility.StopWatch;
 import java.util.Iterator;
@@ -26,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -48,7 +46,6 @@ class StreamingPerformanceTest {
 
     @ParameterizedTest
     @ValueSource(ints = {100, 150, 200})
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void performanceTest(final int payLoadSize) throws InterruptedException {
         generateObjects(payLoadSize);
         CountDownLatch countDownLatch = new CountDownLatch(1);

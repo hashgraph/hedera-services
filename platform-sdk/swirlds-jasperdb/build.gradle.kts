@@ -20,6 +20,7 @@ plugins {
     id("com.hedera.gradle.feature.benchmark")
     id("com.hedera.gradle.feature.test-fixtures")
     id("com.hedera.gradle.feature.test-hammer")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
@@ -33,11 +34,29 @@ mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 jmhModuleInfo { requires("jmh.core") }
 
 testModuleInfo {
-    requires("com.google.common")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+}
+
+timingSensitiveModuleInfo {
+    requires("com.google.common")
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.config.extensions")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.merkledb.test.fixtures")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.virtualmap")
     requires("org.apache.commons.lang3")
+    requires("org.apache.logging.log4j")
     requires("org.apache.logging.log4j.core")
+    requires("org.eclipse.collections.impl")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

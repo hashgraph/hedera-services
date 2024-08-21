@@ -288,14 +288,6 @@ tasks.withType<Checkstyle>().configureEach {
     }
 }
 
-// Remove below configuration once all 'TIME_CONSUMING' tests are moved to 'src/timeConsuming'.
-tasks.test {
-    options {
-        this as JUnitPlatformOptions
-        excludeTags("TIME_CONSUMING")
-    }
-}
-
 tasks.withType<JavaExec>().configureEach {
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath = false

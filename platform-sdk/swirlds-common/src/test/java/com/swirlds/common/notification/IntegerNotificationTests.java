@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.notification.internal.AsyncNotificationEngine;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.futures.FuturePool;
@@ -53,7 +52,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -810,7 +808,6 @@ public class IntegerNotificationTests {
     @ParameterizedTest
     @MethodSource("buildArgumentsForCompletionCallbackTest")
     @DisplayName("Completion Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void completionTest(final CompletionCallbackTestConfiguration config) throws InterruptedException {
         final NotificationEngine engine = new AsyncNotificationEngine(getStaticThreadManager());
 
