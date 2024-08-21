@@ -16,41 +16,43 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
-
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(UtilPrngTranslator.class);
+class TokenCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
+            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
+        final var receiptBuilder = TransactionReceipt.newBuilder();
         final var recordBuilder = TransactionRecord.newBuilder();
-        final var txOutput = transaction.output();
-        if (txOutput != null && txOutput.hasUtilPrng()) {
-            final var entropy = txOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                recordBuilder.prngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                recordBuilder.prngNumber(entropy.as());
-            }
-        } else {
-            logger.info("Was not able to translate UtilPrng operation");
+
+        if (stateChanges != null) {
+            maybeAssignTokenID(stateChanges, receiptBuilder);
         }
 
         return new SingleTransactionRecord(
                 transaction.txn(),
-                recordBuilder.build(),
+                recordBuilder.receipt(receiptBuilder.build()).build(),
                 List.of(),
                 new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    private void maybeAssignTokenID(final StateChanges stateChanges, final TransactionReceipt.Builder recordBuilder) {
+        stateChanges.stateChanges().stream()
+                .filter(StateChange::hasMapUpdate)
+                .findFirst()
+                .ifPresent(stateChange -> {
+                    if (stateChange.mapUpdate().hasKey()
+                            && stateChange.mapUpdate().key().hasTokenIdKey()) {
+                        recordBuilder.tokenID(stateChange.mapUpdate().key().tokenIdKey());
+                    }
+                });
     }
 }

@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -82,6 +83,7 @@ import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -374,8 +376,6 @@ public class HandleWorkflow {
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            // TODO - build and stream any committed builders and state changes from the stack, with a
-            // FAIL_INVALID for the user transaction record/result
             return failInvalidStreamItems(userTxn);
         }
     }
@@ -388,6 +388,16 @@ public class HandleWorkflow {
      */
     private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
+        // The stack for the user txn should never be committed
+        final List<BlockItem> blockItems = new LinkedList<>();
+        if (HandleWorkflow.STREAM_MODE != RECORDS) {
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            blockItems.addAll(failInvalidBuilder.build());
+        }
+
         final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                 .status(FAIL_INVALID)
@@ -397,8 +407,7 @@ public class HandleWorkflow {
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
-        // TODO: Add block items
-        return new HandleOutput(List.of(), List.of(failInvalidRecord));
+        return new HandleOutput(blockItems, List.of(failInvalidRecord));
     }
 
     /**

@@ -16,9 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
-
+import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -28,29 +26,28 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(UtilPrngTranslator.class);
+public class ContractCallTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    private static final Logger logger = LogManager.getLogger(ContractCallTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
             @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
         final var recordBuilder = TransactionRecord.newBuilder();
-        final var txOutput = transaction.output();
-        if (txOutput != null && txOutput.hasUtilPrng()) {
-            final var entropy = txOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                recordBuilder.prngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                recordBuilder.prngNumber(entropy.as());
-            }
+        final var txnOutput = transaction.output();
+        var contractCallOutput = CallContractOutput.DEFAULT;
+
+        if (txnOutput != null && txnOutput.hasContractCall()) {
+            contractCallOutput = txnOutput.contractCall();
+            final var contractCallResult = contractCallOutput.contractCallResult();
+            recordBuilder.contractCallResult(contractCallResult);
         } else {
-            logger.info("Was not able to translate UtilPrng operation");
+            logger.info("Was not able to translate ContractCall operation");
         }
 
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),
-                List.of(),
+                txnOutput != null ? contractCallOutput.sidecars() : List.of(),
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 }

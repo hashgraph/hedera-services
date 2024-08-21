@@ -35,7 +35,6 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -83,8 +82,16 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var singleTxnRecord =
                 switch (txnType) {
+                    case CryptoCreate -> new CryptoCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ConsensusCreateTopic -> new ConsensusTopicCreateTranslator()
+                            .translate(txnWrapper, stateChanges);
                     case ConsensusSubmitMessage -> new ConsensusSubmitMessageTranslator()
                             .translate(txnWrapper, stateChanges);
+                    case ContractCreate -> new ContractCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ContractCall -> new ContractCallTranslator().translate(txnWrapper, stateChanges);
+                    case FileCreate -> new FileCreateTranslator().translate(txnWrapper, stateChanges);
+                    case ScheduleCreate -> new ScheduleCreateTranslator().translate(txnWrapper, stateChanges);
+                    case TokenCreate -> new TokenCreateTranslator().translate(txnWrapper, stateChanges);
                     case UtilPrng -> new UtilPrngTranslator().translate(txnWrapper, stateChanges);
                     default -> new SingleTransactionRecord(
                             txnWrapper.txn(),
@@ -159,8 +166,8 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
                 .toList();
     }
 
-    private TransactionRecord.Builder parseTransaction(
-            final Transaction txn, final TransactionRecord.Builder recordBuilder) throws NoSuchAlgorithmException {
+    private void parseTransaction(final Transaction txn, final TransactionRecord.Builder recordBuilder)
+            throws NoSuchAlgorithmException {
         if (txn.body() != null) {
             final var transactionID = pbjToProto(
                     txn.body().transactionID(), com.hedera.hapi.node.base.TransactionID.class, TransactionID.class);
@@ -183,8 +190,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         final var txnBytes = toBytesForHash(txn);
         final var hash = txnBytes != Bytes.EMPTY ? hashTxn(txnBytes) : Bytes.EMPTY;
         recordBuilder.setTransactionHash(toByteString(hash));
-
-        return recordBuilder;
     }
 
     /**
@@ -209,7 +214,7 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         return Bytes.wrap(SHA384.Digest.getInstance("SHA-384").digest(bytes.toByteArray()));
     }
 
-    private TransactionRecord.Builder parseTransactionResult(
+    private void parseTransactionResult(
             final TransactionResult txnResult,
             final TransactionRecord.Builder recordBuilder,
             final TransactionReceipt.Builder receiptBuilder)
@@ -268,15 +273,13 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
 
         final var responseCode = ResponseCodeEnum.valueOf(txnResult.status().name());
         receiptBuilder.setStatus(responseCode);
-
-        return recordBuilder;
     }
 
-    private TransactionRecord.Builder parseTransactionOutput(
+    private void parseTransactionOutput(
             final TransactionOutput txnOutput, final TransactionRecord.Builder trb, final TransactionReceipt.Builder rb)
             throws InvalidProtocolBufferException {
         if (txnOutput == null) {
-            return trb;
+            return;
         }
 
         // TODO: why are so many of these methods missing?
@@ -299,32 +302,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         //            if (txnOutput.hasFileCreate()) {
         //                rb.fileID(txnOutput.fileCreate().fileID());
         //            }
-
-        if (txnOutput.hasContractCreate()) {
-            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
-                    .map(com.hedera.hapi.node.contract.ContractFunctionResult::contractID)
-                    .ifPresent(id -> rb.setContractID(fromPbj(id)));
-
-            Optional.ofNullable(txnOutput.contractCreate().contractCreateResult())
-                    .ifPresent(id -> {
-                        try {
-                            trb.setContractCreateResult(ContractFunctionResult.parseFrom(
-                                    com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
-                                            .toBytes(txnOutput.contractCreate().contractCreateResult())
-                                            .toByteArray()));
-                        } catch (InvalidProtocolBufferException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-        }
-
-        if (txnOutput.hasContractCall()) {
-            final var callResult =
-                    ContractFunctionResult.parseFrom(com.hedera.hapi.node.contract.ContractFunctionResult.PROTOBUF
-                            .toBytes(txnOutput.contractCall().contractCallResult())
-                            .toByteArray());
-            trb.setContractCallResult(callResult);
-        }
 
         if (txnOutput.hasEthereumCall()) {
             Optional.ofNullable(txnOutput.ethereumCall())
@@ -384,8 +361,6 @@ public class BlockStreamTransactionTranslator implements TransactionRecordTransl
         // TODO: assign `newPendingAirdrops` (if applicable)
 
         trb.setReceipt(rb.build());
-
-        return trb;
     }
 
     private void maybeAssignEvmAddressAlias(final TransactionOutput txnOutput, final TransactionRecord.Builder trb) {
