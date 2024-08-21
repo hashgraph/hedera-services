@@ -26,6 +26,9 @@ import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for {@link V0540RosterSchema}.
+ */
 class V0540RosterSchemaTest {
 
     @LoggingSubject
@@ -42,7 +45,7 @@ class V0540RosterSchemaTest {
         assertThat(statesToCreate).hasSize(2);
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(ROSTER_KEY, iter.next());
-        assertEquals(ROSTER_STATES_KEY, iter.next());
+        assertEquals(ROSTER_KEY, iter.next(), "Unexpected Roster key!");
+        assertEquals(ROSTER_STATES_KEY, iter.next(), "Unexpected RosterState key!");
     }
 }

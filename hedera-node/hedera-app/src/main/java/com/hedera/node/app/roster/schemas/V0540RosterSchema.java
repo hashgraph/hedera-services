@@ -33,7 +33,7 @@ public class V0540RosterSchema extends Schema {
     public static final String ROSTER_KEY = "ROSTER";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
     /** this can't be increased later so we pick some number large enough, 2^16. */
-    private static final long MAX_ROSTERS = 65536L;
+    private static final long MAX_ROSTERS = 65_536L;
 
     /**
      * The version of the schema.

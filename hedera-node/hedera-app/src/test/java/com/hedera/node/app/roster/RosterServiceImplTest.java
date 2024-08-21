@@ -29,6 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+/**
+ * Unit tests for {@link RosterServiceImpl}.
+ */
 class RosterServiceImplTest {
     private RosterServiceImpl rosterService;
 
@@ -61,7 +64,7 @@ class RosterServiceImplTest {
     }
 
     @Test
-    void getServiceNameReturnsCorrectName() {
+    void testServiceNameReturnsCorrectName() {
         assertThat(rosterService.getServiceName()).isEqualTo(RosterServiceImpl.SCHEMA_NAME);
     }
 }
