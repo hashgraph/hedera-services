@@ -153,7 +153,7 @@ public class UnsignedEvent extends AbstractHashable {
                 HapiUtils.asTimestamp(timeCreated),
                 this.allParents.stream()
                         .map(ed -> new com.hedera.hapi.platform.event.EventDescriptor(
-                                ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
+                                ed.getHash().getBytes(), ed.getCreator().id(), ed.getBirthRound(), ed.getGeneration()))
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
         this.transactions = transactions.stream().map(PayloadWrapper::new).toList();
