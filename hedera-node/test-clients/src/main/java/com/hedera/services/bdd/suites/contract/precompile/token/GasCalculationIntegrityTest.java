@@ -78,7 +78,6 @@ public class GasCalculationIntegrityTest {
     @DisplayName("cannot update a missing token")
     public Stream<DynamicTest> cannotUpdateMissingToken() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateFile(ratesProvider.hbarEquiv, ratesProvider.centEquiv),
                 updateTokenContract.call("donate", poorAccount).gas(24337L).andAssert(txn -> txn.via("first")),
                 getTxnRecord("first").logged()));
     }
@@ -87,7 +86,6 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using cryptoTransferV2 for hBar transfer")
     public Stream<DynamicTest> failToUseCryptoTransferV2() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                //   updateFile(ratesProvider.hbarEquiv, ratesProvider.centEquiv),
                 numericContractComplex
                         .call("cryptoTransferV2", new long[] {-5, 5}, alice, poorAccount)
                         .gas(33304L)
