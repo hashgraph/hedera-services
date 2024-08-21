@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.tracers.AddOnEvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
@@ -135,10 +134,13 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             }
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
-        } catch (AbortException e) {
-            if (e.isChargeable() && contractsConfig.chargeGasOnPreEvmException()) {
+        } catch (HandleException e) {
+            if (contractsConfig.chargeGasOnPreEvmException()) {
                 gasCharging.chargeGasForAbortedTransaction(
-                        requireNonNull(e.senderId()), hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
+                        requireNonNull(hevmTransaction.senderId()),
+                        hederaEvmContext,
+                        rootProxyWorldUpdater,
+                        hevmTransaction);
             }
             // Commit any HAPI fees that were charged before aborting
             rootProxyWorldUpdater.commit();
@@ -148,10 +150,10 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 recipientId = hevmTransaction.contractId();
             }
 
-            var result = HederaEvmTransactionResult.fromAborted(e.senderId(), recipientId, e.getStatus());
+            var result = HederaEvmTransactionResult.fromAborted(hevmTransaction.senderId(), recipientId, e.getStatus());
 
             if (context.body().hasEthereumTransaction()) {
-                final var sender = rootProxyWorldUpdater.getHederaAccount(e.senderId());
+                final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
                 if (sender != null) {
                     result = result.withSignerNonce(sender.getNonce());
                 }
