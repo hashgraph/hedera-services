@@ -26,11 +26,18 @@ import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Service for BlockStreams implementation responsible for tracking state changes
+ * and writing them to a block
+ */
 public class BlockStreamService implements Service {
     public static final String NAME = "BlockStreamService";
 
     private final boolean enabled;
 
+    /**
+     * Service constructor.
+     */
     public BlockStreamService(final Configuration config) {
         this.enabled = config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS;
     }

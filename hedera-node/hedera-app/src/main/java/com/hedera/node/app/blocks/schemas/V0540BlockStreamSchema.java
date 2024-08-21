@@ -55,9 +55,15 @@ import java.util.Set;
 public class V0540BlockStreamSchema extends Schema {
     public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
 
+    /**
+     * The version of the schema.
+     */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
+    /**
+     * Schema constructor.
+     */
     public V0540BlockStreamSchema() {
         super(VERSION);
     }
