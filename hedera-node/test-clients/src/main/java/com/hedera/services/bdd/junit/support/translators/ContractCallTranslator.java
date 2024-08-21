@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,31 +26,28 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(ContractCreateTranslator.class);
+public class ContractCallTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+    private static final Logger logger = LogManager.getLogger(ContractCallTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
             @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
         final var recordBuilder = TransactionRecord.newBuilder();
-
         final var txnOutput = transaction.output();
-        if (txnOutput != null && txnOutput.hasContractCreate()) {
-            final var contractCreateResult = txnOutput.contractCreate().contractCreateResult();
-            receiptBuilder.contractID(contractCreateResult.contractID());
-            recordBuilder
-                    .receipt(receiptBuilder.build())
-                    .contractCreateResult(contractCreateResult)
-                    .evmAddress(contractCreateResult.evmAddress());
+        var contractCallOutput = CallContractOutput.DEFAULT;
+
+        if (txnOutput != null && txnOutput.hasContractCall()) {
+            contractCallOutput = txnOutput.contractCall();
+            final var contractCallResult = contractCallOutput.contractCallResult();
+            recordBuilder.contractCallResult(contractCallResult);
         } else {
-            logger.info("Was not able to translate ContractCreate operation");
+            logger.info("Was not able to translate ContractCall operation");
         }
 
         return new SingleTransactionRecord(
                 transaction.txn(),
                 recordBuilder.build(),
-                txnOutput != null ? txnOutput.contractCreate().sidecars() : List.of(),
+                txnOutput != null ? contractCallOutput.sidecars() : List.of(),
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 }
