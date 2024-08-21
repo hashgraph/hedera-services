@@ -16,13 +16,17 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
+import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
+import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.junit.support.BlockStreamAccess.computeSingletonValueFromUpdates;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -32,8 +36,12 @@ import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -60,20 +68,32 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
+import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -94,7 +114,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -119,12 +138,20 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
     private final Set<String> servicesWritten = new HashSet<>();
-    private final MerkleStateRoot state = new MerkleStateRoot();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     private Timestamp genesisMigrationTimestamp = null;
+    private MerkleStateRoot state;
 
-    public static void main(String[] args) {}
+    public static void main(String[] args) {
+        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/test-streams/";
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(loc));
+        final var lastPlatformState = computeSingletonValueFromUpdates(
+                blocks,
+                computeLabel("PlatformStateService", "PLATFORM_STATE"),
+                SingletonUpdateChange::platformStateValueOrThrow);
+        System.out.println(lastPlatformState);
+    }
 
     public static final Factory FACTORY = new Factory() {
         @NonNull
@@ -183,12 +210,16 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
         registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
-        final var currentVersion =
-                bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
+        final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
+        final var currentVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
         final var networkInfo = fakeNetworkInfoFrom(addressBook);
 
         final var migrator = new OrderedServiceMigrator();
+        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
+        state = new MerkleStateRoot(
+                lifecycles, version -> new HederaSoftwareVersion(versionConfig.hapiVersion(), version));
+        state.getPlatformState();
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -231,7 +262,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final var actualHashes = hashesFor(state);
             final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
-            final var onlyRootMismatch = new AtomicBoolean(true);
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
                 if (!expectedHash.equals(actualHash)) {
@@ -241,26 +271,21 @@ public class StateChangesValidator implements BlockStreamValidator {
                             .append(expectedHash)
                             .append(", was ")
                             .append(actualHash);
-                    onlyRootMismatch.set(false);
                 }
             });
-            // Until we are streaming Platform state changes, the root hash will never match, so for now
-            // we only fail if some Services state hash does not match
-            if (!onlyRootMismatch.get()) {
-                Assertions.fail(errorMsg.toString());
-            }
+            Assertions.fail(errorMsg.toString());
         }
     }
 
     private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {
         final var sb = new StringBuilder();
         new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
+        logger.info("Replayed hashes:\n{}", sb);
         return hashesByName(sb.toString());
     }
 
     private boolean isGenesisMigrationChange(@NonNull final StateChanges stateChanges) {
-        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp)
-                && stateChanges.cause() == STATE_CHANGE_CAUSE_MIGRATION;
+        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp);
     }
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
@@ -418,7 +443,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
-                        new AddressBookServiceImpl())
+                        new AddressBookServiceImpl(),
+                        PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }
 
@@ -537,12 +563,10 @@ public class StateChangesValidator implements BlockStreamValidator {
                     sb = new StringBuilder();
                     sawAllChildHashes = false;
                 } else if (sb != null) {
-                    if (!line.contains("PlatformState")) {
-                        final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
-                        sawAllChildHashes |= !childStateMatcher.matches();
-                        if (!sawAllChildHashes) {
-                            sb.append(line).append('\n');
-                        }
+                    final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
+                    sawAllChildHashes |= !childStateMatcher.matches();
+                    if (!sawAllChildHashes) {
+                        sb.append(line).append('\n');
                     }
                 }
             }
@@ -550,6 +574,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.error("Could not read hashes from {}", path, e);
             return null;
         }
+        logger.info("Read hashes:\n{}", sb);
         return sb == null ? null : hashesByName(sb.toString());
     }
 
@@ -572,12 +597,64 @@ public class StateChangesValidator implements BlockStreamValidator {
         return hashes;
     }
 
+    private static MerkleStateLifecycles newPlatformInitLifecycle(
+            @NonNull final Configuration bootstrapConfig,
+            @NonNull final SemanticVersion currentVersion,
+            @NonNull final OrderedServiceMigrator serviceMigrator,
+            @NonNull final ServicesRegistryImpl servicesRegistry) {
+        return new MerkleStateLifecycles() {
+            @Override
+            public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+                return serviceMigrator.doMigrations(
+                        state,
+                        servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                        serviceMigrator.creationVersionOf(state),
+                        currentVersion,
+                        bootstrapConfig,
+                        UNAVAILABLE_NETWORK_INFO,
+                        UNAVAILABLE_METRICS);
+            }
+
+            @Override
+            public void onPreHandle(@NonNull Event event, @NonNull State state) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public void onStateInitialized(
+                    @NonNull State state,
+                    @NonNull Platform platform,
+                    @NonNull InitTrigger trigger,
+                    @Nullable SoftwareVersion previousVersion) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public void onUpdateWeight(
+                    @NonNull MerkleStateRoot state,
+                    @NonNull AddressBook configAddressBook,
+                    @NonNull PlatformContext context) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+        };
+    }
+
     private static Object singletonPutFor(@NonNull final SingletonUpdateChange singletonUpdateChange) {
         return switch (singletonUpdateChange.newValue().kind()) {
             case UNSET -> throw new IllegalStateException("Singleton update value is not set");
             case BLOCK_INFO_VALUE -> singletonUpdateChange.blockInfoValueOrThrow();
             case CONGESTION_LEVEL_STARTS_VALUE -> singletonUpdateChange.congestionLevelStartsValueOrThrow();
-            case ENTITY_NUMBER_VALUE -> singletonUpdateChange.entityNumberValueOrThrow();
+            case ENTITY_NUMBER_VALUE -> new EntityNumber(singletonUpdateChange.entityNumberValueOrThrow());
             case EXCHANGE_RATE_SET_VALUE -> singletonUpdateChange.exchangeRateSetValueOrThrow();
             case NETWORK_STAKING_REWARDS_VALUE -> singletonUpdateChange.networkStakingRewardsValueOrThrow();
             case BYTES_VALUE -> new ProtoBytes(singletonUpdateChange.bytesValueOrThrow());
@@ -586,6 +663,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case THROTTLE_USAGE_SNAPSHOTS_VALUE -> singletonUpdateChange.throttleUsageSnapshotsValueOrThrow();
             case TIMESTAMP_VALUE -> singletonUpdateChange.timestampValueOrThrow();
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
+            case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
         };
     }
 
@@ -593,7 +671,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         return switch (queuePushChange.value().kind()) {
             case UNSET, PROTO_STRING_ELEMENT -> throw new IllegalStateException("Queue push value is not supported");
             case PROTO_BYTES_ELEMENT -> new ProtoBytes(queuePushChange.protoBytesElementOrThrow());
-            case TRANSACTION_RECORD_ENTRY_ELEMENT -> queuePushChange.transactionRecordEntryElementOrThrow();
+            case TRANSACTION_RECEIPT_ENTRIES_ELEMENT -> queuePushChange.transactionReceiptEntriesElementOrThrow();
         };
     }
 
@@ -601,8 +679,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         return switch (mapChangeKey.keyChoice().kind()) {
             case UNSET -> throw new IllegalStateException("Key choice is not set for " + mapChangeKey);
             case ACCOUNT_ID_KEY -> mapChangeKey.accountIdKeyOrThrow();
-            case ENTITY_ID_PAIR_KEY -> mapChangeKey.entityIdPairKeyOrThrow();
-            case ENTITY_NUMBER_KEY -> mapChangeKey.entityNumberKeyOrThrow();
+            case TOKEN_RELATIONSHIP_KEY -> pairFrom(mapChangeKey.tokenRelationshipKeyOrThrow());
+            case ENTITY_NUMBER_KEY -> new EntityNumber(mapChangeKey.entityNumberKeyOrThrow());
             case FILE_ID_KEY -> mapChangeKey.fileIdKeyOrThrow();
             case NFT_ID_KEY -> mapChangeKey.nftIdKeyOrThrow();
             case PROTO_BYTES_KEY -> new ProtoBytes(mapChangeKey.protoBytesKeyOrThrow());
@@ -636,5 +714,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
         };
+    }
+
+    private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
+        return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
     }
 }

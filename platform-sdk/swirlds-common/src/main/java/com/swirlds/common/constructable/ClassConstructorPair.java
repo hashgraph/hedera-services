@@ -24,10 +24,11 @@ import java.util.function.Supplier;
 @Deprecated(forRemoval = true)
 public class ClassConstructorPair {
     private final Class<? extends RuntimeConstructable> aClass;
-    private final Supplier<RuntimeConstructable> constructor;
+    private final Supplier<? extends RuntimeConstructable> constructor;
 
     public ClassConstructorPair(
-            final Class<? extends RuntimeConstructable> aClass, final Supplier<RuntimeConstructable> constructor) {
+            final Class<? extends RuntimeConstructable> aClass,
+            final Supplier<? extends RuntimeConstructable> constructor) {
         this.aClass = aClass;
         this.constructor = constructor;
     }
@@ -36,7 +37,7 @@ public class ClassConstructorPair {
         return aClass;
     }
 
-    public Supplier<RuntimeConstructable> getConstructor() {
+    public Supplier<? extends RuntimeConstructable> getConstructor() {
         return constructor;
     }
 

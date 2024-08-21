@@ -64,6 +64,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -171,7 +172,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state the state for this registry to use.
+     * @param state     the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
@@ -180,7 +181,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -241,7 +242,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(schema, config, metrics, stateRoot);
+                final var followingSchemas = schemas.tailSet(schema).stream()
+                        .filter(s -> s != schema && !isSoOrdered(previousVersion, s.getVersion()))
+                        .toList();
+                final var redefinedWritableStates =
+                        applyStateDefinitions(schema, followingSchemas, config, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -268,6 +273,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
+            @NonNull final List<Schema> followingSchemas,
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleStateRoot stateRoot) {
@@ -277,6 +283,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
+                    if (followingSchemas.stream()
+                            .anyMatch(s -> s.statesToRemove().contains(stateKey))) {
+                        logger.info("  Skipping {} as it is removed by a later schema", stateKey);
+                        return;
+                    }
                     logger.info("  Ensuring {} has state {}", serviceName, stateKey);
                     final var md = new StateMetadata<>(serviceName, schema, def);
                     if (def.singleton()) {
@@ -339,6 +350,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var writableStates = stateRoot.getWritableStates(serviceName);
         final var remainingStates = new HashSet<>(writableStates.stateKeys());
         remainingStates.removeAll(statesToRemove);
+        logger.info("  Removing states {} from service {}", statesToRemove, serviceName);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
     }

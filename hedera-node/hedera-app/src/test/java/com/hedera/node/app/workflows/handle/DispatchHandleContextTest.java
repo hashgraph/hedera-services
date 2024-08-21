@@ -97,7 +97,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -112,7 +111,6 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -188,9 +186,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private BlockRecordManager blockRecordManager;
 
     @Mock
-    private HederaRecordCache recordCache;
-
-    @Mock
     private ResourcePriceCalculator resourcePriceCalculator;
 
     @Mock
@@ -209,19 +204,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private ThrottleAdviser throttleAdviser;
 
     @Mock
-    private PlatformState platformState;
-
-    @Mock
     private StoreMetricsService storeMetricsService;
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
-
-    @Mock
-    private RecordStreamBuilder oneChildBuilder;
-
-    @Mock
-    private RecordStreamBuilder twoChildBuilder;
 
     @Mock
     private ChildDispatchFactory childDispatchFactory;
@@ -379,14 +365,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             storeFactory,
             payerId,
             verifier,
-            platformState,
             CONTRACT_CALL,
             Key.newBuilder().build(),
             exchangeRateManager,
             stack,
             entityNumGenerator,
             dispatcher,
-            recordCache,
             networkInfo,
             childDispatchFactory,
             dispatchProcessor,
@@ -417,7 +401,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.networkInfo()).isSameAs(networkInfo);
         assertThat(subject.payer()).isEqualTo(payerId);
         assertThat(subject.networkInfo()).isEqualTo(networkInfo);
-        assertThat(subject.recordCache()).isEqualTo(recordCache);
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
@@ -762,14 +745,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 storeFactory,
                 payerId,
                 verifier,
-                platformState,
                 CRYPTO_TRANSFER,
                 Key.DEFAULT,
                 exchangeRateManager,
                 stack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,

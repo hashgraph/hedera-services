@@ -19,7 +19,7 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
-import static com.hedera.node.app.blocks.impl.RoundStateChangeListener.singletonUpdateChangeValueFor;
+import static com.hedera.node.app.blocks.impl.BoundaryStateChangeListener.singletonUpdateChangeValueFor;
 import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -33,7 +33,6 @@ import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
@@ -85,6 +84,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final ExecutorService executor;
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
@@ -93,8 +93,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private List<BlockItem> pendingItems;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
-    private KVStateChangeListener kvStateChangeListener;
-    private RoundStateChangeListener roundStateChangeListener;
     /**
      * A future that completes after all items not in the pendingItems list have been serialized
      * to bytes, with their hashes scheduled for incorporation in the input/output trees and running
@@ -107,10 +105,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final InitTrigger initTrigger,
             @NonNull final BlockItemWriter writer,
             @NonNull final ExecutorService executor,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writer = requireNonNull(writer);
         this.executor = requireNonNull(executor);
         this.initTrigger = requireNonNull(initTrigger);
+        this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.nodeVersion = nodeVersionFrom(config);
@@ -119,36 +119,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
+    public void writeFreezeRound(@NonNull final State state, @NonNull final Instant consensusNow) {
+        requireNonNull(state);
+        requireNonNull(consensusNow);
+        final var blockStreamInfo = startRoundInternal(consensusNow, state);
+        writeFuture.join();
+        endRoundInternal(blockStreamInfo);
+    }
+
+    @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        blockTimestamp = round.getConsensusTimestamp();
-        // If there are no other changes to state, we can just use the round's consensus timestamp as the
-        // last-assigned consensus time for externalizing the PUT to the block stream info singleton
-        roundStateChangeListener = new RoundStateChangeListener(blockTimestamp);
-        state.registerCommitListener(roundStateChangeListener);
-        kvStateChangeListener = new KVStateChangeListener();
-        state.registerCommitListener(kvStateChangeListener);
-        pendingItems = new ArrayList<>();
-        var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
-                .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
-                .get();
-        if (blockStreamInfo == null && initTrigger != GENESIS) {
-            // TODO - initialize from record stream state
-        }
-        blockNumber = blockStreamInfo == null ? 0 : blockStreamInfo.lastBlockNumber() + 1;
-        previousBlockHash = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.lastBlockHash();
-        blockHashManager.startRound(blockStreamInfo);
-        runningHashManager.startRound(blockStreamInfo);
-        inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
-        outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
-        pendingItems.add(BlockItem.newBuilder()
-                .blockHeader(BlockHeader.newBuilder()
-                        .number(blockNumber)
-                        .previousBlockHash(previousBlockHash)
-                        .hashAlgorithm(SHA2_384)
-                        .softwareVersion(nodeVersion)
-                        .hapiProtoVersion(hapiVersion))
-                .build());
-        writer.openBlock(blockNumber);
+        startRoundInternal(round.getConsensusTimestamp(), state);
     }
 
     @Override
@@ -170,28 +151,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         blockStreamInfoState.put(blockStreamInfo);
         ((CommittableWritableStates) writableState).commit();
 
-        pendingItems.add(roundStateChangeListener.stateChanges());
-        final var blockItem = BlockItem.newBuilder()
-                .stateChanges(StateChanges.newBuilder()
-                        .cause(StateChangesCause.STATE_CHANGE_CAUSE_END_OF_BLOCK)
-                        .consensusTimestamp(roundStateChangeListener.endOfBlockTimestamp())
-                        .stateChanges(StateChange.newBuilder()
-                                .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
-                                .singletonUpdate(
-                                        new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
-                                .build())
-                        .build())
-                .build();
-        pendingItems.add(blockItem);
-
-        schedulePendingWork();
-
-        writeFuture.join();
-        final var inputRootHash = inputTreeHasher.rootHash().join();
-        final var outputRootHash = outputTreeHasher.rootHash().join();
-        final var stateRootHash = MOCK_STATE_ROOT_HASH_FUTURE.join();
-
-        writer.closeBlock();
+        endRoundInternal(blockStreamInfo);
     }
 
     @Override
@@ -200,21 +160,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (pendingItems.size() == CHUNK_SIZE) {
             schedulePendingWork();
         }
-    }
-
-    @Override
-    public void closeStream() {
-        writer.closeBlock();
-    }
-
-    @Override
-    public RoundStateChangeListener roundStateChangeListener() {
-        return roundStateChangeListener;
-    }
-
-    @Override
-    public KVStateChangeListener kvStateChangeListener() {
-        return kvStateChangeListener;
     }
 
     @Override
@@ -239,7 +184,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     public Timestamp endOfBlockTimestamp() {
-        return roundStateChangeListener.endOfBlockTimestamp();
+        return boundaryStateChangeListener.endOfBlockTimestamp();
     }
 
     private void schedulePendingWork() {
@@ -247,6 +192,62 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
         writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
         pendingItems = new ArrayList<>();
+    }
+
+    private BlockStreamInfo startRoundInternal(@NonNull final Instant consensusNow, @NonNull final State state) {
+        blockTimestamp = consensusNow;
+        // If there are no other changes to state, we can just use the round's consensus timestamp as the
+        // last-assigned consensus time for externalizing the PUT to the block stream info singleton
+        boundaryStateChangeListener.setLastUsedConsensusTime(blockTimestamp);
+        pendingItems = new ArrayList<>();
+        final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
+                .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
+                .get();
+        if (blockStreamInfo == null && initTrigger != GENESIS) {
+            // TODO - initialize from record stream state
+        }
+        blockNumber = blockStreamInfo == null ? 0 : blockStreamInfo.lastBlockNumber() + 1;
+        previousBlockHash = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.lastBlockHash();
+        blockHashManager.startRound(blockStreamInfo);
+        runningHashManager.startRound(blockStreamInfo);
+        inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
+        outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
+        pendingItems.add(BlockItem.newBuilder()
+                .blockHeader(BlockHeader.newBuilder()
+                        .number(blockNumber)
+                        .previousBlockHash(previousBlockHash)
+                        .hashAlgorithm(SHA2_384)
+                        .softwareVersion(nodeVersion)
+                        .hapiProtoVersion(hapiVersion))
+                .build());
+        writer.openBlock(blockNumber);
+        return blockStreamInfo;
+    }
+
+    private void endRoundInternal(@NonNull final BlockStreamInfo blockStreamInfo) {
+        requireNonNull(blockStreamInfo);
+        final var endOfBlockTimestamp = boundaryStateChangeListener.endOfBlockTimestamp();
+        pendingItems.add(boundaryStateChangeListener.flushChanges());
+        final var blockItem = BlockItem.newBuilder()
+                .stateChanges(StateChanges.newBuilder()
+                        .consensusTimestamp(endOfBlockTimestamp)
+                        .stateChanges(StateChange.newBuilder()
+                                .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
+                                .singletonUpdate(
+                                        new SingletonUpdateChange(singletonUpdateChangeValueFor(blockStreamInfo)))
+                                .build())
+                        .build())
+                .build();
+        pendingItems.add(blockItem);
+
+        schedulePendingWork();
+
+        writeFuture.join();
+        final var inputRootHash = inputTreeHasher.rootHash().join();
+        final var outputRootHash = outputTreeHasher.rootHash().join();
+        final var stateRootHash = MOCK_STATE_ROOT_HASH_FUTURE.join();
+
+        writer.closeBlock();
     }
 
     /**
@@ -272,6 +273,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         /**
          * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec.
+         *
          * @return the serialized items
          */
         public List<Bytes> serializeItems() {

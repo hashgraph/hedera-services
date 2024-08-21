@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks.impl;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyList;
@@ -245,7 +244,6 @@ public class BlockStreamBuilder
         if (!stateChanges.isEmpty()) {
             final var stateChangesBlockItem = BlockItem.newBuilder()
                     .stateChanges(StateChanges.newBuilder()
-                            .cause(STATE_CHANGE_CAUSE_TRANSACTION)
                             .consensusTimestamp(asTimestamp(consensusNow))
                             .stateChanges(stateChanges)
                             .build())

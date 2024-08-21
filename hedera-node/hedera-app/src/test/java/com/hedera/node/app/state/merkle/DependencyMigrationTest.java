@@ -28,6 +28,7 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -74,7 +75,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleStateRoot(lifecycles);
+        merkleTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
     }
 
     @Nested
@@ -172,7 +173,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service));
+        Set.of(entityService, dsService).forEach(servicesRegistry::register);
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator();

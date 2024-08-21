@@ -16,16 +16,13 @@
 
 package com.hedera.node.app.services;
 
-import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_MIGRATION;
-
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
-import com.hedera.node.app.blocks.impl.RoundStateChangeListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +32,7 @@ import java.util.List;
 public class MigrationStateChanges {
     private final List<List<StateChange>> stateChanges = new ArrayList<>();
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
-    private final RoundStateChangeListener roundStateChangeListener = new RoundStateChangeListener(Instant.EPOCH);
+    private final BoundaryStateChangeListener roundStateChangeListener = new BoundaryStateChangeListener();
 
     /**
      * Constructs a new instance of {@link MigrationStateChanges} based on migration
@@ -71,9 +68,7 @@ public class MigrationStateChanges {
             stateChanges.add(roundChanges);
         }
         return stateChanges.stream()
-                .map(changes -> StateChanges.newBuilder()
-                        .cause(STATE_CHANGE_CAUSE_MIGRATION)
-                        .stateChanges(changes))
+                .map(changes -> StateChanges.newBuilder().stateChanges(changes))
                 .toList();
     }
 }

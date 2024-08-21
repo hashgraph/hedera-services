@@ -145,3 +145,13 @@ client.
 :information*source:&nbsp; In case of an unclean shutdown, or unwanted accumulation of logs and
 audit data in the local workspace, use the Maven `antrun:run@app-clean` goal in the `hedera-node`
 project to get a clean state. (Or simply delete \_rm -rf hedera-node/data/saved* for a quick reset.)
+
+## Recommended IDE Settings
+
+### Spotbugs annotations
+
+Hedera Services uses Spotbugs annotations everywhere and to help ensuring this as standard practice,
+we recommend adding both `javax.annotation` and `org.jetbrains.annotations` to the IntelliJ setting
+Editor/General/Auto Import/Exclude from auto-import and completion.
+
+![intellij-spotbugs](./assets/intellij-spotbugs.png)

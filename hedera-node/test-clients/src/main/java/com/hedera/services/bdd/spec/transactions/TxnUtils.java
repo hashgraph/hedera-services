@@ -83,7 +83,9 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -225,6 +227,17 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isLiteralEvmAddress(@NonNull final String s) {
+        return (s.startsWith("0x") && s.substring(2).matches("[0-9a-fA-F]+"))
+                || (s.length() == 40 && s.matches("[0-9a-fA-F]+"));
+    }
+
+    public static ByteString asLiteralEvmAddress(@NonNull final String s) {
+        return s.startsWith("0x")
+                ? ByteString.copyFrom(CommonUtils.unhex(s.substring(2)))
+                : ByteString.copyFrom(CommonUtils.unhex(s));
+    }
+
     public static boolean isNumericLiteral(final String s) {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
@@ -238,6 +251,9 @@ public class TxnUtils {
     }
 
     public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
+        if (isLiteralEvmAddress(s)) {
+            return AccountID.newBuilder().setAlias(asLiteralEvmAddress(s)).build();
+        }
         return isIdLiteral(s)
                 ? asAccount(s)
                 : (lookupSpec.registry().hasAccountId(s)
@@ -748,5 +764,23 @@ public class TxnUtils {
 
     public static KeyList getCompositeList(final Key key) {
         return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
+    }
+
+    /**
+     * Returns the contents of the resource at the given location as a string.
+     *
+     * @param loc the location of the resource
+     * @return the contents of the resource as a string
+     */
+    public static String resourceAsString(@NonNull final String loc) {
+        try {
+            try (final var in = TxnUtils.class.getClassLoader().getResourceAsStream(loc);
+                    final var bridge = new InputStreamReader(requireNonNull(in));
+                    final var reader = new BufferedReader(bridge)) {
+                return reader.lines().collect(joining("\n"));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

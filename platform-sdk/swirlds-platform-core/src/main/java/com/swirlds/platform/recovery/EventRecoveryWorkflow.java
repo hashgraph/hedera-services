@@ -52,7 +52,7 @@ import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -313,7 +313,6 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
                         initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
@@ -380,7 +379,7 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new StatefulEventHasher().hashEvent(lastEvent);
 
-        final PlatformState platformState = newState.getPlatformState();
+        final PlatformStateAccessor platformState = newState.getPlatformState();
 
         platformState.setRound(round.getRoundNum());
         platformState.setLegacyRunningEventHash(getHashEventsCons(
@@ -476,7 +475,7 @@ public final class EventRecoveryWorkflow {
     static void applyTransactions(
             final SwirldState immutableState,
             final SwirldState mutableState,
-            final PlatformState platformState,
+            final PlatformStateAccessor platformState,
             final Round round) {
 
         mutableState.throwIfImmutable();

@@ -32,7 +32,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -218,10 +218,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
 
         final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
         if (merkleMap != null) {
@@ -255,7 +252,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();

@@ -31,7 +31,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWO
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
-import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RECORD_QUEUE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -41,6 +41,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROT
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKENS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN_RELATIONS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOPICS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TRANSACTION_RECEIPTS_QUEUE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_150;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_151;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_152;
@@ -148,8 +149,12 @@ public class BlockImplUtils {
                         case "UPGRADE_FILE_HASH" -> STATE_ID_UPGRADE_FILE_HASH.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
+                    case "PlatformStateService" -> switch (stateKey) {
+                        case "PLATFORM_STATE" -> STATE_ID_PLATFORM_STATE.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
                     case "RecordCache" -> switch (stateKey) {
-                        case "TransactionRecordQueue" -> STATE_ID_RECORD_QUEUE.protoOrdinal();
+                        case "TransactionReceiptQueue" -> STATE_ID_TRANSACTION_RECEIPTS_QUEUE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "ScheduleService" -> switch (stateKey) {

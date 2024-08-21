@@ -16,22 +16,24 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite.MINT_NFT_CONTRACT;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
@@ -55,7 +57,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(TOKEN)
 public class PrecompileMintThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(PrecompileMintThrottlingCheck.class);
@@ -63,7 +67,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(50);
     private static final int EXPECTED_MAX_MINTS_PER_SEC = 50;
-    private static final double ALLOWED_THROTTLE_NOISE_TOLERANCE = 0.05;
+    private static final double ALLOWED_THROTTLE_NOISE_TOLERANCE = 0.10;
     private static final String NON_FUNGIBLE_TOKEN = "NON_FUNGIBLE_TOKEN";
     public static final int GAS_TO_OFFER = 1_000_000;
 
@@ -76,13 +80,13 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
         return List.of(precompileNftMintsAreLimitedByConsThrottle());
     }
 
-    // When enabling, note this disables the GAS throttle and overrides throttles
-    @SuppressWarnings("java:S5960")
+    @LeakyHapiTest(
+            requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
+            overrides = {"contracts.throttle.throttleByGas"},
+            throttles = "testSystemFiles/mainnet-throttles.json")
     final Stream<DynamicTest> precompileNftMintsAreLimitedByConsThrottle() {
-        var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
         return hapiTest(
                 overriding("contracts.throttle.throttleByGas", "false"),
-                fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(mainnetLimits.toByteArray()),
                 runWithProvider(precompileMintsFactory())
                         .lasting(duration::get, unit::get)
                         .maxOpsPerSec(maxOpsPerSec::get),

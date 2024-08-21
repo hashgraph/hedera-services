@@ -26,7 +26,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates the logic for calling
- * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)} at
+ * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
  * startup time.
  */
 public final class StateInitializer {
@@ -62,6 +61,7 @@ public final class StateInitializer {
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
 
+        System.out.printf("Calling isGenesisState() on %d%n", System.identityHashCode(signedState));
         if (signedState.isGenesisState()) {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
@@ -81,7 +81,8 @@ public final class StateInitializer {
             throw new IllegalStateException("Expected initial swirld state to be unhashed");
         }
 
-        initialState.getSwirldState().init(platform, initialState.getPlatformState(), trigger, previousSoftwareVersion);
+        System.out.printf("Calling init() on %d%n", System.identityHashCode(initialState.getSwirldState()));
+        initialState.getSwirldState().init(platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

@@ -50,4 +50,10 @@ public @interface Contract {
      * @return the amount of gas to use
      */
     long creationGas() default 100_000L;
+
+    /**
+     * Whether this contract is immutable.
+     * @return {@code true} if the contract is immutable, {@code false} otherwise
+     */
+    boolean isImmutable() default false;
 }

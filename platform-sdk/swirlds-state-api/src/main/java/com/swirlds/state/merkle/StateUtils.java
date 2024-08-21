@@ -31,7 +31,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWO
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
-import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RECORD_QUEUE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -41,6 +41,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROT
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKENS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN_RELATIONS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOPICS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TRANSACTION_RECEIPTS_QUEUE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_150;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_151;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_152;
@@ -67,9 +68,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Utility class for working with states. */
 public final class StateUtils {
+
+    private static final Logger logger = LogManager.getLogger();
+
     /** Prevent instantiation */
     private StateUtils() {}
 
@@ -230,7 +236,8 @@ public final class StateUtils {
             case "FileService.UPGRADE_FILE" -> STATE_ID_UPGRADE_FILE.protoOrdinal();
             case "FreezeService.FREEZE_TIME" -> STATE_ID_FREEZE_TIME.protoOrdinal();
             case "FreezeService.UPGRADE_FILE_HASH" -> STATE_ID_UPGRADE_FILE_HASH.protoOrdinal();
-            case "RecordCache.TransactionRecordQueue" -> STATE_ID_RECORD_QUEUE.protoOrdinal();
+            case "PlatformStateService.PLATFORM_STATE" -> STATE_ID_PLATFORM_STATE.protoOrdinal();
+            case "RecordCache.TransactionReceiptQueue" -> STATE_ID_TRANSACTION_RECEIPTS_QUEUE.protoOrdinal();
             case "ScheduleService.SCHEDULES_BY_EQUALITY" -> STATE_ID_SCHEDULES_BY_EQUALITY.protoOrdinal();
             case "ScheduleService.SCHEDULES_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULES_BY_EXPIRY.protoOrdinal();
             case "ScheduleService.SCHEDULES_BY_ID" -> STATE_ID_SCHEDULES_BY_ID.protoOrdinal();

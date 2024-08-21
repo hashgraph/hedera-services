@@ -24,6 +24,8 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapDeleteChange;
 import com.hedera.hapi.block.stream.output.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -31,15 +33,17 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +92,7 @@ public enum BlockStreamAccess {
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
                         updateChange.valueOrThrow().nodeValueOrThrow()));
         return nodesById.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().number()))
+                .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .toList();
     }
@@ -109,9 +113,33 @@ public enum BlockStreamAccess {
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
                         updateChange.valueOrThrow().stakingNodeInfoValueOrThrow()));
         return infosById.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().number()))
+                .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .toList();
+    }
+
+    /**
+     * Given a list of blocks, computes the last singleton value for a certain state by applying the given
+     * function to the {@link SingletonUpdateChange} block items.
+     *
+     * @param blocks the list of blocks
+     * @param stateName the name of the state to compute
+     * @param extractFn the function to apply to a {@link SingletonUpdateChange} to get the value
+     * @param <V> the value type
+     * @return the last singleton value
+     */
+    @Nullable
+    public static <V> V computeSingletonValueFromUpdates(
+            @NonNull final List<Block> blocks,
+            @NonNull final String stateName,
+            @NonNull final Function<SingletonUpdateChange, V> extractFn) {
+        final AtomicReference<V> lastValue = new AtomicReference<>();
+        final var stateId = StateUtils.stateIdentifierOf(stateName);
+        stateChangesForState(blocks, stateId)
+                .filter(StateChange::hasSingletonUpdate)
+                .map(StateChange::singletonUpdateOrThrow)
+                .forEach(update -> lastValue.set(extractFn.apply(update)));
+        return lastValue.get();
     }
 
     /**
@@ -149,6 +177,13 @@ public enum BlockStreamAccess {
                     }
                 }));
         return upToDate;
+    }
+
+    private static Stream<StateChange> stateChangesForState(@NonNull final List<Block> blocks, final int stateId) {
+        return blocks.stream().flatMap(block -> block.items().stream()
+                .filter(BlockItem::hasStateChanges)
+                .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                .filter(change -> change.stateId() == stateId));
     }
 
     private Block blockFrom(@NonNull final Path path) {

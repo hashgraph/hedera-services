@@ -29,13 +29,13 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -46,7 +46,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -84,7 +84,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
             new PlatformStatusChangeNotification(FREEZE_COMPLETE);
 
-    protected final PlatformState platformState = new PlatformState();
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
     protected final FakeState state = new FakeState();
@@ -116,7 +115,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        hedera.onStateInitialized(state, fakePlatform(), platformState, GENESIS, null);
+        hedera.initPlatformState(state);
+        hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
         fakePlatform().notifyListeners(ACTIVE_NOTIFICATION);
@@ -134,8 +134,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
-    public PlatformState platformState() {
-        return platformState;
+    public SoftwareVersion version() {
+        return version;
     }
 
     @Override

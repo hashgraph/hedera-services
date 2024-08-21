@@ -174,7 +174,7 @@ public class WorkingDirUtils {
                                     <AppenderRef ref="Console"/>
                                     <AppenderRef ref="TestClientRollingFile"/>
                                   </Logger>
-                                  """)
+                                 \s""")
                 .replace(
                         "output/",
                         workingDir.resolve(OUTPUT_DIR).toAbsolutePath().normalize() + "/");

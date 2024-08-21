@@ -27,6 +27,7 @@ import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -49,7 +50,8 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -117,6 +119,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
                 .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
                 .withService(new BlockRecordService())
+                .withService(PLATFORM_STATE_SERVICE)
                 .build();
 
         // Preload the specific state we want to test with
@@ -126,6 +129,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
                         new BlockInfo(-1, EPOCH, STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
+                .commit();
+        app.stateMutator(PlatformStateService.NAME)
+                .withSingletonState(
+                        V0540PlatformStateSchema.PLATFORM_STATE_KEY, V0540PlatformStateSchema.GENESIS_PLATFORM_STATE)
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -183,7 +190,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -197,9 +204,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                            merkleState,
-                            mock(PlatformState.class));
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
@@ -271,7 +276,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getState(), producer, blockStreamManager)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -293,9 +298,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                                merkleState,
-                                mock(PlatformState.class));
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
                         blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                         transactionCount++;
                         // collect hashes
@@ -421,8 +424,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
@@ -432,8 +435,8 @@ final class BlockRecordManagerTest extends AppTestBase {
     void consTimeOfLastHandledTxnIsNotSet() {
         final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
         final var state = simpleBlockInfoState(blockInfo);
-        final var subject = new BlockRecordManagerImpl(
-                app.configProvider(), state, mock(BlockRecordStreamProducer.class), blockStreamManager);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
 
         final var result = subject.consTimeOfLastHandledTxn();
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));

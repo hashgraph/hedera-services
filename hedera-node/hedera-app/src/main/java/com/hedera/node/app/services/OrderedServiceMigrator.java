@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -136,5 +137,13 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                     }
                 });
         return migrationStateChanges.getStateChanges();
+    }
+
+    @Override
+    public SemanticVersion creationVersionOf(@NonNull final State state) {
+        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
+            throw new IllegalArgumentException("State must be a MerkleStateRoot");
+        }
+        return PLATFORM_STATE_SERVICE.creationVersionOf(merkleStateRoot);
     }
 }
