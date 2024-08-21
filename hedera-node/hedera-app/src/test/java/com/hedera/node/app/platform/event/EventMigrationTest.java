@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjBytesHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -40,12 +40,7 @@ public class EventMigrationTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        SemanticVersion semanticVersion = SemanticVersion.newBuilder()
-                .setMajor(0)
-                .setMinor(46)
-                .setPatch(3)
-                .build();
-        StaticSoftwareVersion.setSoftwareVersion(new SerializableSemVers(semanticVersion, semanticVersion));
+        StaticSoftwareVersion.setSoftwareVersion(new HederaSoftwareVersion());
     }
 
     /**
@@ -68,13 +63,13 @@ public class EventMigrationTest {
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
                 new File(this.getClass()
                                 .getClassLoader()
-                                .getResource("eventFiles/sdk0.46.3/2024-03-05T00_10_55.002129867Z.events")
+                                .getResource("eventFiles/previewnet-53/2024-08-20T13_55_10.001053369Z.events")
                                 .toURI())
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
-                new StatefulEventHasher().hashEvent(platformEvent);
+                new PbjBytesHasher().hashEvent(platformEvent);
                 numEvents++;
                 eventHashes.add(platformEvent.getHash());
                 platformEvent.getAllParents().stream()
@@ -84,11 +79,11 @@ public class EventMigrationTest {
             }
         }
 
-        Assertions.assertEquals(2417, numEvents, "this file is expected to have 2417 events but has " + numEvents);
+        Assertions.assertEquals(633, numEvents, "this file is expected to have 633 events but has " + numEvents);
         Assertions.assertEquals(
-                2417,
+                633,
                 eventHashes.size(),
-                "we expected to have 2417 hashes (one for each event) but have " + eventHashes.size());
+                "we expected to have 633 hashes (one for each event) but have " + eventHashes.size());
         eventHashes.removeAll(parentHashes);
         Assertions.assertEquals(
                 9,
