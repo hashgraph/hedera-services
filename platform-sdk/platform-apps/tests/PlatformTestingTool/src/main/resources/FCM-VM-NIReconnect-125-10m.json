@@ -3,21 +3,13 @@
 	"appendSig": true,
 	"insertSeq": true,
 	"variedSize": false,
+	"performOnDeleted": true,
+	"performOnNonExistingEntities": true,
 	"_comment": "payload type TYPE_RANDOM_BYTES for random bytes",
-	"type": "TYPE_RANDOM_BYTES",
+	"type":  "TYPE_FCM_VIRTUAL_MIX",
+	"ratioOfFCMTransaction": 0.5,
 	"payloadByteSize": 100,
-	"maxByteSize": 100,
-	"distribution": {
-	  "sizeDistribution": [
-		100
-	  ],
-	  "ratioDistribution": [
-		100
-	  ],
-	  "typeDistribution": [
-		"TYPE_FCM_TEST"
-	  ]
-	}
+	"maxByteSize": 100
   },
   "submitConfig": {
 	"_comment0": [
@@ -31,12 +23,43 @@
 	  "5,  C2C_LATENCY"
 	],
 	"systemMetric": "TRANS_PER_SECOND_PER_NODE",
-	"metricThreshold": 2500.0,
+	"metricThreshold": 125.0,
 	"_comment1": "pause after submit defined amount of transactions",
 	"pauseAfter": 0,
 	"pauseSeconds": 30,
 	"allowRunSubmit": true,
 	"C2CDelayThreshold": 6
+  },
+
+  "virtualMerkleConfig": {
+	"samplingProbability": 1,
+	"assorted": false,
+	"sequential": [
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 400
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 100
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 2000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 2000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 100
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 2000
+	  }
+	]
   },
   "fcmConfig": {
 	"sequentialTest": true,
@@ -44,32 +67,39 @@
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 2500,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "TYPE_FCM_UPDATE",
-		"sequentialAmount": 1000000,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 1000000,
-		"sequentialSize": 100
-	  },
-	  {
-		"sequentialType": "TYPE_FCM_DELETE",
-		"sequentialAmount": 2500,
+		"sequentialAmount": 4000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "SAVE_EXPECTED_MAP",
 		"sequentialAmount": 1,
 		"sequentialSize": 100
+	  },
+	  {
+		"sequentialType": "TYPE_FCM_UPDATE",
+		"sequentialAmount": 4000,
+		"sequentialSize": 100
+	  },
+	  {
+		"sequentialType": "SAVE_EXPECTED_MAP",
+		"sequentialAmount": 1,
+		"sequentialSize": 100
+	  },
+	  {
+		"sequentialType": "TYPE_FCM_TRANSFER",
+		"sequentialAmount": 60000,
+		"sequentialSize": 100
+	  },
+	  {
+		"sequentialType": "SAVE_EXPECTED_MAP",
+		"sequentialAmount": 1,
+		"sequentialSize": 100
+	  },
+	  {
+		"sequentialType": "TYPE_FCM_DELETE",
+		"sequentialAmount": 4000,
+		"sequentialSize": 100
 	  }
 	]
-  },
-  "freezeConfig": {
-	"startFreezeAfterMin": 2
   }
 }
