@@ -24,6 +24,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -44,7 +46,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -136,10 +137,13 @@ class HandleWorkflowTest {
     private State state;
 
     @Mock
-    private PlatformState platformState;
+    private Round round;
 
     @Mock
-    private Round round;
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     private HandleWorkflow subject;
 
@@ -170,6 +174,8 @@ class HandleWorkflowTest {
                 recordCache,
                 exchangeRateManager,
                 preHandleWorkflow,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
                 List.of());
     }
 
