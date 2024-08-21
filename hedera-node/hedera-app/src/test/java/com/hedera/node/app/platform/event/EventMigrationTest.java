@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.platform.event;
 
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -69,6 +70,10 @@ public class EventMigrationTest {
                 false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
+
+                System.out.println(EventCore.JSON.toJSON(platformEvent.getEventCore()));
+                System.exit(0);
+
                 new PbjBytesHasher().hashEvent(platformEvent);
                 numEvents++;
                 eventHashes.add(platformEvent.getHash());
@@ -78,6 +83,7 @@ public class EventMigrationTest {
                         .forEach(parentHashes::add);
             }
         }
+
 
         Assertions.assertEquals(633, numEvents, "this file is expected to have 633 events but has " + numEvents);
         Assertions.assertEquals(
