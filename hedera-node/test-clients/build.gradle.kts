@@ -29,10 +29,6 @@ mainModuleInfo {
 }
 
 sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-
     create("rcdiff")
     create("yahcli")
 }
@@ -271,6 +267,7 @@ val yahCliJar =
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["main"].output)
         from(sourceSets["rcdiff"].output)
         destinationDirectory.set(project.file("rcdiff"))
         archiveFileName.set("rcdiff.jar")
@@ -278,7 +275,7 @@ val rcdiffJar =
 
         manifest {
             attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
                 "Multi-Release" to "true"
             )
         }

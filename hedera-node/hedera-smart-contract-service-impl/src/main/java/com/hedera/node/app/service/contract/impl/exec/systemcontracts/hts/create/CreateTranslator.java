@@ -33,6 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -117,6 +119,26 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                     + ARRAY_BRACKETS
                     + ")",
             "(int64,address)");
+
+    /**
+     * A set of `Function` objects representing various create functions for fungible and non-fungible tokens.
+     * This set is used in {@link com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor}
+     * to determine if a given call attempt is a creation call, because we do not allow sending value to Hedera system contracts
+     * except in the case of token creation
+     */
+    public static final Set<Function> CREATE_FUNCTIONS = new HashSet<>(Set.of(
+            CREATE_FUNGIBLE_TOKEN_V1,
+            CREATE_FUNGIBLE_TOKEN_V2,
+            CREATE_FUNGIBLE_TOKEN_V3,
+            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1,
+            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2,
+            CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3,
+            CREATE_NON_FUNGIBLE_TOKEN_V1,
+            CREATE_NON_FUNGIBLE_TOKEN_V2,
+            CREATE_NON_FUNGIBLE_TOKEN_V3,
+            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1,
+            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2,
+            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3));
 
     private final CreateDecoder decoder;
 

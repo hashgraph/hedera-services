@@ -84,7 +84,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(status);
         requireNonNull(token);
 
-        // @Future remove to revert #9074 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && (status != SUCCESS || nft == null)) {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
