@@ -83,7 +83,7 @@ public class TokenAirdropValidator {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
         }
-        validateTokenTransfers(op.tokenTransfers(), true);
+        validateTokenTransfers(op.tokenTransfers(), CryptoTransferValidator.AllowanceStrategy.ALLOWANCES_REJECTED);
     }
 
     public void validateSemantics(

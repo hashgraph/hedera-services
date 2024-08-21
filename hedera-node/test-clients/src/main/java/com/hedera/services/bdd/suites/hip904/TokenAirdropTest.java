@@ -921,7 +921,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @DisplayName("fungible token with allowance")
         final Stream<DynamicTest> airdropFtWithAllowance() {
             var spender = "spender";
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
+            return defaultHapiSpec("should fail - NOT_SUPPORTED")
                     .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
                     .when(cryptoApproveAllowance()
                             .payingWith(OWNER)
@@ -936,7 +936,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @DisplayName("NFT with allowance")
         final Stream<DynamicTest> airdropNftWithAllowance() {
             var spender = "spender";
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
+            return defaultHapiSpec("should fail - NOT_SUPPORTED")
                     .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
                     .when(cryptoApproveAllowance()
                             .payingWith(OWNER)
@@ -1591,7 +1591,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
                             .signedBy(OWNER)
                             .payingWith(OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION_BODY));
+                            .hasKnownStatus(NOT_SUPPORTED));
         }
     }
 
