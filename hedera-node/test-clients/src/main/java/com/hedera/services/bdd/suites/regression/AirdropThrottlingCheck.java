@@ -20,39 +20,42 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDE
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verify;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -62,16 +65,14 @@ public class AirdropThrottlingCheck extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(AirdropThrottlingCheck.class);
     private final AtomicLong duration = new AtomicLong(10);
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private final AtomicInteger maxOpsPerSec = new AtomicInteger(100);
-    private static final int EXPECTED_MAX_AIRDROPS_PER_SEC = 100;
-    private static final double ALLOWED_THROTTLE_NOISE_TOLERANCE = 0.05;
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(50);
+    private static final int EXPECTED_MAX_AIRDROPS_PER_SEC = 2;
 
     protected static final String OWNER = "owner";
-    // receivers
-    protected static final String RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS = "receiverWithUnlimitedAutoAssociations";
-    // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    final AtomicInteger airdropCounter = new AtomicInteger(0);
+    final AtomicInteger numAssociationsCounter = new AtomicInteger(0);
 
     public static void main(String... args) {
         new AirdropThrottlingCheck().runSuiteSync();
@@ -92,32 +93,17 @@ public class AirdropThrottlingCheck extends HapiSuite {
                 runWithProvider(airdropFactory())
                         .lasting(duration::get, unit::get)
                         .maxOpsPerSec(maxOpsPerSec::get),
-                getTokenInfo(NON_FUNGIBLE_TOKEN)
-                        .hasTotalSupplySatisfying(supply -> {
-                            final var allowedMaxSupply = (int) (unit.get().toSeconds(duration.get())
-                                    * EXPECTED_MAX_AIRDROPS_PER_SEC
-                                    * (1.0 + ALLOWED_THROTTLE_NOISE_TOLERANCE));
-                            final var allowedMinSupply = (int) (unit.get().toSeconds(duration.get())
-                                    * EXPECTED_MAX_AIRDROPS_PER_SEC
-                                    * (1.0 - ALLOWED_THROTTLE_NOISE_TOLERANCE));
-                            Assertions.assertTrue(
-                                    supply <= allowedMaxSupply,
-                                    String.format(
-                                            "Expected max supply to be less than %d, but was %d",
-                                            allowedMaxSupply, supply));
-                            Assertions.assertTrue(
-                                    supply >= allowedMinSupply,
-                                    String.format(
-                                            "Expected min supply to be at least %d, but was %d",
-                                            allowedMinSupply, supply));
-                        })
-                        .logged());
+                verify(() -> {
+                    LOG.info("Airdrop success count: {}", numAssociationsCounter.get());
+                    assertTrue(
+                            numAssociationsCounter.get() <= (EXPECTED_MAX_AIRDROPS_PER_SEC * duration.get()),
+                            String.format(
+                                    "Expected airdrop success be less than %d, but was %d",
+                                    EXPECTED_MAX_AIRDROPS_PER_SEC * duration.get(), numAssociationsCounter.get()));
+                }));
     }
 
     private Function<HapiSpec, OpProvider> airdropFactory() {
-        final List<byte[]> someMetadata =
-                IntStream.range(0, 100).mapToObj(TxnUtils::randomUtf8Bytes).toList();
-        final SplittableRandom r = new SplittableRandom();
         return spec -> new OpProvider() {
             @Override
             public List<SpecOperation> suggestedInitializers() {
@@ -127,57 +113,32 @@ public class AirdropThrottlingCheck extends HapiSuite {
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .treasury(OWNER)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(100000L)
-                                .maxSupply(100000000L),
+                                .initialSupply(100000L),
                         newKeyNamed("nftSupplyKey"),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .treasury(OWNER)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0L)
                                 .name(NON_FUNGIBLE_TOKEN)
-                                .supplyKey("nftSupplyKey"),
-                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1));
+                                .supplyKey("nftSupplyKey"));
             }
 
             @Override
             public Optional<HapiSpecOperation> get() {
-                //                final var numMetadataThisMint = r.nextBytes(new byte[48]);
-
-                var mintOp = mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a" + r.nextInt())));
-
-                return Optional.of(mintOp);
+                final var keyName = "airdropKey" + airdropCounter.incrementAndGet();
+                final var op1 = newKeyNamed(keyName).shape(SECP256K1_ON);
+                final var op2 = sourcingContextual(spec -> tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                .between(OWNER, spec.registry().getKey(keyName).toByteString()))
+                        .payingWith(OWNER)
+                        .deferStatusResolution()
+                        .hasPrecheckFrom(OK, BUSY)
+                        .signedBy(OWNER)
+                        .hasKnownStatusFrom(SUCCESS, THROTTLED_AT_CONSENSUS)
+                        .tokenAssociationsObserver(numAssociationsCounter::addAndGet)
+                        .noLogging());
+                return Optional.of(blockingOrder(op1, op2));
             }
         };
-    }
-
-    protected static SpecOperation[] setUpTokensAndAllReceivers() {
-        var nftSupplyKey = "nftSupplyKey";
-        final var t = new ArrayList<SpecOperation>(List.of(
-                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                // base tokens
-                tokenCreate(FUNGIBLE_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(1000L),
-                tokenCreate("dummy").treasury(OWNER).tokenType(FUNGIBLE_COMMON).initialSupply(100L),
-                newKeyNamed(nftSupplyKey),
-                tokenCreate(NON_FUNGIBLE_TOKEN)
-                        .treasury(OWNER)
-                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .initialSupply(0L)
-                        .name(NON_FUNGIBLE_TOKEN)
-                        .supplyKey(nftSupplyKey),
-                mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c"),
-                                ByteString.copyFromUtf8("d"),
-                                ByteString.copyFromUtf8("e"),
-                                ByteString.copyFromUtf8("f")))));
-
-        return t.toArray(new SpecOperation[0]);
     }
 
     @Override

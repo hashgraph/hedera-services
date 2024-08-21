@@ -38,6 +38,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -81,6 +82,8 @@ public class DispatchUsageManager {
      */
     public void screenForCapacity(@NonNull final Dispatch dispatch) throws ThrottleException {
         if (isConsensusThrottled(dispatch)) {
+            throttleServiceManager.resetThrottlesUnconditionally(
+                    dispatch.stack().getReadableStates(CongestionThrottleService.NAME));
             final var isThrottled =
                     networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {

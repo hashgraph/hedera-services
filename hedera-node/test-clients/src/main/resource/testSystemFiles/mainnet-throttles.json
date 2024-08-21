@@ -139,7 +139,7 @@
     },
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 15000,
+      "burstPeriodMs": 1000,
       "name": "CreationLimits",
       "throttleGroups": [
         {
