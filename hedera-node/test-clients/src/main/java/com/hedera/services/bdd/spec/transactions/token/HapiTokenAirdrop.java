@@ -191,7 +191,6 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
             subOp = getAccountInfo(account).noLogging();
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
-                log.warn(error.get());
                 return 0;
             }
             return subOp.getResponse()
@@ -203,7 +202,6 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
             HapiGetContractInfo subOp = getContractInfo(account).noLogging();
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
-                log.warn(error.get());
                 return 0;
             }
             return subOp.getResponse()

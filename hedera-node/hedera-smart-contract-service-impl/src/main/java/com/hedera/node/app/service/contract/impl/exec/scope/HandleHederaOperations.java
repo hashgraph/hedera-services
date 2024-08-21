@@ -47,6 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -83,6 +84,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final HandleContext context;
     private final HederaFunctionality functionality;
     private final PendingCreationMetadataRef pendingCreationMetadataRef;
+    private final AccountsConfig accountsConfig;
 
     @Inject
     public HandleHederaOperations(
@@ -93,7 +95,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef) {
+            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef,
+            @NonNull final AccountsConfig accountsConfig) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
@@ -102,6 +105,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.functionality = requireNonNull(functionality);
         this.pendingCreationMetadataRef = requireNonNull(pendingCreationMetadataRef);
+        this.accountsConfig = requireNonNull(accountsConfig);
     }
 
     /**
@@ -156,6 +160,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public long contractCreationLimit() {
         return contractsConfig.maxNumber();
+    }
+
+    @Override
+    public long accountCreationLimit() {
+        return accountsConfig.maxNumber();
     }
 
     /**

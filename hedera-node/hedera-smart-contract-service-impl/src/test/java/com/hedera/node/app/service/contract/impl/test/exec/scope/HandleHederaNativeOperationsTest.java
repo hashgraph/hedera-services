@@ -226,13 +226,11 @@ class HandleHederaNativeOperationsTest {
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(context.entityNumGenerator()).willReturn(entityNumGenerator);
         given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
         verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID);
-        verify(entityNumGenerator).newEntityNum();
     }
 
     @Test

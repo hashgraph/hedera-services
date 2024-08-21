@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep.PLACEHOLDER_SYNTHETIC_ASSOCIATION;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep.associationFeeFor;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountPendingAirdrop;
@@ -31,13 +30,13 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
@@ -137,14 +136,13 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         assessAndChargeCustomFee(context, convertedOp);
 
         for (final var xfers : op.tokenTransfers()) {
-            throwIfContractWithoutAdminKey(xfers, accountStore);
+            throwIfReceiverCannotClaimAirdrop(xfers, accountStore);
 
             final var tokenId = xfers.tokenOrThrow();
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
 
-            // process fungible token transfers if any. pureChecks validates there is only one debit, so findFirst
-            // should return one item
+            // process fungible token transfers if any.
             if (!xfers.transfers().isEmpty()) {
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
@@ -154,6 +152,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                         fungibleLists.pendingFungibleAmounts().size(),
                         fungibleLists.transfersNeedingAutoAssociation());
 
+                // pureChecks validates there is only one debit, so findFirst should return one item
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
@@ -214,23 +213,37 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * Currently we are not supporting airdropping to a contract. If any of the receivers is a contract and
      * the contract doesn't have a key we throw an error
      */
-    private static void throwIfContractWithoutAdminKey(
-            TokenTransferList tokenTransferList, WritableAccountStore accountStore) {
-        var receivers = extractAllReceivers(tokenTransferList);
-
-        for (var receiver : receivers) {
-            if (receiver.alias() != null) {
-                continue;
+    private static void throwIfReceiverCannotClaimAirdrop(
+            @NonNull final TokenTransferList tokenTransferList, @NonNull final WritableAccountStore accountStore) {
+        final var receiverIds = extractAllReceiverIds(tokenTransferList);
+        for (final var receiverId : receiverIds) {
+            final var account = accountStore.getAliasedAccountById(receiverId);
+            // Missing accounts will be treated as auto-creation attempts
+            if (account != null) {
+                validateTrue(isHollow(account) || canClaimAirdrop(account.keyOrThrow()), NOT_SUPPORTED);
             }
-            var account = accountStore.get(receiver);
-            validateTrue(account != null, INVALID_ACCOUNT_ID);
-            requireNonNull(account.key());
-            validateFalse(account.smartContract() && account.key().contractID() != null, INVALID_TRANSACTION_BODY);
         }
     }
 
-    private static Collection<AccountID> extractAllReceivers(TokenTransferList tokenTransferList) {
-        var receivers = new HashSet<AccountID>();
+    private static boolean canClaimAirdrop(@NonNull final Key key) {
+        return switch (key.key().kind()) {
+            case UNSET -> throw new IllegalStateException("Key kind cannot be UNSET");
+            case CONTRACT_ID -> false;
+            case ED25519 -> true;
+            case RSA_3072 -> false;
+            case ECDSA_384 -> false;
+            case THRESHOLD_KEY -> key.thresholdKeyOrThrow().keysOrThrow().keys().stream()
+                            .filter(TokenAirdropHandler::canClaimAirdrop)
+                            .count()
+                    >= key.thresholdKeyOrThrow().threshold();
+            case KEY_LIST -> key.keyListOrThrow().keys().stream().allMatch(TokenAirdropHandler::canClaimAirdrop);
+            case ECDSA_SECP256K1 -> true;
+            case DELEGATABLE_CONTRACT_ID -> false;
+        };
+    }
+
+    private static Collection<AccountID> extractAllReceiverIds(@NonNull final TokenTransferList tokenTransferList) {
+        final var receivers = new HashSet<AccountID>();
         receivers.addAll(tokenTransferList.transfers().stream()
                 .filter(t -> t.amount() > 0)
                 .map(AccountAmount::accountID)
@@ -290,9 +303,11 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         nftLists.forEach(item -> {
             // Each time it is important to get the latest sender account, as we are updating the account
             // with new pending airdrop
-            final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
-            final var pendingId = createNftPendingAirdropId(
-                    tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
+            final var senderAccount = requireNonNull(accountStore.getAliasedAccountById(senderId));
+            final var receiverAccount =
+                    requireNonNull(accountStore.getAliasedAccountById(item.receiverAccountIDOrThrow()));
+            final var pendingId =
+                    createNftPendingAirdropId(tokenId, item.serialNumber(), senderAccount, receiverAccount);
             // check for existence
             validateTrue(!pendingStore.exists(pendingId), PENDING_NFT_AIRDROP_ALREADY_EXISTS);
             updateNewPendingAirdrop(senderAccount, pendingId, null, accountStore, pendingStore);
@@ -306,7 +321,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * the credits for the receivers.
      * @param fungibleAmounts the fungible airdrop amounts
      * @param sender the sender account id
-     * @param isApproval if the airdrop transfer is sent with an approval
+     * @param isApproval is approval
      * @param transferListBuilder the transfer list builder
      */
     private void addTransfersToTransferList(
@@ -344,9 +359,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         fungibleAmounts.forEach(accountAmount -> {
             // Each time it is important to get the latest sender account , as we are updating the account
             // with new pending airdrop
-            final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
-            final var pendingId =
-                    createFungibleTokenPendingAirdropId(tokenId, senderAccount.accountId(), accountAmount.accountID());
+            final var senderAccount = requireNonNull(accountStore.getAliasedAccountById(senderId));
+            final var receiverAccount =
+                    requireNonNull(accountStore.getAliasedAccountById(accountAmount.accountIDOrThrow()));
+            final var pendingId = createFungibleTokenPendingAirdropId(tokenId, senderAccount, receiverAccount);
             final var pendingValue = PendingAirdropValue.newBuilder()
                     .amount(accountAmount.amount())
                     .build();
