@@ -37,7 +37,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -215,14 +215,13 @@ public class DefaultTransactionHandler implements TransactionHandler {
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all needed data for this round.
+     * Populate the {@link PlatformStateAccessor} with all needed data for this round.
      *
      * @param round the consensus round
      */
     private void updatePlatformState(@NonNull final ConsensusRound round) {
-        final PlatformState platformState =
+        final PlatformStateAccessor platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
-
         platformState.setRound(round.getRoundNum());
         platformState.setConsensusTimestamp(round.getConsensusTimestamp());
         platformState.setCreationSoftwareVersion(softwareVersion);
@@ -237,7 +236,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @throws InterruptedException if this thread is interrupted
      */
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
-        final PlatformState platformState =
+        final PlatformStateAccessor platformState =
                 swirldStateManager.getConsensusState().getPlatformState();
 
         if (writeLegacyRunningEventHash) {

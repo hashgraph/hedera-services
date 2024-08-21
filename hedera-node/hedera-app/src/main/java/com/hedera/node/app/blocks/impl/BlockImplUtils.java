@@ -31,6 +31,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWO
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -146,6 +147,10 @@ public class BlockImplUtils {
                     case "FreezeService" -> switch (stateKey) {
                         case "FREEZE_TIME" -> STATE_ID_FREEZE_TIME.protoOrdinal();
                         case "UPGRADE_FILE_HASH" -> STATE_ID_UPGRADE_FILE_HASH.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
+                    case "PlatformStateService" -> switch (stateKey) {
+                        case "PLATFORM_STATE" -> STATE_ID_PLATFORM_STATE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "RecordCache" -> switch (stateKey) {

@@ -106,4 +106,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
         mapWritableStates.commit();
         return List.of();
     }
+
+    @Override
+    public SemanticVersion creationVersionOf(@NonNull final State state) {
+        if (!(state instanceof FakeState)) {
+            throw new IllegalArgumentException("Can only be used with FakeState instances");
+        }
+        // Fake states are always from genesis and have no creation version
+        return null;
+    }
 }

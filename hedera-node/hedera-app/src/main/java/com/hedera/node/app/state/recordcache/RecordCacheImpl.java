@@ -139,6 +139,8 @@ public class RecordCacheImpl implements HederaRecordCache {
      *
      * @param deduplicationCache A cache containing known {@link TransactionID}s, used for deduplication
      * @param configProvider     Used for looking up the max valid duration window for a transaction dynamically
+     * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
+     * records must be saved in state or read from state.
      */
     @Inject
     public RecordCacheImpl(

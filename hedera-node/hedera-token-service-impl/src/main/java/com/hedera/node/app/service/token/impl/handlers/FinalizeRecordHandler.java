@@ -183,7 +183,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
                         .map(accountId -> String.format(
                                 "\tOriginal : %s%n\tModified : %s",
                                 accountStore.getOriginalValue(accountId), accountStore.get(accountId)))
-                        .collect(Collectors.joining("%n")));
+                        .collect(Collectors.joining("\n")));
     }
 
     private void deductChangesFromChildOrPrecedingRecords(

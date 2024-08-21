@@ -191,13 +191,13 @@ public final class PlatformBuilder {
     /**
      * Constructor.
      *
-     * @param appName             the name of the application, currently used for deciding where to store states on
-     *                            disk
-     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the software version of the application
-     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
-     * @param snapshotStateReader a function to read an existing state snapshot, if exists
+     * @param appName               the name of the application, currently used for deciding where to store states on
+     *                              disk
+     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion       the software version of the application
+     * @param genesisStateBuilder   a supplier that will be called to create the genesis state, if necessary
+     * @param snapshotStateReader   a function to read an existing state snapshot, if exists
+     * @param selfId                the ID of this node
      */
     private PlatformBuilder(
             @NonNull final String appName,

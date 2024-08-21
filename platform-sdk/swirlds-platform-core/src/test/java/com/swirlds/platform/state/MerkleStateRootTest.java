@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
-import static com.swirlds.platform.state.MerkleStateRoot.PLATFORM_STATE_INDEX;
+import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -29,16 +30,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.State;
@@ -52,6 +57,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -62,7 +68,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -83,6 +88,11 @@ class MerkleStateRootTest extends MerkleTestBase {
 
     private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
+        public void initPlatformState(@NonNull final State state) {
+            FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        }
+
+        @Override
         public void onPreHandle(@NonNull Event event, @NonNull State state) {
             onPreHandleCalled.set(true);
         }
@@ -93,8 +103,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onHandleConsensusRound(
-                @NonNull Round round, @NonNull PlatformState platformState, @NonNull State state) {
+        public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
             onHandleCalled.set(true);
         }
 
@@ -102,7 +111,6 @@ class MerkleStateRootTest extends MerkleTestBase {
         public void onStateInitialized(
                 @NonNull State state,
                 @NonNull Platform platform,
-                @NonNull PlatformState platformState,
                 @NonNull InitTrigger trigger,
                 @Nullable SoftwareVersion previousVersion) {}
 
@@ -121,8 +129,10 @@ class MerkleStateRootTest extends MerkleTestBase {
      */
     @BeforeEach
     void setUp() {
+        setupConstructableRegistry();
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
         setupFruitMerkleMap();
-        stateRoot = new MerkleStateRoot(lifecycles);
+        stateRoot = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
     }
 
     /** Looks for a merkle node with the given label */
@@ -745,8 +755,8 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformState.class);
-            final var state = new MerkleStateRoot(lifecycles);
+            final var platformState = Mockito.mock(PlatformStateAccessor.class);
+            final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
 
             state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
@@ -763,7 +773,7 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformState.class);
+            final var platformState = Mockito.mock(PlatformStateAccessor.class);
             assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
 
             // But the copy does
@@ -815,80 +825,6 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(onUpdateWeightCalled).isFalse();
             stateRoot.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
             assertThat(onUpdateWeightCalled).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("Platform State configuration test")
-    final class PlatformStateConfigurationTest {
-        @Test
-        @DisplayName("Platform state is the first child")
-        void platformStateIsTheFirst() {
-            final var platformState = Mockito.mock(PlatformState.class);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState()).isSameAs(platformState);
-        }
-
-        @Test
-        @DisplayName("Platform state is NOT the first child")
-        void platformStateIsNotTheFirst() {
-            setupAnimalMerkleMap();
-            setupSingletonCountry();
-            setupSteamQueue();
-
-            // Given a State with the fruit and animal and country states
-            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
-            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
-            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
-
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(0);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(1);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
-                    .isEqualTo(2);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(3);
-
-            final var platformState = Mockito.mock(PlatformState.class);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.<MerkleNode>getChild(PLATFORM_STATE_INDEX)).isSameAs(platformState);
-
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(1);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(2);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
-                    .isEqualTo(3);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(4);
-        }
-
-        @Test
-        @DisplayName("Platform state is set twice (same instance) ")
-        void platformStatSetTwice_sameInstance() {
-            final var platformState = new PlatformState();
-            platformState.setRound(nextLong());
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState())
-                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                            .withIgnoredFields("reservationCount")
-                            .build())
-                    .isEqualTo(platformState);
-        }
-
-        @Test
-        @DisplayName("Platform state is set twice (different instance) ")
-        void platformStatSetTwice_differentInstance() {
-            final var platformState1 = new PlatformState();
-            platformState1.setRound(nextLong());
-            stateRoot.setPlatformState(platformState1);
-            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState1);
-            final var platformState2 = new PlatformState();
-            platformState2.setRound(nextLong());
-            stateRoot.setPlatformState(platformState2);
-            assertThat(stateRoot.getPlatformState())
-                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                            .withIgnoredFields("route")
-                            .build())
-                    .isEqualTo(platformState2);
         }
     }
 
@@ -957,6 +893,52 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(nonKvListener);
+        }
+    }
+
+    @Nested
+    @DisplayName("Platform state related tests")
+    class PlatformStateTests {
+
+        @Test
+        @DisplayName("Platform state should be registered by default")
+        void platformStateIsRegisteredByDefault() {
+            assertThat(stateRoot.getPlatformState()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Test access to the platform state")
+        void testAccessToPlatformStateData() {
+            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            stateRoot.updatePlatformState(randomPlatformState);
+            ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
+                    .getReadableStates(PlatformStateService.NAME)
+                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+            WritableSingletonState<PlatformState> writableSingletonState = stateRoot
+                    .getWritableStates(PlatformStateService.NAME)
+                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+
+            assertThat(readableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
+            assertThat(writableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
+        }
+
+        @Test
+        @DisplayName("Test update of the platform state")
+        void testUpdatePlatformStateData() {
+            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            stateRoot.updatePlatformState(randomPlatformState);
+            WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
+            WritableSingletonState<PlatformState> writableSingletonState =
+                    writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+
+            PlatformStateAccessor newPlatformState = randomPlatformState();
+            writableSingletonState.put(toPbjPlatformState(newPlatformState));
+            ((CommittableWritableStates) writableStates).commit();
+
+            PlatformStateAccessor stateAccessor = stateRoot.getPlatformState();
+            assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
+            assertThat(stateAccessor.getRound())
+                    .isEqualTo(newPlatformState.getSnapshot().round());
         }
     }
 }

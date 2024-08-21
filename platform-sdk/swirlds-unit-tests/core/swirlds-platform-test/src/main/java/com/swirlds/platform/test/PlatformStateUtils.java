@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
@@ -36,15 +39,15 @@ public final class PlatformStateUtils {
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState() {
+    public static PlatformStateAccessor randomPlatformState() {
         return randomPlatformState(new Random());
     }
 
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState(final Random random) {
-        final PlatformState platformState = new PlatformState();
+    public static PlatformStateAccessor randomPlatformState(final Random random) {
+        final PlatformStateAccessor platformState = new PlatformState();
 
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withSize(4)
@@ -55,6 +58,7 @@ public final class PlatformStateUtils {
         platformState.setLegacyRunningEventHash(randomHash(random));
         platformState.setRound(random.nextLong());
         platformState.setConsensusTimestamp(randomInstant(random));
+        platformState.setCreationSoftwareVersion(new BasicSoftwareVersion(nextInt(1, 100)));
 
         final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {

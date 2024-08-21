@@ -210,7 +210,7 @@ public class RcDiff implements Callable<Integer> {
                 return !consensusTime.isBefore(start) && consensusTime.isBefore(end);
             };
             final var diffsHere =
-                    findDifferencesBetweenV6(actualStreams, expectedStreams, recordDiffSummarizer, inclusionTest);
+                    findDifferencesBetweenV6(expectedStreams, actualStreams, recordDiffSummarizer, inclusionTest);
 
             out.println(" ➡️ Found " + diffsHere.size() + " diffs from " + start + " to " + end);
             diffs.addAll(diffsHere);

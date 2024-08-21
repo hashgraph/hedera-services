@@ -35,7 +35,7 @@ public interface ServiceMigrator {
     /**
      * Perform the migrations on the given state.
      *
-     * @param state The state to migrate
+     * @param state            The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
@@ -52,4 +52,12 @@ public interface ServiceMigrator {
             @NonNull Configuration config,
             @NonNull NetworkInfo networkInfo,
             @NonNull Metrics metrics);
+
+    /**
+     * Given a {@link State}, returns the creation version of the state if it was deserialized, or null otherwise.
+     * @param state the state
+     * @return the version of the state if it was deserialized, otherwise null
+     */
+    @Nullable
+    SemanticVersion creationVersionOf(@NonNull State state);
 }

@@ -42,7 +42,6 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
-import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
@@ -128,8 +127,6 @@ public interface HederaInjectionComponent {
     ReconnectCompleteListener reconnectListener();
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
-
-    PlatformStateAccessor platformStateAccessor();
 
     StoreMetricsService storeMetricsService();
 

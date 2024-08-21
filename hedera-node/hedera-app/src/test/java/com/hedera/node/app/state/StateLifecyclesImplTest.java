@@ -117,16 +117,16 @@ class StateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        subject.onHandleConsensusRound(round, platformState, merkleStateRoot);
+        subject.onHandleConsensusRound(round, merkleStateRoot);
 
-        verify(hedera).onHandleConsensusRound(round, platformState, merkleStateRoot);
+        verify(hedera).onHandleConsensusRound(round, merkleStateRoot);
     }
 
     @Test
     void delegatesOnStateInitialized() {
-        subject.onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
+        subject.onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
 
-        verify(hedera).onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
+        verify(hedera).onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
     }
 
     @Test
