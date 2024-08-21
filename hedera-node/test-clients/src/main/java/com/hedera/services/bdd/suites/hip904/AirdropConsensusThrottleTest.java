@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.regression;
+package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verify;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -45,7 +46,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -60,9 +60,9 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
-public class AirdropThrottlingCheck extends HapiSuite {
+public class AirdropConsensusThrottleTest {
+    private static final Logger LOG = LogManager.getLogger(AirdropConsensusThrottleTest.class);
 
-    private static final Logger LOG = LogManager.getLogger(AirdropThrottlingCheck.class);
     private final AtomicLong duration = new AtomicLong(10);
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(50);
@@ -73,15 +73,6 @@ public class AirdropThrottlingCheck extends HapiSuite {
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     final AtomicInteger airdropCounter = new AtomicInteger(0);
     final AtomicInteger numAssociationsCounter = new AtomicInteger(0);
-
-    public static void main(String... args) {
-        new AirdropThrottlingCheck().runSuiteSync();
-    }
-
-    @Override
-    public List<Stream<DynamicTest>> getSpecsInSuite() {
-        return List.of(airdropsAreLimitedByConsThrottle());
-    }
 
     @LeakyHapiTest(
             requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
@@ -139,10 +130,5 @@ public class AirdropThrottlingCheck extends HapiSuite {
                 return Optional.of(blockingOrder(op1, op2));
             }
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }
