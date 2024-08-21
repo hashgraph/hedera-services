@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -638,6 +640,57 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2)).payingWith(BOB),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 5));
+    }
+
+    @HapiTest
+    @DisplayName("fails when not enough fungible token exist in the owner account")
+    final Stream<DynamicTest> failsNotEnoughBalanceInSenderAccountOfFT() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        final String CAROL = "CAROL";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_1)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .adminKey(ALICE),
+                tokenAssociate(CAROL, FUNGIBLE_TOKEN_1),
+                tokenAirdrop(moving(1000, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                cryptoTransfer(moving(1000, FUNGIBLE_TOKEN_1).between(ALICE, CAROL)),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .payingWith(BOB)
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+    }
+
+    @HapiTest
+    @DisplayName("fails attempt to claim by deleted account")
+    final Stream<DynamicTest> attemptToClaimByDeletedAccount() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        final String CAROL = "CAROL";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                tokenCreate(FUNGIBLE_TOKEN_1)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .adminKey(ALICE),
+                tokenAirdrop(
+                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, CAROL),
+                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                cryptoDelete(BOB),
+                tokenClaimAirdrop(
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_1))
+                        .signedBy(CAROL, BOB)
+                        .payingWith(CAROL)
+                        .hasPrecheck(ACCOUNT_DELETED));
     }
 
     @HapiTest
