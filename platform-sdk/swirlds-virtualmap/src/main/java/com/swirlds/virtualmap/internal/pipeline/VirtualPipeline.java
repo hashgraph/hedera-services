@@ -232,8 +232,10 @@ public class VirtualPipeline {
         }
 
         try {
+            final long sleepStartTime = System.currentTimeMillis();
             logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush backpressure: {} ms", sleepTimeMillis);
             MILLISECONDS.sleep(sleepTimeMillis);
+            statistics.recordFlushBackpressureMs((int) (System.currentTimeMillis() - sleepStartTime));
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
@@ -254,9 +256,7 @@ public class VirtualPipeline {
 
         final Duration maxSleepTime = config.maximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
-        final int sleepTimeMillis = (int) sleepTime.toMillis();
-        statistics.recordFlushBackpressureMs(sleepTimeMillis);
-        return sleepTimeMillis;
+        return sleepTime.toMillis();
     }
 
     /**
