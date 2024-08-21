@@ -75,8 +75,8 @@ import javax.inject.Singleton;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
 
     private static final SpeedometerMetric.Config BALANCE_SPEEDOMETER_CONFIG = new SpeedometerMetric.Config(
-                    "app", "queriedAccountBalances")
-            .withDescription("Number of account balances requested in GetAccountInfo queries per second");
+                    "app", "queriedTokenBalances")
+            .withDescription("Number of token balances requested in GetAccountInfo queries per second");
 
     private final CryptoOpsUsage cryptoOpsUsage;
     private final InstantSource instantSource;
