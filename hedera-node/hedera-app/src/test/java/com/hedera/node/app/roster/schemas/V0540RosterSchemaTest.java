@@ -20,9 +20,19 @@ import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
+import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,9 +44,14 @@ class V0540RosterSchemaTest {
     @LoggingSubject
     private V0540RosterSchema subject;
 
+    private MigrationContext migrationContext;
+    private WritableSingletonState<Object> rosterState;
+
     @BeforeEach
     void setUp() {
         subject = new V0540RosterSchema();
+        migrationContext = mock(MigrationContext.class);
+        rosterState = mock(WritableSingletonState.class);
     }
 
     @Test
@@ -47,5 +62,24 @@ class V0540RosterSchemaTest {
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(ROSTER_KEY, iter.next(), "Unexpected Roster key!");
         assertEquals(ROSTER_STATES_KEY, iter.next(), "Unexpected RosterState key!");
+    }
+
+    @Test
+    void testMigrateFromNullPreviousVersion() {
+        when(migrationContext.previousVersion()).thenReturn(null);
+        when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
+        when(migrationContext.newStates().getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
+                .thenReturn(rosterState);
+
+        subject.migrate(migrationContext);
+        verify(rosterState, times(1)).put(RosterState.DEFAULT);
+    }
+
+    @Test
+    void testMigrateFromNonNullPreviousVersion() {
+        when(migrationContext.previousVersion())
+                .thenReturn(SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());
+        subject.migrate(migrationContext);
+        verifyNoInteractions(rosterState);
     }
 }

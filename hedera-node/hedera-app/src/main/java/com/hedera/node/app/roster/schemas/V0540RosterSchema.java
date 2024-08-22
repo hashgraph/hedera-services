@@ -64,11 +64,8 @@ public class V0540RosterSchema extends Schema {
         if (ctx.previousVersion() == null) {
             log.info("Creating genesis roster and roster state");
             // This migration code is really, for now, a default value provider.
-            // At genesis we put empty roster and roster state into the state
+            // At genesis we put empty roster state into the state
             // as serialization/deserialization fails on null.
-            // It is important to distinguish this from the Genesis Roster,
-            // which will be provided by the Execution layer depending on
-            // the desired network mode
             final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
             rosterState.put(RosterState.DEFAULT);
         }
