@@ -813,7 +813,6 @@ public class HapiSpecRegistry {
     private synchronized <T> T get(String name, Class<T> type) {
         Object v = registry.get(full(name, type));
         if (v == null) {
-            Thread.dumpStack();
             throw new RegistryNotFound("Missing " + type.getSimpleName() + " '" + name + "'!");
         }
         return type.cast(v);
