@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.hip904;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -573,19 +572,37 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, validAlias))
                         .payingWith(OWNER),
                 // check if account is hollow (has empty key)
-                getAliasedAccountInfo(validAlias)
-                        .has(accountWith().hasEmptyKey().noAlias()),
-
-                // claim and check if account is finalized
+                getAliasedAccountInfo(validAlias).isHollow(),
                 tokenClaimAirdrop(pendingAirdrop(OWNER, validAlias, FUNGIBLE_TOKEN))
                         .payingWith(validAlias)
                         .sigMapPrefixes(uniqueWithFullPrefixesFor(validAlias))
                         .via("claimTxn"),
                 validateChargedUsd("claimTxn", 0.001, 1),
 
-                // check if account was finalized (has the correct key)
-                getAliasedAccountInfo(validAlias)
-                        .has(accountWith().key(validAlias).noAlias())));
+                // check if account was finalized and auto associations were not modified
+                getAliasedAccountInfo(validAlias).isNotHollow().hasMaxAutomaticAssociations(0)));
+    }
+
+    @HapiTest
+    @DisplayName("hollow account with 0 slots different payer")
+    final Stream<DynamicTest> airdropToAliasWithNoFreeSlotsClaimWithDifferentPayer() {
+        final var alias = "alias2.0";
+        final var carol = "CAROL";
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(carol).balance(ONE_HUNDRED_HBARS),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, alias)).payingWith(OWNER),
+                // check if account is hollow (has empty key)
+                getAliasedAccountInfo(alias).isHollow(),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, alias, FUNGIBLE_TOKEN))
+                        .payingWith(carol)
+                        .signedBy(carol, alias)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
+                        .via("claimTxn"),
+                validateChargedUsd("claimTxn", 0.001, 1),
+
+                // check if account was finalized and auto associations were not modified
+                getAliasedAccountInfo(alias).isNotHollow().hasMaxAutomaticAssociations(0)));
     }
 
     @HapiTest
@@ -714,7 +731,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @HapiTest
     @DisplayName("containing up to 10 tokens and some duplicate entries should fail")
-    final Stream<DynamicTest> contain10TokensDulplicateFail() {
+    final Stream<DynamicTest> contain10TokensDuplicateFail() {
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
