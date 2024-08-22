@@ -36,6 +36,7 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -235,5 +236,10 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
 
     private @NonNull PlatformState stateOrThrow() {
         return requireNonNull(state.get());
+    }
+
+    @Override
+    public void bulkUpdate(Consumer<PlatformStateAccessor> updater) {
+        throw new MutabilityException("Platform state is read-only");
     }
 }

@@ -54,11 +54,13 @@ public final class PlatformStateUtils {
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
-        platformState.setAddressBook(addressBook);
-        platformState.setLegacyRunningEventHash(randomHash(random));
-        platformState.setRound(random.nextLong());
-        platformState.setConsensusTimestamp(randomInstant(random));
-        platformState.setCreationSoftwareVersion(new BasicSoftwareVersion(nextInt(1, 100)));
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook);
+            v.setLegacyRunningEventHash(randomHash(random));
+            v.setRound(random.nextLong());
+            v.setConsensusTimestamp(randomInstant(random));
+            v.setCreationSoftwareVersion(new BasicSoftwareVersion(nextInt(1, 100)));
+        });
 
         final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {

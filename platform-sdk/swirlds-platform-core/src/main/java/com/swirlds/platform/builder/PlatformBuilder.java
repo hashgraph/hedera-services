@@ -73,6 +73,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -537,17 +538,17 @@ public final class PlatformBuilder {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            state.getPlatformState()
-                    .setAddressBook(
-                            addressBookInitializer.getCurrentAddressBook().copy());
+            PlatformStateAccessor platformState = state.getPlatformState();
+            platformState.bulkUpdate(v -> {
+                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
 
-            state.getPlatformState()
-                    .setPreviousAddressBook(
-                            addressBookInitializer.getPreviousAddressBook() == null
-                                    ? null
-                                    : addressBookInitializer
-                                            .getPreviousAddressBook()
-                                            .copy());
+                v.setPreviousAddressBook(
+                        addressBookInitializer.getPreviousAddressBook() == null
+                                ? null
+                                : addressBookInitializer
+                                        .getPreviousAddressBook()
+                                        .copy());
+            });
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.

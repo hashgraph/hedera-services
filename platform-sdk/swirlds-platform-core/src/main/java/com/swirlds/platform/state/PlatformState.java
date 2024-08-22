@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * State managed and used by the platform.
@@ -553,5 +554,13 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, Plat
     @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         this.lowestJudgeGenerationBeforeBirthRoundMode = lowestJudgeGenerationBeforeBirthRoundMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bulkUpdate(Consumer<PlatformStateAccessor> updater) {
+        updater.accept(this);
     }
 }

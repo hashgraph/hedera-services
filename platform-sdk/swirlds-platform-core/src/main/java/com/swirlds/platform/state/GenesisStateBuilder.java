@@ -42,19 +42,20 @@ public final class GenesisStateBuilder {
             final PlatformStateAccessor platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook.copy());
+            v.setCreationSoftwareVersion(appVersion);
+            v.setRound(0);
+            v.setLegacyRunningEventHash(null);
+            v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
-        platformState.setAddressBook(addressBook.copy());
-        platformState.setCreationSoftwareVersion(appVersion);
-        platformState.setRound(0);
-        platformState.setLegacyRunningEventHash(null);
-        platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            platformState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
+            final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+            if (genesisFreezeTime > 0) {
+                platformState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            }
+        });
     }
 
     /**
