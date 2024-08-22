@@ -73,9 +73,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIV
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
@@ -683,7 +683,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("NFT with royalty fee")
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
+            return defaultHapiSpec("should fail - TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY")
                     .given()
                     .when(
                             tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
@@ -692,7 +692,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .then(tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 1L)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .signedByPayerAnd(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS, OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION));
+                            .hasKnownStatus(TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY));
         }
 
         @HapiTest
