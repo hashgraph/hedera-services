@@ -24,7 +24,6 @@ testing.suites {
         targets.all {
             testTask {
                 group = "build"
-                shouldRunAfter(tasks.test)
                 maxHeapSize = "8g"
             }
         }

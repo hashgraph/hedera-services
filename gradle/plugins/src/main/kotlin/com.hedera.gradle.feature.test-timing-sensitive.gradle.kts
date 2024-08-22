@@ -18,25 +18,20 @@ import com.hedera.gradle.services.TaskLockService
 
 plugins { id("java") }
 
-// Denotes a test that normally needs more than 100 ms to be executed
+// Tests that are resource sensitive (e.g. use Thread.sleep()) and thus need to run without anything
+// in parallel.
 @Suppress("UnstableApiUsage")
 testing.suites {
     register<JvmTestSuite>("timingSensitive") {
-        testType.set("timing-sensitive")
+        testType = "timing-sensitive"
         targets.all {
             testTask {
                 group = "build"
-                shouldRunAfter(tasks.test)
                 maxHeapSize = "4g"
                 usesService(
                     gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
                         maxParallelUsages = 1
                     }
-                )
-                mustRunAfter(
-                    rootProject.subprojects
-                        .filter { File(it.projectDir, "src/test").exists() }
-                        .map { "${it.path}:test" }
                 )
             }
         }

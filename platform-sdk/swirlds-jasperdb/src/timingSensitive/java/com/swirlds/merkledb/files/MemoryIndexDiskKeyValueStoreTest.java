@@ -86,12 +86,12 @@ class MemoryIndexDiskKeyValueStoreTest {
             assertNotNull(dataItem, "dataItem unexpectedly null");
             switch (testType) {
                 default:
-                case FilesTestType.fixed:
+                case fixed:
                     assertEquals(2 * Long.BYTES, dataItem.length(), "unexpected dataItem length"); // size
                     assertEquals(i, dataItem.readLong(), "unexpected dataItem key"); // key
                     assertEquals(i + valueAddition, dataItem.readLong(), "unexpected dataItem value"); // value
                     break;
-                case FilesTestType.variable:
+                case variable:
                     final long[] dataItemLongs = new long[Math.toIntExact(dataItem.remaining() / Long.BYTES)];
                     for (int j = 0; j < dataItemLongs.length; j++) {
                         dataItemLongs[j] = dataItem.readLong();
@@ -131,10 +131,10 @@ class MemoryIndexDiskKeyValueStoreTest {
             //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
-                case FilesTestType.fixed:
+                case fixed:
                     dataValue = new long[] {i, i + valueAddition};
                     break;
-                case FilesTestType.variable:
+                case variable:
                     dataValue = getVariableSizeDataForI(i, valueAddition);
                     break;
             }

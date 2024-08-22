@@ -157,10 +157,10 @@ class DataFileCollectionTest {
                 long[] dataValue;
                 switch (testType) {
                     default:
-                    case FilesTestType.fixed:
+                    case fixed:
                         dataValue = new long[] {i, i + 10_000};
                         break;
-                    case FilesTestType.variable:
+                    case variable:
                         dataValue = getVariableSizeDataForI(i, 10_000);
                         break;
                 }
@@ -475,10 +475,10 @@ class DataFileCollectionTest {
             long[] dataValue;
             switch (testType) {
                 default:
-                case FilesTestType.fixed:
+                case fixed:
                     dataValue = new long[] {i, i + 100_000};
                     break;
-                case FilesTestType.variable:
+                case variable:
                     dataValue = getVariableSizeDataForI(i, 100_000);
                     break;
             }
@@ -695,10 +695,10 @@ class DataFileCollectionTest {
                 long[] dataValue;
                 switch (testType) {
                     default:
-                    case FilesTestType.fixed:
+                    case fixed:
                         dataValue = new long[] {i, i + 10_000};
                         break;
-                    case FilesTestType.variable:
+                    case variable:
                         dataValue = getVariableSizeDataForI(i, 10_000);
                         break;
                 }

@@ -26,7 +26,6 @@ testing.suites {
         targets.all {
             testTask {
                 group = "build"
-                shouldRunAfter(tasks.test)
                 usesService(
                     gradle.sharedServices.registerIfAbsent("lock", TaskLockService::class) {
                         maxParallelUsages = 1
