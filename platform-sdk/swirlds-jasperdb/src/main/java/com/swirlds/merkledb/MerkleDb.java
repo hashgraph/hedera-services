@@ -30,7 +30,9 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
@@ -184,11 +186,8 @@ public final class MerkleDb {
     private static Path getDefaultPath() {
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
-                try {
-                    p = Files.createTempDirectory(null).resolve(MERKLEDB_COMPONENT);
-                } catch (IOException z) {
-                    throw new UncheckedIOException(z);
-                }
+                final Configuration config = ConfigurationHolder.getInstance().get();
+                p = FileSystemManager.create(config).resolveNewTemp(MERKLEDB_COMPONENT);
             }
             return p;
         });
