@@ -78,7 +78,8 @@ class V0540RosterSchemaTest {
     @Test
     void testMigrateFromNonNullPreviousVersion() {
         when(migrationContext.previousVersion())
-                .thenReturn(SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());
+                .thenReturn(
+                        SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());
         subject.migrate(migrationContext);
         verifyNoInteractions(rosterState);
     }
