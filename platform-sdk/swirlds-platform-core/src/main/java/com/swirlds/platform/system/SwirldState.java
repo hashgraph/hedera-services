@@ -23,6 +23,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -50,7 +51,9 @@ public interface SwirldState extends MerkleNode {
      *                                software version
      */
     default void init(
-            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         // Override if needed
     }
 

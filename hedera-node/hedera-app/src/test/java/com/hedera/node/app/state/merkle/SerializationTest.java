@@ -254,7 +254,7 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>());
-        loadedTree.migrate(MerkleStateRoot.VERSION_2);
+        loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
 
         return loadedTree;
     }

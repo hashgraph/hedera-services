@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.service.impl;
+package com.swirlds.platform.state.service;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjTimestamp;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjConsensusSnapshot;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjTimestamp;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,16 +60,7 @@ class PbjConverterTest {
 
     @Test
     void testToPbjPlatformState() {
-        final PlatformState platformState = new PlatformState();
-        platformState.setCreationSoftwareVersion(randomSoftwareVersion());
-        platformState.setRoundsNonAncient(nextInt());
-        platformState.setLastFrozenTime(randomInstant(random));
-        platformState.setLegacyRunningEventHash(randomHash());
-        platformState.setLowestJudgeGenerationBeforeBirthRoundMode(nextInt());
-        platformState.setLastRoundBeforeBirthRoundMode(nextInt());
-        platformState.setFirstVersionInBirthRoundMode(randomSoftwareVersion());
-        platformState.setSnapshot(randomSnapshot());
-        platformState.setAddressBook(randomAddressBook());
+        final PlatformState platformState = randomPlatformState();
 
         final com.hedera.hapi.platform.state.PlatformState pbjPlatformState =
                 PbjConverter.toPbjPlatformState(platformState);
@@ -88,6 +82,20 @@ class PbjConverterTest {
 
         assertSnapshot(platformState.getSnapshot(), pbjPlatformState.consensusSnapshot());
         assertAddressBook(platformState.getAddressBook(), pbjPlatformState.addressBook());
+    }
+
+    private PlatformState randomPlatformState() {
+        final PlatformState platformState = new PlatformState();
+        platformState.setCreationSoftwareVersion(randomSoftwareVersion());
+        platformState.setRoundsNonAncient(nextInt());
+        platformState.setLastFrozenTime(randomInstant(random));
+        platformState.setLegacyRunningEventHash(randomHash());
+        platformState.setLowestJudgeGenerationBeforeBirthRoundMode(nextInt());
+        platformState.setLastRoundBeforeBirthRoundMode(nextInt());
+        platformState.setFirstVersionInBirthRoundMode(randomSoftwareVersion());
+        platformState.setSnapshot(randomSnapshot());
+        platformState.setAddressBook(randomAddressBook());
+        return platformState;
     }
 
     @Test
@@ -149,6 +157,252 @@ class PbjConverterTest {
         final com.hedera.hapi.platform.state.ConsensusSnapshot pbjSnapshot = randomPbjSnapshot();
         final ConsensusSnapshot snapshot = PbjConverter.fromPbjConsensusSnapshot(pbjSnapshot);
         assertSnapshot(snapshot, pbjSnapshot);
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_updateCreationSoftwareVersion() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.creationSoftwareVersion(),
+                toPbjPlatformState(oldState, accumulator).creationSoftwareVersion());
+
+        var newValue = randomSoftwareVersion();
+
+        accumulator.setCreationSoftwareVersion(newValue);
+
+        assertEquals(
+                newValue.getPbjSemanticVersion(),
+                toPbjPlatformState(oldState, accumulator).creationSoftwareVersion());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_updateRoundsNonAncient() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.roundsNonAncient(),
+                toPbjPlatformState(oldState, accumulator).roundsNonAncient());
+
+        var newValue = nextInt();
+
+        accumulator.setRoundsNonAncient(newValue);
+
+        assertEquals(newValue, toPbjPlatformState(oldState, accumulator).roundsNonAncient());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_snapshot() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.consensusSnapshot(),
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot());
+
+        var newValue = randomSnapshot();
+
+        accumulator.setSnapshot(newValue);
+
+        assertEquals(
+                toPbjConsensusSnapshot(newValue),
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_freezeTime() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.freezeTime(), toPbjPlatformState(oldState, accumulator).freezeTime());
+
+        var newValue = randomInstant(random);
+
+        accumulator.setFreezeTime(newValue);
+
+        assertEquals(
+                toPbjTimestamp(newValue),
+                toPbjPlatformState(oldState, accumulator).freezeTime());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_lastFrozenTime() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.freezeTime(), toPbjPlatformState(oldState, accumulator).freezeTime());
+
+        var newValue = randomInstant(random);
+
+        accumulator.setLastFrozenTime(newValue);
+
+        assertEquals(
+                toPbjTimestamp(newValue),
+                toPbjPlatformState(oldState, accumulator).lastFrozenTime());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_legacyRunningEventHash() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.legacyRunningEventHash(),
+                toPbjPlatformState(oldState, accumulator).legacyRunningEventHash());
+
+        var newValue = randomHash();
+
+        accumulator.setLegacyRunningEventHash(newValue);
+
+        assertArrayEquals(
+                newValue.copyToByteArray(),
+                toPbjPlatformState(oldState, accumulator)
+                        .legacyRunningEventHash()
+                        .toByteArray());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_lowestJudgeGenerationBeforeBirthRoundMode() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.lowestJudgeGenerationBeforeBirthRoundMode(),
+                toPbjPlatformState(oldState, accumulator).lowestJudgeGenerationBeforeBirthRoundMode());
+
+        var newValue = nextInt();
+
+        accumulator.setLowestJudgeGenerationBeforeBirthRoundMode(newValue);
+
+        assertEquals(newValue, toPbjPlatformState(oldState, accumulator).lowestJudgeGenerationBeforeBirthRoundMode());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_firstVersionInBirthRoundMode() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.firstVersionInBirthRoundMode(),
+                toPbjPlatformState(oldState, accumulator).firstVersionInBirthRoundMode());
+
+        var newValue = randomSoftwareVersion();
+
+        accumulator.setFirstVersionInBirthRoundMode(newValue);
+
+        assertEquals(
+                newValue.getPbjSemanticVersion(),
+                toPbjPlatformState(oldState, accumulator).firstVersionInBirthRoundMode());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_lastRoundBeforeBirthRoundMode() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.lastRoundBeforeBirthRoundMode(),
+                toPbjPlatformState(oldState, accumulator).lastRoundBeforeBirthRoundMode());
+
+        var newValue = nextInt();
+
+        accumulator.setLastRoundBeforeBirthRoundMode(newValue);
+
+        assertEquals(newValue, toPbjPlatformState(oldState, accumulator).lastRoundBeforeBirthRoundMode());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_addressBook() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.addressBook(),
+                toPbjPlatformState(oldState, accumulator).addressBook());
+
+        var newValue = randomAddressBook();
+
+        accumulator.setAddressBook(newValue);
+
+        assertEquals(
+                toPbjAddressBook(newValue),
+                toPbjPlatformState(oldState, accumulator).addressBook());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_previousBook() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        // no change without update is expected
+        assertEquals(
+                oldState.previousAddressBook(),
+                toPbjPlatformState(oldState, accumulator).previousAddressBook());
+
+        var newValue = randomAddressBook();
+
+        accumulator.setPreviousAddressBook(newValue);
+
+        assertEquals(
+                toPbjAddressBook(newValue),
+                toPbjPlatformState(oldState, accumulator).previousAddressBook());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_updateAll() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        var newValue = randomPlatformState();
+
+        accumulator.setCreationSoftwareVersion(newValue.getCreationSoftwareVersion());
+        accumulator.setRoundsNonAncient(newValue.getRoundsNonAncient());
+        accumulator.setSnapshot(newValue.getSnapshot());
+        accumulator.setFreezeTime(newValue.getLastFrozenTime());
+        accumulator.setLastFrozenTime(newValue.getLastFrozenTime());
+        accumulator.setLegacyRunningEventHash(newValue.getLegacyRunningEventHash());
+        accumulator.setLowestJudgeGenerationBeforeBirthRoundMode(
+                newValue.getLowestJudgeGenerationBeforeBirthRoundMode());
+        accumulator.setFirstVersionInBirthRoundMode(newValue.getFirstVersionInBirthRoundMode());
+        accumulator.setLastRoundBeforeBirthRoundMode(newValue.getLastRoundBeforeBirthRoundMode());
+        accumulator.setAddressBook(newValue.getAddressBook());
+
+        var pbjState = toPbjPlatformState(oldState, accumulator);
+
+        assertEquals(newValue.getCreationSoftwareVersion().getPbjSemanticVersion(), pbjState.creationSoftwareVersion());
+        assertEquals(newValue.getRoundsNonAncient(), pbjState.roundsNonAncient());
+        assertEquals(toPbjConsensusSnapshot(newValue.getSnapshot()), pbjState.consensusSnapshot());
+        assertEquals(toPbjTimestamp(newValue.getLastFrozenTime()), pbjState.freezeTime());
+        assertEquals(toPbjTimestamp(newValue.getLastFrozenTime()), pbjState.lastFrozenTime());
+        assertArrayEquals(
+                newValue.getLegacyRunningEventHash().getBytes().toByteArray(),
+                pbjState.legacyRunningEventHash().toByteArray());
+        assertEquals(
+                newValue.getLowestJudgeGenerationBeforeBirthRoundMode(),
+                pbjState.lowestJudgeGenerationBeforeBirthRoundMode());
+        assertEquals(
+                newValue.getFirstVersionInBirthRoundMode().getPbjSemanticVersion(),
+                pbjState.firstVersionInBirthRoundMode());
+        assertEquals(newValue.getLastRoundBeforeBirthRoundMode(), pbjState.lastRoundBeforeBirthRoundMode());
+        assertEquals(toPbjAddressBook(newValue.getAddressBook()), pbjState.addressBook());
+    }
+
+    private com.hedera.hapi.platform.state.PlatformState randomPbjPlatformState() {
+        return toPbjPlatformState(randomPlatformState());
     }
 
     private com.hedera.hapi.platform.state.ConsensusSnapshot randomPbjSnapshot() {

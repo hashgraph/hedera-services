@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.service.impl;
+package com.swirlds.platform.state.service;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,7 +50,7 @@ import java.util.Optional;
 /**
  * This class handles conversion from PBJ objects related to the platform state to the corresponding Java objects, and vice versa.
  */
-public class PbjConverter {
+public final class PbjConverter {
     /**
      * Converts an instance of {@link PlatformStateAccessor} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
      * @param accessor the source of the data
@@ -76,13 +77,85 @@ public class PbjConverter {
                 toPbjAddressBook(accessor.getAddressBook()),
                 toPbjAddressBook(accessor.getPreviousAddressBook()));
     }
+
+    /**
+     * Converts an instance of {@link PlatformStateAccessor} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
+     * @param accumulator the source of the data
+     * @return the platform state as PBJ object
+     */
+    @NonNull
+    public static com.hedera.hapi.platform.state.PlatformState toPbjPlatformState(
+            @NonNull com.hedera.hapi.platform.state.PlatformState previousState,
+            @NonNull final PlatformStateValueAccumulator accumulator) {
+        requireNonNull(accumulator);
+        var builder = previousState.copyBuilder();
+
+        if (accumulator.isCreationSoftwareVersionUpdated()) {
+            builder.creationSoftwareVersion(
+                    accumulator.getCreationSoftwareVersion().getPbjSemanticVersion());
+        }
+
+        if (accumulator.isRoundsNonAncientUpdated()) {
+            builder.roundsNonAncient(accumulator.getRoundsNonAncient());
+        }
+
+        if (accumulator.isSnapshotUpdated()) {
+            builder.consensusSnapshot(toPbjConsensusSnapshot(accumulator.getSnapshot()));
+        }
+
+        if (accumulator.isFreezeTimeUpdated()) {
+            builder.freezeTime(toPbjTimestamp(accumulator.getFreezeTime()));
+        }
+
+        if (accumulator.isLastFrozenTimeUpdated()) {
+            builder.lastFrozenTime(toPbjTimestamp(accumulator.getLastFrozenTime()));
+        }
+
+        if (accumulator.isLegacyRunningEventHashUpdated()) {
+            if (accumulator.getLegacyRunningEventHash() == null) {
+                builder.legacyRunningEventHash(Bytes.EMPTY);
+            } else {
+                builder.legacyRunningEventHash(
+                        accumulator.getLegacyRunningEventHash().getBytes());
+            }
+        }
+
+        if (accumulator.isLowestJudgeGenerationBeforeBirthRoundModeUpdated()) {
+            builder.lowestJudgeGenerationBeforeBirthRoundMode(
+                    accumulator.getLowestJudgeGenerationBeforeBirthRoundMode());
+        }
+
+        if (accumulator.isLastRoundBeforeBirthRoundModeUpdated()) {
+            builder.lastRoundBeforeBirthRoundMode(accumulator.getLastRoundBeforeBirthRoundMode());
+        }
+
+        if (accumulator.isFirstVersionInBirthRoundModeUpdated()) {
+            if (accumulator.getFirstVersionInBirthRoundMode() == null) {
+                builder.firstVersionInBirthRoundMode((SemanticVersion) null);
+            } else {
+                builder.firstVersionInBirthRoundMode(
+                        accumulator.getFirstVersionInBirthRoundMode().getPbjSemanticVersion());
+            }
+        }
+
+        if (accumulator.isAddressBookUpdated()) {
+            builder.addressBook(toPbjAddressBook(accumulator.getAddressBook()));
+        }
+
+        if (accumulator.isPreviousAddressBookUpdated()) {
+            builder.previousAddressBook(toPbjAddressBook(accumulator.getPreviousAddressBook()));
+        }
+
+        return builder.build();
+    }
+
     /**
      * Converts an instance of {@link AddressBook} to the corresponding {@link com.hedera.hapi.platform.state.AddressBook}.
      * @param addressBook source of the data
      * @return the address book as PBJ object
      */
-    public static @Nullable com.hedera.hapi.platform.state.AddressBook toPbjAddressBook(
-            @Nullable AddressBook addressBook) {
+    @Nullable
+    public static com.hedera.hapi.platform.state.AddressBook toPbjAddressBook(@Nullable final AddressBook addressBook) {
         if (addressBook == null) {
             return null;
         }
@@ -108,7 +181,7 @@ public class PbjConverter {
      * @return the address book a domain object
      */
     public static @Nullable AddressBook fromPbjAddressBook(
-            @Nullable com.hedera.hapi.platform.state.AddressBook addressBook) {
+            @Nullable final com.hedera.hapi.platform.state.AddressBook addressBook) {
         if (addressBook == null) {
             return null;
         }
@@ -124,7 +197,7 @@ public class PbjConverter {
 
     @Nullable
     public static com.hedera.hapi.platform.state.ConsensusSnapshot toPbjConsensusSnapshot(
-            @Nullable ConsensusSnapshot consensusSnapshot) {
+            @Nullable final ConsensusSnapshot consensusSnapshot) {
         if (consensusSnapshot == null) {
             return null;
         }
@@ -140,7 +213,7 @@ public class PbjConverter {
 
     @Nullable
     public static ConsensusSnapshot fromPbjConsensusSnapshot(
-            @Nullable com.hedera.hapi.platform.state.ConsensusSnapshot consensusSnapshot) {
+            @Nullable final com.hedera.hapi.platform.state.ConsensusSnapshot consensusSnapshot) {
         if (consensusSnapshot == null) {
             return null;
         }
@@ -172,6 +245,7 @@ public class PbjConverter {
         return timestamp == null ? null : Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
 
+    @NonNull
     private static com.hedera.hapi.platform.state.Address toPbjAddress(@NonNull final Address address) {
         final var builder = com.hedera.hapi.platform.state.Address.newBuilder()
                 .id(com.hedera.hapi.platform.state.NodeId.newBuilder()
@@ -209,6 +283,7 @@ public class PbjConverter {
         return builder.build();
     }
 
+    @NonNull
     private static Address fromPbjAddress(@NonNull final com.hedera.hapi.platform.state.Address address) {
         requireNonNull(address.id());
         return new Address(
@@ -225,6 +300,7 @@ public class PbjConverter {
                 address.memo());
     }
 
+    @NonNull
     private static MinimumJudgeInfo fromPbjMinimumJudgeInfo(
             @NonNull final com.hedera.hapi.platform.state.MinimumJudgeInfo v) {
         return new MinimumJudgeInfo(v.round(), v.minimumJudgeAncientThreshold());
@@ -236,6 +312,7 @@ public class PbjConverter {
         return new com.hedera.hapi.platform.state.MinimumJudgeInfo(v.round(), v.minimumJudgeAncientThreshold());
     }
 
+    @NonNull
     private static SerializableX509Certificate fromPbjX509Certificate(@NonNull final Bytes bytes) {
         requireNonNull(bytes);
         final byte[] encoded = bytes.toByteArray();
@@ -245,5 +322,9 @@ public class PbjConverter {
         } catch (final CertificateException e) {
             throw new UncheckedIOException("Unable to deserialize x509 certificate", new IOException(e));
         }
+    }
+
+    private PbjConverter() {
+        // empty
     }
 }

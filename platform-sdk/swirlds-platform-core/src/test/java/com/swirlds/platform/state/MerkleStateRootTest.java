@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;

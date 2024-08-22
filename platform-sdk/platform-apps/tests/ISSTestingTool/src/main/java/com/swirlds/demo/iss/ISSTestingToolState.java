@@ -148,7 +148,9 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      */
     @Override
     public void init(
-            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         throwIfImmutable();
 

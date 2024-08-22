@@ -16,10 +16,9 @@
 
 package com.swirlds.platform.state.service;
 
-import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjAddressBook;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjConsensusSnapshot;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjTimestamp;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjAddressBook;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjConsensusSnapshot;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjTimestamp;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 

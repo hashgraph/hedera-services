@@ -538,7 +538,7 @@ public final class PlatformBuilder {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            PlatformStateAccessor platformState = state.getPlatformState();
+            final PlatformStateAccessor platformState = state.getPlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
 

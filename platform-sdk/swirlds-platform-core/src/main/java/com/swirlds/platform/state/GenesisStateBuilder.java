@@ -53,7 +53,7 @@ public final class GenesisStateBuilder {
 
             final long genesisFreezeTime = basicConfig.genesisFreezeTime();
             if (genesisFreezeTime > 0) {
-                platformState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+                v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
             }
         });
     }
