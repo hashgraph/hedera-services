@@ -39,9 +39,12 @@ testModuleInfo {
 }
 
 timingSensitiveModuleInfo {
+    // replace with 'requires("com.swirlds.demo.platform")' after
+    // https://github.com/hashgraph/hedera-services/pull/14245
+    dependencies { timingSensitiveImplementation(project(path)) }
+
     requires("com.swirlds.common")
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.demo.platform")
     requires("com.swirlds.fcqueue")
     requires("com.swirlds.merkle")
     requires("com.swirlds.merkle.test.fixtures")
