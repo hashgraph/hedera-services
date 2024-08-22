@@ -240,7 +240,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @HapiTest
     @DisplayName("not enough Hbar to claim and than enough")
-    final Stream<DynamicTest> notEnoughHbarToCalimAndThanEnough() {
+    final Stream<DynamicTest> notEnoughHbarToClaimAndThanEnough() {
         final String ALICE = "ALICE";
         final String BOB = "BOB";
         return hapiTest(
