@@ -459,8 +459,7 @@ public class Shadowgraph implements Clearable {
      * @throws IllegalArgumentException if {@code otherParentsDescriptors} contains more than one event descriptor
      */
     @Nullable
-    public synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> otherParentsDescriptors) {
-        Objects.requireNonNull(otherParentsDescriptors, "otherParentsDescriptors is null");
+    private synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> otherParentsDescriptors) {
         if (otherParentsDescriptors.isEmpty()) {
             return null;
         }
