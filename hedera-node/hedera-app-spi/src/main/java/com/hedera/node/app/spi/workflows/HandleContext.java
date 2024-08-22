@@ -313,7 +313,7 @@ public interface HandleContext {
      * @param recordBuilderClass the record builder class of the transaction
      * @param verifier           if non-null, a {@link Predicate} that will be used to validate primitive keys
      * @param syntheticPayer     the payer of the transaction
-     * @param throttleStrategy
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the transaction
      * @throws NullPointerException     if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
@@ -327,7 +327,7 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer,
-            final ConsensusThrottling throttleStrategy);
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Dispatches a child transaction.
@@ -352,7 +352,7 @@ public interface HandleContext {
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
      * @param syntheticPayerId   the payer of the child transaction
      * @param childCategory      the category of the child transaction
-     * @param throttleStrategy
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -366,7 +366,7 @@ public interface HandleContext {
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull TransactionCategory childCategory,
-            @NonNull final ConsensusThrottling throttleStrategy);
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Dispatches a child transaction that already has a transaction ID due to
@@ -412,7 +412,7 @@ public interface HandleContext {
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
      * @param syntheticPayerId   the payer of the child transaction
      * @param customizer         a final transformation to apply before externalizing if the returned value is non-null
-     * @param throttleStrategy   the strategy to use for throttling
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -426,7 +426,7 @@ public interface HandleContext {
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
             @NonNull ExternalizedRecordCustomizer customizer,
-            @NonNull ConsensusThrottling throttleStrategy);
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Returns the current {@link SavepointStack}.
@@ -537,6 +537,10 @@ public interface HandleContext {
     @NonNull
     Map<AccountID, Long> dispatchPaidRewards();
 
+    /**
+     * Whether a dispatch should be throttled at consensus. True for everything except certain dispatches
+     * internal to the EVM which are only constrained by gas.
+     */
     enum ConsensusThrottling {
         ON,
         OFF

@@ -383,7 +383,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             final AccountID childSyntheticPayer,
-            @NonNull final ConsensusThrottling throttleStrategy) {
+            @NonNull final ConsensusThrottling consensusThrottling) {
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,
@@ -393,7 +393,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.REMOVABLE,
                 false,
-                throttleStrategy);
+                consensusThrottling);
     }
 
     @NonNull
@@ -404,7 +404,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final ConsensusThrottling throttleStrategy) {
+            @NonNull final ConsensusThrottling consensusThrottling) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
@@ -419,7 +419,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childCategory,
                 StreamBuilder.ReversingBehavior.REVERSIBLE,
                 false,
-                throttleStrategy);
+                consensusThrottling);
     }
 
     @NonNull
