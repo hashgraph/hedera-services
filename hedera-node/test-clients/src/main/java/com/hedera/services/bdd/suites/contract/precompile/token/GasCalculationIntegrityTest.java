@@ -27,17 +27,22 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -93,6 +98,65 @@ public class GasCalculationIntegrityTest {
                         .gas(43304L)
                         .andAssert(txn -> txn.via("test")),
                 getTxnRecord("test").logged()));
+    }
+
+    @Nested
+    @OrderedInIsolation
+    @DisplayName("when calling view functions")
+    class ViewFunctions {
+
+        @Contract(contract = "TokenInfoContract", creationGas = 1_000_000L)
+        static SpecContract tokenInfoContract;
+
+        @Contract(contract = "ERC20Contract", creationGas = 1_000_000L)
+        static SpecContract erc20Contract;
+
+        @FungibleToken
+        static SpecFungibleToken token;
+
+        @HapiTest
+        @Order(1)
+        @DisplayName("for token info call")
+        public Stream<DynamicTest> checkTokenGetInfoGas() {
+            return testCases.flatMap(ratesProvider -> hapiTest(
+                    tokenInfoContract
+                            .call("getInformationForToken", token)
+                            .gas(78_805L).via("tokenInfo"),
+                    getTxnRecord("tokenInfo").logged()));
+        }
+
+        @HapiTest
+        @Order(2)
+        @DisplayName("for token custom fees call")
+        public Stream<DynamicTest> checkTokenGetCustomFeesGas() {
+            return testCases.flatMap(ratesProvider -> hapiTest(
+                    tokenInfoContract
+                            .call("getCustomFeesForToken", token)
+                            .gas(31_421L).via("customFees"),
+                    getTxnRecord("customFees").logged()));
+        }
+
+        @HapiTest
+        @Order(3)
+        @DisplayName("for token name call")
+        public Stream<DynamicTest> checkErc20Name() {
+            return testCases.flatMap(ratesProvider -> hapiTest(
+                    erc20Contract
+                            .call("name", token)
+                            .gas(30_207L).via("name"),
+                    getTxnRecord("name").logged()));
+        }
+
+        @HapiTest
+        @Order(4)
+        @DisplayName("for token balance of call")
+        public Stream<DynamicTest> checkErc20BalanceOf() {
+            return testCases.flatMap(ratesProvider -> hapiTest(
+                    erc20Contract
+                            .call("balanceOf", token, alice)
+                            .gas(30_074L).via("balance"),
+                    getTxnRecord("balance").logged()));
+        }
     }
 
     private HapiFileUpdate updateFile(final int hbarEquiv, final int centEquiv) {
