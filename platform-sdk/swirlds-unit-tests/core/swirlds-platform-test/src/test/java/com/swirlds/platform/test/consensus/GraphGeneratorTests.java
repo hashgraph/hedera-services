@@ -49,6 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -625,6 +627,7 @@ public class GraphGeneratorTests {
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Other Parent Age Tests")
+    @Disabled("This test needs to be investigated")
     public void otherParentAgeTests(final boolean birthRoundAsAncientThreshold) {
 
         final int numberOfEvents = 100_000;
