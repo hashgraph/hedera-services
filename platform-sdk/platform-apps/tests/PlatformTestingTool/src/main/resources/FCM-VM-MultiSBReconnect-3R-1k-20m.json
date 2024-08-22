@@ -4,20 +4,10 @@
 	"insertSeq": true,
 	"variedSize": false,
 	"_comment": "this test requires 10 nodes",
-	"type": "TYPE_RANDOM_BYTES",
+	"type":  "TYPE_FCM_VIRTUAL_MIX",
+	"ratioOfFCMTransaction": 0.2,
 	"payloadByteSize": 100,
-	"maxByteSize": 100,
-	"distribution": {
-	  "sizeDistribution": [
-		100
-	  ],
-	  "ratioDistribution": [
-		100
-	  ],
-	  "typeDistribution": [
-		"TYPE_FCM_TEST"
-	  ]
-	}
+	"maxByteSize": 100
   },
   "submitConfig": {
 	"_comment0": [
@@ -31,12 +21,42 @@
 	  "5,  C2C_LATENCY"
 	],
 	"systemMetric": "TRANS_PER_SECOND_PER_NODE",
-	"metricThreshold": 1000.0,
+	"metricThreshold": 200.0,
 	"_comment1": "pause after submit defined amount of transactions",
 	"pauseAfter": 0,
 	"pauseSeconds": 30,
 	"allowRunSubmit": true,
 	"C2CDelayThreshold": 6
+  },
+  "virtualMerkleConfig": {
+	"samplingProbability": 1,
+	"assorted": false,
+	"sequential": [
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 10000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 5000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 100000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+		"amount": 10000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+		"amount": 5000
+	  },
+	  {
+		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+		"amount": 100000
+	  }
+	]
   },
   "fcmConfig": {
 	"sequentialTest": true,
@@ -44,22 +64,22 @@
 	"sequentials": [
 	  {
 		"sequentialType": "TYPE_FCM_CREATE",
-		"sequentialAmount": 100000,
+		"sequentialAmount": 20000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_UPDATE",
-		"sequentialAmount": 400000,
+		"sequentialAmount": 100000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_TRANSFER",
-		"sequentialAmount": 1800000,
+		"sequentialAmount": 300000,
 		"sequentialSize": 100
 	  },
 	  {
 		"sequentialType": "TYPE_FCM_DELETE",
-		"sequentialAmount": 10000,
+		"sequentialAmount": 20000,
 		"sequentialSize": 100
 	  }
 	]
