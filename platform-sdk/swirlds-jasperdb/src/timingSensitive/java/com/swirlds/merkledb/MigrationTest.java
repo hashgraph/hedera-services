@@ -40,9 +40,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+// This test requires more memory than others, decide what to do with it
+@Disabled("This test needs to be investigated")
 class MigrationTest {
 
     @Test

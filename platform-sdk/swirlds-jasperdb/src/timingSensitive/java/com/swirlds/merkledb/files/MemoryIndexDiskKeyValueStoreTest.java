@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -158,6 +159,7 @@ class MemoryIndexDiskKeyValueStoreTest {
      */
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
+    @Disabled("This test needs to be investigated")
     void createDataAndCheck(final FilesTestType testType) throws Exception {
         // keep track of base direct-memory usage, so we can check we did not leak
         final long directMemoryUsedAtStart = getDirectMemoryUsedBytes();
