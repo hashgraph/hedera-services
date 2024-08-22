@@ -101,7 +101,7 @@ class NetworkUtilizationManagerImplTest {
         subject.trackTxn(transactionInfo, consensusNow, state);
 
         // then
-        verify(throttleAccumulator).shouldThrottle(transactionInfo, consensusNow, state);
+        verify(throttleAccumulator).checkAndEnforceThrottle(transactionInfo, consensusNow, state);
         verify(congestionMultipliers).updateMultiplier(consensusNow);
     }
 
@@ -121,7 +121,7 @@ class NetworkUtilizationManagerImplTest {
         subject.trackFeePayments(consensusNow, state);
 
         // then
-        verify(throttleAccumulator).shouldThrottle(expectedTxnToBeChargedFor, consensusNow, state);
+        verify(throttleAccumulator).checkAndEnforceThrottle(expectedTxnToBeChargedFor, consensusNow, state);
         verify(congestionMultipliers).updateMultiplier(consensusNow);
     }
 }
