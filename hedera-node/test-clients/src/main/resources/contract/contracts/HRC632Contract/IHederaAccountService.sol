@@ -35,4 +35,10 @@ interface IHederaAccountService {
         address account,
         bytes memory messageHash,
         bytes memory signature) external returns (bool response);
+
+    /// Returns the EVM address alias for the given Hedera account.
+    /// @param account The Hedera account to get the EVM address alias for
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return alias The EVM address alias for the given Hedera account.
+    function getEvmAddressAlias(address account) external returns (int64 responseCode, address alias);
 }

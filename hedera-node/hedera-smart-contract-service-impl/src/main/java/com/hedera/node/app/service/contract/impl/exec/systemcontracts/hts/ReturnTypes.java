@@ -64,6 +64,7 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
     public static final String RESPONSE_CODE_INT256 = "(int64,int256)";
+    public static final String RESPONSE_CODE_ADDRESS = "(int64,address)";
 
     public static final String UINT256 = "(uint256)";
     public static final String RESPONSE_CODE_EXPIRY = "(int32,"

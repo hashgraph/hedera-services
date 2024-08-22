@@ -46,6 +46,17 @@ abstract contract HederaAccountService {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaAccountService.isAuthorizedRaw.selector,
                 account, messageHash, signature));
-        response = abi.decode(result, (bool));
+        response = success ? abi.decode(result, (bool)) : false;
+    }
+
+    /// Returns the EVM address alias for the given Hedera account.
+    /// @param account The Hedera account to get the EVM address alias for
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return alias The EVM address alias for the given Hedera account.
+    function getEvmAddressAlias(address account) internal returns (int64 responseCode, address alias) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaAccountService.getEvmAddressAlias.selector,
+                account));
+        return success ? abi.decode(result, (address)) : address(0);
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevmaddressalias.EvmAddressAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawTranslator;
@@ -63,6 +64,14 @@ public interface HasTranslatorsModule {
     @IntoSet
     @Named("HasTranslators")
     static CallTranslator provideIsAuthorizedRawTranslator(@NonNull final IsAuthorizedRawTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HasTranslators")
+    static CallTranslator provideEvmAddressAliasTranslator(@NonNull final EvmAddressAliasTranslator translator) {
         return translator;
     }
 }
