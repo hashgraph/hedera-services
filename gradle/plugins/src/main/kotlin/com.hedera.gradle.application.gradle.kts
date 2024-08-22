@@ -19,12 +19,6 @@ plugins {
     id("com.hedera.gradle.java")
 }
 
-group = "com.swirlds"
-
-// Module Names of 'demo' projects do not always fit the expected pattern.
-// Which is ok for the independent 'demo' projects that only consist of one project.
-javaModuleDependencies.moduleNameCheck.set(false)
-
 // Find the central SDK deployment dir by searching up the folder hierarchy
 fun sdkDir(dir: Directory): Directory =
     if (dir.dir("sdk").asFile.exists()) dir.dir("sdk") else sdkDir(dir.dir(".."))
