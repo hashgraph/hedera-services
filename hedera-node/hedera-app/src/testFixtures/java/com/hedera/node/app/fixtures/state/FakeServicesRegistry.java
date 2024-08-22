@@ -71,6 +71,7 @@ public class FakeServicesRegistry implements ServicesRegistry {
         return Collections.unmodifiableSortedSet(entries);
     }
 
+    @NonNull
     @Override
     public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
         requireNonNull(serviceNames);
