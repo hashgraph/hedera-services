@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -44,14 +45,20 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAird
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingNFTAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
@@ -62,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -71,6 +79,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -736,6 +745,26 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .hasPrecheck(NOT_SUPPORTED));
     }
 
+    @HapiTest
+    @DisplayName("a hollow account receiver that sigs it with no HBAR fail")
+    final Stream<DynamicTest> hollowNoHbarFail() {
+        final var hollowAcnt = "hollowAcnt";
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                newKeyNamed(hollowAcnt).shape(SECP_256K1_SHAPE),
+                createHollowAccountByFunToken(hollowAcnt, FUNGIBLE_TOKEN_1, OWNER),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN_1).between(OWNER, hollowAcnt))
+                        .payingWith(OWNER),
+                getAliasedAccountInfo(hollowAcnt)
+                        .has(accountWith().hasEmptyKey().noAlias()),
+                getAccountBalance(hollowAcnt).hasTinyBars(0L),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, hollowAcnt, FUNGIBLE_TOKEN_1))
+                        .payingWith(hollowAcnt)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAcnt))
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+    }
+
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {
         return tokenCreate(tokenName)
                 .treasury(treasury)
@@ -746,5 +775,23 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     private HapiTokenAirdrop airdropFT(String tokenName, String sender, String receiver, int amountToMove) {
         return tokenAirdrop(moving(amountToMove, tokenName).between(sender, receiver))
                 .payingWith(sender);
+    }
+
+    private SpecOperation createHollowAccountByFunToken(String hollowAcnt, String token, String owner) {
+        return withOpContext((spec, opLog) -> {
+            final var ecdsaKey =
+                    spec.registry().getKey(hollowAcnt).getECDSASecp256K1().toByteArray();
+            final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+            final var op1 =
+                    cryptoTransfer(moving(1, token).between(owner, evmAddress)).hasKnownStatus(SUCCESS);
+            final var op2 = getAliasedAccountInfo(evmAddress)
+                    .has(accountWith()
+                            .hasEmptyKey()
+                            .expectedBalanceWithChargedUsd(0L, 0, 0)
+                            .autoRenew(THREE_MONTHS_IN_SECONDS)
+                            .memo(LAZY_MEMO));
+            allRunFor(spec, op1, op2);
+            updateSpecFor(spec, hollowAcnt);
+        });
     }
 }
