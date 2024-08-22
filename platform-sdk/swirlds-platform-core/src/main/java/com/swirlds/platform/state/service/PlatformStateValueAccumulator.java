@@ -478,7 +478,7 @@ class PlatformStateValueAccumulator implements PlatformStateAccessor {
     }
 
     @Override
-    public void bulkUpdate(Consumer<PlatformStateAccessor> updater) {
+    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
         throw new UnsupportedOperationException("This implementation doesn't support bulkUpdate operation");
     }
 }

@@ -560,7 +560,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, Plat
      * {@inheritDoc}
      */
     @Override
-    public void bulkUpdate(Consumer<PlatformStateAccessor> updater) {
+    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
         updater.accept(this);
     }
 }

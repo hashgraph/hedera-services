@@ -246,5 +246,5 @@ public interface PlatformStateAccessor {
      * This is a convenience method to update multiple fields in the platform state in a single operation.
      * @param updater a consumer that updates the platform state
      */
-    void bulkUpdate(Consumer<PlatformStateAccessor> updater);
+    void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater);
 }
