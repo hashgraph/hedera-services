@@ -41,6 +41,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -211,7 +212,7 @@ public record UserTxn(
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
+        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
@@ -257,7 +258,8 @@ public record UserTxn(
                 USER,
                 tokenContextImpl,
                 platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     /**

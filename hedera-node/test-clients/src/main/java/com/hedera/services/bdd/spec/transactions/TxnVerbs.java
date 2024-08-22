@@ -136,11 +136,13 @@ public class TxnVerbs {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiCryptoTransfer sortedCryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(true, providers);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiCryptoTransfer cryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(providers);
     }
@@ -171,12 +173,14 @@ public class TxnVerbs {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiTokenCancelAirdrop tokenCancelAirdrop(
             final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
         return new HapiTokenCancelAirdrop(pendingAirdropIds);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiTokenClaimAirdrop tokenClaimAirdrop(Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
         return new HapiTokenClaimAirdrop(pendingAirdropIds);
     }
@@ -334,11 +338,13 @@ public class TxnVerbs {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiTokenReject tokenReject(String account, Function<HapiSpec, TokenReference>... referencesSources) {
         return new HapiTokenReject(account, referencesSources);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static HapiTokenReject tokenReject(Function<HapiSpec, TokenReference>... referencesSources) {
         return new HapiTokenReject(referencesSources);
     }
