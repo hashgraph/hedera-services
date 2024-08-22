@@ -684,6 +684,22 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("with max long token balance")
+    final Stream<DynamicTest> maxLongTokenBalance() {
+        var receiver = "receiverWithMaxLongTokenBalance";
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(receiver).balance(ONE_HBAR).maxAutomaticTokenAssociations(0),
+                tokenCreate(FUNGIBLE_TOKEN).treasury(OWNER).initialSupply(Long.MAX_VALUE),
+                tokenAirdrop(moving(Long.MAX_VALUE, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                        .payingWith(OWNER),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
+                        .payingWith(receiver)
+                        .via("maxAmountClaimTxn"),
+                getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
+    }
+
+    @HapiTest
     @DisplayName("duplicate entries of Non Fungible Tokens should fail")
     final Stream<DynamicTest> duplicatedNFTFail() {
         return hapiTest(flattened(
