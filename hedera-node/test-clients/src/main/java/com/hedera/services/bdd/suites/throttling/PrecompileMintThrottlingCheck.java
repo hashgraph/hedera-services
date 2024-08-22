@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.regression;
+package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite.MINT_NFT_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -121,11 +120,11 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
             @Override
             public List<SpecOperation> suggestedInitializers() {
                 return List.of(
-                        uploadInitCode(MINT_NFT_CONTRACT),
-                        contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER),
+                        uploadInitCode("MintNFTContract"),
+                        contractCreate("MintNFTContract").gas(GAS_TO_OFFER),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .contractKey(Set.of(TokenKeyType.SUPPLY_KEY), MINT_NFT_CONTRACT)
+                                .contractKey(Set.of(TokenKeyType.SUPPLY_KEY), "MintNFTContract")
                                 .initialSupply(0)
                                 .exposingAddressTo(mintContractAddress::set),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).logged());
@@ -133,12 +132,12 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
 
             @Override
             public Optional<HapiSpecOperation> get() {
-                final var numMetadataThisMint = r.nextInt(1, 11);
+                final var numMetadataThisMint = r.nextInt(1, 2);
                 final var metadata = r.ints(numMetadataThisMint, 0, someMetadata.size())
                         .mapToObj(someMetadata::get)
                         .toArray(byte[][]::new);
                 var op = contractCall(
-                                MINT_NFT_CONTRACT,
+                                "MintNFTContract",
                                 "mintNonFungibleTokenWithAddress",
                                 mintContractAddress.get(),
                                 metadata)

@@ -63,7 +63,7 @@ public class SynchronizedThrottleAccumulator {
      */
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, State state) {
         setDecisionTime(instantSource.instant());
-        return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
+        return frontendThrottle.checkAndEnforceThrottle(txnInfo, lastDecisionTime, state);
     }
 
     /**
@@ -82,7 +82,7 @@ public class SynchronizedThrottleAccumulator {
         requireNonNull(query);
         requireNonNull(queryFunction);
         setDecisionTime(instantSource.instant());
-        return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
+        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {
