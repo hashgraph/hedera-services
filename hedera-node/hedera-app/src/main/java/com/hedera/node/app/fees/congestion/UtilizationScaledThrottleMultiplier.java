@@ -205,7 +205,7 @@ public class UtilizationScaledThrottleMultiplier {
     private int roundedAirdropPercentUtil(@NonNull final ReadableStoreFactory storeFactory) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumAirdrops =
-                configuration.getConfigData(TokensConfig.class).maxPendingAllowedAirdrops();
+                configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
 
         final var airdropStore = storeFactory.getStore(ReadableAirdropStore.class);
         final var numPendingAirdrops = airdropStore.sizeOfState();

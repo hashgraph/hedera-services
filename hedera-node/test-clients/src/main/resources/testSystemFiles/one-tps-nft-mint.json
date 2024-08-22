@@ -15,9 +15,9 @@
       "burstPeriod": 1,
       "throttleGroups": [
         {
-          "opsPerSec": 1000,
+          "opsPerSec": 100000,
           "operations": [
-            "TransactionGetReceipt", "FileGetInfo", "FileGetContents"
+            "TransactionGetReceipt", "FileGetInfo", "FileGetContents", "TokenGetInfo"
           ]
         }
       ]

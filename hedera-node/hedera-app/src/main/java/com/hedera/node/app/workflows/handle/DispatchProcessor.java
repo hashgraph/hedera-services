@@ -29,7 +29,6 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -46,6 +45,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
+import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -99,10 +99,7 @@ public class DispatchProcessor {
      * This method is responsible for charging the fees and tries to execute the
      * business logic for the given dispatch, guaranteeing that the changes committed
      * to its stack are exactly reflected in its recordBuilder. At the end, it will
-     * finalize the record and commit the stack. The WorkDone returned will be used
-     * to track the network utilization. It will be {@link DispatchUsageManager.WorkDone#FEES_ONLY} if
-     * the transaction has node errors, otherwise it will be
-     * {@link DispatchUsageManager.WorkDone#USER_TRANSACTION}.
+     * finalize the record and commit the stack.
      *
      * @param dispatch the dispatch to be processed
      */
