@@ -104,7 +104,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.NESTED_LAZY_CREATE_VIA_CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
@@ -2770,8 +2769,7 @@ public class ContractCallSuite {
                                     .hasKnownStatus(SUCCESS),
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
                 }),
-                childRecordsCheck(
-                        TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).memo(LAZY_MEMO)));
+                childRecordsCheck(TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS)));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

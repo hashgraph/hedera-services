@@ -70,7 +70,6 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.setExpectedCreate2Address;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.setIdentifiers;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
@@ -247,7 +246,6 @@ public class AirdropsDisabledTest {
                                 .hasStandinContractKey()
                                 .maxAutoAssociations(2)
                                 .hasAlreadyUsedAutomaticAssociations(2)
-                                .memo(LAZY_MEMO)
                                 .balance(ONE_HBAR + tcValue))
                         .hasToken(relationshipWith(A_TOKEN).balance(500))
                         .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN).balance(1))
@@ -369,7 +367,6 @@ public class AirdropsDisabledTest {
                                         .hasStandinContractKey()
                                         .maxAutoAssociations(fungibleTransfersSize)
                                         .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
-                                        .memo(LAZY_MEMO)
                                         .balance(tcValue))
                                 .logged()),
                         sourcing(
@@ -568,7 +565,6 @@ public class AirdropsDisabledTest {
                                 .hasStandinContractKey()
                                 .maxAutoAssociations(2)
                                 .hasAlreadyUsedAutomaticAssociations(2)
-                                .memo(LAZY_MEMO)
                                 .balance(ONE_HBAR + tcValue))
                         .hasToken(relationshipWith(A_TOKEN).balance(500))
                         .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN).balance(1))

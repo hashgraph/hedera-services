@@ -104,7 +104,6 @@ public class HollowAccountFinalizationSuite {
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
     private static final String PAY_RECEIVABLE = "PayReceivable";
     private static final long INITIAL_BALANCE = 1000L;
-    private static final String LAZY_MEMO = "lazy-created account";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String PARTY = "party";
@@ -201,8 +200,7 @@ public class HollowAccountFinalizationSuite {
                                     .hasEmptyKey()
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     final HapiGetTxnRecord hapiGetTxnRecord =
                             getTxnRecord(FT_XFER).andAllChildRecords().logged();
@@ -245,7 +243,7 @@ public class HollowAccountFinalizationSuite {
 
                     final var hapiGetTxnRecord = getTxnRecord(FT_XFER)
                             .hasNonStakingChildRecordCount(1)
-                            .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO));
+                            .hasChildRecords(recordWith().status(SUCCESS));
 
                     allRunFor(
                             spec,
@@ -450,8 +448,7 @@ public class HollowAccountFinalizationSuite {
                                     .hasEmptyKey()
                                     .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
                     allRunFor(spec, op, op2);
                 }))
                 .then(withOpContext((spec, opLog) -> {

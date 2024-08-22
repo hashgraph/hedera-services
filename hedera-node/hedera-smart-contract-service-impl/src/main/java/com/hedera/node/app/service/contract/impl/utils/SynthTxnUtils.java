@@ -41,7 +41,6 @@ public class SynthTxnUtils {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final Duration DEFAULT_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS).build();
-    public static final String LAZY_CREATION_MEMO = "lazy-created account";
 
     private SynthTxnUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -159,7 +158,6 @@ public class SynthTxnUtils {
                 .initialBalance(0L)
                 .alias(evmAddress)
                 .key(IMMUTABILITY_SENTINEL_KEY)
-                .memo(LAZY_CREATION_MEMO)
                 .autoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
                 .build();
     }

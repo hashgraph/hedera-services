@@ -82,7 +82,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
     public static final String TRUE = "true";
     public static final String FALSE = "false";
-    public static final String LAZY_MEMO = "lazy-created account";
     public static final String VALID_ALIAS = "validAlias";
     public static final String A_TOKEN = "tokenA";
     public static final String PARTY = "party";
@@ -90,7 +89,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String MULTI_KEY = "multi";
     private static final long INITIAL_BALANCE = 1000L;
-    private static final String AUTO_MEMO = "auto-created account";
     private static final String CIVILIAN = "somebody";
     private static final String SPONSOR = "autoCreateSponsor";
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
@@ -149,7 +147,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                 .receiverSigReq(false)
                                 .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
-                                .memo(AUTO_MEMO)
                                 .maxAutoAssociations(-1))
                         .logged()));
     }
@@ -205,7 +202,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                 .receiverSigReq(false)
                                 .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
-                                .memo(AUTO_MEMO)
                                 .maxAutoAssociations(0))
                         .logged()));
     }
@@ -260,8 +256,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false)
-                                    .maxAutoAssociations(-1)
-                                    .memo(LAZY_MEMO));
+                                    .maxAutoAssociations(-1));
 
                     final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
                             .adminKey(SECP_256K1_SOURCE_KEY)
@@ -303,14 +298,13 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false)
                                     .maxAutoAssociations(-1)
-                                    .newAssociationsFromSnapshot(SECP_256K1_SOURCE_KEY, Collections.EMPTY_LIST)
-                                    .memo(LAZY_MEMO));
+                                    .newAssociationsFromSnapshot(SECP_256K1_SOURCE_KEY, Collections.EMPTY_LIST));
 
                     allRunFor(spec, completedAccount);
                 }),
                 getTxnRecord(HBAR_XFER)
                         .hasChildRecordCount(1)
-                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                        .hasChildRecords(recordWith().status(SUCCESS)),
                 cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
                         .hasKnownStatus(SUCCESS)
                         .via(TRANSFER_TXN),
@@ -375,8 +369,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false)
-                                    .maxAutoAssociations(-1)
-                                    .memo(LAZY_MEMO));
+                                    .maxAutoAssociations(-1));
 
                     final HapiGetTxnRecord hapiGetTxnRecord =
                             getTxnRecord(FT_XFER).andAllChildRecords().assertingNothingAboutHashes();
@@ -406,7 +399,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     final var completed = getAccountInfo(SECP_256K1_SOURCE_KEY)
                             .hasAlreadyUsedAutomaticAssociations(1)
-                            .has(accountWith().maxAutoAssociations(-1).memo(LAZY_MEMO));
+                            .has(accountWith().maxAutoAssociations(-1));
 
                     allRunFor(spec, hollowAccountTransfer, completion, completed);
                 }));
@@ -482,8 +475,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false)
-                                    .maxAutoAssociations(-1)
-                                    .memo(LAZY_MEMO));
+                                    .maxAutoAssociations(-1));
 
                     final HapiGetTxnRecord hapiGetTxnRecord =
                             getTxnRecord(NFT_XFER).andAllChildRecords().assertingNothingAboutHashes();
@@ -513,7 +505,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     final var completed = getAccountInfo(SECP_256K1_SOURCE_KEY)
                             .hasAlreadyUsedAutomaticAssociations(1)
-                            .has(accountWith().maxAutoAssociations(-1).memo(LAZY_MEMO));
+                            .has(accountWith().maxAutoAssociations(-1));
 
                     allRunFor(spec, hollowAccountTransfer, completion, completed);
                 }));

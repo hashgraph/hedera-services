@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -108,8 +107,7 @@ public class AutoCreateUtils {
                                 .hasEmptyKey()
                                 .expectedBalanceWithChargedUsd(transferAmount, 0, 0)
                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                .receiverSigReq(false)
-                                .memo(LAZY_MEMO));
+                                .receiverSigReq(false));
 
                 // create a hollow account with the correct create1 address
                 final var create1Address =

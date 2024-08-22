@@ -134,7 +134,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanc
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.NAME_TXN;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
@@ -1017,16 +1016,12 @@ public class LeakyContractTestsSuite {
                                     .sending(depositAmount)
                                     .hasKnownStatus(SUCCESS)
                                     .gas(6_000_000),
-                            childRecordsCheck(
-                                    payTxn,
-                                    SUCCESS,
-                                    recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                            childRecordsCheck(payTxn, SUCCESS, recordWith().status(SUCCESS)),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
                                             .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)
                                             .evmAddress(evmAddress)
                                             .balance(depositAmount)));
                 }),

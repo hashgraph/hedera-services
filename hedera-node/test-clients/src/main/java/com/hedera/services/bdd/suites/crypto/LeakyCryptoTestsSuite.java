@@ -97,7 +97,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
@@ -472,8 +471,7 @@ public class LeakyCryptoTestsSuite {
                                     .noAlias()
                                     .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
                     final HapiGetTxnRecord hapiGetTxnRecord =
                             getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
                     allRunFor(spec, op, op2, hapiGetTxnRecord);
@@ -555,8 +553,7 @@ public class LeakyCryptoTestsSuite {
                                     .hasEmptyKey()
                                     .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
                     final var op9 = getAccountBalance(payer).hasTinyBars(0);
                     allRunFor(
                             spec,
@@ -754,8 +751,7 @@ public class LeakyCryptoTestsSuite {
                                         getAliasedAccountInfo(aliasAsByteString)
                                                 .has(accountWith()
                                                         .balance(FIVE_HBARS)
-                                                        .key(EMPTY_KEY)
-                                                        .memo(LAZY_MEMO))
+                                                        .key(EMPTY_KEY))
                                                 .exposingIdTo(accountId -> {
                                                     lazyAccountIdReference.set(accountId);
                                                     contractIdReference.set(
@@ -770,10 +766,7 @@ public class LeakyCryptoTestsSuite {
                                         childRecordsCheck(
                                                 lazyCreateTxn,
                                                 SUCCESS,
-                                                recordWith()
-                                                        .status(SUCCESS)
-                                                        .memo(LAZY_MEMO)
-                                                        .alias(EMPTY)),
+                                                recordWith().status(SUCCESS).alias(EMPTY)),
                                         getTxnRecord(lazyCreateTxn)
                                                 .hasPriority(recordWith()
                                                         .targetedContractId(contractIdReference.get())
@@ -1025,8 +1018,7 @@ public class LeakyCryptoTestsSuite {
                                     .noAlias()
                                     .nonce(0)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     // send eth transaction signed by the ecdsa key
                     var op3 = ethereumCallWithFunctionAbi(

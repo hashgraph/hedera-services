@@ -35,7 +35,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  */
 public class ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
-    public static final String LAZY_MEMO = "lazy-created account";
 
     private final ContractServiceComponent component;
 

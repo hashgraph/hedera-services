@@ -19,8 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -75,7 +73,6 @@ public class AutoAccountCreator {
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final TransactionBody.Builder syntheticCreation;
-        String memo;
 
         final var isAliasEVMAddress = isOfEvmAddressSize(alias);
         final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
@@ -84,18 +81,15 @@ public class AutoAccountCreator {
                 : requiredAutoAssociations;
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
-            memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
             syntheticCreation = createAccount(alias, key, 0L, autoAssociations);
-            memo = AUTO_MEMO;
         }
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateStreamBuilder.class, null, handleContext.payer());
-        childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
@@ -118,7 +112,7 @@ public class AutoAccountCreator {
     public TransactionBody.Builder createHollowAccount(
             @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
+        baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 
@@ -146,7 +140,7 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
+        baseBuilder.key(key).alias(alias).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }

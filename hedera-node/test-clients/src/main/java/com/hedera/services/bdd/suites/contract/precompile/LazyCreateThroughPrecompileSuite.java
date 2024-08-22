@@ -66,7 +66,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.nCopiesOfSender;
 import static com.hedera.services.bdd.suites.contract.Utils.nNonMirrorAddressFrom;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -291,8 +290,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)),
+                                            .receiverSigReq(false)),
                             getAliasedAccountBalance(alias)
                                     .hasTokenBalance(FUNGIBLE_TOKEN, 2)
                                     .logged(),
@@ -408,8 +406,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)),
+                                            .receiverSigReq(false)),
                             getAliasedAccountBalance(alias)
                                     .hasTokenBalance(FUNGIBLE_TOKEN, 2)
                                     .logged(),
@@ -514,8 +511,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)),
+                                            .receiverSigReq(false)),
                             getAliasedAccountBalance(alias)
                                     .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
                                     .logged(),
@@ -595,7 +591,7 @@ public class LazyCreateThroughPrecompileSuite {
                             childRecordsCheck(
                                     successfulTransferFromTxn,
                                     SUCCESS,
-                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()
@@ -607,8 +603,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)),
+                                            .receiverSigReq(false)),
                             getAliasedAccountBalance(alias)
                                     .hasTokenBalance(FUNGIBLE_TOKEN, allowance / 2)
                                     .logged());
@@ -664,7 +659,7 @@ public class LazyCreateThroughPrecompileSuite {
                             childRecordsCheck(
                                     TRANSFER_TXN,
                                     SUCCESS,
-                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()
@@ -676,8 +671,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                            .receiverSigReq(false)
-                                            .memo(LAZY_MEMO)),
+                                            .receiverSigReq(false)),
                             getAliasedAccountBalance(alias)
                                     .hasTokenBalance(NFT_TOKEN, 1)
                                     .logged());

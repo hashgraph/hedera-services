@@ -134,8 +134,6 @@ public class AutoAccountCreationSuite {
     private static final Key VALID_ED_25519_KEY =
             Key.newBuilder().setEd25519(ALIAS_CONTENT).build();
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
-    private static final String AUTO_MEMO = "auto-created account";
-    public static final String LAZY_MEMO = "lazy-created account";
     public static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
@@ -808,8 +806,7 @@ public class AutoAccountCreationSuite {
                                     .noAlias()
                                     .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     allRunFor(spec, cryptoTransferWithLazyCreate, getHollowAccountInfoAfterCreation);
 
@@ -971,8 +968,7 @@ public class AutoAccountCreationSuite {
                                         .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
                                         .alias(VALID_ALIAS)
                                         .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .memo(AUTO_MEMO)));
+                                        .receiverSigReq(false)));
     }
 
     @HapiTest
@@ -1249,8 +1245,7 @@ public class AutoAccountCreationSuite {
                                         .alias(VALID_ALIAS)
                                         .autoRenew(THREE_MONTHS_IN_SECONDS)
                                         .receiverSigReq(false)
-                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
-                                        .memo(AUTO_MEMO))
+                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0))
                                 .logged()));
     }
 
@@ -1365,8 +1360,7 @@ public class AutoAccountCreationSuite {
                                     .hasEmptyKey()
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
                             .adminKey(SECP_256K1_SOURCE_KEY)
@@ -1378,7 +1372,7 @@ public class AutoAccountCreationSuite {
                 .then(
                         getTxnRecord(HBAR_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                                .hasChildRecords(recordWith().status(SUCCESS)),
                         // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
                         cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
                                 .hasKnownStatus(SUCCESS)
@@ -1418,8 +1412,7 @@ public class AutoAccountCreationSuite {
                                     .alias(SECP_256K1_SOURCE_KEY)
                                     .key(SECP_256K1_SOURCE_KEY)
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(AUTO_MEMO));
+                                    .receiverSigReq(false));
 
                     final var op3 = childRecordsCheck(
                             transferToECDSA,
@@ -1480,8 +1473,7 @@ public class AutoAccountCreationSuite {
                                     .hasEmptyKey()
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
                             .adminKey(SECP_256K1_SOURCE_KEY)
@@ -1527,7 +1519,7 @@ public class AutoAccountCreationSuite {
                 }))
                 .then(getTxnRecord(FT_XFER)
                         .hasNonStakingChildRecordCount(1)
-                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO))
+                        .hasChildRecords(recordWith().status(SUCCESS))
                         .hasPriority(recordWith().autoAssociationCount(1)));
     }
 
@@ -1578,8 +1570,7 @@ public class AutoAccountCreationSuite {
                                     .hasEmptyKey()
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                                    .receiverSigReq(false));
 
                     final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
                             .adminKey(SECP_256K1_SOURCE_KEY)
@@ -1628,7 +1619,7 @@ public class AutoAccountCreationSuite {
                 .then(getTxnRecord(NFT_XFER)
                         .hasNonStakingChildRecordCount(1)
                         .hasPriority(recordWith().autoAssociationCount(1))
-                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
+                        .hasChildRecords(recordWith().status(SUCCESS)));
     }
 
     @HapiTest
@@ -1664,8 +1655,7 @@ public class AutoAccountCreationSuite {
                     getTxnRecord("failedTxn").logged();
                     getTxnRecord("passedTxn")
                             .hasChildRecordCount(1)
-                            .hasChildRecords(
-                                    recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
+                            .hasChildRecords(recordWith().status(SUCCESS).alias(evmAddress.get()));
                 }));
     }
 }

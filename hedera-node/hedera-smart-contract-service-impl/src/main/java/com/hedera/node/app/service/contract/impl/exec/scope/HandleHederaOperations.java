@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -73,8 +72,7 @@ public class HandleHederaOperations implements HederaOperations {
                     .initialBalance(0)
                     .maxAutomaticTokenAssociations(0)
                     .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS))
-                    .key(IMMUTABILITY_SENTINEL_KEY)
-                    .memo(LAZY_MEMO);
+                    .key(IMMUTABILITY_SENTINEL_KEY);
 
     private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;

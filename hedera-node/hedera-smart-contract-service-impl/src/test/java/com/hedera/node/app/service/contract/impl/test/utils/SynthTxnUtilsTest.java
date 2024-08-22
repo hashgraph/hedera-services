@@ -27,7 +27,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_ME
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationForExternalization;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
@@ -48,7 +47,6 @@ class SynthTxnUtilsTest {
     void createsExpectedHollowSynthBody() {
         final var expected = CryptoCreateTransactionBody.newBuilder()
                 .key(IMMUTABILITY_SENTINEL_KEY)
-                .memo(LAZY_CREATION_MEMO)
                 .alias(CANONICAL_ALIAS)
                 .autoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
                 .build();
