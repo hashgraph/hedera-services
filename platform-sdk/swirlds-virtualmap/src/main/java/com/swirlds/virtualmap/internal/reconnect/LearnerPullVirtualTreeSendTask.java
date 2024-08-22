@@ -132,6 +132,11 @@ public class LearnerPullVirtualTreeSendTask {
                     }
                     break;
                 }
+                if (path < 0) {
+                    // No path available to send yet. Slow down
+                    Thread.sleep(1);
+                    continue;
+                }
                 responsesExpected.incrementAndGet();
                 out.sendAsync(viewId, new PullVirtualTreeRequest(path, view.getNodeHash(path)));
                 view.getMapStats().incrementTransfersFromLearner();

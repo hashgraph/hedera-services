@@ -80,6 +80,7 @@ import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPushVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.NodeTraversalOrder;
+import com.swirlds.virtualmap.internal.reconnect.ParallelSyncTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectNodeRemover;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
@@ -1396,6 +1397,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            case VirtualMapReconnectMode.PULL_PARALLEL_SYNC -> new TeacherPullVirtualTreeView<>(
+                    getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
         };
     }
@@ -1495,6 +1498,19 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         reconnectState,
                         nodeRemover,
                         twoPhasePessimistic,
+                        mapStats);
+            }
+            case VirtualMapReconnectMode.PULL_PARALLEL_SYNC -> {
+                final NodeTraversalOrder parallelSync = new ParallelSyncTraversalOrder(nodeCount);
+                yield new LearnerPullVirtualTreeView<>(
+                        reconnectConfig,
+                        viewId,
+                        this,
+                        originalMap.records,
+                        originalState,
+                        reconnectState,
+                        nodeRemover,
+                        parallelSync,
                         mapStats);
             }
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());

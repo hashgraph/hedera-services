@@ -22,6 +22,7 @@ import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,6 +51,8 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     // populated on the receiving thread and queried on the sending thread
     private final Set<MutableLong> cleanNodes = ConcurrentHashMap.newKeySet();
 
+    private final AtomicInteger lastResponseRank = new AtomicInteger(0);
+
     /**
      * Constructor.
      *
@@ -74,12 +77,10 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
         }
     }
 
-    // Debug
-    final AtomicLong lastPathReceived = new AtomicLong(0);
-
     @Override
     public void nodeReceived(final long path, final boolean isClean) {
-        lastPathReceived.set(path);
+        // This is not very atomic, but it isn't critical
+        lastResponseRank.set(Math.max(Path.getRank(path), lastResponseRank.get()));
         final boolean isLeaf = path >= reconnectFirstLeafPath;
         if (isClean && !isLeaf && !hasCleanParent(path)) {
             cleanNodes.add(new MutableLong(path));
@@ -118,11 +119,11 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
             // If the next clean path is a leaf, return INVALID_PATH. It will trigger a call to
             // getNextLeafPathToSend() below
             if (result == Path.INVALID_PATH) {
-                System.err.println("DEBUG Last path received: " + lastPathReceived.get() + " "
-                        + Path.getRank(lastPathReceived.get()) + "/" + Path.getRank(reconnectLastLeafPath));
                 return Path.INVALID_PATH;
             }
         } while (!lastPath.compareAndSet(wasLastPath, result));
+        // Slow down a little bit, if requests are too far ahead of responses
+        applyRequestResponseBackpressure(result);
         return result;
     }
 
@@ -139,7 +140,20 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
             result = skipCleanPaths(path, reconnectLastLeafPath);
         }
         lastPath.set(result);
+        // Slow down a little bit, if requests are too far ahead of responses
+        applyRequestResponseBackpressure(result);
         return result;
+    }
+
+    private void applyRequestResponseBackpressure(final long path) {
+        final int rank = Path.getRank(path);
+        if (rank - lastResponseRank.get() > 1) {
+            try {
+                Thread.sleep(0, 1);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private boolean hasCleanParent(final long path) {
