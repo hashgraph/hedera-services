@@ -82,6 +82,8 @@ include(":swirlds-platform", "platform-sdk")
 
 include(":swirlds", "platform-sdk/swirlds")
 
+include(":null-handling-sample", "platform-sdk/null-handling-sample")
+
 include(":swirlds-base", "platform-sdk/swirlds-base")
 
 include(":swirlds-logging", "platform-sdk/swirlds-logging")
