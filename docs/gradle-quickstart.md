@@ -164,15 +164,6 @@ nightly, and we record the results, so we can do trend analysis over time.
 We use the [Java Micro-benchmarking Harness](https://github.com/openjdk/jmh), or JMH, for writing
 and executing our micro-benchmarks.
 
-#### End-to-End Tests
-
-- located in `src/main/eet` of the `test-clients` module
-- run with `./gradlew :test-clients:eet`
-
-End-to-end tests need a running instance. You can start one in one terminal with `./gradlew modrun`
-and then execute the tests from a second terminal with `./gradlew eet`. Or you can use JRS to start
-an instance, or use some existing environment.
-
 ### Cleaning
 
 Gradle projects put all build artifacts into `build` directories. To clean your workspace of all

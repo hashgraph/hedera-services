@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -93,30 +92,12 @@ class HandleContextTest {
                 .dispatchScheduledChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
         subject.dispatchScheduledChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
         verify(subject)
-                .dispatchChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, SCHEDULED);
-    }
-
-    @Test
-    void defaultDispatchRemovableChildThrowsOnMissingTransactionId() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(TransactionBody.DEFAULT, StreamBuilder.class, signatureTest);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.dispatchRemovableChildTransaction(
-                        TransactionBody.DEFAULT, StreamBuilder.class, signatureTest));
-    }
-
-    @Test
-    void defaultDispatchRemovableChildUsesTransactionIdWhenSet() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchRemovableChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
-        subject.dispatchRemovableChildTransaction(WITH_PAYER_ID, StreamBuilder.class, signatureTest);
-        verify(subject)
-                .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID, StreamBuilder.class, signatureTest, PAYER_ID, NOOP_RECORD_CUSTOMIZER);
+                .dispatchChildTransaction(
+                        WITH_PAYER_ID,
+                        StreamBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        SCHEDULED,
+                        HandleContext.ConsensusThrottling.ON);
     }
 }
