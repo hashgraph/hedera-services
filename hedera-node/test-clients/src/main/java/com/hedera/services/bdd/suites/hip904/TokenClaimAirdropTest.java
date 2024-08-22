@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdr
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
@@ -72,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -85,8 +87,11 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -500,8 +505,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
-    @DisplayName("token airdrop 10 FT and claim them")
-    final Stream<DynamicTest> tokenClaimByFiveDifferentReciveres() {
+    @DisplayName("token airdrop 10 FT and claim them to different receivers")
+    final Stream<DynamicTest> tokenClaimByFiveDifferentReceivers() {
         final String ALICE = "ALICE";
         final String BOB = "BOB";
         final String CAROL = "CAROL";
@@ -691,6 +696,47 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .signedBy(CAROL, BOB)
                         .payingWith(CAROL)
                         .hasPrecheck(ACCOUNT_DELETED));
+    }
+
+    @HapiTest
+    @DisplayName("multiple FT token but not enough balance to transfer twice")
+    final Stream<DynamicTest> multipleFTButNotEnoughBalanceToTransferTwice() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 2L),
+                createFT(FUNGIBLE_TOKEN_2, ALICE, 2L),
+                tokenAirdrop(moving(2, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenAirdrop(
+                                moving(2, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                                moving(2, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .payingWith(BOB)
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+    }
+
+    @HapiTest
+    @DisplayName("FT token paused during airdrop")
+    final Stream<DynamicTest> tokenPausedDuringAirdrop() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                newKeyNamed("pauseKey"),
+                tokenCreate(FUNGIBLE_TOKEN_1)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .pauseKey("pauseKey")
+                        .initialSupply(15L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenPause(FUNGIBLE_TOKEN_1),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .payingWith(BOB)
+                        .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
     @HapiTest
@@ -1125,6 +1171,14 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     private HapiTokenAirdrop airdropFT(String tokenName, String sender, String receiver, int amountToMove) {
         return tokenAirdrop(moving(amountToMove, tokenName).between(sender, receiver))
                 .payingWith(sender);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T[] mapTenTokens(
+            @NonNull final Function<String, T> f, @NonNull final Class<T> type, int numberOfTokens) {
+        return IntStream.range(0, numberOfTokens)
+                .mapToObj(i -> f.apply("token" + i))
+                .toArray(n -> (T[]) Array.newInstance(type, n));
     }
 
     private SpecOperation createHollowAccountByFunToken(String hollowAcnt, String token, String owner) {
