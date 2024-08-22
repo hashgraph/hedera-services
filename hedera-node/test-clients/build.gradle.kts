@@ -23,22 +23,12 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-text-blocks,-varargs,-static")
-}
-
 mainModuleInfo {
     runtimeOnly("org.junit.jupiter.engine")
     runtimeOnly("org.junit.platform.launcher")
 }
 
 sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-
     create("rcdiff")
     create("yahcli")
 }
@@ -277,6 +267,7 @@ val yahCliJar =
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["main"].output)
         from(sourceSets["rcdiff"].output)
         destinationDirectory.set(project.file("rcdiff"))
         archiveFileName.set("rcdiff.jar")
@@ -284,7 +275,7 @@ val rcdiffJar =
 
         manifest {
             attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
                 "Multi-Release" to "true"
             )
         }

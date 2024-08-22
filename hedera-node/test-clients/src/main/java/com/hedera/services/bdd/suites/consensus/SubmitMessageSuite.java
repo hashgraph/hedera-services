@@ -313,7 +313,7 @@ public class SubmitMessageSuite {
 
     @HapiTest
     final Stream<DynamicTest> longMessageIsFragmentedIntoChunks() {
-        String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
+        String fileForLongMessage = "src/main/resources/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
                 .given(cryptoCreate("payer"), createTopic("testTopic"))
                 .when()

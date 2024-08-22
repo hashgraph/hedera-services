@@ -986,14 +986,14 @@ public class NonceSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .hasKnownStatus(INVALID_CONTRACT_ID)
                         .via(TX))
                 .then(
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)),
                         getTxnRecord(TX)
                                 .hasPriority(recordWith()
-                                        .status(CONTRACT_REVERT_EXECUTED)
+                                        .status(INVALID_CONTRACT_ID)
                                         .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
