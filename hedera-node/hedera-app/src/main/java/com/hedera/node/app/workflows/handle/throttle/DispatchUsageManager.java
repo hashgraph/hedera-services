@@ -80,6 +80,8 @@ public class DispatchUsageManager {
     public void screenForCapacity(@NonNull final Dispatch dispatch) throws ThrottleException {
         if (dispatch.throttleStrategy() == ON) {
             final var readableStates = dispatch.stack().getReadableStates(CongestionThrottleService.NAME);
+            // reset throttles for every dispatch before we track the usage. This is to ensure that
+            // when the user transaction fails, we release the capacity taken at consensus by child transactions.
             throttleServiceManager.resetThrottlesUnconditionally(readableStates);
             final var isThrottled =
                     networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());

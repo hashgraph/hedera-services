@@ -370,7 +370,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ExternalizeInitcodeOnSuccess externalizeInitcodeOnSuccess) {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
-        // in the contract creation body for the dispatched crypto create body
+        // in the contract creation body for the dispatched crypto create body. This child transaction will not
+        // be throttled at consensus.
         final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
