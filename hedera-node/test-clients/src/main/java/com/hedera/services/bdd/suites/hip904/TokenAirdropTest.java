@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -389,7 +390,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("FT with fractional fee and net of transfers false")
+        @DisplayName("FT with fractional fee with netOfTransfers=false")
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalse() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
@@ -409,7 +410,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("FT with fractional fee and net of transfers false, in pending state")
+        @DisplayName("FT with fractional fee with netOfTransfers=false, in pending state")
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseInPendingState() {
             var sender = "sender";
             return defaultHapiSpec("the value should be reduced")
@@ -431,6 +432,33 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                             .pendingAirdrops(
                                                     includingFungiblePendingAirdrop(moving(90, FT_WITH_FRACTIONAL_FEE)
                                                             .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false and dissociated collector")
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
+            var sender = "sender";
+            return defaultHapiSpec("should have 2 pending airdrops and the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE_2),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(
+                            tokenDissociate(HTS_COLLECTOR, FT_WITH_FRACTIONAL_FEE_2),
+                            tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(sender)
+                                    .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.2, 10),
+                            getTxnRecord("fractionalTxn")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moving(90, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                                    moving(10, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, HTS_COLLECTOR)))));
         }
 
         @HapiTest

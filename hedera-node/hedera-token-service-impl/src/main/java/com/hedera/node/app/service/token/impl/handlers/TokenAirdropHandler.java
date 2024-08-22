@@ -135,8 +135,11 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 .tokenTransfers(op.tokenTransfers())
                 .build();
 
-        var transfersAfterCustomFees = assessAndChargeCustomFee(context, convertedOp);
-        for (final var xfers : transfersAfterCustomFees.getFirst().tokenTransfers()) {
+        // after charging custom fees, the original transfer may be reduced (in case of fractional fee with
+        // netOfTransfers = false)
+        // so we should use the new transfer value instead of the original one
+        var opBodyAfterCustomFeesAssessment = assessAndChargeCustomFee(context, convertedOp);
+        for (final var xfers : opBodyAfterCustomFeesAssessment.tokenTransfers()) {
             throwIfReceiverCannotClaimAirdrop(xfers, accountStore);
 
             final var tokenId = xfers.tokenOrThrow();
@@ -377,16 +380,22 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
 
     /**
      * Assesses and charge the custom fee for the token airdrop transaction.
+     *
      * @param context the handle context
      * @param body the crypto transfer transaction body
-     * @return transfer transaction bodies after custom fees assessment
+     * @return transfer transaction body after custom fees assessment
+     * <p>
+     * Note : In case of fractional fee with {@code netOfTransfers = false}, the original transfer
+     * body is updated. A new account-amount is added to represent fractional part of the original
+     * value that need to be transferred to the fee collector.
+     * </p>
      */
-    private List<CryptoTransferTransactionBody> assessAndChargeCustomFee(
+    private CryptoTransferTransactionBody assessAndChargeCustomFee(
             @NonNull final HandleContext context, @NonNull final CryptoTransferTransactionBody body) {
         final var syntheticCryptoTransferTxn =
                 TransactionBody.newBuilder().cryptoTransfer(body).build();
         final var transferContext = new TransferContextImpl(context, body, true);
-        return chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
+        return chargeCustomFeeForAirdrops(syntheticCryptoTransferTxn, transferContext);
     }
 
     /**
