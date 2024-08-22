@@ -20,12 +20,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
@@ -34,6 +38,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -41,7 +46,10 @@ import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -50,11 +58,18 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -106,13 +121,99 @@ public class SystemSetup {
 
     /**
      * Sets up post-upgrade state for the system.
+     *
      * @param dispatch the post-upgrade transaction dispatch
      */
     public void doPostUpgradeSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
+
+        // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
         final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
         fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
         dispatch.stack().commitFullStack();
+
+        // And then we update the system files for fees schedules, throttles, override properties, and override
+        // permissions from any upgrade files that are present in the configured directory
+        final var config = dispatch.config();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
+        final List<AutoSysFileUpdate> autoUpdates = List.of(
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.feeSchedules(), config),
+                        adminConfig.upgradeFeeSchedulesFile(),
+                        SystemSetup::parseFeeSchedules),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.throttleDefinitions(), config),
+                        adminConfig.upgradeThrottlesFile(),
+                        SystemSetup::parseThrottles));
+        autoUpdates.forEach(update -> {
+            if (update.tryIfPresent(adminConfig.upgradeSysFilesLoc(), systemContext)) {
+                dispatch.stack().commitFullStack();
+            }
+        });
+    }
+
+    /**
+     * Encapsulates logic to attempt the automatic update of a system file by parsing the new contents of the
+     * corresponding file from the post-upgrade location.
+     *
+     * @param fileId the file ID of the system file
+     * @param upgradeFileName the name of the upgrade file
+     * @param upgradeFileParser the function to parse the upgrade file
+     */
+    private record AutoSysFileUpdate(
+            @NonNull FileID fileId,
+            @NonNull String upgradeFileName,
+            @NonNull Function<InputStream, Bytes> upgradeFileParser) {
+        /**
+         * Attempts to update the system file using the given system context if the corresponding upgrade file is
+         * present at the given location and can be parsed with this update's parser.
+         *
+         * @param postUpgradeLoc the location of the post-upgrade files
+         * @param systemContext the system context
+         * @return {@code true} if a synthetic update was dispatched, {@code false} otherwise
+         */
+        boolean tryIfPresent(@NonNull final String postUpgradeLoc, @NonNull final SystemContext systemContext) {
+            final var path = Paths.get(postUpgradeLoc, upgradeFileName);
+            if (!Files.exists(path)) {
+                log.info("No post-upgrade file for {} found at {}, not updating", upgradeFileName, path);
+                return false;
+            }
+            try (final var fin = Files.newInputStream(path)) {
+                final Bytes bytes;
+                try {
+                    bytes = upgradeFileParser.apply(fin);
+                } catch (Exception e) {
+                    log.warn("Failed to parse upgrade file for {} at {}", upgradeFileName, path, e);
+                    return false;
+                }
+                log.info("Dispatching synthetic update for {} with {} bytes", upgradeFileName, bytes.length());
+                dispatchSynthFileUpdate(systemContext, fileId, bytes);
+                return true;
+            } catch (IOException e) {
+                log.warn("Failed to read upgrade file for {} at {}", upgradeFileName, path, e);
+            }
+            return false;
+        }
+    }
+
+    private static Bytes parseFeeSchedules(@NonNull final InputStream in) {
+        try {
+            final var bytes = in.readAllBytes();
+            final var feeSchedules = V0490FileSchema.parseFeeSchedules(bytes);
+            return CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedules);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Bytes parseThrottles(@NonNull final InputStream in) {
+        try {
+            final var json = new String(in.readAllBytes());
+            return Bytes.wrap(V0490FileSchema.parseThrottleDefinitions(json));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private SystemContext systemContextFor(@NonNull final Dispatch dispatch) {

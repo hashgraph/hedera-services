@@ -47,6 +47,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
@@ -229,13 +230,26 @@ public class V0490FileSchema extends Schema {
     public void updateNodeDetailsAfterFreeze(
             @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(systemContext);
-        final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
+        final var config = systemContext.configuration();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
         // Create the node details for file 102
-        final var nodeInfoFileNum = filesConfig.nodeDetails();
+        dispatchSynthFileUpdate(
+                systemContext, createFileID(filesConfig.nodeDetails(), config), nodeStoreNodeDetails(nodeStore));
+    }
+
+    /**
+     * Given a {@link SystemContext}, dispatches a synthetic file update transaction for the given file ID and contents.
+     *
+     * @param systemContext the system context
+     * @param fileId the file ID
+     * @param contents the contents of the file
+     */
+    public static void dispatchSynthFileUpdate(
+            @NonNull final SystemContext systemContext, @NonNull final FileID fileId, @NonNull final Bytes contents) {
         systemContext.dispatchUpdate(TransactionBody.newBuilder()
                 .fileUpdate(FileUpdateTransactionBody.newBuilder()
-                        .fileID(FileID.newBuilder().fileNum(nodeInfoFileNum).build())
-                        .contents(nodeStoreNodeDetails(nodeStore))
+                        .fileID(fileId)
+                        .contents(contents)
                         .expirationTime(maxLifetimeExpiry(systemContext))
                         .build())
                 .build());
@@ -301,7 +315,14 @@ public class V0490FileSchema extends Schema {
         }
     }
 
-    private static CurrentAndNextFeeSchedule parseFeeSchedules(@NonNull final byte[] feeScheduleJsonBytes) {
+    /**
+     * Deserializes a JSON object representing a {@link CurrentAndNextFeeSchedule} message from the given bytes,
+     * returning the equivalent protobuf message.
+     *
+     * @param feeScheduleJsonBytes the bytes of the JSON object representing the fee schedules
+     * @return the {@link CurrentAndNextFeeSchedule} message
+     */
+    public static CurrentAndNextFeeSchedule parseFeeSchedules(@NonNull final byte[] feeScheduleJsonBytes) {
         try {
             final var json = new ObjectMapper();
             final var rootNode = json.readTree(feeScheduleJsonBytes);
@@ -584,18 +605,25 @@ public class V0490FileSchema extends Schema {
         }
 
         // Parse the throttle definitions JSON file into a ServicesConfigurationList protobuf object
-        byte[] throttleDefinitionsProtoBytes;
+        return parseThrottleDefinitions(throttleDefinitionsContent);
+    }
+
+    /**
+     * Deserializes a JSON object representing a {@link ThrottleDefinitions} message from the given bytes,
+     * returning the serialized bytes of the equivalent protobuf message.
+     *
+     * @param throttleJson the serialized JSON representing the fee schedules
+     * @return the {@link CurrentAndNextFeeSchedule} message
+     */
+    public static byte[] parseThrottleDefinitions(@NonNull final String throttleJson) {
         try {
-            var om = new ObjectMapper();
-            var throttleDefinitionsObj = om.readValue(
-                    throttleDefinitionsContent,
-                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.class);
-            throttleDefinitionsProtoBytes = throttleDefinitionsObj.toProto().toByteArray();
+            final var om = new ObjectMapper();
+            final var throttleDefinitionsObj = om.readValue(
+                    throttleJson, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.class);
+            return throttleDefinitionsObj.toProto().toByteArray();
         } catch (IOException e) {
-            logger.fatal("Throttle definitions JSON could not be parsed and converted to proto");
-            throw new IllegalStateException("Throttle definitions JSON could not be parsed and converted to proto", e);
+            throw new IllegalArgumentException("Unable to parse throttle definitions", e);
         }
-        return throttleDefinitionsProtoBytes;
     }
 
     // ================================================================================================================
@@ -649,5 +677,14 @@ public class V0490FileSchema extends Schema {
         } else {
             return hex(publicKey.getEncoded());
         }
+    }
+
+    private static FileID createFileID(final long fileNum, @NonNull final Configuration config) {
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        return FileID.newBuilder()
+                .realmNum(hederaConfig.realm())
+                .shardNum(hederaConfig.shard())
+                .fileNum(fileNum)
+                .build();
     }
 }
