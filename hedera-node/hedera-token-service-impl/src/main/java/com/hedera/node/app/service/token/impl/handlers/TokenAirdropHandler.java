@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -221,7 +220,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             final var account = accountStore.getAliasedAccountById(receiverId);
             // Missing accounts will be treated as auto-creation attempts
             if (account != null) {
-                validateTrue(isHollow(account) || canClaimAirdrop(account.keyOrThrow()), INVALID_TRANSACTION_BODY);
+                validateTrue(isHollow(account) || canClaimAirdrop(account.keyOrThrow()), NOT_SUPPORTED);
             }
         }
     }
@@ -322,7 +321,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * the credits for the receivers.
      * @param fungibleAmounts the fungible airdrop amounts
      * @param sender the sender account id
-     * @param isApproval should be false for airdrop
+     * @param isApproval is approval
      * @param transferListBuilder the transfer list builder
      */
     private void addTransfersToTransferList(

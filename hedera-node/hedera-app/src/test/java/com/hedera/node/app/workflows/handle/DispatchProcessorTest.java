@@ -42,7 +42,6 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.cre
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -81,6 +80,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
+import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -406,14 +406,14 @@ class DispatchProcessorTest {
     }
 
     @Test
-    void consGasExhaustedWaivesServiceFee() throws DispatchUsageManager.ThrottleException {
+    void consGasExhaustedWaivesServiceFee() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatchValidator.validationReportFor(dispatch)).willReturn(successReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         givenAuthorization(CONTRACT_TXN_INFO);
-        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+        doThrow(ThrottleException.newGasThrottleException())
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -429,7 +429,7 @@ class DispatchProcessorTest {
     }
 
     @Test
-    void consGasExhaustedForEthTxnDoesExtraWork() throws DispatchUsageManager.ThrottleException {
+    void consGasExhaustedForEthTxnDoesExtraWork() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -437,7 +437,7 @@ class DispatchProcessorTest {
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(ETH_TXN_INFO);
         givenAuthorization(ETH_TXN_INFO);
-        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+        doThrow(ThrottleException.newGasThrottleException())
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -601,10 +601,10 @@ class DispatchProcessorTest {
     }
 
     private void verifyTrackedFeePayments() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.FEES_ONLY);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 
     private void verifyUtilization() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.USER_TRANSACTION);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 }
