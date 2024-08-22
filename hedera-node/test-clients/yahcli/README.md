@@ -672,7 +672,8 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localh
   --description 'Testing 123' \
   --gossipEndpoints 127.0.0.1:50070,10.1.2.3:50070 \
   --serviceEndpoints a.b.com:50213 \
-  --gossipCaCertificate s-public-node1.pem \
+  --gossipCaCertificatePfx private-node1.pfx \
+  --gossipCaCertificateAlias s-node1 \
   --hapiCertificate node1.crt \
   --adminKey adminKey.pem
 Log level is WARN
