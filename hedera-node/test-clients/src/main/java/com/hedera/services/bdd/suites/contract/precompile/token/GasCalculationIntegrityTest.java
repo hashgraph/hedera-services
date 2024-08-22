@@ -355,6 +355,7 @@ public class GasCalculationIntegrityTest {
         @DisplayName("for token info call")
         public Stream<DynamicTest> checkTokenGetInfoGas() {
             return testCases.flatMap(ratesProvider -> hapiTest(
+                    updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                     tokenInfoContract
                             .call("getInformationForToken", token)
                             .gas(78_805L)
@@ -367,6 +368,7 @@ public class GasCalculationIntegrityTest {
         @DisplayName("for token custom fees call")
         public Stream<DynamicTest> checkTokenGetCustomFeesGas() {
             return testCases.flatMap(ratesProvider -> hapiTest(
+                    updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                     tokenInfoContract
                             .call("getCustomFeesForToken", token)
                             .gas(31_421L)
@@ -388,6 +390,7 @@ public class GasCalculationIntegrityTest {
         @DisplayName("for token balance of call")
         public Stream<DynamicTest> checkErc20BalanceOf() {
             return testCases.flatMap(ratesProvider -> hapiTest(
+                    updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                     erc20Contract.call("balanceOf", token, alice).gas(30_074L).via("balance"),
                     getTxnRecord("balance").logged()));
         }
