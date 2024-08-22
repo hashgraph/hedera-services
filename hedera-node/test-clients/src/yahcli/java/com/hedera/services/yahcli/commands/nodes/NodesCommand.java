@@ -81,11 +81,6 @@ public class NodesCommand implements Callable<Integer> {
         }
     }
 
-    public static void main(String[] args) {
-        final var loc = "/Users/michaeltinker/Dev/hedera-services/hedera-node/test-clients/yahcli/private-node1.pfx";
-        x509CertFromPfx(loc, "password", "s-node1", new Yahcli());
-    }
-
     /**
      * Given a location and a {@link Yahcli}, validates that a X.509 certificate exists at the location and
      * returns its encoded bytes, or throws a {@link picocli.CommandLine.ParameterException} with context on the
