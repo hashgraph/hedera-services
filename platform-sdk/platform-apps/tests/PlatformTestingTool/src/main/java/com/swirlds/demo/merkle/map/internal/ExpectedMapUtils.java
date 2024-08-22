@@ -91,6 +91,9 @@ public class ExpectedMapUtils {
         final PAYLOAD_TYPE payload_type = submittedPayloadTriple.middle();
         if (payload_type == PAYLOAD_TYPE.TYPE_MINT_TOKEN
                 || payload_type == PAYLOAD_TYPE.TYPE_BURN_TOKEN
+                || payload_type == PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_CREATE
+                || payload_type == PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_UPDATE
+                || payload_type == PAYLOAD_TYPE.TYPE_VIRTUAL_MERKLE_DELETE
                 || payload_type == PAYLOAD_TYPE.TYPE_TRANSFER_TOKEN) {
             return;
         }

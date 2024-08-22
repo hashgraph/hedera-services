@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -69,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -386,6 +388,22 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("multiple FT airdrops to same receiver")
+    final Stream<DynamicTest> multipleFtAirdropsSameReceiver() {
+        final String BOB = "BOB";
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, BOB)).payingWith(OWNER),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, BOB, FUNGIBLE_TOKEN))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 30)));
+    }
+
+    @HapiTest
     @DisplayName("multiple pending transfers in one airdrop same token different receivers")
     final Stream<DynamicTest> multiplePendingInOneAirdropDifferentReceivers() {
         final String ALICE = "ALICE";
@@ -663,6 +681,77 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 20),
                 tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN)).payingWith(BOB),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 30));
+    }
+
+    @HapiTest
+    @DisplayName("duplicate entries of Non Fungible Tokens should fail")
+    final Stream<DynamicTest> duplicatedNFTFail() {
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN),
+                                pendingAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN))
+                        .payingWith(RECEIVER)
+                        .hasPrecheck(PENDING_AIRDROP_ID_REPEATED)));
+    }
+
+    @HapiTest
+    @DisplayName("containing up to 10 tokens and some duplicate entries should fail")
+    final Stream<DynamicTest> contain10TokensDulplicateFail() {
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1001L),
+                createFT(FUNGIBLE_TOKEN_2, OWNER, 1002L),
+                createFT(FUNGIBLE_TOKEN_3, OWNER, 1003L),
+                createFT(FUNGIBLE_TOKEN_4, OWNER, 1004L),
+                createFT(FUNGIBLE_TOKEN_5, OWNER, 1005L),
+                createFT(FUNGIBLE_TOKEN_6, OWNER, 1006L),
+                createFT(FUNGIBLE_TOKEN_7, OWNER, 1007L),
+                createFT(FUNGIBLE_TOKEN_8, OWNER, 1008L),
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_2),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_3),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_4),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_5),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_6),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_7),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_8))
+                        .payingWith(RECEIVER)
+                        .hasPrecheck(PENDING_AIRDROP_ID_REPEATED)));
+    }
+
+    @HapiTest
+    @DisplayName(
+            "not signed by the account referenced by a receiver_id for each entry in the pending airdrops list should fail")
+    final Stream<DynamicTest> notSignedByReceiverFail() {
+        var RECEIVER2 = "RECEIVER2";
+        return hapiTest(flattened(
+                setUpTokensAndAllReceivers(),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER2).balance(ONE_HUNDRED_HBARS),
+                tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
+                                pendingAirdrop(OWNER, RECEIVER2, NON_FUNGIBLE_TOKEN))
+                        .signedBy(RECEIVER)
+                        .hasPrecheck(INVALID_SIGNATURE)));
+    }
+
+    @LeakyHapiTest(overrides = {"tokens.airdrops.claim.enabled"})
+    @DisplayName("sign a tokenClaimAirdrop transaction when the feature flag is disabled")
+    final Stream<DynamicTest> tokenClaimAirdropDisabledFail() {
+        return hapiTest(
+                overriding("tokens.airdrops.claim.enabled", "false"),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1))
+                        .payingWith(RECEIVER)
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {

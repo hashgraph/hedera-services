@@ -89,10 +89,10 @@ public final class DiverseStateCreation extends HapiSuite {
     public static final String KEY_REPRS_KEY = "keyReprs";
     public static final String HEXED_BYTECODE_KEY = "hexedBytecode";
 
-    public static final String SMALL_CONTENTS_LOC = "src/main/resource/testfiles/small.txt";
-    public static final String MEDIUM_CONTENTS_LOC = "src/main/resource/testfiles/medium.txt";
-    public static final String LARGE_CONTENTS_LOC = "src/main/resource/testfiles/large.txt";
-    public static final String STATE_META_JSON_LOC = "src/main/resource/testfiles/diverseBlobsInfo.json";
+    public static final String SMALL_CONTENTS_LOC = "src/main/resources/testfiles/small.txt";
+    public static final String MEDIUM_CONTENTS_LOC = "src/main/resources/testfiles/medium.txt";
+    public static final String LARGE_CONTENTS_LOC = "src/main/resources/testfiles/large.txt";
+    public static final String STATE_META_JSON_LOC = "src/main/resources/testfiles/diverseBlobsInfo.json";
 
     public static void main(String... args) throws IOException {
         new DiverseStateCreation().runSuiteSync();
