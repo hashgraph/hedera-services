@@ -72,7 +72,7 @@ class EnsureAliasesStepTest extends StepsBase {
     void autoCreatesAccounts() {
         ensureAliasesInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -140,7 +140,7 @@ class EnsureAliasesStepTest extends StepsBase {
         givenTxn(body, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
@@ -246,7 +246,7 @@ class EnsureAliasesStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

@@ -167,6 +167,12 @@ public class HapiSpec implements Runnable, Executable {
      * on its {@link LeakyHapiTest#throttles()} attribute.
      */
     public static final ThreadLocal<String> THROTTLES_OVERRIDE = new ThreadLocal<>();
+    /**
+     * If set, a resource to load fee schedules from for this thread's next {@link HapiSpec} instance. Typically the
+     * {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a test factory based
+     * on its {@link LeakyHapiTest#fees()} ()} attribute.
+     */
+    public static final ThreadLocal<String> FEES_OVERRIDE = new ThreadLocal<>();
 
     public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
@@ -198,7 +204,7 @@ public class HapiSpec implements Runnable, Executable {
         TRUE
     }
 
-    private record Failure(Throwable cause, String opDescription) {
+    public record Failure(Throwable cause, String opDescription) {
         private static final String LOG_TPL = "%s when executing %s";
 
         @Override
@@ -266,6 +272,12 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private String throttleResource;
+    /**
+     * If non-null, a resource to load override fees from for this spec, restoring the previous
+     * contents of the 0.0.111 system file after the spec completes.
+     */
+    @Nullable
+    private String feeResource;
 
     boolean quietMode;
 
@@ -704,6 +716,10 @@ public class HapiSpec implements Runnable, Executable {
         if (throttleResource != null) {
             ops.addFirst(new SysFileOverrideOp(
                     THROTTLES, () -> throttleResource.isBlank() ? null : resourceAsString(throttleResource)));
+        }
+        if (feeResource != null) {
+            ops.addFirst(
+                    new SysFileOverrideOp(FEES, () -> feeResource.isBlank() ? null : resourceAsString(feeResource)));
         }
         final var autoScheduled = setup().txnTypesToSchedule();
         if (!autoScheduled.isEmpty()) {
@@ -1219,6 +1235,7 @@ public class HapiSpec implements Runnable, Executable {
                 .map(TestLifecycle::getSharedStates)
                 .ifPresent(spec::setSharedStates);
         spec.throttleResource = THROTTLES_OVERRIDE.get();
+        spec.feeResource = FEES_OVERRIDE.get();
         return spec;
     }
 
@@ -1289,7 +1306,7 @@ public class HapiSpec implements Runnable, Executable {
         this.quietMode = "true".equalsIgnoreCase(quiet) || (!"false".equalsIgnoreCase(quiet) && isCiCheck);
     }
 
-    interface Def {
+    public interface Def {
         @FunctionalInterface
         interface Sourced {
             Given withProperties(Object... sources);

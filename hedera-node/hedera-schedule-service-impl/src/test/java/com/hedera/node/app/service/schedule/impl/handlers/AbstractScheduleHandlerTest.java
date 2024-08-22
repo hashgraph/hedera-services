@@ -133,7 +133,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyCheckTxnId() throws PreCheckException {
+    void verifyCheckTxnId() {
         assertThatThrownBy(new CallCheckValid(null, testHandler))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
         for (final Schedule next : listOfScheduledOptions) {
@@ -213,7 +213,8 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
                         any(),
                         any(Predicate.class),
                         any(AccountID.class),
-                        any(TransactionCategory.class)))
+                        any(TransactionCategory.class),
+                        any()))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();

@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -256,18 +257,17 @@ public abstract class HapiSuite {
     }
 
     @SuppressWarnings({"java:S3358", "java:S3740"})
-    public static HapiSpecOperation[] flattened(Object... ops) {
+    public static SpecOperation[] flattened(Object... ops) {
         return Stream.of(ops)
-                .map(op -> (op instanceof HapiSpecOperation hapiOp)
-                        ? new HapiSpecOperation[] {hapiOp}
-                        : ((op instanceof List list)
-                                ? list.toArray(new HapiSpecOperation[0])
-                                : (HapiSpecOperation[]) op))
+                .map(op -> (op instanceof SpecOperation hapiOp)
+                        ? new SpecOperation[] {hapiOp}
+                        : ((op instanceof List list) ? list.toArray(new SpecOperation[0]) : (SpecOperation[]) op))
                 .flatMap(Stream::of)
-                .toArray(HapiSpecOperation[]::new);
+                .toArray(SpecOperation[]::new);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final List<Stream<DynamicTest>> allOf(final List<Stream<DynamicTest>>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
