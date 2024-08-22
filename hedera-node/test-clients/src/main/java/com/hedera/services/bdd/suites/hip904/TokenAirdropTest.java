@@ -640,7 +640,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
                             .signedBy(OWNER)
                             .payingWith(OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION_BODY));
+                            .hasKnownStatus(NOT_SUPPORTED));
         }
     }
 
