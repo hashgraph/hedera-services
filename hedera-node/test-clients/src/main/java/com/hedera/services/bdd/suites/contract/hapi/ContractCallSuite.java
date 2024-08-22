@@ -881,7 +881,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 
     /**

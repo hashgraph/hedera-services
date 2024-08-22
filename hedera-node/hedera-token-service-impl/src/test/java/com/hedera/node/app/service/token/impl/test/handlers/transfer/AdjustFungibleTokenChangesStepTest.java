@@ -67,7 +67,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);

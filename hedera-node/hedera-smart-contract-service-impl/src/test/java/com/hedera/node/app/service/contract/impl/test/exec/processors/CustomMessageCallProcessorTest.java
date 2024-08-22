@@ -130,6 +130,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractHappyPath() {
         givenPrngCall(ZERO_GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
         given(result.getOutput()).willReturn(OUTPUT_DATA);
         given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
 
@@ -147,6 +148,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractInsufficientGas() {
         givenPrngCall(GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
 

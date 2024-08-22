@@ -5,7 +5,8 @@
     "variedSize": false,
     "waitForSaveStateDuringFreeze": true,
     "_comment": "payload type TYPE_RANDOM_BYTES for random bytes",
-    "type": "TYPE_VIRTUAL_MERKLE_TEST",
+    "type":  "TYPE_FCM_VIRTUAL_MIX",
+    "ratioOfFCMTransaction": 0.5,
     "payloadByteSize": 100,
     "maxByteSize": 100
   },
@@ -34,73 +35,94 @@
     "sequential": [
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 30000
+        "amount": 10000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 15000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 9000
+        "amount": 4000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 9000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 9000
+        "amount": 4000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_DELETE",
-        "amount": 9000
+        "amount": 5000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-        "amount": 9000
+        "amount": 4000
       },
       {
         "type": "TYPE_VIRTUAL_MERKLE_CREATE",
-        "amount": 15000
+        "amount": 10000
       }
     ]
   },
   "fcmConfig": {
-    "sequentialTest": false,
+    "sequentialTest": true,
     "_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmoutn, sequentialSize, this override typeDistribution defined in payloadConfig",
-    "sequentials": []
+    "sequentials": [
+      {
+        "sequentialType": "TYPE_FCM_CREATE",
+        "sequentialAmount": 10000,
+        "sequentialSize": 100
+      },
+      {
+        "sequentialType": "TYPE_FCM_UPDATE",
+        "sequentialAmount": 10000,
+        "sequentialSize": 100
+      },
+      {
+        "sequentialType": "TYPE_FCM_TRANSFER",
+        "sequentialAmount": 10000,
+        "sequentialSize": 100
+      },
+      {
+        "sequentialType": "TYPE_FCM_DELETE",
+        "sequentialAmount": 6000,
+        "sequentialSize": 100
+      }
+    ]
   }
 }

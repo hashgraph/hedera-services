@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.OFF;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -242,6 +244,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
+    @Mock
+    private Predicate<Key> signatureTest;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -271,6 +276,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Bytes.EMPTY,
             CRYPTO_TRANSFER,
             null);
+
+    private static final TransactionBody MISSING_PAYER_ID =
+            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
+
+    private static final AccountID PAYER_ID =
+            AccountID.newBuilder().accountNum(1_234L).build();
+    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
+            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -570,16 +584,21 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() ->
-                            subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+            assertThatThrownBy(() -> subject.dispatchChildTransaction(
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+                            null,
+                            StreamBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            NOOP_RECORD_CUSTOMIZER,
+                            OFF))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER, OFF))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -588,13 +607,14 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD)),
+                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             txBody,
                             StreamBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID(),
-                            (ignore) -> Transaction.DEFAULT)));
+                            (ignore) -> Transaction.DEFAULT,
+                            OFF)));
         }
 
         @ParameterizedTest
@@ -660,7 +680,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchRemovablePrecedingTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -685,7 +705,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatchChildTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED, ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -762,7 +782,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                        any()))
+                        any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()
