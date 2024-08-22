@@ -166,7 +166,7 @@ public class ChildDispatchFactory {
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
-        final var childTxnInfo = getTxnInfoFrom(txBody);
+        final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
         final var childStack =
                 SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
@@ -433,10 +433,11 @@ public class ChildDispatchFactory {
     /**
      * Provides the transaction information for the given dispatched transaction body.
      *
+     * @param payerId the payer id
      * @param txBody the transaction body
      * @return the transaction information
      */
-    private TransactionInfo getTxnInfoFrom(TransactionBody txBody) {
+    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -444,15 +445,11 @@ public class ChildDispatchFactory {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        // Since in the current systems the synthetic transactions need not have a transaction ID
-        // Payer will be injected as synthetic payer in dagger subcomponent, since the payer could be different
-        // for schedule dispatches. Also, there will not be signature verifications for synthetic transactions.
-        // So these fields are set to default values and will not be used.
         return new TransactionInfo(
                 transaction,
                 txBody,
                 TransactionID.DEFAULT,
-                AccountID.DEFAULT,
+                payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
                 functionOfTxn(txBody));
