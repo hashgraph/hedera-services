@@ -385,7 +385,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 throw new IllegalStateException("Expected a PlatformState as the first child");
             }
             preV054PlatformState = platformState;
-            logger.info("Found pre-0.54 PlatformState, will migrate to State API singleton");
+            logger.info(STARTUP.getMarker(), "Found pre-0.54 PlatformState, will migrate to State API singleton");
             INDEX_LOOKUP.clear();
             final List<MerkleNode> newChildren = new ArrayList<>();
             for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
