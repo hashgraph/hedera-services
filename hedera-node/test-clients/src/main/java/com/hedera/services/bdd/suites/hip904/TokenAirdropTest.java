@@ -224,6 +224,38 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 // without free auto associations receiver - 0.1 (creates pending airdrop)
                                 validateChargedUsd("non fungible airdrop", 0.2, 1));
             }
+
+            @HapiTest
+            @DisplayName("charge association fee for FT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.05, 1));
+            }
+
+            @HapiTest
+            @DisplayName("charge association fee for NFT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForNFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 2).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.1, 1));
+            }
         }
 
         @HapiTest
