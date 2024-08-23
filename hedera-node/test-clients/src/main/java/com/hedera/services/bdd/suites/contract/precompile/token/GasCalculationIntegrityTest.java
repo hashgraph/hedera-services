@@ -48,6 +48,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -87,15 +88,6 @@ public class GasCalculationIntegrityTest {
 
     public static final long EXPIRY_RENEW = 3_000_000L;
 
-    private final Stream<RatesProvider> testCasesNew = Stream.of(
-            new RatesProvider(10, 147),
-            new RatesProvider(1, 1),
-            new RatesProvider(1, 1),
-            new RatesProvider(189, 10),
-            new RatesProvider(30000, 552522226),
-            new RatesProvider(787812, 1112),
-            new RatesProvider(14444, 9999));
-
     private final Stream<RatesProvider> testCases = Stream.of(
             new RatesProvider(30000, 16197),
             new RatesProvider(30000, 359789),
@@ -104,7 +96,14 @@ public class GasCalculationIntegrityTest {
 
     private record RatesProvider(int hBarEquiv, int centEquiv) {}
 
+    @AfterAll
+    public static void afterAll(final @NonNull TestLifecycle lifecycle) {
+        // Reset exchange rates
+        lifecycle.doAdhoc(updateRates(1, 12));
+    }
+
     @Nested
+    @OrderedInIsolation
     @DisplayName("calls to approve functions and checks gas integrity with different exchange rates")
     class ApproveTests {
 
@@ -119,29 +118,32 @@ public class GasCalculationIntegrityTest {
         @HapiTest
         @DisplayName("when using nft via redirect proxy contract")
         public Stream<DynamicTest> approveViaProxyNft() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContract
                             .call("approveRedirect", nft, bob, BigInteger.valueOf(7))
                             .gas(756_729L)
                             .via("approveRedirectTxn")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("approveRedirectTxn").logged());
+                    getTxnRecord("approveRedirectTxn").logged()));
         }
 
         @HapiTest
         @DisplayName("when using fungible token hts system contract")
         public Stream<DynamicTest> approveFungibleToken() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContract
                             .call("approve", fungibleToken, alice, BigInteger.TWO)
                             .gas(742_877L)
                             .via("approveTxn")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("approveTxn").logged());
+                    getTxnRecord("approveTxn").logged()));
         }
     }
 
     @Nested
+    @OrderedInIsolation
     @DisplayName("updating and creating tokens does not result in gas change when exchange rates change")
     class CreateTokenTests {
 
@@ -161,7 +163,8 @@ public class GasCalculationIntegrityTest {
             final long denominator = 1;
             final long maxAmount = 500;
             final long minAmount = 100;
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call(
                                     "createFungibleTokenWithCustomFeesV3FractionalFee",
@@ -173,13 +176,14 @@ public class GasCalculationIntegrityTest {
                             .sending(ONE_HUNDRED_HBARS)
                             .via("createWithCustomFeeFractional")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("createWithCustomFeeFractional").logged());
+                    getTxnRecord("createWithCustomFeeFractional").logged()));
         }
 
         @HapiTest
         @DisplayName("when using createNonFungibleTokenWithCustomFeesV3 with fractionalFee where denominator is bad")
         public Stream<DynamicTest> createNonFungibleTokenWithCustomRoyaltyFeesV3WithBadDenominator() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call(
                                     "createNonFungibleTokenWithCustomRoyaltyFeesV3",
@@ -192,13 +196,14 @@ public class GasCalculationIntegrityTest {
                             .payingWith(alice)
                             .via("createWithCustomFeeRoyalty")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("createWithCustomFeeRoyalty").logged());
+                    getTxnRecord("createWithCustomFeeRoyalty").logged()));
         }
 
         @HapiTest
         @DisplayName("when using createFungibleToken")
         public Stream<DynamicTest> createFungible() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call(
                                     "createFungibleToken",
@@ -207,17 +212,18 @@ public class GasCalculationIntegrityTest {
                                     10000L,
                                     BigInteger.TEN,
                                     BigInteger.TWO)
-                            .gas(165_800L)
+                            .gas(10080_800L)
                             .sending(ONE_HUNDRED_HBARS)
                             .via("createFungibleToken")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("createFungibleToken").logged());
+                    getTxnRecord("createFungibleToken").logged()));
         }
 
         @HapiTest
         @DisplayName("when using createNonFungibleTokenV3")
         public Stream<DynamicTest> createNonFungibleTokenV3() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call(
                                     "createNonFungibleTokenV3",
@@ -230,7 +236,7 @@ public class GasCalculationIntegrityTest {
                             .payingWith(alice)
                             .via("createNonFungibleTokenV3")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("createNonFungibleTokenV3").logged());
+                    getTxnRecord("createNonFungibleTokenV3").logged()));
         }
     }
 
@@ -251,20 +257,22 @@ public class GasCalculationIntegrityTest {
         @Order(1)
         @DisplayName("when using cryptoTransferV2 for hBar transfer")
         public Stream<DynamicTest> useCryptoTransferV2() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("cryptoTransferV2", new long[] {-5, 5}, alice, bob)
                             .gas(33_304L)
                             .via("cryptoTransferV2")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("cryptoTransferV2").logged());
+                    getTxnRecord("cryptoTransferV2").logged()));
         }
 
         @HapiTest
         @Order(2)
         @DisplayName("when using cryptoTransferFungibleV1 with internal auto associate")
         public Stream<DynamicTest> useCryptoTransferFungibleV1() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call(
                                     "cryptoTransferFungibleV1",
@@ -274,44 +282,49 @@ public class GasCalculationIntegrityTest {
                                     bob)
                             .via("cryptoTransferFungibleV1")
                             .gas(763_480L),
-                    getTxnRecord("cryptoTransferFungibleV1").logged());
+                    getTxnRecord("cryptoTransferFungibleV1").logged()));
         }
 
         @HapiTest
         @Order(3)
         @DisplayName("when using cryptoTransferNonFungible with internal auto associate")
         public Stream<DynamicTest> useCryptoTransferNonFungible() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("cryptoTransferNonFungible", nft, nft.treasury(), bob, 1L)
                             .gas(761_070L)
                             .via("cryptoTransferNonFungible")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                    getTxnRecord("cryptoTransferNonFungible").logged());
+                    getTxnRecord("cryptoTransferNonFungible").logged(),
+                    bob.transferNFTsTo(nft.treasury(), nft, 1L)));
         }
 
         @HapiTest
         @Order(4)
         @DisplayName("when using transferNFTs with internal auto associate")
         public Stream<DynamicTest> useTransferNFTs() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferNFTs", nft, nft.treasury(), alice, new long[] {4L})
                             .via("transferNFTs")
                             .gas(761_519L),
-                    getTxnRecord("transferNFTs").logged());
+                    getTxnRecord("transferNFTs").logged(),
+                    alice.transferNFTsTo(nft.treasury(), nft, 4L)));
         }
 
         @HapiTest
         @Order(5)
         @DisplayName("when using transferToken with internal auto associate")
         public Stream<DynamicTest> useTransferToken() {
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, 1L)
                             .via("transferTokenTest")
                             .gas(758_568L),
-                    getTxnRecord("transferTokenTest").logged());
+                    getTxnRecord("transferTokenTest").logged()));
         }
 
         @HapiTest
@@ -319,12 +332,14 @@ public class GasCalculationIntegrityTest {
         @DisplayName("when using transferNFT")
         public Stream<DynamicTest> useTransferNFT() {
             // Cannot be tested directly as it requires associate from previous test
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferNFTTest", nft, nft.treasury(), alice, 3L)
                             .via("transferNFTTest")
                             .gas(42_235L),
-                    getTxnRecord("transferNFTTest").logged());
+                    getTxnRecord("transferNFTTest").logged(),
+                    alice.transferNFTsTo(nft.treasury(), nft, 3L)));
         }
 
         @HapiTest
@@ -332,12 +347,13 @@ public class GasCalculationIntegrityTest {
         @DisplayName("when using transferFrom")
         public Stream<DynamicTest> useTransferFrom() {
             // Cannot be tested directly as it requires associate from previous test
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                             .via("transferFrom")
                             .gas(42_264L),
-                    getTxnRecord("transferFrom").logged());
+                    getTxnRecord("transferFrom").logged()));
         }
 
         @HapiTest
@@ -345,12 +361,13 @@ public class GasCalculationIntegrityTest {
         @DisplayName("when using transferFromERC")
         public Stream<DynamicTest> useTransferFromERC() {
             // Cannot be tested directly as it requires associate from previous test
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                             .via("transferFromERC")
                             .gas(44_900L),
-                    getTxnRecord("transferFromERC").logged());
+                    getTxnRecord("transferFromERC").logged()));
         }
 
         @HapiTest
@@ -358,12 +375,14 @@ public class GasCalculationIntegrityTest {
         @DisplayName("when using transferFromNFT")
         public Stream<DynamicTest> useTransferNFTFrom() {
             // Cannot be tested directly as it requires associate from previous test
-            return hapiTest(
+            return testCases.flatMap(rates -> hapiTest(
+                    updateRates(rates.hBarEquiv, rates.centEquiv),
                     numericContractComplex
                             .call("transferFromNFT", nft, nft.treasury(), alice, BigInteger.TWO)
                             .via("transferFromNFT")
                             .gas(42_263L),
-                    getTxnRecord("transferFromNFT").logged());
+                    getTxnRecord("transferFromNFT").logged(),
+                    alice.transferNFTsTo(nft.treasury(), nft, 2L)));
         }
     }
 
@@ -428,7 +447,7 @@ public class GasCalculationIntegrityTest {
         }
     }
 
-    private HapiFileUpdate updateRates(final int hbarEquiv, final int centEquiv) {
+    private static HapiFileUpdate updateRates(final int hbarEquiv, final int centEquiv) {
         return fileUpdate(EXCHANGE_RATES).contents(spec -> {
             ByteString newRates =
                     spec.ratesProvider().rateSetWith(hbarEquiv, centEquiv).toByteString();

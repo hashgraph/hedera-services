@@ -83,6 +83,19 @@ public class TransferTokensOperation extends AbstractSpecTransaction<TransferTok
         this.transferType = TransferType.NFT;
     }
 
+    public TransferTokensOperation(
+            @NonNull final SpecAccount sender,
+            @NonNull final SpecAccount receiver,
+            @NonNull final SpecNonFungibleToken token,
+            final long... serialNumber) {
+        super(List.of(sender, receiver, token));
+        this.senderName = requireNonNull(sender.name());
+        this.receiverName = requireNonNull(receiver.name());
+        this.tokenName = requireNonNull(token.name());
+        this.serialNumber = serialNumber;
+        this.transferType = TransferType.NFT;
+    }
+
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
