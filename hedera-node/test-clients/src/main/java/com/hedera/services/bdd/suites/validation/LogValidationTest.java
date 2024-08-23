@@ -47,9 +47,9 @@ public class LogValidationTest {
         final Path workingDir = requireNonNull(metadata.workingDir());
         final Path path = workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
         final String fileContent = Files.readString(path);
-        Pattern pattern = Pattern.compile(".*Exception.*", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(fileContent);
-        StringBuilder matchedLines = new StringBuilder();
+        final Pattern pattern = Pattern.compile(".*Exception.*", Pattern.CASE_INSENSITIVE);
+        final Matcher matcher = pattern.matcher(fileContent);
+        final StringBuilder matchedLines = new StringBuilder();
         while (matcher.find()) {
             matchedLines.append(matcher.group()).append(System.lineSeparator());
         }
