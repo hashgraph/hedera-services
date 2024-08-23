@@ -136,6 +136,8 @@ public final class PlatformBuilder {
      */
     private AddressBook bootstrapAddressBook;
 
+    private Roster bootstrapRoster;
+
     /**
      * This node's cryptographic keys.
      */
@@ -391,6 +393,20 @@ public final class PlatformBuilder {
     public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
         this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the roster to use for bootstrapping the system. If not provided then the roster is created from the
+     * bootstrap address book.
+     *
+     * @param bootstrapRoster the roster to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withBootstrapRoster(@NonNull final Roster bootstrapRoster) {
+        throwIfAlreadyUsed();
+        this.bootstrapRoster = Objects.requireNonNull(bootstrapRoster);
         return this;
     }
 
