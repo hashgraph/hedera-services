@@ -29,6 +29,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
@@ -46,12 +48,14 @@ public class LogValidationTest {
         final Path workingDir = requireNonNull(metadata.workingDir());
         final Path path = workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
         final String fileContent = Files.readString(path);
-        try (var lines = Files.lines(path)) {
-            if (lines.anyMatch(line -> line.contains("Exception"))) {
-                throw new AssertionError("Unexpected problem found in logs: " + fileContent);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        Pattern pattern = Pattern.compile(".*Exception.*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(fileContent);
+        StringBuilder matchedLines = new StringBuilder();
+        while (matcher.find()) {
+            matchedLines.append(matcher.group()).append(System.lineSeparator());
+        }
+        if (!matchedLines.isEmpty()) {
+            throw new AssertionError("Unexpected problem found in logs:\n" + matchedLines);
         }
     }
 
