@@ -133,12 +133,12 @@ class CryptoFeeBuilderTest {
 
     @Test
     void getsCorrectCostCryptoAccountRecordsQueryFeeMatrices() {
-        assertEquals(FeeData.getDefaultInstance(), subject.getCostCryptoAccountRecordsQueryFeeMatrices());
+        assertEquals(FeeData.getDefaultInstance(), CryptoFeeBuilder.getCostCryptoAccountRecordsQueryFeeMatrices());
     }
 
     @Test
     void getsCorrectCostCryptoAccountInfoQueryFeeMatrices() {
-        assertEquals(FeeData.getDefaultInstance(), subject.getCostCryptoAccountInfoQueryFeeMatrices());
+        assertEquals(FeeData.getDefaultInstance(), CryptoFeeBuilder.getCostCryptoAccountInfoQueryFeeMatrices());
     }
 
     private void assertQueryFee(final FeeData feeData, final long expectedBpr) {

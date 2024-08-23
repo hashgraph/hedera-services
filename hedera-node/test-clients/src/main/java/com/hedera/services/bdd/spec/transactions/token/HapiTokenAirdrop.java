@@ -19,7 +19,10 @@ package com.hedera.services.bdd.spec.transactions.token;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
@@ -28,6 +31,7 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiBaseTransfer;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -36,14 +40,22 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
     static final Logger log = LogManager.getLogger(HapiTokenAirdrop.class);
+
+    @Nullable
+    private IntConsumer numAirdropsCreated = null;
+
+    @Nullable
+    private IntConsumer numTokenAssociationsCreated = null;
 
     public HapiTokenAirdrop(final TokenMovement... sources) {
         this.tokenAwareProviders = List.of(sources);
@@ -85,6 +97,34 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
         return builder -> builder.setTokenAirdrop(opBody);
     }
 
+    public HapiTokenAirdrop airdropObserver(@Nullable final IntConsumer numAirdropsCreated) {
+        this.numAirdropsCreated = numAirdropsCreated;
+        return this;
+    }
+
+    public HapiTokenAirdrop tokenAssociationsObserver(@Nullable final IntConsumer numTokenAssociationsCreated) {
+        this.numTokenAssociationsCreated = numTokenAssociationsCreated;
+        return this;
+    }
+
+    @Override
+    protected void assertExpectationsGiven(final HapiSpec spec) throws Throwable {
+        if (numAirdropsCreated != null) {
+            final var op = getTxnRecord(extractTxnId(txnSubmitted))
+                    .assertingNothingAboutHashes()
+                    .noLogging();
+            CustomSpecAssert.allRunFor(spec, op);
+            numAirdropsCreated.accept(op.getResponseRecord().getNewPendingAirdropsCount());
+        }
+        if (numTokenAssociationsCreated != null) {
+            final var op = getTxnRecord(extractTxnId(txnSubmitted))
+                    .assertingNothingAboutHashes()
+                    .noLogging();
+            CustomSpecAssert.allRunFor(spec, op);
+            numTokenAssociationsCreated.accept(op.getResponseRecord().getAutomaticTokenAssociationsCount());
+        }
+    }
+
     private long estimateTransferFees(HapiSpec spec, int numPayerKeys) throws Throwable {
         // convert transfer list in to crypto transfer transaction
         var cryptoTransferBodyBuilder = CryptoTransferTransactionBody.newBuilder();
@@ -115,6 +155,8 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
                 var accountId = AccountID.getDefaultInstance();
                 if (spec.registry().hasAccountId(receiver)) {
                     accountId = spec.registry().getKeyAlias(receiver);
+                } else {
+                    return ONE_HUNDRED_HBARS;
                 }
                 // create token associate transaction for each missing association
                 var tokenAssociateTransactionBody = TokenAssociateTransactionBody.newBuilder()
@@ -149,7 +191,6 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
             subOp = getAccountInfo(account).noLogging();
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
-                log.warn(error.get());
                 return 0;
             }
             return subOp.getResponse()
@@ -161,7 +202,6 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
             HapiGetContractInfo subOp = getContractInfo(account).noLogging();
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
-                log.warn(error.get());
                 return 0;
             }
             return subOp.getResponse()

@@ -36,7 +36,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -49,7 +48,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -90,7 +88,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionInfo txnInfo;
     private final Configuration config;
     private final Authorizer authorizer;
-    private final BlockRecordManager blockRecordManager;
+    private final BlockRecordInfo blockRecordInfo;
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
@@ -105,7 +103,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final AttributeValidator attributeValidator;
     private final ExpiryValidator expiryValidator;
     private final TransactionDispatcher dispatcher;
-    private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
@@ -119,7 +116,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Configuration config,
             @NonNull final Authorizer authorizer,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
@@ -132,7 +129,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final SavepointStackImpl stack,
             @NonNull final EntityNumGenerator entityNumGenerator,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
@@ -143,7 +139,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.txnInfo = requireNonNull(transactionInfo);
         this.config = requireNonNull(config);
         this.authorizer = requireNonNull(authorizer);
-        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.blockRecordInfo = requireNonNull(blockRecordInfo);
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.storeFactory = requireNonNull(storeFactory);
@@ -162,7 +158,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
-        this.recordCache = requireNonNull(recordCache);
         this.networkInfo = requireNonNull(networkInfo);
     }
 
@@ -217,7 +212,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
-        return blockRecordManager;
+        return blockRecordInfo;
     }
 
     @NonNull
@@ -295,12 +290,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public SystemPrivilege hasPrivilegedAuthorization() {
         return authorizer.hasPrivilegedAuthorization(payerId, txnInfo.functionality(), txnInfo.txBody());
-    }
-
-    @NonNull
-    @Override
-    public RecordCache recordCache() {
-        return recordCache;
     }
 
     @NonNull
@@ -383,7 +372,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.IRREVERSIBLE,
-                true);
+                true,
+                ConsensusThrottling.ON);
     }
 
     @NonNull
@@ -392,7 +382,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
-            final AccountID childSyntheticPayer) {
+            final AccountID childSyntheticPayer,
+            @NonNull final ConsensusThrottling consensusThrottling) {
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,
@@ -401,7 +392,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.REMOVABLE,
-                false);
+                false,
+                consensusThrottling);
     }
 
     @NonNull
@@ -411,7 +403,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final TransactionCategory childCategory) {
+            @NonNull final TransactionCategory childCategory,
+            @NonNull final ConsensusThrottling consensusThrottling) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
@@ -425,7 +418,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
                 StreamBuilder.ReversingBehavior.REVERSIBLE,
-                false);
+                false,
+                consensusThrottling);
     }
 
     @NonNull
@@ -435,11 +429,13 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final ConsensusThrottling throttleStrategy) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
         requireNonNull(customizer, "customizer must not be null");
+        requireNonNull(throttleStrategy, "throttleStrategy must not be null");
 
         return dispatchForRecord(
                 childTxBody,
@@ -449,7 +445,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 customizer,
                 TransactionCategory.CHILD,
                 StreamBuilder.ReversingBehavior.REMOVABLE,
-                false);
+                false,
+                throttleStrategy);
     }
 
     @NonNull
@@ -478,7 +475,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
             @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
-            final boolean commitStack) {
+            final boolean commitStack,
+            @NonNull final ConsensusThrottling throttleStrategy) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,
                 childVerifier,
@@ -493,7 +491,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 platformState,
                 topLevelFunction,
                 throttleAdviser,
-                consensusNow);
+                consensusNow,
+                blockRecordInfo,
+                throttleStrategy);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();

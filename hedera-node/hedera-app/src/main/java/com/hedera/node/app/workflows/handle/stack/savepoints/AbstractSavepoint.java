@@ -34,6 +34,7 @@ import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.hedera.node.config.types.StreamMode;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
@@ -113,11 +114,17 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            final boolean isBaseBuilder) {
+            final boolean isBaseBuilder,
+            @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
-        final var builder = new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+        final var builder =
+                switch (streamMode) {
+                    case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+                    case BLOCKS -> throw new UnsupportedOperationException("Block stream not yet supported");
+                    case BOTH -> throw new UnsupportedOperationException("Paired stream not yet supported");
+                };
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING && !isBaseBuilder) {
                 addPrecedingOrThrow(builder);

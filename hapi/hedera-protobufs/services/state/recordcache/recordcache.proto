@@ -24,6 +24,7 @@ package proto;
 
 import "basic_types.proto";
 import "transaction_record.proto";
+import "response_code.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.recordcache">>> This comment is special code for setting PBJ Compiler java package
@@ -52,4 +53,35 @@ message TransactionRecordEntry {
      * The transaction record for the transaction.
      */
     TransactionRecord transaction_record = 3;
+}
+/**
+ * As a single transaction is handled a receipt is created. It is stored in state for a configured time
+ * limit (perhaps, for example, 3 minutes). During this time window, any client can query the node and get the
+ * receipt for the transaction. The TransactionReceiptEntry is the object stored in state with this information.
+ */
+message TransactionReceiptEntry {
+    /**
+    * The ID of the node that submitted the transaction to consensus. The ID is the ID of the node as known by the
+    * address book. Valid node IDs are in the range 0..2^63-1, inclusive.
+    */
+    uint64 node_id = 1;
+
+    /**
+     * The id of the submitted transaction.
+     */
+    TransactionID transaction_id = 2;
+
+    /**
+     * The resulting status of handling the transaction.
+     */
+    ResponseCodeEnum status = 3;
+}
+/**
+ * As transactions are handled and receipts are created, they are stored in state for a configured time
+ * limit (perhaps, for example, 3 minutes). During this time window, any client can query the node and get the
+ * receipt for the transaction. The TransactionReceiptEntries is the object stored in state with this information.
+ * This object contains a list of TransactionReceiptEntry objects.
+ */
+message TransactionReceiptEntries {
+    repeated TransactionReceiptEntry entries = 1;
 }

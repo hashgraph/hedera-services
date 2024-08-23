@@ -29,12 +29,14 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
@@ -98,6 +100,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected AdjustFungibleTokenChangesStep adjustFungibleTokenChangesStep;
     protected CryptoTransferTransactionBody body;
     protected TokenAirdropTransactionBody airdropBody;
+    protected TokenClaimAirdropTransactionBody claimAirdropBody;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
 
@@ -145,6 +148,16 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         .transactionValidStart(consensusTimestamp)
                         .build())
                 .tokenAirdrop(body)
+                .build();
+    }
+
+    protected TransactionBody asClaimAirdropTxn(final TokenClaimAirdropTransactionBody body, final AccountID payerId) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .tokenClaimAirdrop(body)
                 .build();
     }
 
@@ -199,7 +212,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
@@ -212,7 +226,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer), any()))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)
@@ -278,8 +292,22 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(TokenAirdropStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(tokenAirdropRecordBuilder);
+        given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
+        given(configProvider.getConfiguration()).willReturn(versionedConfig);
+    }
+
+    protected void givenClaimAirdrop(List<PendingAirdropId> airdrops) {
+        claimAirdropBody = TokenClaimAirdropTransactionBody.newBuilder()
+                .pendingAirdrops(airdrops)
+                .build();
+        txn = asClaimAirdropTxn(claimAirdropBody, payerId);
+        given(handleContext.payer()).willReturn(payerId);
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
