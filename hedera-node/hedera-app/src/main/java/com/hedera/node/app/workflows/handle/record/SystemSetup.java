@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
@@ -66,6 +68,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -83,6 +86,10 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class SystemSetup {
     private static final Logger log = LogManager.getLogger(SystemSetup.class);
+
+    private static final EnumSet<ResponseCodeEnum> SUCCESSES =
+            EnumSet.of(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
@@ -235,7 +242,7 @@ public class SystemSetup {
                 controlledNum.put(new EntityNumber(entityNum - 1));
                 final var recordBuilder = dispatch.handleContext()
                         .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
-                if (recordBuilder.status() != SUCCESS) {
+                if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error(
                             "Failed to dispatch system create transaction {} for entity {} - {}",
                             txBody,
@@ -250,7 +257,7 @@ public class SystemSetup {
                 requireNonNull(txBody);
                 final var recordBuilder = dispatch.handleContext()
                         .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
-                if (recordBuilder.status() != SUCCESS) {
+                if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error("Failed to dispatch update transaction {} for - {}", txBody, recordBuilder.status());
                 }
             }

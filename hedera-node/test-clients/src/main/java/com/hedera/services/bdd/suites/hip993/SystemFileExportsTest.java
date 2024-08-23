@@ -122,8 +122,8 @@ public class SystemFileExportsTest {
         };
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleItems(
-                        addressBookExportValidator(grpcCertHashes, gossipCertificates), "addressBookExport")),
+                streamMustIncludePassFrom(selectedItems(
+                        addressBookExportValidator(grpcCertHashes, gossipCertificates), 1, this::isSysFileUpdate)),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
@@ -367,7 +367,7 @@ public class SystemFileExportsTest {
             @NonNull final byte[][] grpcCertHashes,
             @NonNull final AtomicReference<Map<Long, X509Certificate>> gossipCertificates) {
         return (spec, records) -> {
-            final var items = requireNonNull(records.get("addressBookExport"));
+            final var items = requireNonNull(records.get(SELECTED_ITEMS_KEY));
             final var histogram = statusHistograms(items.entries());
             assertEquals(Map.of(SUCCESS, 1), histogram.get(FileUpdate));
             final var updateItem = items.entries().stream()
