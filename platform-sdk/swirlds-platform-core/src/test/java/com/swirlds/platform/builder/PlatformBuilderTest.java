@@ -63,7 +63,9 @@ class PlatformBuilderTest {
 
     @Test
     void testCreateRosterFromNullAddressBook() {
-        assertThrows(IllegalStateException.class, platformBuilder::createRoster,
+        assertThrows(
+                IllegalStateException.class,
+                platformBuilder::createRoster,
                 "Illegal attempt to create a Roster from a null AddressBook");
     }
 
