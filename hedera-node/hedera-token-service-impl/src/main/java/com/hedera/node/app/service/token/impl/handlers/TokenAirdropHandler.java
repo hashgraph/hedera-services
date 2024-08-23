@@ -127,7 +127,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
 
         // validate the transaction body token transfers and NFT transfers
-        validator.validateSemantics(context, op, accountStore, tokenStore, tokenRelStore, nftStore);
+        validator.validateSemantics(context, op, accountStore, tokenStore, tokenRelStore, nftStore, pendingStore);
 
         // If the transaction is valid, charge custom fees in advance
         var convertedOp = CryptoTransferTransactionBody.newBuilder()
