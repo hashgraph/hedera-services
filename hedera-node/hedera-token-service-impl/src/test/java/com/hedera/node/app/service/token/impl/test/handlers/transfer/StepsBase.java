@@ -212,7 +212,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(CryptoCreateStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
@@ -225,7 +226,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(syntheticPayer), any()))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)
@@ -291,7 +292,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(TokenAirdropStreamBuilder.class),
                         any(Predicate.class),
                         eq(payerId),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
