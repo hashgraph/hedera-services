@@ -20,10 +20,9 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BoundaryStateChangeListener.singletonUpdateChangeValueFor;
-import static com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
-import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -44,6 +43,7 @@ import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -85,10 +85,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
+    private final int roundsPerBlock;
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
-    private Bytes previousBlockHash;
     private Instant blockTimestamp;
     private List<BlockItem> pendingItems;
     private StreamingTreeHasher inputTreeHasher;
@@ -99,6 +99,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * hashes if applicable; <b>and</b> written to the block item writer.
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
+
+    private CompletableFuture<Bytes> previousBlockHashFuture = completedFuture(Bytes.EMPTY);
 
     @Inject
     public BlockStreamManagerImpl(
@@ -114,6 +116,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.nodeVersion = nodeVersionFrom(config);
+        this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
     }
@@ -122,36 +125,47 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     public void writeFreezeRound(@NonNull final State state, @NonNull final Instant consensusNow) {
         requireNonNull(state);
         requireNonNull(consensusNow);
-        final var blockStreamInfo = startRoundInternal(consensusNow, state);
+        // While writing a freeze block, we need to close the existing block, if it is open.
+        if (!writer.isClosed()) {
+            final var blockStreamInfo = requireNonNull(state.getReadableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
+                    .get());
+            endBlock(blockStreamInfo);
+        }
+        final var blockStreamInfo = startBlock(consensusNow, state);
         writeFuture.join();
-        endRoundInternal(blockStreamInfo);
+        endBlock(blockStreamInfo);
     }
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        startRoundInternal(round.getConsensusTimestamp(), state);
+        if (writer.isClosed()) {
+            startBlock(round.getConsensusTimestamp(), state);
+        }
     }
 
     @Override
-    public void endRound(@NonNull final State state) {
+    public void endRound(@NonNull final State state, final long roundNum) {
         //        log.info(
         //                "Capturing end of round state changes for block {} with {}",
         //                blockNumber,
         //                roundStateChangeListener.stateChanges());
-        writeFuture.join();
-
+        if (!shouldCloseBlock(roundNum, roundsPerBlock)) {
+            return;
+        }
         final var writableState = state.getWritableStates(BlockStreamService.NAME);
         final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+        final var prevBlockHash = previousBlockHashFuture.join();
+
         final var blockStreamInfo = new BlockStreamInfo(
                 blockNumber,
-                Bytes.EMPTY,
+                previousBlockHashFuture.get(),
                 blockTimestamp(),
                 runningHashManager.latestHashes(),
                 blockHashManager.hashesAfterLatest(Bytes.wrap(new byte[48])));
         blockStreamInfoState.put(blockStreamInfo);
         ((CommittableWritableStates) writableState).commit();
-
-        endRoundInternal(blockStreamInfo);
+        endBlock(blockStreamInfo);
     }
 
     @Override
@@ -194,37 +208,35 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         pendingItems = new ArrayList<>();
     }
 
-    private BlockStreamInfo startRoundInternal(@NonNull final Instant consensusNow, @NonNull final State state) {
+    private BlockStreamInfo startBlock(@NonNull final Instant consensusNow, @NonNull final State state) {
         blockTimestamp = consensusNow;
         // If there are no other changes to state, we can just use the round's consensus timestamp as the
         // last-assigned consensus time for externalizing the PUT to the block stream info singleton
         boundaryStateChangeListener.setLastUsedConsensusTime(blockTimestamp);
-        pendingItems = new ArrayList<>();
-        final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
+        final var blockStreamInfo = requireNonNull(state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
-                .get();
-        if (blockStreamInfo == null && initTrigger != GENESIS) {
-            // TODO - initialize from record stream state
-        }
-        blockNumber = blockStreamInfo == null ? 0 : blockStreamInfo.lastBlockNumber() + 1;
-        previousBlockHash = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.lastBlockHash();
+                .get());
         blockHashManager.startRound(blockStreamInfo);
         runningHashManager.startRound(blockStreamInfo);
         inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
         outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
+        blockNumber = blockStreamInfo.lastBlockNumber() + 1;
+        pendingItems = new ArrayList<>();
+
         pendingItems.add(BlockItem.newBuilder()
                 .blockHeader(BlockHeader.newBuilder()
                         .number(blockNumber)
-                        .previousBlockHash(previousBlockHash)
+                        .previousBlockHash(blockStreamInfo.lastBlockHash())
                         .hashAlgorithm(SHA2_384)
                         .softwareVersion(nodeVersion)
                         .hapiProtoVersion(hapiVersion))
                 .build());
+
         writer.openBlock(blockNumber);
         return blockStreamInfo;
     }
 
-    private void endRoundInternal(@NonNull final BlockStreamInfo blockStreamInfo) {
+    private void endBlock(@NonNull final BlockStreamInfo blockStreamInfo) {
         requireNonNull(blockStreamInfo);
         final var endOfBlockTimestamp = boundaryStateChangeListener.endOfBlockTimestamp();
         pendingItems.add(boundaryStateChangeListener.flushChanges());
@@ -239,7 +251,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .build())
                 .build();
         pendingItems.add(blockItem);
+        closeBlock();
+    }
 
+    private void closeBlock() {
         schedulePendingWork();
 
         writeFuture.join();
@@ -411,5 +426,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         Bytes hashesAfterLatest(@NonNull final Bytes blockHash) {
             return appendHash(blockHash, blockHashes, numTrailingBlocks);
         }
+    }
+
+    public enum RoundType {
+        FREEZE,
+        NORMAL
     }
 }

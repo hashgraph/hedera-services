@@ -45,9 +45,11 @@ public interface BlockStreamManager extends BlockRecordInfo {
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
-     * @param state the mutable state of the network at the end of the round
+     *
+     * @param state    the mutable state of the network at the end of the round
+     * @param roundNum
      */
-    void endRound(@NonNull State state);
+    void endRound(@NonNull State state, final long roundNum);
 
     /**
      * Writes a block item to the stream.
@@ -60,4 +62,9 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * Writes the final block items for the freeze round to a new block.
      */
     void writeFreezeRound(@NonNull State state, @NonNull Instant consensusNow);
+
+    default boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
+        return roundNumber % roundsPerBlock == 0;
+    }
+    ;
 }

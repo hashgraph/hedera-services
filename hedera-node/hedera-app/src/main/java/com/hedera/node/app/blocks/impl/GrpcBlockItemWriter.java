@@ -121,4 +121,9 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                 ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
         return BlockStreamServiceGrpc.newStub(channel);
     }
+
+    @Override
+    public boolean isClosed() {
+        return state == GrpcBlockItemWriter.State.CLOSED;
+    }
 }

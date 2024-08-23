@@ -183,6 +183,11 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
+    @Override
+    public boolean isClosed() {
+        return state == State.CLOSED;
+    }
+
     /**
      * Get the record file path for a record file with the given consensus time
      *

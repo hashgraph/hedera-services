@@ -16,8 +16,15 @@
 
 package com.hedera.node.app.blocks.schemas;
 
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.lastBlockHash;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
@@ -52,13 +59,15 @@ import java.util.Set;
  *     <li>The <b>trailing 256 block hashes</b>, used to implement the EVM {@code BLOCKHASH} opcode.</li>
  * </ol>
  */
-public class V0XX0BlockStreamSchema extends Schema {
+public class V0540BlockStreamSchema extends Schema {
     public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
+    private static final String SHARED_BLOCK_RECORD_INFO = "SHARED_BLOCK_RECORD_INFO";
+    private static final String SHARED_RUNNING_HASHES = "SHARED_RUNNING_HASHES";
 
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
 
-    public V0XX0BlockStreamSchema() {
+    public V0540BlockStreamSchema() {
         super(VERSION);
     }
 
@@ -69,9 +78,33 @@ public class V0XX0BlockStreamSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        final var state = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
         if (ctx.previousVersion() == null) {
-            final var blockStreamInfo = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
-            blockStreamInfo.put(BlockStreamInfo.DEFAULT);
+            state.put(BlockStreamInfo.DEFAULT);
+        } else {
+            final var blockStreamInfo = state.get();
+            // This will be null if the previous version is before 0.54.0
+            if (blockStreamInfo == null) {
+                final BlockInfo blockInfo =
+                        (BlockInfo) requireNonNull(ctx.sharedValues().get(SHARED_BLOCK_RECORD_INFO));
+                final RunningHashes runningHashes =
+                        (RunningHashes) requireNonNull(ctx.sharedValues().get(SHARED_RUNNING_HASHES));
+                state.put(BlockStreamInfo.newBuilder()
+                        .lastBlockTime(blockInfo.firstConsTimeOfLastBlock())
+                        .lastBlockNumber(blockInfo.lastBlockNumber())
+                        .lastBlockHash(requireNonNull(lastBlockHash(blockInfo)))
+                        .trailingBlockHashes(blockInfo.blockHashes())
+                        .trailingOutputHashes(appendedHashes(runningHashes))
+                        .build());
+            }
         }
+    }
+
+    private Bytes appendedHashes(final RunningHashes runningHashes) {
+        Bytes appendedHashes = Bytes.EMPTY;
+        appendedHashes = appendHash(runningHashes.nMinus3RunningHash(), appendedHashes, 4);
+        appendedHashes = appendHash(runningHashes.nMinus2RunningHash(), appendedHashes, 4);
+        appendedHashes = appendHash(runningHashes.nMinus1RunningHash(), appendedHashes, 4);
+        return appendHash(runningHashes.runningHash(), appendedHashes, 4);
     }
 }
