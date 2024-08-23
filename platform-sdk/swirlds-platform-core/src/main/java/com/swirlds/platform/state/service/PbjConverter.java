@@ -99,9 +99,25 @@ public final class PbjConverter {
             builder.roundsNonAncient(accumulator.getRoundsNonAncient());
         }
 
+        com.hedera.hapi.platform.state.ConsensusSnapshot.Builder consensusSnapshotBuilder;
         if (accumulator.isSnapshotUpdated()) {
-            builder.consensusSnapshot(toPbjConsensusSnapshot(accumulator.getSnapshot()));
+            consensusSnapshotBuilder =
+                    toPbjConsensusSnapshot(accumulator.getSnapshot()).copyBuilder();
+        } else {
+            consensusSnapshotBuilder = previousState
+                    .consensusSnapshotOrElse(com.hedera.hapi.platform.state.ConsensusSnapshot.DEFAULT)
+                    .copyBuilder();
         }
+
+        if (accumulator.isRoundUpdated()) {
+            consensusSnapshotBuilder.round(accumulator.getRound());
+        }
+
+        if (accumulator.isConsensusTimestampUpdated()) {
+            consensusSnapshotBuilder.consensusTimestamp(toPbjTimestamp(accumulator.getConsensusTimestamp()));
+        }
+
+        builder.consensusSnapshot(consensusSnapshotBuilder);
 
         if (accumulator.isFreezeTimeUpdated()) {
             builder.freezeTime(toPbjTimestamp(accumulator.getFreezeTime()));
