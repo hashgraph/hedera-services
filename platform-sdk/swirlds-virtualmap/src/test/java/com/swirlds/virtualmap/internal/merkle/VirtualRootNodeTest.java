@@ -40,8 +40,6 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
@@ -103,13 +101,12 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("A new map with a datasource with a root hash reveals it")
     void mapWithExistingHashedDataHasNonNullRootHash() throws ExecutionException, InterruptedException {
-        final KeySerializer<TestKey> keySerializer = new TestKeySerializer();
-        final ValueSerializer<TestValue> valueSerializer = new TestValueSerializer();
         // The builder I will use with this map is unique in that each call to "build" returns THE SAME DATASOURCE.
         final InMemoryDataSource ds = new InMemoryDataSource("mapWithExistingHashedDataHasNonNullRootHash");
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
 
-        final VirtualRootNode<TestKey, TestValue> fcm = new VirtualRootNode<>(keySerializer, valueSerializer, builder);
+        final VirtualRootNode<TestKey, TestValue> fcm =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
         fcm.put(A_KEY, APPLE);
@@ -122,7 +119,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(keySerializer, valueSerializer, builder);
+        final VirtualRootNode<TestKey, TestValue> fcm2 =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
         fcm2.postInit(copy.getState());
         assertNotNull(fcm2.getChild(0), "child should not be null");
         assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");

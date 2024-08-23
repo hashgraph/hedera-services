@@ -68,9 +68,6 @@ public class RecordAccessorImplTest {
     private static final long DELETED_LEAF_PATH = 12;
     private static final long BOGUS_LEAF_PATH = 22;
 
-    private static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
-    private static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
-
     private BreakableDataSource dataSource;
     private RecordAccessorImpl<TestKey, TestValue> records;
     private RecordAccessorImpl<TestKey, TestValue> mutableRecords;
@@ -80,7 +77,8 @@ public class RecordAccessorImplTest {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
         VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
         dataSource = new BreakableDataSource();
-        records = new RecordAccessorImpl<>(state, cache, KEY_SERIALIZER, VALUE_SERIALIZER, dataSource);
+        records = new RecordAccessorImpl<>(
+                state, cache, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, dataSource);
 
         // Prepopulate the database with some records
         final VirtualHashRecord root = internal(0);
@@ -102,7 +100,7 @@ public class RecordAccessorImplTest {
                 12,
                 Stream.of(root, left, right, leftLeft, leftRight, rightLeft),
                 Stream.of(firstLeaf, secondLeaf, thirdLeaf, fourthLeaf, fifthLeaf, sixthLeaf, seventhLeaf)
-                        .map(r -> r.toBytes(KEY_SERIALIZER, VALUE_SERIALIZER)),
+                        .map(r -> r.toBytes(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE)),
                 Stream.empty());
 
         // Prepopulate the cache with some of those records. Some will be deleted, some will be modified, some will
@@ -119,7 +117,8 @@ public class RecordAccessorImplTest {
         cache.deleteLeaf(seventhLeafGone);
         cache.deleteHash(DELETED_INTERNAL_PATH);
         cache.deleteHash(OLD_DELETED_INTERNAL_PATH);
-        mutableRecords = new RecordAccessorImpl<>(state, cache.copy(), KEY_SERIALIZER, VALUE_SERIALIZER, dataSource);
+        mutableRecords = new RecordAccessorImpl<>(
+                state, cache.copy(), TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, dataSource);
         cache.prepareForHashing();
         cache.putHash(rootChanged);
         cache.putHash(rightChanged);

@@ -106,7 +106,6 @@ public interface BaseSerializer<T> {
             serialize(data, out);
             final byte[] bytes = bout.toByteArray();
             assert bytes.length == getSerializedSize(data);
-            ;
             return Bytes.wrap(bytes);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

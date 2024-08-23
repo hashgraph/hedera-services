@@ -853,22 +853,6 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
     }
 
-    /*
-    @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-        // Deleted leaves count is ignored, as deleted leaves aren't flushed to data source
-        final long estimatedInternalsSize = dirtyInternals
-                * (Long.BYTES // path
-                        + DigestType.SHA_384.digestLength()); // hash
-        final long estimatedLeavesSize = dirtyLeaves
-                * (Long.BYTES // path
-                        + DigestType.SHA_384.digestLength() // hash
-                        + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
-                        + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
-        return estimatedInternalsSize + estimatedLeavesSize;
-    }
-    */
-
     /** toString for debugging */
     @Override
     public String toString() {

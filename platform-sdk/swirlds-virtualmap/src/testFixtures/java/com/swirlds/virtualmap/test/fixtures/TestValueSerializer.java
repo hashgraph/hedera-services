@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 @ConstructableIgnored
 public class TestValueSerializer implements ValueSerializer<TestValue> {
 
+    public static final TestValueSerializer INSTANCE = new TestValueSerializer();
+
     @Override
     public long getClassId() {
         throw new UnsupportedOperationException("This value serializer should never be serialized/deserialized");

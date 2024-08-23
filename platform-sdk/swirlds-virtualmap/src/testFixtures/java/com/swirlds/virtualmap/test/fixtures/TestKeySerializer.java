@@ -26,6 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @ConstructableIgnored
 public class TestKeySerializer implements KeySerializer<TestKey> {
 
+    public static final TestKeySerializer INSTANCE = new TestKeySerializer();
+
     @Override
     public long getClassId() {
         throw new UnsupportedOperationException("This key serializer should never be serialized/deserialized");

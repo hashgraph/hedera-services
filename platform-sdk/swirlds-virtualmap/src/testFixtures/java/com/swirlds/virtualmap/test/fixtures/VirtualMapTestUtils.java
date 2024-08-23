@@ -19,23 +19,17 @@ package com.swirlds.virtualmap.test.fixtures;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
 
 /**
  * Methods for testing {@link VirtualMap}.
  */
 public final class VirtualMapTestUtils {
 
-    private static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
-
-    private static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
-
     private VirtualMapTestUtils() {}
 
     public static VirtualMap<TestKey, TestValue> createMap(String label) {
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
-        return new VirtualMap<>(label, KEY_SERIALIZER, VALUE_SERIALIZER, builder);
+        return new VirtualMap<>(label, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
     }
 
     public static VirtualMap<TestKey, TestValue> createMap() {
@@ -44,7 +38,7 @@ public final class VirtualMapTestUtils {
 
     public static VirtualRootNode<TestKey, TestValue> createRoot() {
         final VirtualRootNode<TestKey, TestValue> root =
-                new VirtualRootNode<>(KEY_SERIALIZER, VALUE_SERIALIZER, new InMemoryBuilder());
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
         root.postInit(new DummyVirtualStateAccessor());
         return root;
     }

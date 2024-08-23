@@ -60,15 +60,13 @@ class ReconnectHashListenerTest {
 
     private static final Cryptography CRYPTO = CryptographyHolder.get();
 
-    private static final KeySerializer<TestKey> keySerializer = new TestKeySerializer();
-    private static final ValueSerializer<TestValue> valueSerializer = new TestValueSerializer();
-
     @Test
     @DisplayName("Null datasource throws")
     void nullDataSourceThrows() {
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener<TestKey, TestValue>(1, 1, keySerializer, valueSerializer, null, null),
+                () -> new ReconnectHashListener<TestKey, TestValue>(
+                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, null, null),
                 "A null data source should produce an NPE");
     }
 
@@ -89,7 +87,12 @@ class ReconnectHashListenerTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new ReconnectHashListener<>(
-                        firstLeafPath, lastLeafPath, keySerializer, valueSerializer, ds, null),
+                        firstLeafPath,
+                        lastLeafPath,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        ds,
+                        null),
                 "Should have thrown IllegalArgumentException");
     }
 
@@ -99,7 +102,8 @@ class ReconnectHashListenerTest {
     void goodLeafPaths(long firstLeafPath, long lastLeafPath) {
         final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true);
         try {
-            new ReconnectHashListener<>(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, ds, null);
+            new ReconnectHashListener<>(
+                    firstLeafPath, lastLeafPath, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, null);
         } catch (Exception e) {
             fail("Should have been able to create the instance", e);
         }
@@ -117,8 +121,8 @@ class ReconnectHashListenerTest {
 
         // 100 leaves would have firstLeafPath = 99, lastLeafPath = 198
         final long last = size + size;
-        final ReconnectHashListener<TestKey, TestValue> listener =
-                new ReconnectHashListener<>(size, last, keySerializer, valueSerializer, ds, remover);
+        final ReconnectHashListener<TestKey, TestValue> listener = new ReconnectHashListener<>(
+                size, last, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, remover);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         hasher.hash(
                 this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);

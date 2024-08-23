@@ -36,7 +36,7 @@ import java.io.IOException;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message HashRecord {
  *
  *     // Virtual node path

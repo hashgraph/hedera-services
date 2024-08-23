@@ -38,7 +38,9 @@ import com.swirlds.virtualmap.serialize.ValueSerializer;
  * hash code is always set to 0. It can be restored from the key, once the key is deserialized
  * from key bytes, but there should be actually no need to restore the hash code.
  *
- * <p><pre>
+ * <p>Protobuf schema:
+ *
+ * <pre>
  * message LeafRecord {
  *
  *     // Virtual node path
