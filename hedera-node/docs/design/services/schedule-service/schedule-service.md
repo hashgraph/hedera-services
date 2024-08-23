@@ -1,29 +1,27 @@
 # Schedule Service
-
 The Schedule Service processes transactions that create a schedulable entity on the network.
 CryptoTransfer,ConsensusSubmitMessage,TokenBurn,TokenMint, and CryptoApproveAllowance transactions
 are the transaction types that can be scheduled.
 Additional schedulable transactions will be added in future releases.
 
 ### Table of Contents
-
 - [Schedule Service](#Schedule-Service)
 - [Table of Contents](#Table-of-Contents)
 - [Architecture Overview](#Architecture-Overview)
 - [Transaction and Queries for the Schedule Service](#Transaction-and-Queries-for-the-Schedule-Service)
 - [Protobuf Definitions](#Protobuf-Definitions)
-  - [Schedule ID](#Schedule-ID)
-  - [Transaction Body's](#Transaction-Bodys)
-    - [SchedulableTransactionBody](#SchedulableTransactionBody)
-    - [ScheduleCreateTransactionBody](#ScheduleCreateTransactionBody)
-    - [ScheduleSignTransactionBody](#ScheduleSignTransactionBody)
-    - [ScheduleDeleteTransactionBody](#ScheduleDeleteTransactionBody)
-    - [ScheduleGetInfoQuery](#ScheduleGetInfoQuery)
+    - [Schedule ID](#Schedule-ID)
+    - [Transaction Body's](#Transaction-Bodys)
+        - [SchedulableTransactionBody](#SchedulableTransactionBody)
+        - [ScheduleCreateTransactionBody](#ScheduleCreateTransactionBody)
+        - [ScheduleSignTransactionBody](#ScheduleSignTransactionBody)
+        - [ScheduleDeleteTransactionBody](#ScheduleDeleteTransactionBody)
+        - [ScheduleGetInfoQuery](#ScheduleGetInfoQuery)
 - [Handlers](#Handlers)
-  - [pureChecks](#pureChecks)
-  - [preHandle](#preHandle)
-  - [handle](#handle)
-  - [calculateFees](#calculateFees)
+    - [pureChecks](#pureChecks)
+    - [preHandle](#preHandle)
+    - [handle](#handle)
+    - [calculateFees](#calculateFees)
 - [Network Response Messages](#Network-Response-Messages)
 
 ## Architecture Overview
@@ -50,20 +48,17 @@ The Schedule Service is designed to be stateless, meaning that it does not store
 data between requests.
 
 ## Transaction and Queries for the Schedule Service
-
 Transactions and queries are the means of interacting with the
 Schedule Service. They define the actions that can be performed on scheduable entities,
 such as creating a new schedule, signing a schedule, deleting a schedule,
 or retrieving information about a schedule.
 
 ## Protobuf Definitions
-
 Protobuf, or Protocol Buffers, is a method of serializing structured
 data. The Schedule Service uses it to define the structure of our transactions and queries.
 Here are some of the Protobuf definitions used in the Schedule Service:
 
 ### Schedule ID
-
 The entity ID of a schedule transaction.
 
 A ```ScheduleId``` is composed of a <shardNum>.<realmNum>.<scheduleNum> (eg. 0.0.10).
@@ -76,8 +71,9 @@ A ```ScheduleId``` is composed of a <shardNum>.<realmNum>.<scheduleNum> (eg. 0.0
 
 Together these values make up your ScheduleId. When a ScheduleId is requested in a field, be sure enter all three values.
 
-### Transaction Body's & Queries
 
+
+### Transaction Body's & Queries
 These are the specific types of transactions that can be performed on schedulable entities.
 Each transaction body corresponds to a specific operation,
 such as creating a new schedule (```ScheduleCreateTransactionBody```),
@@ -86,28 +82,26 @@ deleting a schedule (```ScheduleDeleteTransactionBody```),
 or retrieving information about a schedule (```ScheduleGetInfoQuery```).
 
 #### SchedulableTransactionBody
-
 ```SchedulableTransactionBody``` is a protobuf message used in the
 Schedule Service to define a transaction that can be scheduled for
 execution. This message is part of the Schedule Service which
 processes transactions that can be scheduled. Note that the global/dynamic
 system property
 * <tt>scheduling.whitelist</tt> controls which transaction types may be
-scheduled.
+  scheduled.
 
 Here are the key fields of ```SchedulableTransactionBody```:
 - ```transactionFee``` : This field is of type uint64 and represents the maximum transaction fee the client is willing to pay.
 - ```memo```: This is an optional field of type string that can hold a UTF-8 encoded
-string of no more than 100 bytes which does not contain the zero byte.
+  string of no more than 100 bytes which does not contain the zero byte.
 - ```data```: This field is a oneof type which means it can hold one of many types of
-transactions. The types of transactions that can be scheduled are arranged by
-service in roughly lexicographical order. The field ordinals are non-sequential,
-and a result of the historical order of implementation. The choices here include
-various types of transactions such as ContractCallTransactionBody,
-ContractCreateTransactionBody, etc.
+  transactions. The types of transactions that can be scheduled are arranged by
+  service in roughly lexicographical order. The field ordinals are non-sequential,
+  and a result of the historical order of implementation. The choices here include
+  various types of transactions such as ContractCallTransactionBody,
+  ContractCreateTransactionBody, etc.
 
 #### ScheduleCreateTransactionBody
-
 ```ScheduleCreateTransactionBody``` is a message used to create a new schedule
 entity in the network's action queue. Upon ```SUCCESS```, the receipt contains the
 ```ScheduleID``` of the created schedule.
@@ -129,7 +123,6 @@ The handler is responsible for executing the transaction and interacts with the
 ScheduleStore to perform the required operations.
 
 #### ScheduleSignTransactionBody
-
 ```ScheduleSignTransactionBody``` is a message used to sign a schedule entity in the network's action queue. The signing
 of a schedule is a crucial step in the lifecycle of a schedule as it determines whether the scheduled transaction
 can be executed or not.
@@ -148,20 +141,19 @@ The ```ScheduleSignTransactionBody``` message includes the following fields:
 The ```ScheduleDeleteTransactionBody``` message includes the following fields:
 
 - ```scheduleID```: The ID of the Scheduled Entity to be deleted.
-  -
+-
 - The ```ScheduleDeleteTransactionBody``` message is used in the ```ScheduleDeleteHandler``` to handle the
 - deletion of a schedule. The handler is responsible for executing the transaction and interacts with the
 - ScheduleStore to perform the required operations.
 
 #### ScheduleGetInfoQuery
-
 ```ScheduleGetInfoQuery``` is a message used to retrieve information about a schedule entity in the network's
 action queue. This query allows users to fetch details about a specific scheduled transaction using its
 ScheduleID.
 
 The ```ScheduleGetInfoQuery``` message includes the following fields:
 - ```header```: Standard info sent from client to node, including the signed payment, and what kind of response
-is requested (cost, state proof, both, or neither).
+  is requested (cost, state proof, both, or neither).
 - ```scheduleID```: The ID of the schedule entity whose information is requested.
 
 The ```ScheduleGetInfoQuery``` message is used in the ```ScheduleGetInfoQueryHandler``` to handle the retrieval of schedule information.
@@ -180,14 +172,12 @@ pureChecks, preHandle, handle, and calculateFees methods; or ultimately implemen
 through their inheritance structure. If the latter, they provide an implementation of the ```findResponse``` method.
 
 ### pureChecks
-
 The ```pureChecks``` method is responsible for performing checks that are independent of state or context.
 It takes a TransactionBody as an argument and throws a PreCheckException if any of the checks fail.
 In the context of ```ScheduleCreateHandler```, this method checks if the transaction ID is valid and if the
 scheduled transaction is valid for long term scheduling.
 
 ### preHandle
-
 The ```preHandle``` method in ```ScheduleCreateHandler``` and other handlers is called during the pre-handle workflow.
 It determines the signatures needed for creating a schedule. It takes a PreHandleContext as an argument,
 which collects all information, and throws a ```PreCheckException``` if any issue happens on the pre-handle
@@ -195,21 +185,18 @@ level. This method validates the scheduleID and checks if the schedule signature
 If not, it validates and adds the required keys.
 
 ### handle
-
 The ```handle``` method in ```ScheduleCreateHandler``` and other handlers is responsible for executing the main logic of each Handler.
 For ScheduleCreateHandler, it takes a HandleContext as an argument and throws a HandleException if any
 issue happens during the handling process. This method handles the creation of a new schedule. It validates
 the schedule and its contents, and then updates the schedule with the new contents.
 
 ### calculateFees
-
 The ```calculateFees``` method in ```ScheduleCreateHandler``` and other handlers is responsible for calculating the
 fees associated with the schedule operation. It takes a FeeContext as an argument and returns a Fees object. In the
 context of ```ScheduleCreateHandler``` This method calculates the fees based on the size of the data being created and
 the effective lifetime of the schedule.
 
 ## Network Response Messages
-
 Specific network response messages (```ResponseCodeEnum```) are wrapped by ```HandleException``` or
 ```PreCheckException``` and the codes relevant to the Schedule Service are:
 

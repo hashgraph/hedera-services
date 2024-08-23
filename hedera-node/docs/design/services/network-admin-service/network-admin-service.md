@@ -5,7 +5,6 @@ transactions respectively. When the Hedera network is entering a maintenance win
 the Freeze service is utilized to facilitate the upgrade process.
 
 ### Table of Contents
-
 - [Architecture Overview](#Architecture-Overview)
 - [Protobuf Definitions](#Protobuf-Definitions)
   - [Network Service](#Network-Service)
@@ -50,7 +49,6 @@ The Network and Freeze Services are designed to be stateless, meaning that they 
 client-specific data between requests.
 
 ## Protobuf Definitions
-
 Protobuf, or Protocol Buffers, is a method of serializing structured
 data. Here are some of the Protobuf definitions used in the Network & Freeze Service's:
 
@@ -176,7 +174,6 @@ future time. The `update_file` and `file_hash` fields are optional and are used 
 during the maintenance window.
 
 #### FreezeType
-
 `FreezeType` is a protobuf enum defined in the `freeze_type.proto` file. It is used to specify the type of network freeze or upgrade operation to be performed. It has several values:
 
 - `UNKNOWN_FREEZE_TYPE`: An (invalid) default value for this enum, to ensure the client explicitly sets the intended type of freeze transaction.
@@ -255,7 +252,6 @@ The `handle` method contains a switch statement that executes different logic ba
 - `UNKNOWN_FREEZE_TYPE`: If the `FreezeType` is `UNKNOWN_FREEZE_TYPE`, the method throws a `HandleException` with `ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY`.
 
 ## Network Response Messages
-
 Specific network response messages (```ResponseCodeEnum```) are wrapped by ```HandleException``` or ```PreCheckException```
 and the codes relevant to the Network and Freeze Service are:
 

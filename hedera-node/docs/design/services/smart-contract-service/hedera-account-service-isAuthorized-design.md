@@ -30,9 +30,9 @@ A "hedera account service" system contract is in
 Following the existing pattern for HAS each method will be given a package under
 `...contract.impl.exec.systemcontracts.has` with two classes:
 * `[method]Translator` - which first confirms that the call is for the given method, and
-then builds an `IsAuthorizedRawCall` for it.
+  then builds an `IsAuthorizedRawCall` for it.
 * `[method]Call` - which has an `execute()` method
-that does the work.
+  that does the work.
 
 ## Design for `isAuthorizedRaw`
 
@@ -47,6 +47,7 @@ an EVM address.
   recovered address, if successful, or "empty", if not.  The recovered address must then
   match the address given as an argument to `isAuthorizedRaw`.
   * 3000gas will be charged to match `ECRECOVER` behavior
+
 * If an Hedera account then it gets the account, looks in it to find a key _which it must
   have_ and which must be a _single key_ (otherwise: failure).  Then given the key and the
   signature verifies that the signature matches the message hash and is attested by
@@ -71,8 +72,8 @@ deprecated-for-removal API (via `CryptographyHolder`).  Additionally, `isAuthori
 functionality is present in Service's app-spi module but not exported to other modules (directly
 or indirectly from the `HandleContext`).  It needs to be exposed in that way.
 * Currently what is exported w.r.t. signatures is only that the signatures on the top-level
-transaction have been verified.  Not the ability to verify an arbitrary signature given hash and
-signature and an account (with keys).
+  transaction have been verified.  Not the ability to verify an arbitrary signature given hash and
+  signature and an account (with keys).
 
 ## Testing
 
@@ -86,32 +87,33 @@ All positive tests return a status SUCCESS, and then verification of the signatu
 boolean output argument.
 
 1. EVM address, valid hash+signature -> SUCCESS + true
-2. EVM address, _invalid_ hash+signature -> SUCCESS + false
-3. EVM address, some hash (correct size) but signature's `v` value is `>1` and `<27` -> SUCCESS + false
-4. EVM address, valid hash+signature but recovered address does not match given address -> SUCCESS + false
-   * But I don't know of any such example, so **low priority**
-5. EVM alias of Hedera account w/ single ED key, valid hash+signature -> SUCCESS + true
-6. EVM alias Hedera account w/ single ED key, _invalid_ hash+signature -> SUCCESS + false
-7. EC and ED validation _with sufficient gas_ succeeds
+1. EVM address, _invalid_ hash+signature -> SUCCESS + false
+1. EVM address, some hash (correct size) but signature's `v` value is `>1` and `<27` -> SUCCESS + false
+1. EVM address, valid hash+signature but recovered address does not match given address -> SUCCESS + false
+  * But I don't know of any such example, so **low priority**
+1. EVM alias of Hedera account w/ single ED key, valid hash+signature -> SUCCESS + true
+1. EVM alias Hedera account w/ single ED key, _invalid_ hash+signature -> SUCCESS + false
+1. EC and ED validation _with sufficient gas_ succeeds
 
 ### Negative
 
 All negative tests return some failure status.
 
 1. EVM address, insufficient gas -> FAILED
-2. EVM alias of Hedera account, insufficient gas -> FAILED
-3. EVM address, signature length `!= 65` bytes -> FAILED
-4. EVM alias of Hedera account, signature length `!= 64` bytes -> FAILED
-5. EVM address, message hash length `!= 32` bytes -> FAILED
-6. EVM address but is a long zero -> FAILED
-7. EVM alias of Hedera account w/ 1 key which is EC -> FAILED
-8. EVM alias of Hedera account w/ (any) threshold key -> FAILED
-9. EVM alias of Hedera account w/ (any) "key list" type key -> FAILED
-10. EC and ED validation _without sufficient gas_ -> FAILED
+1. EVM alias of Hedera account, insufficient gas -> FAILED
+1. EVM address, signature length `!= 65` bytes -> FAILED
+1. EVM alias of Hedera account, signature length `!= 64` bytes -> FAILED
+1. EVM address, message hash length `!= 32` bytes -> FAILED
+1. EVM address but is a long zero -> FAILED
+1. EVM alias of Hedera account w/ 1 key which is EC -> FAILED
+1. EVM alias of Hedera account w/ (any) threshold key -> FAILED
+1. EVM alias of Hedera account w/ (any) "key list" type key -> FAILED
+1. EC and ED validation _without sufficient gas_ -> FAILED
 
 __
 
 ## TBD
+
 
 * `isAuthorizedRaw` requires a message hash.  For EVM addresses, with an EC key,
   the message hash is a
@@ -133,3 +135,5 @@ __
 
 * Don't have sufficiently specific status codes (`HederaResponseEnum`) - and the way to get them is
   to put them in a HIP. So this is pending edits on HIP-632, tracked elsewhere.
+
+

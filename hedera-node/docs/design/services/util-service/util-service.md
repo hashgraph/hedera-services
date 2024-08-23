@@ -5,7 +5,6 @@ Currently, the only functionality provided by this service is the generation of
 pseudorandom numbers.
 
 ### Table of Contents
-
 - [Util Service](#Util-Service)
 - [Protobuf Definitions](#Protobuf-Definitions)
   - [UtilPrngTransactionBody](#UtilPrngTransactionBody)
@@ -13,7 +12,6 @@ pseudorandom numbers.
 - [Configuration](#Configuration)
 
 ## Protobuf Definitions
-
 Protobuf, or Protocol Buffers, is a method of serializing structured data.
 The Util Service uses it to define the structure of our transactions. Here are some of
 the Protobuf definitions used in the Util Service:
@@ -26,7 +24,6 @@ the Protobuf definitions used in the Util Service:
   If not set or set to zero, will return a 384-bit pseudorandom number in the record.
 
 ### UtilPrngTransactionBody
-
 The `UtilPrngTransactionBody` message is a crucial part of the `prng` RPC in the Util Service.
 It is defined in the `util_prng.proto` file and is used to specify the range for the pseudorandom
 number generation.
@@ -62,7 +59,6 @@ implementations of pureChecks, preHandle, handle, and calculateFees methods.
   both essentially unpredictable and deterministic.
 
 ## Configuration
-
 ```UtilPrngConfig``` is a configuration class used in the Hedera Hashgraph network.
 This class is used to configure the behavior of the ```UtilPrngHandler```. The ```UtilPrngConfig```
 class is a record that contains a single boolean property, isEnabled. This property is
