@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.hip906;
+package com.hedera.services.bdd.suites.hip632;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPrivateKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
@@ -552,11 +552,12 @@ public class IsAuthorizedTest {
         // Intrinsic gas is 21_000, ECRECOVER is 3_000, but there's also the contract itself that we're calling
 
         record TestCase(long gasAmount, ResponseCodeEnum status) {}
-        final var testCases = new ArrayList<TestCase>(List.of(new TestCase(100000, SUCCESS)));
 
-        for (long g = 34000; g < 34300; g += 50) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
-        for (long g = 34300; g < 34344; g += 5) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
-        for (long g = 34350; g <= 34600; g += 50) testCases.add(new TestCase(g, SUCCESS));
+        final var testCases = new ArrayList<TestCase>(List.of(new TestCase(100000, SUCCESS)));
+        for (long g = 28000; g < 32000; g += 1000) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
+        for (long g = 32000; g < 33200; g += 100) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
+        for (long g = 33200; g < 34000; g += 100) testCases.add(new TestCase(g, SUCCESS));
+        for (long g = 34000; g < 40000; g += 1000) testCases.add(new TestCase(g, SUCCESS));
 
         final var dynamicTests = new ArrayList<Stream<DynamicTest>>(testCases.size());
         for (final var testCase : testCases) {
@@ -617,10 +618,10 @@ public class IsAuthorizedTest {
 
         record TestCase(long gasAmount, ResponseCodeEnum status) {}
         final var testCases = new ArrayList<TestCase>();
-        for (long g = 1_540_000; g <= 1_554_000; g += 1000) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
-        for (long g = 1_554_100; g < 1_554_500; g += 100) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
-        for (long g = 1_554_500; g < 1_555_000; g += 100) testCases.add(new TestCase(g, SUCCESS));
-        for (long g = 1_555_000; g <= 1_560_000; g += 1000) testCases.add(new TestCase(g, SUCCESS));
+        for (long g = 1_550_000; g < 1_553_000; g += 1000) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
+        for (long g = 1_553_000; g < 1_553_400; g += 100) testCases.add(new TestCase(g, INSUFFICIENT_GAS));
+        for (long g = 1_553_400; g < 1_554_000; g += 100) testCases.add(new TestCase(g, SUCCESS));
+        for (long g = 1_554_000; g < 1_560_000; g += 1000) testCases.add(new TestCase(g, SUCCESS));
 
         final var dynamicTests = new ArrayList<Stream<DynamicTest>>(testCases.size());
         for (final var testCase : testCases) {
@@ -663,6 +664,7 @@ public class IsAuthorizedTest {
                     }));
             final var hapiSpec = testCase.status() == SUCCESS
                     ? throughWhen.then(getTxnRecord(recordName)
+                            .logged()
                             .hasPriority(recordWith()
                                     .status(SUCCESS)
                                     .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
