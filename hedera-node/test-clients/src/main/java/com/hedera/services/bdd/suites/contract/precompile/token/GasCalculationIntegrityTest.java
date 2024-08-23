@@ -88,7 +88,7 @@ public class GasCalculationIntegrityTest {
 
     public static final long EXPIRY_RENEW = 3_000_000L;
 
-    private final Stream<RatesProvider> testCases = Stream.of(
+    private final Stream<RatesProvider> testCasesNew = Stream.of(
             new RatesProvider(10, 147),
             new RatesProvider(1, 1),
             new RatesProvider(1, 1),
@@ -97,7 +97,7 @@ public class GasCalculationIntegrityTest {
             new RatesProvider(787812, 1112),
             new RatesProvider(14444, 9999));
 
-    private final Stream<RatesProvider> testCasesNew = Stream.of(
+    private final Stream<RatesProvider> testCases = Stream.of(
             new RatesProvider(30000, 16197),
             new RatesProvider(30000, 359789),
             new RatesProvider(30000, 2888899),
