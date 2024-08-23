@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAird
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingNFTAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -85,14 +86,18 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -359,99 +364,85 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
         return hapiTest(
                 cryptoCreate(recipient).maxAutomaticTokenAssociations(0),
                 inParallel(
-                        mapNumberOfTokens(token -> createFT(token, DEFAULT_PAYER, 1000L), SpecOperation.class, 1, 10)),
-                tokenAirdrop(mapNumberOfTokens(
-                        token -> moving(1, token).between(DEFAULT_PAYER, recipient), TokenMovement.class, 1, 10)),
-                tokenClaimAirdrop(mapNumberOfTokens(
-                                token -> pendingAirdrop(DEFAULT_PAYER, recipient, token), Function.class, 1, 10))
-                        .payingWith(recipient)
-                        .via("claimTxn"),
-                inParallel(mapNumberOfTokens(
-                        token -> getAccountBalance(recipient).hasTokenBalance(token, 1), SpecOperation.class, 1, 10)),
-                validateChargedUsd("claimTxn", 0.0010031904, 1),
-                // validate that the airdrops already claimed
-                tokenClaimAirdrop(mapNumberOfTokens(
-                                token -> pendingAirdrop(DEFAULT_PAYER, recipient, token), Function.class, 1, 10))
-                        .payingWith(recipient)
-                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID));
+                        mapNTokens(token -> createFT(token, DEFAULT_PAYER, 1000L), SpecOperation.class, "ft", 1, 10)),
+                tokenAirdrop(mapNTokens(
+                        token -> moving(1, token).between(DEFAULT_PAYER, recipient), TokenMovement.class, "ft", 1, 10)),
+                claimAndFailToReclaim(() -> tokenClaimAirdrop(mapNTokens(
+                                token -> pendingAirdrop(DEFAULT_PAYER, recipient, token), Function.class, "ft", 1, 10))
+                        .payingWith(recipient)),
+                inParallel(mapNTokens(
+                        token -> getAccountBalance(recipient).hasTokenBalance(token, 1),
+                        SpecOperation.class,
+                        "ft",
+                        1,
+                        10)));
     }
 
     @HapiTest
     @DisplayName("token airdrop 10 FT and NFT claim by two receivers")
-    @SuppressWarnings("unchecked")
     final Stream<DynamicTest> tokenClaimOfTenFTAndNFTToTwoReceivers() {
-        final String ALICE = "ALICE";
         final String BOB = "BOB";
         final String CAROL = "CAROL";
         return hapiTest(
-                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                 cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                inParallel(mapNumberOfTokens(token -> createFT(token, ALICE, 1000L), SpecOperation.class, 1, 9)),
-                newKeyNamed(NFT_SUPPLY_KEY),
+                inParallel(mapNTokens(
+                        token -> createFT(token, DEFAULT_PAYER, 1000L), SpecOperation.class, "fungibleToken", 1, 9)),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .name(NON_FUNGIBLE_TOKEN)
-                        .treasury(ALICE)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
                         .initialSupply(0L)
-                        .supplyKey(NFT_SUPPLY_KEY),
+                        .supplyKey(DEFAULT_PAYER),
                 mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
                 tokenAirdrop(
-                                moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
-                                moving(1, FUNGIBLE_TOKEN_2).between(ALICE, BOB),
-                                moving(1, FUNGIBLE_TOKEN_3).between(ALICE, BOB),
-                                moving(1, FUNGIBLE_TOKEN_4).between(ALICE, BOB),
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1).between(ALICE, BOB),
-                                moving(1, FUNGIBLE_TOKEN_6).between(ALICE, CAROL),
-                                moving(1, FUNGIBLE_TOKEN_7).between(ALICE, CAROL),
-                                moving(1, FUNGIBLE_TOKEN_8).between(ALICE, CAROL),
-                                moving(1, FUNGIBLE_TOKEN_9).between(ALICE, CAROL),
-                                movingUnique(NON_FUNGIBLE_TOKEN, 2).between(ALICE, CAROL))
-                        .payingWith(ALICE),
-                tokenClaimAirdrop(
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_3),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_4),
-                                pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 1))
-                        .payingWith(BOB)
-                        .via("claimTxn"),
-                tokenClaimAirdrop(
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_6),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_7),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_8),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_9),
-                                pendingNFTAirdrop(ALICE, CAROL, NON_FUNGIBLE_TOKEN, 2))
-                        .payingWith(CAROL)
-                        .via("claimTxn1"),
-                tokenClaimAirdrop(
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_3),
-                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_4),
-                                pendingNFTAirdrop(ALICE, BOB, NON_FUNGIBLE_TOKEN, 1))
-                        .payingWith(BOB)
-                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID),
-                tokenClaimAirdrop(
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_6),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_7),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_8),
-                                pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_9),
-                                pendingNFTAirdrop(ALICE, CAROL, NON_FUNGIBLE_TOKEN, 2))
-                        .payingWith(CAROL)
-                        .hasKnownStatus(INVALID_PENDING_AIRDROP_ID),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 1),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_3, 1),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_4, 1),
+                        moving(1, FUNGIBLE_TOKEN_1).between(DEFAULT_PAYER, BOB),
+                        moving(1, FUNGIBLE_TOKEN_2).between(DEFAULT_PAYER, BOB),
+                        moving(1, FUNGIBLE_TOKEN_3).between(DEFAULT_PAYER, BOB),
+                        moving(1, FUNGIBLE_TOKEN_4).between(DEFAULT_PAYER, BOB),
+                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(DEFAULT_PAYER, BOB),
+                        moving(1, FUNGIBLE_TOKEN_6).between(DEFAULT_PAYER, CAROL),
+                        moving(1, FUNGIBLE_TOKEN_7).between(DEFAULT_PAYER, CAROL),
+                        moving(1, FUNGIBLE_TOKEN_8).between(DEFAULT_PAYER, CAROL),
+                        moving(1, FUNGIBLE_TOKEN_9).between(DEFAULT_PAYER, CAROL),
+                        movingUnique(NON_FUNGIBLE_TOKEN, 2).between(DEFAULT_PAYER, CAROL)),
+                claimAndFailToReclaim(() -> tokenClaimAirdrop(
+                                pendingAirdrop(DEFAULT_PAYER, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(DEFAULT_PAYER, BOB, FUNGIBLE_TOKEN_2),
+                                pendingAirdrop(DEFAULT_PAYER, BOB, FUNGIBLE_TOKEN_3),
+                                pendingAirdrop(DEFAULT_PAYER, BOB, FUNGIBLE_TOKEN_4),
+                                pendingNFTAirdrop(DEFAULT_PAYER, BOB, NON_FUNGIBLE_TOKEN, 1))
+                        .payingWith(BOB)),
+                claimAndFailToReclaim(() -> tokenClaimAirdrop(
+                                pendingAirdrop(DEFAULT_PAYER, CAROL, FUNGIBLE_TOKEN_6),
+                                pendingAirdrop(DEFAULT_PAYER, CAROL, FUNGIBLE_TOKEN_7),
+                                pendingAirdrop(DEFAULT_PAYER, CAROL, FUNGIBLE_TOKEN_8),
+                                pendingAirdrop(DEFAULT_PAYER, CAROL, FUNGIBLE_TOKEN_9),
+                                pendingNFTAirdrop(DEFAULT_PAYER, CAROL, NON_FUNGIBLE_TOKEN, 2))
+                        .payingWith(CAROL)),
+                inParallel(mapNTokens(
+                        token -> getAccountBalance(BOB).hasTokenBalance(token, 1),
+                        HapiGetAccountBalance.class,
+                        "fungibleToken",
+                        1,
+                        4)),
                 getAccountBalance(BOB).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_6, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_7, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_8, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_9, 1),
-                getAccountBalance(CAROL).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                validateChargedUsd("claimTxn", 0.0010031904, 1),
-                validateChargedUsd("claimTxn1", 0.0010031904, 1));
+                inParallel(mapNTokens(
+                        token -> getAccountBalance(CAROL).hasTokenBalance(token, 1),
+                        HapiGetAccountBalance.class,
+                        "fungibleToken",
+                        6,
+                        9)),
+                getAccountBalance(CAROL).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
+    }
+
+    private static final AtomicInteger NUM_CLAIMS = new AtomicInteger(0);
+
+    private SpecOperation claimAndFailToReclaim(@NonNull final Supplier<HapiTokenClaimAirdrop> claimFn) {
+        final var claimNum = NUM_CLAIMS.incrementAndGet();
+        return blockingOrder(
+                claimFn.get().via("claimTxn" + claimNum),
+                claimFn.get().hasKnownStatus(INVALID_PENDING_AIRDROP_ID),
+                validateChargedUsd("claimTxn" + claimNum, 0.0010031904, 1));
     }
 
     @HapiTest
@@ -471,7 +462,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 cryptoCreate(YULIA).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                 cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                 cryptoCreate(STEVE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                inParallel(mapNumberOfTokens(token -> createFT(token, ALICE, 1000L), SpecOperation.class, 1, 10)),
+                inParallel(mapNTokens(
+                        token -> createFT(token, ALICE, 1000L), SpecOperation.class, "fungibleToken", 1, 10)),
                 tokenAirdrop(
                                 moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
                                 moving(1, FUNGIBLE_TOKEN_2).between(ALICE, CAROL),
@@ -498,6 +490,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .payingWith(BOB)
                         .signedByPayerAnd(BOB, CAROL, YULIA, TOM, STEVE)
                         .via("claimTxn"),
+                validateChargedUsd("claimTxn", 0.0010159536, 1),
                 tokenClaimAirdrop(
                                 pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
                                 pendingAirdrop(ALICE, CAROL, FUNGIBLE_TOKEN_2),
@@ -512,25 +505,20 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .signedBy(BOB, CAROL, YULIA, TOM, STEVE)
                         .payingWith(BOB)
                         .hasKnownStatus(INVALID_PENDING_AIRDROP_ID),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_2, 1),
-                getAccountBalance(YULIA).hasTokenBalance(FUNGIBLE_TOKEN_3, 1),
-                getAccountBalance(TOM).hasTokenBalance(FUNGIBLE_TOKEN_4, 1),
-                getAccountBalance(STEVE).hasTokenBalance(FUNGIBLE_TOKEN_5, 1),
-                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_6, 1),
-                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_7, 1),
-                getAccountBalance(YULIA).hasTokenBalance(FUNGIBLE_TOKEN_8, 1),
-                getAccountBalance(TOM).hasTokenBalance(FUNGIBLE_TOKEN_9, 1),
-                getAccountBalance(STEVE).hasTokenBalance(FUNGIBLE_TOKEN_10, 1),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_2),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_3),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_4),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_5),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_7),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_8),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_9),
-                getAccountInfo(BOB).hasNoTokenRelationship(FUNGIBLE_TOKEN_10),
-                validateChargedUsd("claimTxn", 0.0010159536, 1));
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1).hasTokenBalance(FUNGIBLE_TOKEN_6, 1),
+                getAccountInfo(BOB)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_2)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_3)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_4)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_5)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_7)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_8)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_9)
+                        .hasNoTokenRelationship(FUNGIBLE_TOKEN_10),
+                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_2, 1).hasTokenBalance(FUNGIBLE_TOKEN_7, 1),
+                getAccountBalance(YULIA).hasTokenBalance(FUNGIBLE_TOKEN_3, 1).hasTokenBalance(FUNGIBLE_TOKEN_8, 1),
+                getAccountBalance(TOM).hasTokenBalance(FUNGIBLE_TOKEN_4, 1).hasTokenBalance(FUNGIBLE_TOKEN_9, 1),
+                getAccountBalance(STEVE).hasTokenBalance(FUNGIBLE_TOKEN_5, 1).hasTokenBalance(FUNGIBLE_TOKEN_10, 1));
     }
 
     @HapiTest
@@ -845,28 +833,10 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
         return hapiTest(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_2, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_3, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_4, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_5, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_6, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_7, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_8, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_9, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_10, OWNER, 1000L),
-                createFT(FUNGIBLE_TOKEN_11, OWNER, 1000L),
-                airdropFT(FUNGIBLE_TOKEN_1, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_2, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_3, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_4, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_5, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_6, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_7, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_8, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_9, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_10, OWNER, RECEIVER, 20),
-                airdropFT(FUNGIBLE_TOKEN_11, OWNER, RECEIVER, 20),
+                inParallel(mapNTokens(
+                        token -> createFT(token, OWNER, 1000L), SpecOperation.class, "fungibleToken", 1, 11)),
+                inParallel(mapNTokens(
+                        token -> airdropFT(token, OWNER, RECEIVER, 20), SpecOperation.class, "fungibleToken", 1, 11)),
                 tokenClaimAirdrop(
                                 pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_1),
                                 pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN_2),
@@ -1027,7 +997,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @HapiTest
     @DisplayName("containing up to 10 tokens and some duplicate entries should fail")
-    final Stream<DynamicTest> contain10TokensDulplicateFail() {
+    final Stream<DynamicTest> duplicateAirdropsFail() {
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
@@ -1116,14 +1086,14 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T[] mapNumberOfTokens(
+    private static <T> T[] mapNTokens(
             @NonNull final Function<String, T> f,
             @NonNull final Class<T> type,
-            int startNumberToken,
-            int numberOfTokens) {
-        return IntStream.rangeClosed(startNumberToken, numberOfTokens)
-                .mapToObj(i -> f.apply("fungibleToken" + i))
-                .toArray(n -> (T[]) Array.newInstance(type, n));
+            @NonNull final String token,
+            final int lo,
+            final int hi) {
+        return IntStream.rangeClosed(lo, hi).mapToObj(i -> f.apply(token + i)).toArray(n ->
+                (T[]) Array.newInstance(type, n));
     }
 
     private SpecOperation createHollowAccountByFunToken(String hollowAcnt, String token, String owner) {
