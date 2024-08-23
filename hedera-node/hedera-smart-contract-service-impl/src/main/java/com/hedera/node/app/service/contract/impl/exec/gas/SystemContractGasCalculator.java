@@ -61,6 +61,39 @@ public class SystemContractGasCalculator {
         return gasRequirementWithTinyCents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
+    /**
+     * Given a transaction body whose dispatch gas requirement must be at least equivalent to a given minimum
+     * amount of tinybars, returns the gas requirement for the transaction to be dispatched.
+     *
+     * @param body the transaction body to be dispatched
+     * @param payer the payer of the transaction
+     * @param minimumPriceInTinybars the minimum equivalent tinybar cost of the dispatch
+     * @return the gas requirement for the transaction to be dispatched
+     */
+    public long gasRequirement(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
+        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
+        return asGasRequirement(priceInTinybars);
+    }
+
+    /**
+     * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
+     *
+     * @param tinybarPrice the tinybar price
+     * @return the equivalent gas requirement at the current gas price
+     */
+    private long asGasRequirement(final long tinybarPrice) {
+        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPrice());
+    }
+
+    private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
+        // We round up to the nearest gas unit, and then add 20% to account for the premium
+        // of doing a HAPI operation from inside the EVM
+        final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
+        return gasRequirement + (gasRequirement / 5);
+    }
+
     public long gasRequirementWithTinyCents(
             @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
         final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
