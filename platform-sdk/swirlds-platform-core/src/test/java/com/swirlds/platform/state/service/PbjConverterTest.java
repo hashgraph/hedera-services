@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.service.PbjConverter.toPbjConsensusSnap
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjTimestamp;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -49,6 +50,7 @@ import java.security.cert.CertificateEncodingException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("removal")
@@ -360,6 +362,78 @@ class PbjConverterTest {
         assertEquals(
                 toPbjAddressBook(newValue),
                 toPbjPlatformState(oldState, accumulator).previousAddressBook());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_round() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        var newValue = nextInt();
+
+        accumulator.setRound(newValue);
+
+        assertEquals(
+                newValue,
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot().round());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_round_and_snapshot() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        var newRound = nextInt();
+        var newSnapshot = randomSnapshot();
+
+        accumulator.setRound(newRound);
+        accumulator.setSnapshot(newSnapshot);
+
+        // snapshot fields shouldn't be lost
+        assertThat(toPbjPlatformState(oldState, accumulator).consensusSnapshot())
+                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("round")
+                        .build())
+                .isEqualTo(toPbjConsensusSnapshot(newSnapshot));
+        assertEquals(
+                newRound,
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot().round());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_consensusSnapshotTimestamp() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        var newValue = nextInt();
+
+        accumulator.setRound(newValue);
+
+        assertEquals(
+                newValue,
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot().round());
+    }
+
+    @Test
+    void testToPbjPlatformState_acc_consensusTimestamp_and_snapshot() {
+        var oldState = randomPbjPlatformState();
+        var accumulator = new PlatformStateValueAccumulator();
+
+        var consensusTimestamp = randomInstant(random);
+        var newSnapshot = randomSnapshot();
+
+        accumulator.setConsensusTimestamp(consensusTimestamp);
+        accumulator.setSnapshot(newSnapshot);
+
+        // snapshot fields shouldn't be lost
+        assertThat(toPbjPlatformState(oldState, accumulator).consensusSnapshot())
+                .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
+                        .withIgnoredFields("consensusTimestamp")
+                        .build())
+                .isEqualTo(toPbjConsensusSnapshot(newSnapshot));
+        assertEquals(
+                toPbjTimestamp(consensusTimestamp),
+                toPbjPlatformState(oldState, accumulator).consensusSnapshot().consensusTimestamp());
     }
 
     @Test
