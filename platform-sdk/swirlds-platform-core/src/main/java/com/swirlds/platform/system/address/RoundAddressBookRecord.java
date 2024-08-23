@@ -25,5 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param effectiveRound    the round in which this roster becomes effective
  * @param addressBook        the new address book
  */
-public record RoundAddressBookRecord(long effectiveRound, @NonNull AddressBook addressBook) {
-}
+public record RoundAddressBookRecord(long effectiveRound, @NonNull AddressBook addressBook) {}
