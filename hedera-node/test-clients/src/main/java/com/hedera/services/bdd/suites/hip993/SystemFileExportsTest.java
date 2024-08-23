@@ -351,7 +351,6 @@ public class SystemFileExportsTest {
                     .findFirst()
                     .orElse(null);
             assertNotNull(updateItem, "No update for " + fileNumProperty + " found in post-upgrade txn");
-            System.out.println(updateItem.body() + " \n->\n " + updateItem.transactionRecord());
             final var synthOp = updateItem.body().getFileUpdate();
             final T actual;
             try {
