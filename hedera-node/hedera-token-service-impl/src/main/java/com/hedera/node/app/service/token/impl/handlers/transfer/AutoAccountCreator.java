@@ -94,7 +94,11 @@ public class AutoAccountCreator {
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(), CryptoCreateStreamBuilder.class, null, handleContext.payer());
+                syntheticCreation.build(),
+                CryptoCreateStreamBuilder.class,
+                null,
+                handleContext.payer(),
+                HandleContext.ConsensusThrottling.ON);
         childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
