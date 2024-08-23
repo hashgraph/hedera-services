@@ -572,7 +572,7 @@ public class Shadowgraph implements Clearable {
             } else {
                 if (status == InsertableStatus.EXPIRED_EVENT) {
                     logger.error(
-                            SYNC_INFO.getMarker(),
+                            EXCEPTION.getMarker(),
                             "`addEvent`: did not insert, status is {} for event {}, oldestUnexpiredIndicator = {}",
                             status,
                             event,
