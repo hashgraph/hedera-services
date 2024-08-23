@@ -80,6 +80,11 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
+    public static EventualRecordStreamAssertion eventuallyAssertingExplicitPass(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+        return new EventualRecordStreamAssertion(assertionFactory, false);
+    }
+
     /**
      * Returns the record stream location for the first listed node in the network targeted
      * by the given spec.
@@ -138,6 +143,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
 
     public void assertHasPassed() {
         try {
+            System.out.println("Waiting for " + assertion + " to pass...");
             final var eventualResult = result.get();
             if (unsubscribe != null) {
                 unsubscribe.run();

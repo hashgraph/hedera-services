@@ -196,14 +196,18 @@ public class SystemSetup {
                 try {
                     bytes = upgradeFileParser.apply(fin);
                 } catch (Exception e) {
-                    log.warn("Failed to parse upgrade file for {} at {}", upgradeFileName, path, e);
+                    log.warn("Failed to parse upgrade file for {} at {}", upgradeFileName, path.toAbsolutePath(), e);
                     return false;
                 }
-                log.info("Dispatching synthetic update for {} with {} bytes", upgradeFileName, bytes.length());
+                log.info(
+                        "Dispatching synthetic update for {} at {} with {} bytes",
+                        upgradeFileName,
+                        path.toAbsolutePath(),
+                        bytes.length());
                 dispatchSynthFileUpdate(systemContext, fileId, bytes);
                 return true;
             } catch (IOException e) {
-                log.warn("Failed to read upgrade file for {} at {}", upgradeFileName, path, e);
+                log.warn("Failed to read upgrade file for {} at {}", upgradeFileName, path.toAbsolutePath(), e);
             }
             return false;
         }
