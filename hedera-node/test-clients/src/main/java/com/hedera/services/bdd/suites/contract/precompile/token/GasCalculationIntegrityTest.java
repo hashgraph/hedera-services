@@ -92,7 +92,9 @@ public class GasCalculationIntegrityTest {
             new RatesProvider(30000, 16197),
             new RatesProvider(30000, 359789),
             new RatesProvider(30000, 2888899),
-            new RatesProvider(30000, 269100));
+            new RatesProvider(30000, 269100),
+            new RatesProvider(1, 12)
+    );
 
     private record RatesProvider(int hBarEquiv, int centEquiv) {}
 
