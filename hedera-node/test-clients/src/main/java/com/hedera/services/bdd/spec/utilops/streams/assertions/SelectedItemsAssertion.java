@@ -26,6 +26,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 
+/**
+ * An assertion that validates a stream item against a predicate, and after finding an expected number of items,
+ * validates them against a given {@link VisibleItemsValidator}.
+ */
 public class SelectedItemsAssertion implements RecordStreamAssertion {
     public static final String SELECTED_ITEMS_KEY = "SELECTED_ITEMS";
 
