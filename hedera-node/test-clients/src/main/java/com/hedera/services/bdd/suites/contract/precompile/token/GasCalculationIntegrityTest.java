@@ -236,6 +236,7 @@ public class GasCalculationIntegrityTest {
 
     @Nested
     @DisplayName("calls to transfer functions and checks gas integrity with different exchange rates")
+    @OrderedInIsolation
     class TransfersTests {
 
         @BeforeAll
@@ -247,35 +248,38 @@ public class GasCalculationIntegrityTest {
         }
 
         @HapiTest
-        @DisplayName("lazyCreate")
-        public Stream<DynamicTest> lazyCreate() {
+        @Order(1)
+        @DisplayName("when using cryptoTransferV2 for hBar transfer")
+        public Stream<DynamicTest> useCryptoTransferV2() {
             return hapiTest(
                     numericContractComplex
                             .call("cryptoTransferV2", new long[] {-5, 5}, alice, bob)
-                            .gas(1_000_000L)
+                            .gas(33_304L)
                             .via("cryptoTransferV2")
                             .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
                     getTxnRecord("cryptoTransferV2").logged());
         }
 
         @HapiTest
-        @DisplayName("when using cryptoTransferFungibleV1")
+        @Order(2)
+        @DisplayName("when using cryptoTransferFungibleV1 with internal auto associate")
         public Stream<DynamicTest> useCryptoTransferFungibleV1() {
-            return hapiTest(numericContractComplex
-                    .call("cryptoTransferFungibleV1", fungibleToken, new long[] {-5, 5}, fungibleToken.treasury(), bob)
-                    .gas(1_000_000L));
+            return hapiTest(
+                    numericContractComplex
+                            .call(
+                                    "cryptoTransferFungibleV1",
+                                    fungibleToken,
+                                    new long[] {-5, 5},
+                                    fungibleToken.treasury(),
+                                    bob)
+                            .via("cryptoTransferFungibleV1")
+                            .gas(763_480L),
+                    getTxnRecord("cryptoTransferFungibleV1").logged());
         }
 
         @HapiTest
-        @DisplayName("when using cryptoTransferV2 for hBar transfer")
-        public Stream<DynamicTest> useCryptoTransferV2() {
-            return hapiTest(numericContractComplex
-                    .call("cryptoTransferV2", new long[] {-5, 5}, alice, bob)
-                    .gas(1_000_000L));
-        }
-
-        @HapiTest
-        @DisplayName("when using cryptoTransferNonFungible for nft transfer")
+        @Order(3)
+        @DisplayName("when using cryptoTransferNonFungible with internal auto associate")
         public Stream<DynamicTest> useCryptoTransferNonFungible() {
             return hapiTest(
                     numericContractComplex
@@ -287,51 +291,79 @@ public class GasCalculationIntegrityTest {
         }
 
         @HapiTest
-        @DisplayName("when using transferNFTs with invalid serial numbers")
+        @Order(4)
+        @DisplayName("when using transferNFTs with internal auto associate")
         public Stream<DynamicTest> useTransferNFTs() {
-            return hapiTest(numericContractComplex
-                    .call("transferNFTs", nft, nft.treasury(), alice, new long[] {4L})
-                    .gas(1_000_000L));
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferNFTs", nft, nft.treasury(), alice, new long[] {4L})
+                            .via("transferNFTs")
+                            .gas(761_519L),
+                    getTxnRecord("transferNFTs").logged());
         }
 
         @HapiTest
-        @DisplayName("when using transferToken with negative amount")
+        @Order(5)
+        @DisplayName("when using transferToken with internal auto associate")
         public Stream<DynamicTest> useTransferToken() {
-            return hapiTest(numericContractComplex
-                    .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, 1L)
-                    .gas(1_000_000L));
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, 1L)
+                            .via("transferTokenTest")
+                            .gas(758_568L),
+                    getTxnRecord("transferTokenTest").logged());
         }
 
         @HapiTest
+        @Order(6)
         @DisplayName("when using transferNFT")
         public Stream<DynamicTest> useTransferNFT() {
-            return hapiTest(numericContractComplex
-                    .call("transferNFTTest", nft, nft.treasury(), alice, 3L)
-                    .gas(1_000_000L));
+            // Cannot be tested directly as it requires associate from previous test
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferNFTTest", nft, nft.treasury(), alice, 3L)
+                            .via("transferNFTTest")
+                            .gas(42_235L),
+                    getTxnRecord("transferNFTTest").logged());
         }
 
         @HapiTest
+        @Order(7)
         @DisplayName("when using transferFrom")
         public Stream<DynamicTest> useTransferFrom() {
-            return hapiTest(numericContractComplex
-                    .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
-                    .gas(1_000_000L));
+            // Cannot be tested directly as it requires associate from previous test
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
+                            .via("transferFrom")
+                            .gas(42_264L),
+                    getTxnRecord("transferFrom").logged());
         }
 
         @HapiTest
+        @Order(8)
         @DisplayName("when using transferFromERC")
         public Stream<DynamicTest> useTransferFromERC() {
-            return hapiTest(numericContractComplex
-                    .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
-                    .gas(1_000_000L));
+            // Cannot be tested directly as it requires associate from previous test
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
+                            .via("transferFromERC")
+                            .gas(44_900L),
+                    getTxnRecord("transferFromERC").logged());
         }
 
         @HapiTest
+        @Order(9)
         @DisplayName("when using transferFromNFT")
         public Stream<DynamicTest> useTransferNFTFrom() {
-            return hapiTest(numericContractComplex
-                    .call("transferFromNFT", nft, nft.treasury(), alice, BigInteger.TWO)
-                    .gas(1_000_000L));
+            // Cannot be tested directly as it requires associate from previous test
+            return hapiTest(
+                    numericContractComplex
+                            .call("transferFromNFT", nft, nft.treasury(), alice, BigInteger.TWO)
+                            .via("transferFromNFT")
+                            .gas(42_263L),
+                    getTxnRecord("transferFromNFT").logged());
         }
     }
 
@@ -380,6 +412,7 @@ public class GasCalculationIntegrityTest {
         @DisplayName("for token name call")
         public Stream<DynamicTest> checkErc20Name() {
             return testCases.flatMap(ratesProvider -> hapiTest(
+                    updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                     erc20Contract.call("name", token).gas(30_207L).via("name"),
                     getTxnRecord("name").logged()));
         }

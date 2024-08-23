@@ -64,9 +64,12 @@ public class SystemContractGasCalculator {
     public long gasRequirementWithTinyCents(
             @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
         final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
-        // NOTE: precision loss from tinybar to tinycent conversion?
+        // For the rare cases where nominalPriceInTinyBars > minimumPriceInTinyCents:
+        // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
+        // The minimal nominal price is > 1e6, ensuring minor discrepancies. In most cases, the gas difference is zero.
+        // In scenarios where we compare significant price fluctuations (20x, 30x), the gas difference should be
+        // unlikely to exceed 5 units.
 
-        // crypto transfer can have nominal price more than minimum// 96688 hBar
         final var priceInTinyCents =
                 Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
         return asGasRequirementTinyCents(priceInTinyCents);
