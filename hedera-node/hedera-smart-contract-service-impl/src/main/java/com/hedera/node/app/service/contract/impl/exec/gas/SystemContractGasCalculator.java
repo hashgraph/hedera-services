@@ -66,7 +66,8 @@ public class SystemContractGasCalculator {
         final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
         // For the rare cases where nominalPriceInTinyBars > minimumPriceInTinyCents:
         // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
-        // The minimal nominal price is > 1e6 tinyCents, ensuring minor discrepancies. In most cases, the gas difference is zero.
+        // The minimal nominal price is > 1e6 tinyCents, ensuring minor discrepancies. In most cases, the gas difference
+        // is zero.
         // In scenarios where we compare significant price fluctuations (200x, 100x), the gas difference should still be
         // unlikely to exceed 0 units.
 
@@ -94,7 +95,8 @@ public class SystemContractGasCalculator {
      */
     public long canonicalGasRequirement(@NonNull final DispatchType dispatchType) {
         return gasRequirementTinyCents(
-                dispatchPrices.canonicalPriceInTinycents(dispatchType), tinybarValues.morePrecision());
+                dispatchPrices.canonicalPriceInTinycents(dispatchType),
+                tinybarValues.childTransactionTinyCentsGasPrice());
     }
 
     /**
@@ -142,7 +144,7 @@ public class SystemContractGasCalculator {
     }
 
     private long asGasRequirementTinyCents(final long tinyCentPrice) {
-        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.morePrecision());
+        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.childTransactionTinyCentsGasPrice());
     }
 
     private long gasRequirementTinyCents(long tinyCentsPrice, final long gasPriceInCents) {

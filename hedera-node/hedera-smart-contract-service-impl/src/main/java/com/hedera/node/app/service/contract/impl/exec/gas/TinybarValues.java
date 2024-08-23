@@ -103,15 +103,15 @@ public class TinybarValues {
                         * topLevelResourcePrices.congestionMultiplier());
     }
 
-    public long topLevelTinyCentsGasPrice() {
-        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
-                * topLevelResourcePrices.congestionMultiplier();
-    }
-
     public long topLevelTinybarGasPriceFullPrecision() {
         return asTinybars(
                 topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
                         * topLevelResourcePrices.congestionMultiplier());
+    }
+
+    public long topLevelTinyCentsGasPrice() {
+        return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
+                * topLevelResourcePrices.congestionMultiplier();
     }
 
     /**
@@ -140,7 +140,7 @@ public class TinybarValues {
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 
-    public long morePrecision() {
+    public long childTransactionTinyCentsGasPrice() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
         }
