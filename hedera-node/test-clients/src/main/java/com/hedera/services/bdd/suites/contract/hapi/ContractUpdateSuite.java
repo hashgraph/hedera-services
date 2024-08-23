@@ -95,6 +95,8 @@ public class ContractUpdateSuite {
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String STAKED_ACCOUNT = "stakedAccount";
 
     @HapiTest
     final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
@@ -118,7 +120,7 @@ public class ContractUpdateSuite {
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
-                        newKeyNamed("adminKey"),
+                        newKeyNamed(ADMIN_KEY),
                         cryptoCreate("a"),
                         cryptoCreate("b"),
                         uploadInitCode(CONTRACT),
@@ -318,21 +320,20 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateAutoRenewAccountWorks() {
-        final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
         return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(autoRenewAccount),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT),
                         cryptoCreate(newAutoRenewAccount),
                         uploadInitCode(CONTRACT),
                         // refuse eth conversion because ethereum transaction is missing admin key and autoRenewAccount
                         contractCreate(CONTRACT)
                                 .adminKey(ADMIN_KEY)
-                                .autoRenewAccountId(autoRenewAccount)
+                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .refusingEthConversion(),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
                                 .logged())
                 .when(
                         contractUpdate(CONTRACT)
@@ -600,5 +601,30 @@ public class ContractUpdateSuite {
                 .given(given.toArray(HapiSpecOperation[]::new))
                 .when(when.toArray(HapiSpecOperation[]::new))
                 .then(then.toArray(HapiSpecOperation[]::new));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cannotUpdateImmutableContractExceptExpiry() {
+        final var someValidExpiry = new AtomicLong(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 1234L);
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate(AUTO_RENEW_ACCOUNT),
+                cryptoCreate(STAKED_ACCOUNT),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).immutable(),
+                contractUpdate(CONTRACT).newAutoRenew(1).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT)
+                        .newAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newDeclinedReward(true).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get()).hasKnownStatus(SUCCESS),
+                contractUpdate(CONTRACT).newKey(ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(100).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newMemo("The new memo").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newProxy(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT)
+                        .newStakedAccountId(STAKED_ACCOUNT)
+                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newStakedNodeId(1).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 }

@@ -2,7 +2,7 @@
   "buckets": [
 	{
 	  "name": "ThroughputLimits",
-	  "burstPeriod": 1,
+	  "burstPeriod": 1000,
 	  "throttleGroups": [
 		{
 		  "opsPerSec": 20000,
@@ -40,7 +40,7 @@
 		  ]
 		},
 		{
-		  "opsPerSec": 1000,
+		  "opsPerSec": 10000,
 		  "operations": [
 			"ContractCall",
 			"ContractCreate",
@@ -81,10 +81,10 @@
 	},
 	{
 	  "name": "PriorityReservations",
-	  "burstPeriod": 1,
+	  "burstPeriod": 1000,
 	  "throttleGroups": [
 		{
-		  "opsPerSec": 1000,
+		  "opsPerSec": 10000,
 		  "operations": [
 			"ContractCall",
 			"ContractCreate",
