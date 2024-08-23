@@ -6,7 +6,7 @@
 
 Give a 1-3 sentence summary of the capability in the design proposal.
 
-| Metadata           | Entities                            | 
+|      Metadata      |              Entities               |
 |--------------------|-------------------------------------|
 | Designers          | John, Mary, alpha-team              |
 | Functional Impacts | Services, DevOps, Mirror Node, etc. |
@@ -21,7 +21,7 @@ Why is the design proposal necessary? Describe the background and purpose of the
 
 ### Dependencies, Interactions, and Implications
 
-What are the dependencies and pre-requisites of this proposal?  
+What are the dependencies and pre-requisites of this proposal?
 What other proposals, capabilities, and teams are impacted by this proposal?
 What does the proposal enable once it is completed?
 
@@ -40,7 +40,6 @@ Describe the decisions made and the reasons why.
 Describe any alternatives considered and why they were not chosen.
 
 If possible, provide a table illustrating the options, evaluation criteria, and scores that factored into the decision.
-
 
 ---
 
@@ -132,4 +131,4 @@ Remove this section if not applicable.
 ## Implementation and Delivery Plan
 
 How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
-needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability? 
+needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability?

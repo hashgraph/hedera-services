@@ -113,29 +113,29 @@ benchmarks must be based on JMH and the `src/jmh/java` and `src/jmh/resources` f
 Based on the given definitions a module folder in the project looks like this:
 
 ```
- foo-service/
- ├── src/main/java/
- │   ├── com.hedera.node.app.service.foo
- │   │   ├── FooService.java
- │   │   └── package-info.java
- │   └── module-info.java
- ├── src/main/resources/
- │   ├── com.hedera.node.app.service.foo
- │   │   └── some_data.json
- │   └── logging.properties
- ├── src/testFixtures/java/
- │   ├── com.hedera.node.app.service.foo.testfixtures
- │   │   └── FooServiceTestConfig.java
- │   └── module-info.java
- ├── src/test/java/
- │   └── com.hedera.node.app.service.foo
- │       └── FooServiceTest.java
- ├── src/itest/java/
- │   ├── com.hedera.node.app.service.foo.itest
- │   │   └── FooServiceITest.java
- │   └── module-info.java
- └── build.gradle.kts
- ```
+foo-service/
+├── src/main/java/
+│   ├── com.hedera.node.app.service.foo
+│   │   ├── FooService.java
+│   │   └── package-info.java
+│   └── module-info.java
+├── src/main/resources/
+│   ├── com.hedera.node.app.service.foo
+│   │   └── some_data.json
+│   └── logging.properties
+├── src/testFixtures/java/
+│   ├── com.hedera.node.app.service.foo.testfixtures
+│   │   └── FooServiceTestConfig.java
+│   └── module-info.java
+├── src/test/java/
+│   └── com.hedera.node.app.service.foo
+│       └── FooServiceTest.java
+├── src/itest/java/
+│   ├── com.hedera.node.app.service.foo.itest
+│   │   └── FooServiceITest.java
+│   └── module-info.java
+└── build.gradle.kts
+```
 
 ### Open questions:
 
