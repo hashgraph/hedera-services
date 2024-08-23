@@ -570,7 +570,6 @@ public class Shadowgraph implements Clearable {
 
                 return true;
             } else {
-                // Every event received should be insertable, so throw an exception if that is not the case
                 if (status == InsertableStatus.EXPIRED_EVENT) {
                     logger.warn(
                             SYNC_INFO.getMarker(),
@@ -693,11 +692,7 @@ public class Shadowgraph implements Clearable {
      * inserted.
      */
     @NonNull
-    private InsertableStatus insertable(@Nullable final PlatformEvent e) {
-        if (e == null) {
-            return InsertableStatus.NULL_EVENT;
-        }
-
+    private InsertableStatus insertable(@NonNull final PlatformEvent e) {
         // No multiple insertions
         if (shadow(e.getDescriptor()) != null) {
             return InsertableStatus.DUPLICATE_SHADOW_EVENT;
@@ -714,6 +709,9 @@ public class Shadowgraph implements Clearable {
         // If e has an unexpired parent that is not already referenced by the shadowgraph, then we log an error. This
         // is only a sanity check, so there is no need to prevent insertion
         if (hasOP) {
+            if (e.getOtherParents().size() > 1) {
+                throw new IllegalStateException("Only one otherParent descriptor is supported");
+            }
             final EventDescriptorWrapper otherParent = e.getOtherParents().getFirst();
             final boolean knownOP = shadow(otherParent) != null;
             final boolean expiredOP = expired(otherParent);
