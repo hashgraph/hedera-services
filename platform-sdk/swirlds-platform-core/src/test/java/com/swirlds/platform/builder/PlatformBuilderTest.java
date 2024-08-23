@@ -18,6 +18,7 @@ package com.swirlds.platform.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -58,6 +59,12 @@ class PlatformBuilderTest {
         assertEquals(2, roster.rosters().size());
         assertEquals(1L, roster.rosters().getFirst().nodeId());
         assertEquals(2L, roster.rosters().getLast().nodeId());
+    }
+
+    @Test
+    void testCreateRosterFromNullAddressBook() {
+        assertThrows(IllegalStateException.class, platformBuilder::createRoster,
+                "Illegal attempt to create a Roster from a null AddressBook");
     }
 
     @Test
