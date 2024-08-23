@@ -78,7 +78,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     public void addLeaf(@NonNull final Bytes leaf) {
         requireNonNull(leaf);
         if (rootHashRequested) {
-            throw new IllegalStateException("Root hash already requested");
+            return;
         }
         numLeaves++;
         pendingLeaves.add(leaf);
