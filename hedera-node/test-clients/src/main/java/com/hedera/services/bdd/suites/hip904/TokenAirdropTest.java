@@ -885,6 +885,26 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             // Any new auto-creation needs to explicitly associate token. So it will be $0.1
                             validateChargedUsd("evmAddressReceiver", 0.1, 1));
         }
+
+        @HapiTest
+        @DisplayName("a NFT to an EVM address account")
+        final Stream<DynamicTest> airdropNftToNonExistingAccount() {
+            // calculate evmAddress;
+            final byte[] publicKey =
+                    CommonUtils.unhex("02641dc27aa851ddc5a238dc569718f82b4e5eb3b61030942432fe7ac9088459c5");
+            final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+
+            return defaultHapiSpec("should lazy-create and transfer with NFT")
+                    .given()
+                    .when(tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 15L)
+                                    .between(OWNER, evmAddress))
+                            .payingWith(OWNER)
+                            .via("evmAddressReceiver"))
+                    .then(
+                            getAliasedAccountBalance(evmAddress).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            // Any new auto-creation needs to explicitly associate token. So it will be $0.1
+                            validateChargedUsd("evmAddressReceiver", 0.1, 1));
+        }
     }
 
     @Nested
