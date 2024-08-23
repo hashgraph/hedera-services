@@ -519,9 +519,19 @@ public class V0490FileSchema extends Schema {
                 throw new IllegalArgumentException("API Permissions could not be loaded from classpath", e);
             }
         }
-        // Parse the HAPI permissions file into a ServicesConfigurationList protobuf object
+        return parseConfigList("HAPI permissions", apiPermissionsContent);
+    }
+
+    /**
+     * Extracts the text-based key/value pairs from the given content as a Java properties file, accumulates all the
+     * settings into a {@link ServicesConfigurationList} message and returns the serialized bytes of the message.
+     * @param purpose the purpose of the configuration
+     * @param content the content of the configuration
+     * @return the serialized bytes of the {@link ServicesConfigurationList} message
+     */
+    public static Bytes parseConfigList(@NonNull final String purpose, @NonNull final String content) {
         final var settings = new ArrayList<Setting>();
-        try (final var in = new StringReader(apiPermissionsContent)) {
+        try (final var in = new StringReader(content)) {
             final var props = new Properties();
             props.load(in);
             props.entrySet().stream()
@@ -531,8 +541,7 @@ public class V0490FileSchema extends Schema {
                             .value(String.valueOf(entry.getValue()))
                             .build()));
         } catch (final IOException e) {
-            logger.fatal("API Permissions could not be parsed");
-            throw new IllegalArgumentException("API Permissions could not be parsed", e);
+            throw new IllegalArgumentException(purpose + " config could not be parsed", e);
         }
         return ServicesConfigurationList.PROTOBUF.toBytes(
                 ServicesConfigurationList.newBuilder().nameValue(settings).build());

@@ -21,6 +21,7 @@ import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseConfigList;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
@@ -145,7 +146,15 @@ public class SystemSetup {
                 new AutoSysFileUpdate(
                         createFileID(filesConfig.throttleDefinitions(), config),
                         adminConfig.upgradeThrottlesFile(),
-                        SystemSetup::parseThrottles));
+                        SystemSetup::parseThrottles),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.networkProperties(), config),
+                        adminConfig.upgradePropertyOverridesFile(),
+                        in -> parseConfig("override network properties", in)),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.hapiPermissions(), config),
+                        adminConfig.upgradePermissionOverridesFile(),
+                        in -> parseConfig("override HAPI permissions", in)));
         autoUpdates.forEach(update -> {
             if (update.tryIfPresent(adminConfig.upgradeSysFilesLoc(), systemContext)) {
                 dispatch.stack().commitFullStack();
@@ -176,7 +185,10 @@ public class SystemSetup {
         boolean tryIfPresent(@NonNull final String postUpgradeLoc, @NonNull final SystemContext systemContext) {
             final var path = Paths.get(postUpgradeLoc, upgradeFileName);
             if (!Files.exists(path)) {
-                log.info("No post-upgrade file for {} found at {}, not updating", upgradeFileName, path);
+                log.info(
+                        "No post-upgrade file for {} found at {}, not updating",
+                        upgradeFileName,
+                        path.toAbsolutePath());
                 return false;
             }
             try (final var fin = Files.newInputStream(path)) {
@@ -194,25 +206,6 @@ public class SystemSetup {
                 log.warn("Failed to read upgrade file for {} at {}", upgradeFileName, path, e);
             }
             return false;
-        }
-    }
-
-    private static Bytes parseFeeSchedules(@NonNull final InputStream in) {
-        try {
-            final var bytes = in.readAllBytes();
-            final var feeSchedules = V0490FileSchema.parseFeeSchedules(bytes);
-            return CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedules);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static Bytes parseThrottles(@NonNull final InputStream in) {
-        try {
-            final var json = new String(in.readAllBytes());
-            return Bytes.wrap(V0490FileSchema.parseThrottleDefinitions(json));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
@@ -414,5 +407,33 @@ public class SystemSetup {
                         .build())
                 .initialBalance(account.tinybarBalance())
                 .alias(account.alias());
+    }
+
+    private static Bytes parseFeeSchedules(@NonNull final InputStream in) {
+        try {
+            final var bytes = in.readAllBytes();
+            final var feeSchedules = V0490FileSchema.parseFeeSchedules(bytes);
+            return CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedules);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Bytes parseThrottles(@NonNull final InputStream in) {
+        try {
+            final var json = new String(in.readAllBytes());
+            return Bytes.wrap(V0490FileSchema.parseThrottleDefinitions(json));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Bytes parseConfig(@NonNull String purpose, @NonNull final InputStream in) {
+        try {
+            final var content = new String(in.readAllBytes());
+            return parseConfigList(purpose, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

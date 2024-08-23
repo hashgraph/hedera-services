@@ -24,18 +24,23 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoi
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.writeToNodeWorkingDirs;
 import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSystemFiles;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
@@ -44,7 +49,9 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
@@ -56,6 +63,9 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,7 +96,7 @@ public class SystemFileExportsTest {
     private static final String DESCRIPTION_PREFIX = "Revision #";
 
     @GenesisHapiTest
-    final Stream<DynamicTest> syntheticFileUpdatesHappenAtUpgradeBoundary() {
+    final Stream<DynamicTest> syntheticNodeDetailsUpdateHappensAtUpgradeBoundary() {
         final var grpcCertHashes = new byte[][] {
             randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48),
         };
@@ -103,10 +113,39 @@ public class SystemFileExportsTest {
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
-                        .gossipCaCertificate(derEncoded(gossipCertificates.get().get(Long.valueOf(i))))))),
+                        .gossipCaCertificate(derEncoded(gossipCertificates.get().get((long) i)))))),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 cryptoCreate("secondUser").via("addressBookExport"));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticFeeSchedulesUpdateHappensAtUpgradeBoundary()
+            throws InvalidProtocolBufferException {
+        final var feeSchedulesJson = resourceAsString("scheduled-contract-fees.json");
+        final var upgradeFeeSchedules =
+                CurrentAndNextFeeSchedule.parseFrom(SYS_FILE_SERDES.get(111L).toRawFile(feeSchedulesJson, null));
+        return hapiTest(
+                streamMustIncludeNoFailuresFrom(visibleItems(
+                        sysFileExportValidator(
+                                "files.feeSchedules", upgradeFeeSchedules, SystemFileExportsTest::parseFeeSchedule),
+                        "postUpgradeTransaction")),
+                // This is the genesis transaction
+                cryptoCreate("firstUser"),
+                sourcingContextual(spec -> overriding(
+                        "networkAdmin.upgradeFeeSchedulesFile",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString())),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradeFeeSchedulesFile",
+                        feeSchedulesFile -> writeToNodeWorkingDirs(feeSchedulesJson, feeSchedulesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                cryptoCreate("secondUser").via("postUpgradeTransaction"));
     }
 
     @GenesisHapiTest
@@ -121,6 +160,51 @@ public class SystemFileExportsTest {
                         spec.startupProperties().getLong("hedera.firstUserEntity"),
                         spec.registry().getAccountID("firstUser").getAccountNum(),
                         "First user entity num doesn't match config")));
+    }
+
+    private static CurrentAndNextFeeSchedule parseFeeSchedule(final byte[] bytes)
+            throws InvalidProtocolBufferException {
+        return CurrentAndNextFeeSchedule.parseFrom(bytes);
+    }
+
+    private static ThrottleDefinitions parseThrottleDefs(final byte[] bytes) throws InvalidProtocolBufferException {
+        return ThrottleDefinitions.parseFrom(bytes);
+    }
+
+    private static ServicesConfigurationList parseConfigList(final byte[] bytes) throws InvalidProtocolBufferException {
+        return ServicesConfigurationList.parseFrom(bytes);
+    }
+
+    private interface ParseFunction<T> {
+        T parse(@NonNull byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static <T> VisibleItemsValidator sysFileExportValidator(
+            @NonNull final String fileNumProperty,
+            @NonNull final T expectedValue,
+            @NonNull final ParseFunction<T> parser) {
+        return (spec, records) -> {
+            final var items = requireNonNull(records.get("postUpgradeTransaction"));
+            final var histogram = statusHistograms(items.entries());
+            System.out.println(histogram);
+            final var targetId =
+                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get(fileNumProperty)));
+            final var updateItem = items.entries().stream()
+                    .filter(item -> item.function() == FileUpdate)
+                    .filter(item ->
+                            toPbj(item.body().getFileUpdate().getFileID()).equals(targetId))
+                    .findFirst()
+                    .orElse(null);
+            assertNotNull(updateItem, "No update for " + fileNumProperty + " found in post-upgrade txn");
+            final var synthOp = updateItem.body().getFileUpdate();
+            final T actual;
+            try {
+                actual = parser.parse(synthOp.getContents().toByteArray());
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalStateException(fileNumProperty + " update was not parseable", e);
+            }
+            assertEquals(expectedValue, actual);
+        };
     }
 
     private static VisibleItemsValidator addressBookExportValidator(
