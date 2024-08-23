@@ -190,4 +190,8 @@ public final class LoggingTestScenario {
             }
         }
     }
+
+    public String getScenarioName() {
+        return scenarioName;
+    }
 }

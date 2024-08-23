@@ -70,7 +70,7 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * The Configuration object
      */
-    private final Configuration configuration;
+    private volatile Configuration configuration;
 
     /**
      * The handlers of the logging system.
@@ -130,10 +130,12 @@ public class LoggingSystem implements LogEventConsumer {
      * @implNote Currently only the level and marker configuration is updated. New handlers are not added and existing
      * handlers are not removed for now.
      */
-    public void update(final @NonNull Configuration configuration) {
+    public synchronized void update(final @NonNull Configuration configuration) {
+        Objects.requireNonNull(configuration, "configuration must not be null");
         if (ConfigUtils.haveEqualProperties(this.configuration, configuration)) {
             return;
         }
+        this.configuration = configuration;
         this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));
         this.handlers.forEach(handler -> handler.update(configuration));
     }
