@@ -604,7 +604,7 @@ public class ContractUpdateSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> cannotUpdateImmutableContractExceptExipry() {
+    final Stream<DynamicTest> cannotUpdateImmutableContractExceptExpiry() {
         final var someValidExpiry = new AtomicLong(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 1234L);
         return hapiTest(
                 newKeyNamed(ADMIN_KEY),
