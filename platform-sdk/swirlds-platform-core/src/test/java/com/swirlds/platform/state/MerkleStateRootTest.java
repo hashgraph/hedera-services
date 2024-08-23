@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.MerkleStateRoot.CURRENT_VERSION;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
@@ -25,10 +26,17 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
@@ -36,6 +44,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -926,7 +935,6 @@ class MerkleStateRootTest extends MerkleTestBase {
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
                     writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-
             PlatformStateAccessor newPlatformState = randomPlatformState();
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();
@@ -935,6 +943,67 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
             assertThat(stateAccessor.getRound())
                     .isEqualTo(newPlatformState.getSnapshot().round());
+        }
+    }
+
+    @Nested
+    @DisplayName("Migrate test")
+    class MigrateTest {
+        @Test
+        @DisplayName("Migrate fails if the first child is not PlatformState")
+        void migrate_fail() {
+            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
+            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+        }
+
+        @Test
+        @DisplayName("If the version is current, nothing ever happens")
+        void migrate_currentVersion() {
+            var node1 = mock(MerkleNode.class);
+            stateRoot.setChild(0, node1);
+            var node2 = mock(MerkleNode.class);
+            stateRoot.setChild(1, node2);
+
+            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION));
+            verifyNoMoreInteractions(node1, node2);
+        }
+
+        @Test
+        @DisplayName("Migrate from the previous version")
+        void migrate() {
+            com.swirlds.platform.state.PlatformState platformState =
+                    (com.swirlds.platform.state.PlatformState) randomPlatformState();
+            stateRoot.setChild(0, platformState);
+            assertNull(stateRoot.getPreV054PlatformState());
+
+            var node1 = mock(MerkleNode.class);
+            var node1Copy = mock(MerkleNode.class);
+            when(node1.copy()).thenReturn(node1Copy);
+            stateRoot.setChild(1, node1);
+
+            var node2 = mock(MerkleNode.class);
+            var node2Copy = mock(MerkleNode.class);
+            when(node2.copy()).thenReturn(node2Copy);
+            stateRoot.setChild(2, node2);
+
+            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION - 1));
+
+            // Platform state is not a part of the tree temporarily
+            assertEquals(2, stateRoot.getNumberOfChildren());
+            verify(node1).release();
+            verify(node2).release();
+
+            assertEquals(node1Copy, stateRoot.getChild(0));
+            assertEquals(node2Copy, stateRoot.getChild(1));
+
+            // Platform state is temporarily stored in a separate field
+            assertEquals(platformState, stateRoot.getPreV054PlatformState());
+
+            assertFalse(stateRoot.isImmutable());
+
+            // MerkleStateRoot registers the platform state as a singleton upon the first request to it
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
         }
     }
 }
