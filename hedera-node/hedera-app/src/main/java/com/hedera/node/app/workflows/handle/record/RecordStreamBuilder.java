@@ -149,6 +149,10 @@ public class RecordStreamBuilder
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
     // base transaction data
     private Transaction transaction;
+
+    @Nullable
+    private Bytes serializedTransaction;
+
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -366,6 +370,12 @@ public class RecordStreamBuilder
     @NonNull
     public RecordStreamBuilder transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
+        return this;
+    }
+
+    @Override
+    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
+        this.serializedTransaction = serializedTransaction;
         return this;
     }
 
@@ -856,17 +866,19 @@ public class RecordStreamBuilder
         return exchangeRate;
     }
 
-    /**
-     * Sets the receipt exchange rate.
-     *
-     * @param exchangeRate the {@link ExchangeRateSet} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public RecordStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public StreamBuilder congestionMultiplier(long congestionMultiplier) {
+        // No-op
         return this;
     }
 
@@ -1131,7 +1143,6 @@ public class RecordStreamBuilder
      * @param beneficiaryForDeletedAccount the beneficiary account ID
      */
     @Override
-    @NonNull
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
@@ -1189,7 +1200,8 @@ public class RecordStreamBuilder
         }
     }
 
-    public EthereumTransactionStreamBuilder feeChargedToPayer(@NonNull long amount) {
+    @NonNull
+    public EthereumTransactionStreamBuilder feeChargedToPayer(long amount) {
         transactionRecordBuilder.transactionFee(transactionFee + amount);
         return this;
     }
@@ -1199,6 +1211,8 @@ public class RecordStreamBuilder
      *
      * @return the staking rewards paid in this transaction
      */
+    @Override
+    @NonNull
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
@@ -1208,6 +1222,7 @@ public class RecordStreamBuilder
      * @return the {@link TransactionRecord.Builder} of the record
      */
     @Override
+    @NonNull
     public TransactionCategory category() {
         return category;
     }
