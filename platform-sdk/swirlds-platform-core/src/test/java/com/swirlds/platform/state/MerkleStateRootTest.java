@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -963,7 +964,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.setChild(0, node1);
             var node2 = mock(MerkleNode.class);
             stateRoot.setChild(1, node2);
-
+            reset(node1, node2);
             assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION));
             verifyNoMoreInteractions(node1, node2);
         }
