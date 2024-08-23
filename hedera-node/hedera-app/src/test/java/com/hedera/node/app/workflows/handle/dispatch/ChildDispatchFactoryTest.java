@@ -256,7 +256,8 @@ class ChildDispatchFactoryTest {
                         CONTRACT_CALL,
                         throttleAdviser,
                         Instant.ofEpochSecond(12345L),
-                        blockRecordInfo));
+                        blockRecordInfo,
+                        HandleContext.ConsensusThrottling.ON));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
