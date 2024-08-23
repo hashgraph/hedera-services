@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 @HapiTestLifecycle
 @DisplayName("Token airdrop")
-// Adding ordering because even though we are cleaning the created airdrops after each test when we run the tests 
+// Adding ordering because even though we are cleaning the created airdrops after each test when we run the tests
 // simultaneously we run into race conditions and the tests became flaky.
 @OrderedInIsolation
 public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends TokenAirdropBase {
@@ -50,10 +50,10 @@ public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends Tok
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         lifecycle.overrideInClass(Map.of(
-            "tokens.airdrops.enabled", "true",
-            "tokens.airdrops.cancel.enabled", "true",
-            "tokens.maxAllowedPendingAirdrops", "1",
-            "entities.unlimitedAutoAssociationsEnabled", "true"));
+                "tokens.airdrops.enabled", "true",
+                "tokens.airdrops.cancel.enabled", "true",
+                "tokens.maxAllowedPendingAirdrops", "1",
+                "entities.unlimitedAutoAssociationsEnabled", "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
 
@@ -62,15 +62,14 @@ public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends Tok
     @Order(1)
     final Stream<DynamicTest> withTwoTransactionsExceedingTheLimit() {
         return hapiTest(
-            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                .signedByPayerAnd(OWNER),
-            tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                .signedByPayerAnd(OWNER)
-                .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .signedByPayerAnd(OWNER),
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .signedByPayerAnd(OWNER)
+                        .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
 
-            // Clear the airdrop at the end of the test
-            tokenCancelAirdrop(pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
-        );
+                // Clear the airdrop at the end of the test
+                tokenCancelAirdrop(pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN)));
     }
 
     @DisplayName("with a single transaction that will result in two airdrops and exceed the limit - should throw")
@@ -78,11 +77,10 @@ public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends Tok
     @Order(2)
     final Stream<DynamicTest> withASingleTransactionsExceedingTheLimit() {
         return hapiTest(tokenAirdrop(
-            moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-            movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-            .signedByPayerAnd(OWNER)
-            .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED)
-        );
+                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                        movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                .signedByPayerAnd(OWNER)
+                .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }
 
     @DisplayName("with two airdrop transactions. One will result in CryptoTransfer the other in airdrop - SUCCESS")
@@ -90,16 +88,16 @@ public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends Tok
     @Order(3)
     final Stream<DynamicTest> twoTransactionsOneCryptoTransferAndOneAirdrop() {
         return hapiTest(
-            // The first airdrop results in a CryptoTransfer and we don't use the state at all
-            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                .signedByPayerAnd(OWNER),
-            // This is an airdrop but the total airdrop count is equal to the store limit
-            tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                .signedByPayerAnd(OWNER),
+                // The first airdrop results in a CryptoTransfer and we don't use the state at all
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                        .signedByPayerAnd(OWNER),
+                // This is an airdrop but the total airdrop count is equal to the store limit
+                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .signedByPayerAnd(OWNER),
 
-            // Clear the airdrop at the end of the test
-            tokenCancelAirdrop(pendingNFTAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 1L))
-        );
+                // Clear the airdrop at the end of the test
+                tokenCancelAirdrop(
+                        pendingNFTAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 1L)));
     }
 
     /**
@@ -112,11 +110,11 @@ public class TokenAirdropWithOverriddenMaxAllowedPendingAirdropsTest extends Tok
     @Order(4)
     final Stream<DynamicTest> oneTransactionOneCryptoTransferAndOneAirdrop() {
         return hapiTest(
-            // The first airdrop will be a CryptoTransfer, but we count it as an airdrop
-            tokenAirdrop(
-                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
-                movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                .signedByPayerAnd(OWNER)
-                .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+                // The first airdrop will be a CryptoTransfer, but we count it as an airdrop
+                tokenAirdrop(
+                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .signedByPayerAnd(OWNER)
+                        .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }
 }
