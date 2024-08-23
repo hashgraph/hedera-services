@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -46,7 +47,10 @@ public class FungibleTokenInfoTranslator extends AbstractCallTranslator<HtsCallA
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isSelector(FUNGIBLE_TOKEN_INFO, FUNGIBLE_TOKEN_INFO_V2);
+        final var v2Enabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
+        return attempt.isSelector(FUNGIBLE_TOKEN_INFO)
+                || attempt.isSelectorIfConfigEnabled(FUNGIBLE_TOKEN_INFO_V2, v2Enabled);
     }
 
     /**

@@ -256,6 +256,16 @@ public class AbstractCallAttempt {
         return false;
     }
 
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param function selectors to match against
+     * @param configEnabled whether the config is enabled
+     * @return boolean result
+     */
+    public boolean isSelectorIfConfigEnabled(@NonNull final Function function, final boolean configEnabled) {
+        return configEnabled && isSelector(function);
+    }
+
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {
         return Arrays.equals(input, 0, functionSelector.length, functionSelector, 0, functionSelector.length);
     }
