@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.roster;
+package com.swirlds.platform.system.address;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Describes the difference between two rosters. Although it is possible to derive this information by comparing the
+ * Describes the difference between two addressBooks. Although it is possible to derive this information by comparing the
  * {@link AddressBook} objects directly, this data is distilled and provided in this format for convenience.
  *
  * @param consensusWeightChanged whether the consensus weight changed
@@ -31,9 +30,9 @@ import java.util.List;
  * @param removedNodes           the nodes that were removed
  * @param modifiedNodes          the nodes that were modified
  */
-public record RosterDiff(
-        @NonNull UpdatedRoster newRoster,
-        boolean rosterIsIdentical,
+public record AddressBookDiff(
+        @NonNull RoundAddressBookRecord roundAddressBookRecord,
+        boolean addressBookIsIdentical,
         boolean consensusWeightChanged,
         boolean membershipChanged,
         @NonNull List<NodeId> addedNodes,

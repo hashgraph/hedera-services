@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.address;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,6 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * A utility class for AddressBook functionality.
@@ -49,6 +52,8 @@ public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
     public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
+    private static final Pattern IPV4_ADDRESS_PATTERN =
+            Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
     private AddressBookUtils() {}
 
@@ -283,5 +288,29 @@ public class AddressBookUtils {
                 throw new IllegalStateException("The address books do not have the same addresses.");
             }
         }
+    }
+
+    /**
+     * Given a host and port, creates a {@link ServiceEndpoint} object with either an IP address or domain name
+     * depending on the given host.
+     *
+     * @param host the host
+     * @param port the port
+     * @return the {@link ServiceEndpoint} object
+     */
+    public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final var builder = ServiceEndpoint.newBuilder().port(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.ipAddressV4(Bytes.wrap(new byte[]{
+                    (byte) Integer.parseInt(octets[0]),
+                    (byte) Integer.parseInt(octets[1]),
+                    (byte) Integer.parseInt(octets[2]),
+                    (byte) Integer.parseInt(octets[3])
+            }));
+        } else {
+            builder.domainName(host);
+        }
+        return builder.build();
     }
 }

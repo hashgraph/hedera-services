@@ -31,6 +31,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookDiff;
+import com.swirlds.platform.system.address.AddressBookDiffGenerator;
+import com.swirlds.platform.system.address.RoundAddressBookRecord;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import java.util.ArrayList;
@@ -40,7 +43,7 @@ import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class RosterDiffGeneratorTests {
+class AddressBookDiffGeneratorTests {
 
     /**
      * There should be sane behavior when the roster does not change.
@@ -51,23 +54,23 @@ class RosterDiffGeneratorTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
+        final AddressBookDiffGenerator generator = new AddressBookDiffGenerator(platformContext);
 
         final AddressBook roster = RandomAddressBookBuilder.create(random).build();
         roster.setHash(platformContext.getCryptography().digestSync(roster));
 
         // First round added should yield a null diff
-        assertNull(generator.generateDiff(new UpdatedRoster(0, roster)));
+        assertNull(generator.generateDiff(new RoundAddressBookRecord(0, roster)));
 
         for (int i = 1; i < 100; i++) {
-            final UpdatedRoster newRoster = new UpdatedRoster(i, roster);
-            final RosterDiff diff = generator.generateDiff(newRoster);
+            final RoundAddressBookRecord newRoster = new RoundAddressBookRecord(i, roster);
+            final AddressBookDiff diff = generator.generateDiff(newRoster);
 
             assertNotNull(diff);
 
-            assertSame(newRoster, diff.newRoster());
+            assertSame(newRoster, diff.roundAddressBookRecord());
 
-            assertTrue(diff.rosterIsIdentical());
+            assertTrue(diff.addressBookIsIdentical());
             assertFalse(diff.membershipChanged());
             assertFalse(diff.consensusWeightChanged());
             assertTrue(diff.addedNodes().isEmpty());
@@ -82,12 +85,12 @@ class RosterDiffGeneratorTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
+        final AddressBookDiffGenerator generator = new AddressBookDiffGenerator(platformContext);
 
         AddressBook previousRoster =
                 RandomAddressBookBuilder.create(random).withSize(8).build();
         previousRoster.setHash(platformContext.getCryptography().digestSync(previousRoster));
-        assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
+        assertNull(generator.generateDiff(new RoundAddressBookRecord(0, previousRoster)));
 
         for (int round = 1; round < 1000; round++) {
 
@@ -163,13 +166,13 @@ class RosterDiffGeneratorTests {
 
             newRoster.setHash(platformContext.getCryptography().digestSync(newRoster));
 
-            final UpdatedRoster updatedRoster = new UpdatedRoster(round, newRoster);
-            final RosterDiff diff = generator.generateDiff(updatedRoster);
+            final RoundAddressBookRecord roundAddressBookRecord = new RoundAddressBookRecord(round, newRoster);
+            final AddressBookDiff diff = generator.generateDiff(roundAddressBookRecord);
 
             assertNotNull(diff);
-            assertSame(updatedRoster, diff.newRoster());
+            assertSame(roundAddressBookRecord, diff.roundAddressBookRecord());
 
-            assertEquals(rosterIsIdentical, diff.rosterIsIdentical());
+            assertEquals(rosterIsIdentical, diff.addressBookIsIdentical());
             assertEquals(membershipChanged, diff.membershipChanged());
             assertEquals(consensusWeightChanged, diff.consensusWeightChanged());
             assertEquals(addedNodes, new HashSet<>(diff.addedNodes()));
