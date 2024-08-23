@@ -452,7 +452,8 @@ public class ChildDispatchFactory {
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
-                functionOfTxn(txBody));
+                functionOfTxn(txBody),
+                null);
     }
 
     /**

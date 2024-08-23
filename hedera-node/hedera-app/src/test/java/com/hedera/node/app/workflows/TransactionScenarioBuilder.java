@@ -117,7 +117,7 @@ public class TransactionScenarioBuilder implements Scenarios {
                 .body(body)
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
-        return new TransactionInfo(tx, body, SignatureMap.DEFAULT, signedbytes, function);
+        return new TransactionInfo(tx, body, SignatureMap.DEFAULT, signedbytes, function, null);
     }
 
     public static TransactionBody goodDefaultBody() {

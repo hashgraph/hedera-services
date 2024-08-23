@@ -168,7 +168,7 @@ public final class IngestChecker {
         final var consensusTime = instantSource.instant();
 
         // 1. Check the syntax
-        final var txInfo = transactionChecker.check(tx);
+        final var txInfo = transactionChecker.check(tx, null);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 

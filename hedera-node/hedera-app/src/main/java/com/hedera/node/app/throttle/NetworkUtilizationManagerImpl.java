@@ -70,7 +70,8 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                 AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                CRYPTO_TRANSFER);
+                CRYPTO_TRANSFER,
+                null);
         trackTxn(chargingFeesCryptoTransfer, consensusNow, state);
     }
 
