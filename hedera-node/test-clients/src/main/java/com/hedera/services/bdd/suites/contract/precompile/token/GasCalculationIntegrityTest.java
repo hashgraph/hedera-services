@@ -54,13 +54,12 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.parallel.Isolated;
 
 @Tag(SMART_CONTRACT)
 @DisplayName("updateToken")
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
-@Isolated
+@OrderedInIsolation
 public class GasCalculationIntegrityTest {
 
     @Contract(contract = "NumericContract", creationGas = 1_000_000L)
