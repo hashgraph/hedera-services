@@ -1077,13 +1077,9 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("when sending nft to system address")
         final Stream<DynamicTest> nftTokenReceiverSystemAddress() {
-            final String ALICE = "alice";
-            return hapiTest(
-                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
-                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
-                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(ALICE, FREEZE_ADMIN))
-                            .signedByPayerAnd(ALICE)
-                            .hasPrecheck(INVALID_RECEIVING_NODE_ACCOUNT));
+            return hapiTest(tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, FREEZE_ADMIN))
+                    .signedByPayerAnd(OWNER)
+                    .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
         }
 
         @HapiTest

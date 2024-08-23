@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
-import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -151,7 +151,7 @@ public class AirdropHandlerHelper {
             final var tokenRel = tokenRelStore.get(accountId, tokenId);
             var isPendingAirdrop = false;
             if (aa.amount() > 0) {
-                validateTrue(!validateIfSystemAccount(accountId), INVALID_RECEIVING_NODE_ACCOUNT);
+                validateFalse(isSystemAccount(account), INVALID_RECEIVING_NODE_ACCOUNT);
                 isPendingAirdrop = isPendingAirdrop(context, account, tokenRel);
             }
 
@@ -203,6 +203,7 @@ public class AirdropHandlerHelper {
 
             final var account =
                     getIfUsableForAliasedId(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+            validateFalse(isSystemAccount(account), INVALID_RECEIVING_NODE_ACCOUNT);
             var tokenRel = tokenRelStore.get(receiverId, tokenId);
             if (isPendingAirdrop(context, account, tokenRel)) {
                 pendingNftList.add(nftTransfer);
@@ -320,17 +321,14 @@ public class AirdropHandlerHelper {
     }
 
     /**
-     * Validate if AccountId is a system account.
+     * Returns if given account is a system account.
      *
-     * @param accountID the ID of the account that need to be validated
+     * @param account the account that need to be validated
      * @return boolean value indicating if the account is a system account
      */
-    public static boolean validateIfSystemAccount(@NonNull AccountID accountID) {
-        requireNonNull(accountID);
-        if (isAlias(accountID)) {
-            return false;
-        }
-        return accountID.accountNum() <= LAST_RESERVED_SYSTEM_ACCOUNT;
+    public static boolean isSystemAccount(@NonNull Account account) {
+        requireNonNull(account);
+        return account.accountIdOrThrow().accountNumOrThrow() <= LAST_RESERVED_SYSTEM_ACCOUNT;
     }
 
     private static boolean isAutoAssociationLimitReached(@NonNull final Account receiver) {
