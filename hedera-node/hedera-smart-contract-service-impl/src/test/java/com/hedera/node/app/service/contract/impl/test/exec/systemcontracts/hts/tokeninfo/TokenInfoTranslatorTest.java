@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator.TOKEN_INFO_V2;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +59,9 @@ class TokenInfoTranslatorTest {
     Configuration configuration;
 
     @Mock
+    private ContractsConfig contractsConfig;
+
+    @Mock
     private AddressIdConverter addressIdConverter;
 
     @Mock
@@ -78,8 +83,16 @@ class TokenInfoTranslatorTest {
 
     @Test
     void matchesTokenInfoTranslatorTestV2() {
-        attempt = prepareHtsAttemptWithSelector(
-                TOKEN_INFO_V2, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.systemContractTokenInfoV2Enabled()).willReturn(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                TOKEN_INFO_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
         assertTrue(subject.matches(attempt));
     }
 
