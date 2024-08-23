@@ -56,8 +56,8 @@ class PlatformBuilderTest {
 
         assertNotNull(roster);
         assertEquals(2, roster.rosters().size());
-        assertTrue(roster.rosters().getFirst().nodeId() == 1L);
-        assertTrue(roster.rosters().getLast().nodeId() == 2L);
+        assertEquals(1L, roster.rosters().getFirst().nodeId());
+        assertEquals(2L, roster.rosters().getLast().nodeId());
     }
 
     @Test

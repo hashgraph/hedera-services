@@ -144,7 +144,7 @@ public final class PlatformBuilder {
     /**
      * The path to the configuration file (i.e. the file with the address book).
      */
-    private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
+    private final Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
 
     /**
      * The wiring model to use for this platform.
@@ -353,7 +353,7 @@ public final class PlatformBuilder {
      *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
      * </ul>
      *
-     * @return
+     * @return this
      */
     @NonNull
     public PlatformBuilder withConsensusSnapshotOverrideCallback(
