@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.test.sync;
 
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
@@ -38,11 +37,12 @@ public class EventFactory {
     public static ShadowEvent makeShadow(
             @NonNull final Random random, final ShadowEvent selfParent, final ShadowEvent otherParent) {
 
-        final EventImpl eventImpl = EventImplTestUtils.createEventImpl(
-                new TestingEventBuilder(random),
-                selfParent == null ? null : selfParent.getEvent(),
-                otherParent == null ? null : otherParent.getEvent());
+        final TestingEventBuilder eventBuilder = new TestingEventBuilder(random);
+        final PlatformEvent platformEvent = eventBuilder
+                .setSelfParent(selfParent == null ? null : selfParent.getEvent())
+                .setOtherParent(otherParent == null ? null : otherParent.getEvent())
+                .build();
 
-        return new ShadowEvent(eventImpl, selfParent, otherParent);
+        return new ShadowEvent(platformEvent, selfParent, otherParent);
     }
 }
