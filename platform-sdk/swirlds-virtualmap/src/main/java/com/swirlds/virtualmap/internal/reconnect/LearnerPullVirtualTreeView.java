@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -51,6 +52,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link LearnerTreeView} for the virtual merkle. The learner during reconnect
@@ -68,6 +71,8 @@ import java.util.function.Consumer;
  */
 public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements LearnerTreeView<Long> {
+
+    private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeView.class);
 
     /**
      * A stashed null hash, which is used for any leaves which are null that we need to send
@@ -312,6 +317,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
         if (isLeaf) {
             if (firstLeaf) {
+                logger.info(RECONNECT.getMarker(), "First leaf response received, view={}", viewId);
                 root.prepareForFirstLeaf();
                 firstLeaf = false;
             }
