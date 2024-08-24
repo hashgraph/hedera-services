@@ -183,10 +183,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return blockHashManager.hashOfBlock(blockNo);
     }
 
-    public Timestamp endOfBlockTimestamp() {
-        return boundaryStateChangeListener.endOfBlockTimestamp();
-    }
-
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
         final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
