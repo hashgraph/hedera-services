@@ -174,7 +174,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * cancel the reconnect with an exception. If we cannot make space after this many seconds,
      * then it means a single round of hashing has exceeded this time threshold.
      */
-    private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
+    private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 600;
 
     /**
      * The number of seconds to wait for the full leaf rehash process to finish
