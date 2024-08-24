@@ -285,6 +285,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final boolean hashIndexEmpty = pathToDiskLocationInternalNodes.size() == 0;
             final LoadedDataCallback<VirtualHashRecord> hashRecordLoadedCallback;
             if (hashIndexEmpty) {
+                if (validLeafPathRange.getMaxValidKey() >= 0) {
+                    pathToDiskLocationInternalNodes.updateValidRange(0, validLeafPathRange.getMaxValidKey());
+                }
                 hashRecordLoadedCallback = (dataLocation, hashRecord) ->
                         pathToDiskLocationInternalNodes.put(hashRecord.path(), dataLocation);
             } else {
@@ -338,6 +341,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         final LoadedDataCallback<VirtualLeafRecord<K, V>> leafRecordLoadedCallback;
         final boolean needRestorePathToDiskLocationLeafNodes = pathToDiskLocationLeafNodes.size() == 0;
         if (needRestorePathToDiskLocationLeafNodes) {
+            if (validLeafPathRange.getMaxValidKey() >= 0) {
+                pathToDiskLocationLeafNodes.updateValidRange(
+                        validLeafPathRange.getMinValidKey(), validLeafPathRange.getMaxValidKey());
+            }
             leafRecordLoadedCallback = (dataLocation, leafRecord) -> {
                 final long path = leafRecord.getPath();
                 pathToDiskLocationLeafNodes.put(path, dataLocation);
@@ -603,7 +610,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Load a leaf record by path
+     * Load a leaf record by path. This method returns {@code null}, if the path is outside the
+     * valid path range.
      *
      * @param path the path for the leaf we are loading
      * @return loaded record or null if not found
@@ -611,9 +619,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException {
+        if (path < 0) {
+            throw new IllegalArgumentException("Path (" + path + ") is not valid");
+        }
         final KeyRange leafPathRange = validLeafPathRange;
         if (!leafPathRange.withinRange(path)) {
-            throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
+            return null;
         }
         statisticsUpdater.countLeafReads();
         return pathToKeyValue.get(path);
@@ -660,7 +671,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     @Override
     public Hash loadHash(final long path) throws IOException {
         if (path < 0) {
-            throw new IllegalArgumentException("path is less than 0");
+            throw new IllegalArgumentException("Path (" + path + ") is not valid");
         }
 
         // It is possible that the caller will ask for an internal node that the database doesn't
@@ -1067,13 +1078,22 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * Write all hashes to hashStore
      */
     private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
-        if ((dirtyHashes == null) || (maxValidPath <= 0)) {
+        if (hasDiskStoreForHashes) {
+            if (maxValidPath < 0) {
+                // Empty store
+                hashStoreDisk.updateValidKeyRange(-1, -1);
+            } else {
+                hashStoreDisk.updateValidKeyRange(0, maxValidPath);
+            }
+        }
+
+        if ((dirtyHashes == null) || (maxValidPath < 0)) {
             // nothing to do
             return;
         }
 
         if (hasDiskStoreForHashes) {
-            hashStoreDisk.startWriting(0, maxValidPath);
+            hashStoreDisk.startWriting();
         }
 
         dirtyHashes.forEach(rec -> {
@@ -1112,12 +1132,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 .iterator();
         final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
 
+        if (lastLeafPath < 0) {
+            // Empty store
+            pathToKeyValue.updateValidKeyRange(-1, -1);
+        } else {
+            pathToKeyValue.updateValidKeyRange(firstLeafPath, lastLeafPath);
+        }
+
         if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
             // Nothing to do
             return;
         }
 
-        pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
+        pathToKeyValue.startWriting();
         keyToPath.startWriting();
 
         // Iterate over leaf records
