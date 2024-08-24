@@ -229,12 +229,12 @@ class SystemSetupTest {
         verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verify(stack, times(1)).commitFullStack();
 
-        final var warnLogs = logCaptor.warnLogs();
-        assertThat(warnLogs.size()).isEqualTo(4);
-        assertThat(warnLogs.getFirst()).startsWith("Failed to parse upgrade file for feeSchedules.json");
-        assertThat(warnLogs.get(1)).startsWith("Failed to parse upgrade file for throttles.json");
-        assertThat(warnLogs.get(2)).startsWith("Failed to parse upgrade file for application-override.properties");
-        assertThat(warnLogs.getLast())
+        final var errorLogs = logCaptor.errorLogs();
+        assertThat(errorLogs.size()).isEqualTo(4);
+        assertThat(errorLogs.getFirst()).startsWith("Failed to parse upgrade file for feeSchedules.json");
+        assertThat(errorLogs.get(1)).startsWith("Failed to parse upgrade file for throttles.json");
+        assertThat(errorLogs.get(2)).startsWith("Failed to parse upgrade file for application-override.properties");
+        assertThat(errorLogs.getLast())
                 .startsWith("Failed to parse upgrade file for api-permission-override.properties");
     }
 
