@@ -205,4 +205,13 @@ public interface Dispatch {
      * @return the pre-handle result
      */
     PreHandleResult preHandleResult();
+
+    /**
+     * The throttling strategy for the dispatch. If the dispatched transaction should be throttled
+     * at consensus also. All the transactions including user and child transactions are checked for
+     * capacity and throttled at consensus. The only exception is when top level contract create creates an
+     * account by dispatching a crypto create transaction
+     * @return the throttling strategy
+     */
+    HandleContext.ConsensusThrottling throttleStrategy();
 }

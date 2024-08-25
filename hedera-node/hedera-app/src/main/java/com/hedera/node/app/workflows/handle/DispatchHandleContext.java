@@ -372,7 +372,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.IRREVERSIBLE,
-                true);
+                true,
+                ConsensusThrottling.ON);
     }
 
     @NonNull
@@ -381,7 +382,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
-            final AccountID childSyntheticPayer) {
+            final AccountID childSyntheticPayer,
+            @NonNull final ConsensusThrottling consensusThrottling) {
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,
@@ -390,7 +392,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 StreamBuilder.ReversingBehavior.REMOVABLE,
-                false);
+                false,
+                consensusThrottling);
     }
 
     @NonNull
@@ -400,7 +403,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final TransactionCategory childCategory) {
+            @NonNull final TransactionCategory childCategory,
+            @NonNull final ConsensusThrottling consensusThrottling) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
@@ -414,7 +418,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
                 StreamBuilder.ReversingBehavior.REVERSIBLE,
-                false);
+                false,
+                consensusThrottling);
     }
 
     @NonNull
@@ -424,11 +429,13 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final ConsensusThrottling throttleStrategy) {
         requireNonNull(childTxBody, "childTxBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
         requireNonNull(customizer, "customizer must not be null");
+        requireNonNull(throttleStrategy, "throttleStrategy must not be null");
 
         return dispatchForRecord(
                 childTxBody,
@@ -438,7 +445,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 customizer,
                 TransactionCategory.CHILD,
                 StreamBuilder.ReversingBehavior.REMOVABLE,
-                false);
+                false,
+                throttleStrategy);
     }
 
     @NonNull
@@ -467,7 +475,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
             @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
-            final boolean commitStack) {
+            final boolean commitStack,
+            @NonNull final ConsensusThrottling throttleStrategy) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,
                 childVerifier,
@@ -483,7 +492,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 topLevelFunction,
                 throttleAdviser,
                 consensusNow,
-                blockRecordInfo);
+                blockRecordInfo,
+                throttleStrategy);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();
