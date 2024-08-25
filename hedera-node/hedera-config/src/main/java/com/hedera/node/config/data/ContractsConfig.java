@@ -83,7 +83,7 @@ public record ContractsConfig(
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
         @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
-        @ConfigProperty(value = "systemContract.precisionLossFixForGas.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.precisionLossFixForGas.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean isGasPrecisionLossFixEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "true") @NetworkProperty

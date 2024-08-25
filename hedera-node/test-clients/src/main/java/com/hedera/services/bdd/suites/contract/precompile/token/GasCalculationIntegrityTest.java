@@ -140,7 +140,7 @@ public class GasCalculationIntegrityTest {
                 fungibleToken.treasury().approveTokenAllowance(fungibleToken, numericContractComplex, 1000L),
                 nft.treasury().approveNFTAllowance(nft, numericContractComplex, true, List.of(1L, 2L, 3L, 4L, 5L)),
                 alice.approveCryptoAllowance(numericContractComplex, ONE_HBAR),
-
+                updateRates(30000, 16197),
                 // Transfers
                 fungibleToken.treasury().transferUnitsTo(numericContract, 100L, fungibleToken),
                 nft.treasury().transferNFTsTo(numericContract, nft, 7L),
@@ -204,7 +204,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using createNonFungibleTokenWithCustomFeesV3 with fractionalFee")
     public Stream<DynamicTest> createNonFungibleTokenWithCustomRoyaltyFeesV3() {
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                //  updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("createNonFungibleTokenWithCustomRoyaltyFeesV3", alice.getED25519KeyBytes(), 1L, 2L, 10L)
                         .gas(169_584L)
@@ -219,7 +219,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using createFungibleToken")
     public Stream<DynamicTest> createFungible() {
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("createFungibleToken", EXPIRY_RENEW, EXPIRY_RENEW, 10000L, BigInteger.TEN, BigInteger.TWO)
                         .gas(10080_800L)
@@ -250,7 +250,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using cryptoTransferV2 for hBar transfer")
     public Stream<DynamicTest> useCryptoTransferV2() {
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("cryptoTransferV2", new long[] {-5, 5}, alice, bob)
                         .gas(33_304L)
@@ -282,7 +282,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("when using cryptoTransferNonFungible with internal auto associate")
     public Stream<DynamicTest> useCryptoTransferNonFungible() {
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("cryptoTransferNonFungible", nft, nft.treasury(), bob, 1L)
                         .gas(761_070L)
@@ -325,7 +325,7 @@ public class GasCalculationIntegrityTest {
     public Stream<DynamicTest> useTransferNFT() {
         // Cannot be tested directly as it requires associate from previous test
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("transferNFTTest", nft, nft.treasury(), alice, 3L)
                         .via("transferNFTTest")
@@ -340,7 +340,7 @@ public class GasCalculationIntegrityTest {
     public Stream<DynamicTest> useTransferFrom() {
         // Cannot be tested directly as it requires associate from previous test
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                         .via("transferFrom")
@@ -354,7 +354,7 @@ public class GasCalculationIntegrityTest {
     public Stream<DynamicTest> useTransferFromERC() {
         // Cannot be tested directly as it requires associate from previous test
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                         .via("transferFromERC")
@@ -368,7 +368,7 @@ public class GasCalculationIntegrityTest {
     public Stream<DynamicTest> useTransferNFTFrom() {
         // Cannot be tested directly as it requires associate from previous test
         return testCases.flatMap(rates -> hapiTest(
-                updateRates(rates.hBarEquiv, rates.centEquiv),
+                // updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("transferFromNFT", nft, nft.treasury(), alice, BigInteger.TWO)
                         .via("transferFromNFT")
@@ -382,7 +382,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("for token info call")
     public Stream<DynamicTest> checkTokenGetInfoGas() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
+                // updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 tokenInfoContract
                         .call("getInformationForToken", token)
                         .gas(78_805L)
@@ -395,7 +395,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("for token custom fees call")
     public Stream<DynamicTest> checkTokenGetCustomFeesGas() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
+                // updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 tokenInfoContract
                         .call("getCustomFeesForToken", token)
                         .gas(31_421L)
@@ -408,7 +408,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("for token name call")
     public Stream<DynamicTest> checkErc20Name() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
+                // updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 erc20Contract.call("name", token).gas(30_207L).via("name"),
                 getTxnRecord("name").logged()));
     }
@@ -418,7 +418,7 @@ public class GasCalculationIntegrityTest {
     @DisplayName("for token balance of call")
     public Stream<DynamicTest> checkErc20BalanceOf() {
         return testCases.flatMap(ratesProvider -> hapiTest(
-                updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
+                // updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 erc20Contract.call("balanceOf", token, alice).gas(30_074L).via("balance"),
                 getTxnRecord("balance").logged()));
     }
