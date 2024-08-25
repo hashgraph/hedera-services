@@ -114,7 +114,7 @@ public class GasCalculationIntegrityTest {
     @AfterAll
     public static void afterAll(final @NonNull TestLifecycle lifecycle) {
         // Reset exchange rates
-        lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
+        // lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
     }
 
     @BeforeAll
