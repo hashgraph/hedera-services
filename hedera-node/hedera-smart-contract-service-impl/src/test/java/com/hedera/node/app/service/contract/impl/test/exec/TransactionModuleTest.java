@@ -234,7 +234,7 @@ class TransactionModuleTest {
         // And a converstion rate of 7 tinybar per 66 tinycents...
         given(tinybarValues.asTinybars(66L)).willReturn(7L);
         // With each gas costing 2 tinybar...
-        given(tinybarValues.childTransactionTinybarGasPriceFullPrecision()).willReturn(2L);
+        given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);
         final var calculator =
                 TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
         final var result =

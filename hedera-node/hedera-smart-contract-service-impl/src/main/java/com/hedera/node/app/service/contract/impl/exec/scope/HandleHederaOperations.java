@@ -188,7 +188,12 @@ public class HandleHederaOperations implements HederaOperations {
                 .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
                 .build();
         final var createFee = gasCalculator.feeCalculatorPriceInTinyBars(synthCreation, payerId);
-        return (createFee) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasCalculator.topLevelGasPrice();
+
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!contractsConfig.isGasPrecisionLossFixEnabled()) {
+            return (createFee) / gasCalculator.topLevelGasPrice();
+        }
+        return (createFee) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasCalculator.topLevelGasPriceInTinyBars();
     }
 
     /**

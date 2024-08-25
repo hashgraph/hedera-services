@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREP
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -32,6 +33,7 @@ import java.util.Objects;
  */
 public class TinybarValues {
     private final ExchangeRate exchangeRate;
+    private final boolean isGasPrecisionLossFixEnabled;
     private final FunctionalityResourcePrices topLevelResourcePrices;
     // Only non-null for a top-level transaction, since queries cannot have child transactions
     @Nullable
@@ -46,8 +48,9 @@ public class TinybarValues {
      * @param exchangeRate the current exchange rate
      * @return a query-appropriate instance of {@link TinybarValues}
      */
-    public static TinybarValues forQueryWith(@NonNull final ExchangeRate exchangeRate) {
-        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES, null);
+    public static TinybarValues forQueryWith(
+            @NonNull final ExchangeRate exchangeRate, @NonNull final ContractsConfig contractsConfig) {
+        return new TinybarValues(exchangeRate, contractsConfig, PREPAID_RESOURCE_PRICES, null);
     }
 
     /**
@@ -61,18 +64,21 @@ public class TinybarValues {
      */
     public static TinybarValues forTransactionWith(
             @NonNull final ExchangeRate exchangeRate,
+            @NonNull final ContractsConfig contractsConfig,
             @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @Nullable final FunctionalityResourcePrices childTransactionResourcePrices) {
-        return new TinybarValues(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+        return new TinybarValues(exchangeRate, contractsConfig, topLevelResourcePrices, childTransactionResourcePrices);
     }
 
     private TinybarValues(
             @NonNull final ExchangeRate exchangeRate,
+            @NonNull final ContractsConfig contractsConfig,
             @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @Nullable final FunctionalityResourcePrices childTransactionResourcePrices) {
         this.exchangeRate = Objects.requireNonNull(exchangeRate);
         this.topLevelResourcePrices = Objects.requireNonNull(topLevelResourcePrices);
         this.childTransactionResourcePrices = childTransactionResourcePrices;
+        this.isGasPrecisionLossFixEnabled = contractsConfig.isGasPrecisionLossFixEnabled();
     }
 
     /**
@@ -90,11 +96,11 @@ public class TinybarValues {
     }
 
     /**
-     * Returns the tinybar-denominated price of a unit of gas for the current operation based on the current exchange
-     * rate, the current congestion multiplier, and the tinycent-denominated price of gas in the {@code service} fee
+     * Returns the tinyBar-denominated price of a unit of gas for the current operation based on the current exchange
+     * rate, the current congestion multiplier, and the tinyCent-denominated price of gas in the {@code service} fee
      * component.
      *
-     * @return the tinybar-denominated price of a unit of gas for the current operation
+     * @return the tinyBar-denominated price of a unit of gas for the current operation
      */
     public long topLevelTinybarGasPrice() {
         return asTinybars(
@@ -103,13 +109,26 @@ public class TinybarValues {
                         * topLevelResourcePrices.congestionMultiplier());
     }
 
+    /**
+     * Returns the tinyBar price of a unit of gas for the current operation based on the current exchange
+     * rate, the current congestion multiplier without being denominated in tinyCents units.
+     *
+     * @return the full precision tinyBar price of a unit of gas for the current operation
+     */
     public long topLevelTinybarGasPriceFullPrecision() {
         return asTinybars(
                 topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
                         * topLevelResourcePrices.congestionMultiplier());
     }
 
+    /**
+     * Returns the topLevel gas price cost in tinyCents, without denomination, but with congestion multiplier.
+     * @return the tinyCents gas price
+     */
     public long topLevelTinyCentsGasPrice() {
+        if (!isGasPrecisionLossFixEnabled) {
+            return topLevelTinybarGasPrice();
+        }
         return topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
                 * topLevelResourcePrices.congestionMultiplier();
     }
@@ -131,15 +150,11 @@ public class TinybarValues {
                         * childTransactionResourcePrices.congestionMultiplier());
     }
 
-    public long childTransactionTinybarGasPriceFullPrecision() {
-        if (childTransactionResourcePrices == null) {
-            throw new IllegalStateException("Cannot dispatch a child transaction from a query");
-        }
-        return asTinybars(
-                childTransactionResourcePrices.basePrices().servicedataOrThrow().gas()
-                        * childTransactionResourcePrices.congestionMultiplier());
-    }
-
+    /**
+     * Returns the tinyCents gas price for dispatching a child transaction based on the current exchange rate,
+     * Without denomination, but with congestion multiplier, saving the precision.
+     * @return the tinyCents gas price
+     */
     public long childTransactionTinyCentsGasPrice() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
@@ -156,7 +171,21 @@ public class TinybarValues {
      * @return the tinybar-denominated price of a rbh for the current operation
      */
     public long topLevelTinyCentRbhPrice() {
+        if (!isGasPrecisionLossFixEnabled) {
+            return asTinybars(
+                    topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()
+                            / FEE_SCHEDULE_UNITS_PER_TINYCENT
+                            * topLevelResourcePrices.congestionMultiplier());
+        }
         return topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()
                 * topLevelResourcePrices.congestionMultiplier();
+    }
+
+    /**
+     * This can be removed after integrity of the fix is confirmed.
+     * We have it as a temporary measure to allow for easy rollback in case of issues.
+     */
+    public boolean isGasPrecisionLossFixEnabled() {
+        return isGasPrecisionLossFixEnabled;
     }
 }

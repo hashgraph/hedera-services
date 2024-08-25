@@ -91,8 +91,13 @@ public interface TransactionModule {
     static TinybarValues provideTinybarValues(
             @TopLevelResourcePrices @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @ChildTransactionResourcePrices @NonNull final FunctionalityResourcePrices childTransactionResourcePrices,
-            @NonNull final ExchangeRate exchangeRate) {
-        return TinybarValues.forTransactionWith(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+            @NonNull final ExchangeRate exchangeRate,
+            @NonNull final HandleContext context) {
+        return TinybarValues.forTransactionWith(
+                exchangeRate,
+                context.configuration().getConfigData(ContractsConfig.class),
+                topLevelResourcePrices,
+                childTransactionResourcePrices);
     }
 
     @Provides

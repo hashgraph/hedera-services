@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
@@ -57,8 +58,9 @@ public interface QueryModule {
 
     @Provides
     @QueryScope
-    static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
-        return TinybarValues.forQueryWith(exchangeRate);
+    static TinybarValues provideTinybarValues(
+            @NonNull final ExchangeRate exchangeRate, @NonNull final QueryContext context) {
+        return TinybarValues.forQueryWith(exchangeRate, context.configuration().getConfigData(ContractsConfig.class));
     }
 
     @Provides

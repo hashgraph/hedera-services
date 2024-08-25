@@ -58,64 +58,58 @@ public class SystemContractGasCalculator {
             @NonNull final AccountID payer) {
         requireNonNull(body);
         requireNonNull(dispatchType);
+        requireNonNull(payer);
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+            return gasRequirementOldWithPrecisionLoss(body, payer, canonicalPriceInTinybars(dispatchType));
+        }
         return gasRequirementWithTinyCents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
-    }
-
-    /**
-     * Given a transaction body whose dispatch gas requirement must be at least equivalent to a given minimum
-     * amount of tinybars, returns the gas requirement for the transaction to be dispatched.
-     *
-     * @param body the transaction body to be dispatched
-     * @param payer the payer of the transaction
-     * @param minimumPriceInTinybars the minimum equivalent tinybar cost of the dispatch
-     * @return the gas requirement for the transaction to be dispatched
-     */
-    public long gasRequirement(
-            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
-        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
-        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
-        return asGasRequirement(priceInTinybars);
-    }
-
-    /**
-     * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
-     *
-     * @param tinybarPrice the tinybar price
-     * @return the equivalent gas requirement at the current gas price
-     */
-    private long asGasRequirement(final long tinybarPrice) {
-        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPrice());
-    }
-
-    private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
-        // We round up to the nearest gas unit, and then add 20% to account for the premium
-        // of doing a HAPI operation from inside the EVM
-        final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
-        return gasRequirement + (gasRequirement / 5);
     }
 
     public long gasRequirementWithTinyCents(
             @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
+        // If not enabled, make the calculation using the old method.
+        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+            return gasRequirementOldWithPrecisionLoss(body, payer, minimumPriceInTinyCents);
+        }
+
         final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
         // For the rare cases where nominalPriceInTinyBars > minimumPriceInTinyCents:
         // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
-        // The minimal nominal price is > 1e6 tinyCents, ensuring minor discrepancies. In most cases, the gas difference
-        // is zero.
+        // The minimal nominal price is > 1e6 tinyCents, ensuring enough precision.
+        // In most cases, the gas difference is zero.
         // In scenarios where we compare significant price fluctuations (200x, 100x), the gas difference should still be
         // unlikely to exceed 0 units.
-
         final var priceInTinyCents =
                 Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
-        return asGasRequirementTinyCents(priceInTinyCents);
+
+        return gasRequirementFromTinyCents(priceInTinyCents, tinybarValues.childTransactionTinyCentsGasPrice());
     }
 
     /**
      * Returns the gas price for the top-level HAPI operation.
      *
-     * @return the gas price for the top-level HAPI operation
+     * @return the gas price for the top-level HAPI operation in tinyBars.
      */
-    public long topLevelGasPrice() {
+    public long topLevelGasPriceInTinyBars() {
         return tinybarValues.topLevelTinybarGasPriceFullPrecision();
+    }
+
+    /**
+     * Estimates the gas requirement for a view operation.
+     * The minimum gas requirement is 100 units.
+     * For all view operations, the gas requirement is determined using the canonical gas value
+     * for the TOKEN_INFO dispatch type, as specified in the canonical-prices.json.
+     * The TOKEN_INFO operation is representative of view operations.
+     *
+     * @return the gas requirement for a view operation
+     */
+    public long viewGasRequirement() {
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+            return FIXED_VIEW_GAS_COST;
+        }
+        return Math.max(FIXED_VIEW_GAS_COST, canonicalGasRequirement(DispatchType.TOKEN_INFO));
     }
 
     /**
@@ -127,21 +121,13 @@ public class SystemContractGasCalculator {
      * @return the canonical gas requirement for that dispatch type
      */
     public long canonicalGasRequirement(@NonNull final DispatchType dispatchType) {
-        return gasRequirementTinyCents(
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+            return asGasRequirement(canonicalPriceInTinybars(dispatchType));
+        }
+        return gasRequirementFromTinyCents(
                 dispatchPrices.canonicalPriceInTinycents(dispatchType),
                 tinybarValues.childTransactionTinyCentsGasPrice());
-    }
-
-    /**
-     * Although mono-service compares the fixed {@code 100 gas} cost to the implied gas requirement of a
-     * stand-in {@link com.hedera.hapi.node.transaction.TransactionGetRecordQuery}, this stand-in query's
-     * cost will be less than {@code 100 gas} at any exchange rate that sustains the existence of the network.
-     * So for simplicity, we drop that comparison and just return the fixed {@code 100 gas} cost.
-     *
-     * @return the minimum gas requirement for a view query
-     */
-    public long viewGasRequirement() {
-        return Math.max(FIXED_VIEW_GAS_COST, canonicalGasRequirement(DispatchType.TOKEN_INFO));
     }
 
     /**
@@ -152,6 +138,11 @@ public class SystemContractGasCalculator {
      */
     public long canonicalPriceInTinyCents(@NonNull final DispatchType dispatchType) {
         requireNonNull(dispatchType);
+        // If not enabled, return the price in TinyBars.
+        // This is directly used only in ClassicTransfersCall. However, it is easier to place the feature flag here.
+        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+            return canonicalPriceInTinybars(dispatchType);
+        }
         return dispatchPrices.canonicalPriceInTinycents(dispatchType);
     }
 
@@ -176,15 +167,70 @@ public class SystemContractGasCalculator {
         return gas * tinybarValues.childTransactionTinybarGasPrice();
     }
 
-    private long asGasRequirementTinyCents(final long tinyCentPrice) {
-        return gasRequirementTinyCents(tinyCentPrice, tinybarValues.childTransactionTinyCentsGasPrice());
-    }
-
-    private long gasRequirementTinyCents(long tinyCentsPrice, final long gasPriceInCents) {
-        // We round up to the nearest gas unit, and then add 20% to account for the premium
-        // of doing a HAPI operation from inside the EVM
+    /**
+     * Calculates the gas requirement for an operation based on the provided tinyCents price and gas price.
+     * The calculation rounds up the result to the nearest gas unit and then adds 20% to the computed gas
+     * requirement to account for the premium of executing a HAPI operation within the EVM.
+     *
+     * @param tinyCentsPrice the price of the operation in tinyCents
+     * @param gasPriceInCents the current gas price in cents
+     * @return the computed gas requirement for the operation
+     */
+    private long gasRequirementFromTinyCents(long tinyCentsPrice, final long gasPriceInCents) {
         final var gasRequirement =
                 (tinyCentsPrice + gasPriceInCents - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPriceInCents;
+        return gasRequirement + (gasRequirement / 5);
+    }
+
+    /**
+     * After feature flag isGasPrecisionLossFixEnabled is removed, this method should be removed.
+     * @deprecated
+     */
+    @Deprecated(since = "Precision loss fix was implemented in PR #14842", forRemoval = true)
+    public long topLevelGasPrice() {
+        return tinybarValues.topLevelTinybarGasPrice();
+    }
+
+    /**
+     * After feature flag isGasPrecisionLossFixEnabled is removed, this method should be removed.
+     * @deprecated
+     */
+    @Deprecated(since = "Precision loss fix was implemented in PR #14842", forRemoval = true)
+    public long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
+        requireNonNull(dispatchType);
+        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
+    }
+
+    /**
+     * After feature flag isGasPrecisionLossFixEnabled is removed, this method should be removed.
+     * @deprecated
+     */
+    @Deprecated(since = "Precision loss fix was implemented in PR #14842", forRemoval = true)
+    public long gasRequirementOldWithPrecisionLoss(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
+        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
+        return asGasRequirement(priceInTinybars);
+    }
+
+    /**
+     * After feature flag isGasPrecisionLossFixEnabled is removed, this method should be removed.
+     * @deprecated
+     */
+    @Deprecated(since = "Precision loss fix was implemented in PR #14842", forRemoval = true)
+    private long asGasRequirement(final long tinybarPrice) {
+        return asGasRequirement(tinybarPrice, tinybarValues.childTransactionTinybarGasPrice());
+    }
+
+    /**
+     * After feature flag isGasPrecisionLossFixEnabled is removed, this method should be removed.
+     * @deprecated
+     */
+    @Deprecated(since = "Precision loss fix was implemented in PR #14842", forRemoval = true)
+    private long asGasRequirement(final long tinybarPrice, final long gasPrice) {
+        // We round up to the nearest gas unit, and then add 20% to account for the premium
+        // of doing a HAPI operation from inside the EVM
+        final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
         return gasRequirement + (gasRequirement / 5);
     }
 }
