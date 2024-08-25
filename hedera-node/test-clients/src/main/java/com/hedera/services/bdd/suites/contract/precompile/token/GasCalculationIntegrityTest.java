@@ -23,21 +23,15 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.WIPE_KEY;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -47,14 +41,9 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
@@ -63,8 +52,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 @DisplayName("updateToken")
 @SuppressWarnings("java:S1192")
-@HapiTestLifecycle
-@OrderedInIsolation
 public class GasCalculationIntegrityTest {
 
     @Contract(contract = "NumericContract", creationGas = 1_000_000L)
@@ -111,41 +98,42 @@ public class GasCalculationIntegrityTest {
 
     private static final AtomicReference<ByteString> validRates = new AtomicReference<>();
 
-    @AfterAll
-    public static void afterAll(final @NonNull TestLifecycle lifecycle) {
-        // Reset exchange rates
-        // lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
-    }
+    //    @AfterAll
+    //    public static void afterAll(final @NonNull TestLifecycle lifecycle) {
+    //        // Reset exchange rates
+    //        // lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
+    //    }
 
-    @BeforeAll
-    public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
-        // Fetch exchange rates before tests
-        lifecycle.doAdhoc(
-                // Save exchange rates
-                withOpContext((spec, opLog) -> {
-                    var fetch = getFileContents(EXCHANGE_RATES);
-                    CustomSpecAssert.allRunFor(spec, fetch);
-                    validRates.set(fetch.getResponse()
-                            .getFileGetContents()
-                            .getFileContents()
-                            .getContents());
-                }),
-
-                // Authorizations
-                fungibleToken.authorizeContracts(numericContractComplex),
-                nft.authorizeContracts(numericContractComplex),
-                numericContract.associateTokens(fungibleToken, nft),
-
-                // Approvals
-                fungibleToken.treasury().approveTokenAllowance(fungibleToken, numericContractComplex, 1000L),
-                nft.treasury().approveNFTAllowance(nft, numericContractComplex, true, List.of(1L, 2L, 3L, 4L, 5L)),
-                alice.approveCryptoAllowance(numericContractComplex, ONE_HBAR),
-
-                // Transfers
-                fungibleToken.treasury().transferUnitsTo(numericContract, 100L, fungibleToken),
-                nft.treasury().transferNFTsTo(numericContract, nft, 7L),
-                alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS));
-    }
+    //    @BeforeAll
+    //    public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
+    //        // Fetch exchange rates before tests
+    //        lifecycle.doAdhoc(
+    //                // Save exchange rates
+    //                withOpContext((spec, opLog) -> {
+    //                    var fetch = getFileContents(EXCHANGE_RATES);
+    //                    CustomSpecAssert.allRunFor(spec, fetch);
+    //                    validRates.set(fetch.getResponse()
+    //                            .getFileGetContents()
+    //                            .getFileContents()
+    //                            .getContents());
+    //                }),
+    //
+    //                // Authorizations
+    //                fungibleToken.authorizeContracts(numericContractComplex),
+    //                nft.authorizeContracts(numericContractComplex),
+    //                numericContract.associateTokens(fungibleToken, nft),
+    //
+    //                // Approvals
+    //                fungibleToken.treasury().approveTokenAllowance(fungibleToken, numericContractComplex, 1000L),
+    //                nft.treasury().approveNFTAllowance(nft, numericContractComplex, true, List.of(1L, 2L, 3L, 4L,
+    // 5L)),
+    //                alice.approveCryptoAllowance(numericContractComplex, ONE_HBAR),
+    //
+    //                // Transfers
+    //                fungibleToken.treasury().transferUnitsTo(numericContract, 100L, fungibleToken),
+    //                nft.treasury().transferNFTsTo(numericContract, nft, 7L),
+    //                alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS));
+    //    }
 
     @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
     @Order(1)
