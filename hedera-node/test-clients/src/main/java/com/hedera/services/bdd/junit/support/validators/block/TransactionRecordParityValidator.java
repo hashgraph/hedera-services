@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
@@ -36,7 +35,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.utils.RcDiff;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -52,12 +50,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(TransactionRecordParityValidator.class);
 
     private final BlockUnitSplit blockUnitSplit = new BlockUnitSplit();
-    private final BlockTransactionalUnitTranslator translator =
-            new BlockTransactionalUnitTranslator(new EnumMap<>(HederaFunctionality.class) {
-                {
-                    // TODO
-                }
-            });
+    private final BlockTransactionalUnitTranslator translator = new BlockTransactionalUnitTranslator();
 
     public static final Factory FACTORY = new Factory() {
         @NonNull

@@ -16,14 +16,21 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.impl.ConsensusSubmitMessageTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.ConsensusTopicCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.CryptoCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,14 +44,20 @@ public class BlockTransactionalUnitTranslator {
     private static final Logger log = LogManager.getLogger(BlockTransactionalUnitTranslator.class);
 
     /**
+     * The base translator used to create the {@link SingleTransactionRecord}s.
+     */
+    private final BaseTranslator baseTranslator = new BaseTranslator();
+    /**
      * The translators used to translate the block transaction parts for a logical HAPI transaction.
      */
-    private final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators;
-
-    public BlockTransactionalUnitTranslator(
-            @NonNull final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators) {
-        this.translators = requireNonNull(translators);
-    }
+    private final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators =
+            new EnumMap<>(HederaFunctionality.class) {
+                {
+                    put(CONSENSUS_SUBMIT_MESSAGE, new ConsensusSubmitMessageTranslator());
+                    put(CONSENSUS_CREATE_TOPIC, new ConsensusTopicCreateTranslator());
+                    put(CRYPTO_CREATE, new CryptoCreateTranslator());
+                }
+            };
 
     /**
      * Translates the given {@link BlockTransactionalUnit} into a list of {@link SingleTransactionRecord}s.
@@ -53,6 +66,7 @@ public class BlockTransactionalUnitTranslator {
      */
     public List<SingleTransactionRecord> translate(@NonNull final BlockTransactionalUnit unit) {
         requireNonNull(unit);
+        baseTranslator.prepareForUnit(unit);
         final List<StateChange> remainingStateChanges = new LinkedList<>(unit.stateChanges());
         final List<SingleTransactionRecord> translatedRecords = new ArrayList<>();
         for (final var blockTransactionParts : unit.blockTransactionParts()) {
@@ -60,7 +74,9 @@ public class BlockTransactionalUnitTranslator {
             if (translator == null) {
                 log.warn("No translator found for functionality {}, skipping", blockTransactionParts.functionality());
             } else {
-                translatedRecords.add(translator.translate(blockTransactionParts, remainingStateChanges));
+                final var translation =
+                        translator.translate(blockTransactionParts, baseTranslator, remainingStateChanges);
+                translatedRecords.add(translation);
             }
         }
         return translatedRecords;

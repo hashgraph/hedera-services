@@ -19,48 +19,50 @@ package com.hedera.services.bdd.junit.support.translators.impl;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class ConsensusSubmitMessageTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+/**
+ * Translates a consensus submit message into a {@link SingleTransactionRecord}.
+ */
+public class ConsensusSubmitMessageTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(ConsensusSubmitMessageTranslator.class);
+
     // For explanation about this constant value, see
     // https://github.com/hashgraph/hedera-protobufs/blob/pbj-storage-spec-review/block/stream/output/consensus_service.proto#L6
     private static final long RUNNING_HASH_VERSION = 3L;
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        if (transaction.result().status().equals(SUCCESS)) {
-            receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
-        } else {
-            receiptBuilder.status(transaction.result().status());
-        }
-
-        if (stateChanges != null) {
-            stateChanges.stateChanges().stream()
-                    .filter(StateChange::hasMapUpdate)
-                    .findFirst()
-                    .ifPresent(stateChange -> {
-                        final var topic = stateChange.mapUpdate().value().topicValue();
-                        if (topic != null) {
-                            receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                            receiptBuilder.topicRunningHash(topic.runningHash());
-                        }
-                    });
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                TransactionRecord.newBuilder().receipt(receiptBuilder.build()).build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+            @NonNull final BlockTransactionParts parts,
+            @NonNull BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            if (parts.status() == SUCCESS) {
+                receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().valueOrThrow().hasTopicValue()) {
+                        final var topic =
+                                stateChange.mapUpdateOrThrow().valueOrThrow().topicValueOrThrow();
+                        receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
+                        receiptBuilder.topicRunningHash(topic.runningHash());
+                        iter.remove();
+                        return;
+                    }
+                }
+                log.error(
+                        "No topic state change found for successful consensus submit message with id {}",
+                        parts.transactionIdOrThrow());
+            }
+        });
     }
 }

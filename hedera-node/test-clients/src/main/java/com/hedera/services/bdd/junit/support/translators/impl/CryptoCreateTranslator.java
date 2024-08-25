@@ -16,89 +16,64 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionResult;
-import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
+import static com.hedera.node.config.types.EntityType.ACCOUNT;
+import static java.util.Objects.requireNonNull;
 
-public class CryptoCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * Translates a crypto create transaction into a {@link SingleTransactionRecord}.
+ */
+public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(CryptoCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        final var recordBuilder = TransactionRecord.newBuilder();
-
-        if (stateChanges != null) {
-            maybeAssignAccountID(transaction.result(), stateChanges, receiptBuilder);
-
-            maybeAssignAlias(stateChanges, recordBuilder);
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.receipt(receiptBuilder.build()).build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
-    }
-
-    private void maybeAssignAccountID(
-            final TransactionResult result,
-            final StateChanges stateChanges,
-            final TransactionReceipt.Builder receiptBuilder) {
-        final var accountAmounts =
-                result.transferListOrElse(TransferList.DEFAULT).accountAmounts();
-
-        // We'll infer any created accounts by looking for positive amounts in the transfer list
-        final var createdAccounts = accountAmounts.stream()
-                .filter(aa -> aa.amount() >= 0)
-                .map(AccountAmount::accountID)
-                .toList();
-        if (createdAccounts.isEmpty()) {
-            return;
-        }
-
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .filter(stateChange -> stateChange.mapUpdate().hasKey()
-                        && stateChange.mapUpdate().key().hasAccountIdKey()
-                        && createdAccounts.contains(
-                                stateChange.mapUpdate().key().accountIdKey()))
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    final var created = stateChange.mapUpdate().key().accountIdKey();
-                    if (created != null) {
-                        receiptBuilder.accountID(AccountID.newBuilder()
-                                .accountNum(created.accountNum())
-                                .build());
-                    }
-                });
-    }
-
-    private void maybeAssignAlias(final StateChanges stateChanges, final TransactionRecord.Builder recordBuilder) {
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    if (stateChange.mapUpdate().hasValue()
-                            && stateChange.mapUpdate().value().hasAccountValue()) {
-                        final var created = stateChange.mapUpdate().value().accountValue();
-                        if (created != null
-                                && created.alias() != null
-                                && created.alias().length() > 0) {
-                            recordBuilder.alias(created.alias());
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        requireNonNull(parts);
+        requireNonNull(baseTranslator);
+        requireNonNull(remainingStateChanges);
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            if (parts.status() == SUCCESS) {
+                final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
+                        final var accountId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().accountIdKeyOrThrow();
+                        if (accountId.accountNumOrThrow() == createdNum) {
+                            final var account = stateChange
+                                    .mapUpdateOrThrow()
+                                    .valueOrThrow()
+                                    .accountValueOrThrow();
+                            final var maybeEvmAddress = extractEvmAddress(account.alias());
+                            receiptBuilder.accountID(accountId);
+                            if (maybeEvmAddress != null) {
+                                recordBuilder.evmAddress(maybeEvmAddress);
+                            }
+                            iter.remove();
+                            return;
                         }
                     }
-                });
+                }
+                log.error(
+                        "No matching state change found for successful crypto create with id {}",
+                        parts.transactionIdOrThrow());
+            }
+        });
     }
 }

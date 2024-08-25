@@ -42,9 +42,12 @@ public interface BlockTransactionPartsTranslator {
      * </ol>
      *
      * @param parts the parts of the transaction
+     * @param baseTranslator the base translator
      * @param remainingStateChanges the state changes remaining to be processed
      * @return the translated record
      */
     SingleTransactionRecord translate(
-            @NonNull BlockTransactionParts parts, @NonNull List<StateChange> remainingStateChanges);
+            @NonNull BlockTransactionParts parts,
+            @NonNull BaseTranslator baseTranslator,
+            @NonNull List<StateChange> remainingStateChanges);
 }

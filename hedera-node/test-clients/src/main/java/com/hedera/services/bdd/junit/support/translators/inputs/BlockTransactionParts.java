@@ -16,13 +16,22 @@
 
 package com.hedera.services.bdd.junit.support.translators.inputs;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Groups the block items used to represent a single logical HAPI transaction, which itself may be part of a larger
@@ -37,11 +46,82 @@ public record BlockTransactionParts(
         @Nullable TransactionOutput transactionOutput) {
 
     /**
+     * Returns the status of the transaction.
+     * @return the status
+     */
+    public ResponseCodeEnum status() {
+        return transactionResult.status();
+    }
+
+    /**
      * Returns the functionality of the transaction.
      * @return the functionality
      */
     public HederaFunctionality functionality() {
         return transactionParts.function();
+    }
+
+    /**
+     * Returns the transaction ID.
+     * @return the transaction ID
+     */
+    public TransactionID transactionIdOrThrow() {
+        return transactionParts.body().transactionIDOrThrow();
+    }
+
+    /**
+     * Returns the consensus timestamp.
+     * @return the consensus timestamp
+     */
+    public Timestamp consensusTimestamp() {
+        return transactionResult.consensusTimestamp();
+    }
+
+    /**
+     * Returns the transaction fee.
+     * @return the transaction fee
+     */
+    public long transactionFee() {
+        return transactionResult.transactionFeeCharged();
+    }
+
+    /**
+     * Returns the transfer list.
+     * @return the transfer list
+     */
+    public TransferList transferList() {
+        return transactionResult.transferList();
+    }
+
+    /**
+     * Returns the token transfer lists.
+     * @return the token transfer lists
+     */
+    public List<TokenTransferList> tokenTransferLists() {
+        return transactionResult.tokenTransferLists();
+    }
+
+    /**
+     * Returns the memo.
+     * @return the memo
+     */
+    public String memo() {
+        return transactionParts.body().memo();
+    }
+
+    /**
+     * Returns the hash of the transaction.
+     * @return the hash
+     */
+    public Bytes transactionHash() {
+        final var transaction = transactionParts.wrapper();
+        final Bytes transactionBytes;
+        if (transaction.signedTransactionBytes().length() > 0) {
+            transactionBytes = transaction.signedTransactionBytes();
+        } else {
+            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+        }
+        return Bytes.wrap(noThrowSha384HashOf(transactionBytes.toByteArray()));
     }
 
     /**
