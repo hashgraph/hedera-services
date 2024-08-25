@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.support.translators;
+package com.hedera.services.bdd.junit.support.translators.impl;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
@@ -25,11 +25,13 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
+import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-class CryptoCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+public class CryptoCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     @Override
     public SingleTransactionRecord translate(
