@@ -23,8 +23,10 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.WIPE_KEY;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -45,6 +47,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
@@ -111,22 +114,22 @@ public class GasCalculationIntegrityTest {
     @AfterAll
     public static void afterAll(final @NonNull TestLifecycle lifecycle) {
         // Reset exchange rates
-        // lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
+        lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
     }
 
     @BeforeAll
     public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
         // Fetch exchange rates before tests
         lifecycle.doAdhoc(
-                // Save exchange rates
-                //                    withOpContext((spec, opLog) -> {
-                //                        var fetch = getFileContents(EXCHANGE_RATES);
-                //                        CustomSpecAssert.allRunFor(spec, fetch);
-                //                        validRates.set(fetch.getResponse()
-                //                                .getFileGetContents()
-                //                                .getFileContents()
-                //                                .getContents());
-                //                    }),
+                //  Save exchange rates
+                withOpContext((spec, opLog) -> {
+                    var fetch = getFileContents(EXCHANGE_RATES);
+                    CustomSpecAssert.allRunFor(spec, fetch);
+                    validRates.set(fetch.getResponse()
+                            .getFileGetContents()
+                            .getFileContents()
+                            .getContents());
+                }),
 
                 // Authorizations
                 fungibleToken.authorizeContracts(numericContractComplex),
@@ -424,7 +427,6 @@ public class GasCalculationIntegrityTest {
         return fileUpdate(EXCHANGE_RATES).contents(spec -> {
             ByteString newRates =
                     spec.ratesProvider().rateSetWith(hbarEquiv, centEquiv).toByteString();
-            spec.registry().saveBytes("rate", newRates);
             return newRates;
         });
     }
