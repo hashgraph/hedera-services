@@ -33,8 +33,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
@@ -120,6 +120,7 @@ public class GasCalculationIntegrityTest {
     public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
         // Fetch exchange rates before tests
         lifecycle.doAdhoc(
+                // Save exchange rates
                 withOpContext((spec, opLog) -> {
                     var fetch = getFileContents(EXCHANGE_RATES);
                     CustomSpecAssert.allRunFor(spec, fetch);
@@ -145,7 +146,7 @@ public class GasCalculationIntegrityTest {
                 alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(1)
     @DisplayName("when using nft via redirect proxy contract")
     public Stream<DynamicTest> approveViaProxyNft() {
@@ -159,7 +160,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("approveRedirectTxn").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(2)
     @DisplayName("when using fungible token hts system contract")
     public Stream<DynamicTest> approveFungibleToken() {
@@ -173,7 +174,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("approveTxn").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(3)
     @DisplayName("when using createFungibleTokenWithCustomFeesV3 with fractionalFee")
     public Stream<DynamicTest> createFungibleTokenWithCustomFeesV3FractionalFee() {
@@ -197,7 +198,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("createWithCustomFeeFractional").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(4)
     @DisplayName("when using createNonFungibleTokenWithCustomFeesV3 with fractionalFee")
     public Stream<DynamicTest> createNonFungibleTokenWithCustomRoyaltyFeesV3() {
@@ -213,7 +214,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("createWithCustomFeeRoyalty").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @DisplayName("when using createFungibleToken")
     public Stream<DynamicTest> createFungible() {
         return testCases.flatMap(rates -> hapiTest(
@@ -227,7 +228,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("createFungibleToken").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(5)
     @DisplayName("when using createNonFungibleTokenV3")
     public Stream<DynamicTest> createNonFungibleTokenV3() {
@@ -243,7 +244,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("createNonFungibleTokenV3").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(6)
     @DisplayName("when using cryptoTransferV2 for hBar transfer")
     public Stream<DynamicTest> useCryptoTransferV2() {
@@ -257,7 +258,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("cryptoTransferV2").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(7)
     @DisplayName("when using cryptoTransferFungibleV1 with internal auto associate")
     public Stream<DynamicTest> useCryptoTransferFungibleV1() {
@@ -275,7 +276,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("cryptoTransferFungibleV1").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(8)
     @DisplayName("when using cryptoTransferNonFungible with internal auto associate")
     public Stream<DynamicTest> useCryptoTransferNonFungible() {
@@ -290,7 +291,7 @@ public class GasCalculationIntegrityTest {
                 bob.transferNFTsTo(nft.treasury(), nft, 1L)));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(9)
     @DisplayName("when using transferNFTs with internal auto associate")
     public Stream<DynamicTest> useTransferNFTs() {
@@ -304,7 +305,7 @@ public class GasCalculationIntegrityTest {
                 alice.transferNFTsTo(nft.treasury(), nft, 4L)));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(10)
     @DisplayName("when using transferToken with internal auto associate")
     public Stream<DynamicTest> useTransferToken() {
@@ -317,7 +318,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("transferTokenTest").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(11)
     @DisplayName("when using transferNFT")
     public Stream<DynamicTest> useTransferNFT() {
@@ -332,7 +333,7 @@ public class GasCalculationIntegrityTest {
                 alice.transferNFTsTo(nft.treasury(), nft, 3L)));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(12)
     @DisplayName("when using transferFrom")
     public Stream<DynamicTest> useTransferFrom() {
@@ -346,7 +347,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("transferFrom").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(13)
     @DisplayName("when using transferFromERC")
     public Stream<DynamicTest> useTransferFromERC() {
@@ -360,7 +361,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("transferFromERC").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(14)
     @DisplayName("when using transferFromNFT")
     public Stream<DynamicTest> useTransferNFTFrom() {
@@ -375,7 +376,7 @@ public class GasCalculationIntegrityTest {
                 alice.transferNFTsTo(nft.treasury(), nft, 2L)));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(15)
     @DisplayName("for token info call")
     public Stream<DynamicTest> checkTokenGetInfoGas() {
@@ -388,7 +389,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("tokenInfo").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(16)
     @DisplayName("for token custom fees call")
     public Stream<DynamicTest> checkTokenGetCustomFeesGas() {
@@ -401,7 +402,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("customFees").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(17)
     @DisplayName("for token name call")
     public Stream<DynamicTest> checkErc20Name() {
@@ -411,7 +412,7 @@ public class GasCalculationIntegrityTest {
                 getTxnRecord("name").logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(18)
     @DisplayName("for token balance of call")
     public Stream<DynamicTest> checkErc20BalanceOf() {
