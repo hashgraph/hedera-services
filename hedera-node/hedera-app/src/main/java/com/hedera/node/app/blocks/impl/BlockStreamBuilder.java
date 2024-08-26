@@ -472,8 +472,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.tokenTransferLists = tokenTransferLists;
+        this.tokenTransferLists = requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         transactionResultBuilder.tokenTransferLists(tokenTransferLists);
         return this;
     }
@@ -492,13 +491,13 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
-        this.tokenType = requireNonNull(tokenType);
+        this.tokenType = requireNonNull(tokenType, "tokenType must not be null");
         return this;
     }
 
     @Override
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecord);
+        requireNonNull(pendingAirdropRecord, "pendingAirdropRecord must not be null");
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
@@ -561,8 +560,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
         // These need not be externalized to block streams
-        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
-        this.paidStakingRewards = paidStakingRewards;
+        this.paidStakingRewards = requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
         transactionResultBuilder.paidStakingRewards(paidStakingRewards);
         return this;
     }
@@ -584,7 +582,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
-        requireNonNull(prngBytes);
+        requireNonNull(prngBytes, "prngBytes must not be null");
         ensureOutputBuilder()
                 .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
         return this;
@@ -744,8 +742,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
-        requireNonNull(tokenID, "tokenID must not be null");
-        this.tokenID = tokenID;
+        this.tokenID = requireNonNull(tokenID, "tokenID must not be null");
         return this;
     }
 
@@ -800,7 +797,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
-        this.scheduledTransactionId = requireNonNull(scheduledTransactionID);
+        this.scheduledTransactionId = requireNonNull(scheduledTransactionID, "scheduledTransactionID must not be null");
         ensureOutputBuilder();
         return this;
     }
@@ -811,8 +808,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
-        requireNonNull(serialNumbers, "serialNumbers must not be null");
-        this.serialNumbers = serialNumbers;
+        this.serialNumbers = requireNonNull(serialNumbers, "serialNumbers must not be null");
         return this;
     }
 
