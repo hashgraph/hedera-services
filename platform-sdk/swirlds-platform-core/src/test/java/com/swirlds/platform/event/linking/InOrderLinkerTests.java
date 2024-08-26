@@ -18,14 +18,10 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
@@ -35,25 +31,20 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests the {@link InOrderLinker} class. For historical reasons, the linker implementation used in this test is
- * {@link GossipLinker}, and so we also test that the intake event counter is updated correctly (this is a feature
- * specific to {@link GossipLinker}).
+ * Tests the {@link InOrderLinker} class.
  */
 class InOrderLinkerTests {
-    private AtomicLong exitedIntakePipelineCount;
     private Random random;
 
     private InOrderLinker inOrderLinker;
@@ -74,22 +65,11 @@ class InOrderLinkerTests {
     @BeforeEach
     void setup() {
         random = getRandomPrintSeed();
-
-        exitedIntakePipelineCount = new AtomicLong(0);
-
         time = new FakeTime();
     }
 
     private void inOrderLinkerSetup(@NonNull final AncientMode ancientMode) {
-        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
-        doAnswer(invocation -> {
-                    exitedIntakePipelineCount.incrementAndGet();
-                    return null;
-                })
-                .when(intakeEventCounter)
-                .eventExitedIntakePipeline(any());
-
-        inOrderLinker = new GossipLinker(
+        inOrderLinker = new ConsensusLinker(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(
@@ -98,7 +78,7 @@ class InOrderLinkerTests {
                                 .getOrCreateConfig())
                         .withTime(time)
                         .build(),
-                intakeEventCounter);
+                selfId);
 
         time.tick(Duration.ofSeconds(1));
         genesisSelfParent = new TestingEventBuilder(random)
@@ -175,7 +155,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent1);
         assertNotEquals(null, linkedEvent1.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNotEquals(null, linkedEvent1.getOtherParent(), "Other parent is non-ancient, and should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
 
@@ -196,7 +175,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent2);
         assertNotEquals(null, linkedEvent2.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNull(linkedEvent2.getOtherParent(), "Other parent is ancient, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
 
@@ -217,7 +195,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent3);
         assertNull(linkedEvent3.getSelfParent(), "Self parent is ancient, and should be null");
         assertNotEquals(null, linkedEvent3.getOtherParent(), "Other parent is non-ancient, and should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
         // make both parents ancient.
@@ -236,7 +213,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent4);
         assertNull(linkedEvent4.getSelfParent(), "Self parent is ancient, and should be null");
         assertNull(linkedEvent4.getOtherParent(), "Other parent is ancient, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -257,8 +233,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent is missing, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent is not missing, and should not be null");
-
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -279,13 +253,11 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent is not missing, and should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent is missing, and should be null");
-
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @DisplayName("Ancient events should immediately exit the intake pipeline")
+    @DisplayName("Ancient events should not be linked")
     void ancientEvent(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
@@ -318,7 +290,6 @@ class InOrderLinkerTests {
                 .build();
 
         assertNull(inOrderLinker.linkEvent(child2));
-        assertEquals(2, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -340,7 +311,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -362,7 +332,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched birth round, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -385,7 +354,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -407,7 +375,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched birth round, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -438,7 +405,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched time created, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -468,6 +434,5 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 }
