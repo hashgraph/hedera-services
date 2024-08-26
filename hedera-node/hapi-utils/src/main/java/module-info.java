@@ -21,6 +21,7 @@ module com.hedera.node.app.hapi.utils {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
+    requires transitive java.compiler;
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.lang3;
@@ -36,5 +37,4 @@ module com.hedera.node.app.hapi.utils {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
-    requires static java.compiler; // javax.annotation.processing.Generated
 }

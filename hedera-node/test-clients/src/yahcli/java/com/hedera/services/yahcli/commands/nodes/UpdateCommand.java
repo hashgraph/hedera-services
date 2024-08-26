@@ -76,6 +76,16 @@ public class UpdateCommand implements Callable<Integer> {
     String gossipCaCertificatePath;
 
     @CommandLine.Option(
+            names = {"-x", "--gossipCaCertificatePfx"},
+            paramLabel = "path to a .pfx (PKCS#12) file with a X.509 CA certificate for the node's gossip key")
+    String gossipCaCertificatePfxPath;
+
+    @CommandLine.Option(
+            names = {"-l", "--gossipCaCertificateAlias"},
+            paramLabel = "alias in the given .pfx (PKCS#12) file for the X.509 CA certificate of the node's gossip key")
+    String gossipCaCertificatePfxAlias;
+
+    @CommandLine.Option(
             names = {"-h", "--hapiCertificate"},
             paramLabel = "path to the updated self-signed X.509 certificate for node's HAPI TLS endpoint")
     String hapiCertificatePath;
@@ -132,12 +142,15 @@ public class UpdateCommand implements Callable<Integer> {
             newHapiEndpoints = null;
         }
         if (gossipCaCertificatePath != null) {
-            newGossipCaCertificate = validatedX509Cert(gossipCaCertificatePath, yahcli);
+            newGossipCaCertificate = validatedX509Cert(gossipCaCertificatePath, null, null, yahcli);
+        } else if (gossipCaCertificatePfxPath != null) {
+            newGossipCaCertificate =
+                    validatedX509Cert(null, gossipCaCertificatePfxPath, gossipCaCertificatePfxAlias, yahcli);
         } else {
             newGossipCaCertificate = null;
         }
         if (hapiCertificatePath != null) {
-            newHapiCertificateHash = noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath, yahcli));
+            newHapiCertificateHash = noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath, null, null, yahcli));
         } else {
             newHapiCertificateHash = null;
         }
