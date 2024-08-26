@@ -35,7 +35,7 @@ defaults:
 jobs:
   prepare-deploy-preview:
     name: Prepare for Deploy
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: network-node-linux-medium
     outputs:
       version: ${{ steps.tag.outputs.version }}
       prerelease: ${{ steps.tag.outputs.prerelease }}
