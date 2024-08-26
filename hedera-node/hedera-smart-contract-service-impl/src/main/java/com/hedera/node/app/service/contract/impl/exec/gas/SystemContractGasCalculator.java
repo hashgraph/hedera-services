@@ -29,6 +29,8 @@ import java.util.function.ToLongBiFunction;
  */
 public class SystemContractGasCalculator {
     private static final long FIXED_VIEW_GAS_COST = 100L;
+
+    // This represents the predefined gas price which is $0.000_000_0852 per unit of gas.
     private static final long FIXED_TINY_CENT_GAS_PRICE_COST = 852_000L;
 
     private final TinybarValues tinybarValues;
