@@ -10,7 +10,7 @@ secret that no one knows. The public key is known by all and functions as the le
 able to aggregate their individual signatures on a message into a valid ledger signature that is verifiable by the
 ledger id. Part of our goal is that users could write EVM smart contracts that can verify the block signatures.
 
-|      Metadata      |                  Entities                  |
+| Metadata           | Entities                                   |
 |--------------------|--------------------------------------------|
 | Designers          | Edward, Cody, Austin, Kore, Anthony, Artem |
 | Functional Impacts | Services, DevOps                           |
@@ -51,21 +51,26 @@ TSS-Block-Signing, TSS-Ledger-ID-Updates, and TSS-Ledger-New-Networks.
 
 This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 
-- The process of generating the ledger key pair for existing networks and testing environments.
-- The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
-- The new state data structures needed to store TSS Key material and the ledger id.
-- The new components needed in the framework to support creating and transferring the ledger key.
-- The modified startup process to initialize the signing capability.
-- For each node, the creation of a new, private to the node, Elliptic Curve (EC)
-  key pair, which we call the `tssEncryptionKey`, that is used in creating and
-  decrypting shares.
+- Ledger ID
+    - The process of generating the ledger key pair for existing networks and testing environments.
+    - Transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
+    - The new state data structures needed to store TSS Key material and the ledger id.
+    - The new components needed in the framework to support creating and transferring the ledger key.
+- System Behavior
+    - Each day, generating a new candidate roster at midnight when the node weights are calculated.
+    - Adding a new `TSS Base Service` for generating the TSS key material for the candidate roster.
+    - A modified startup process for adopting rosters and initializing the signing capability.
+- Cryptography
+    - For each node, the creation of a new, private to the node, Elliptic Curve (EC)
+      key pair, which we call the `tssEncryptionKey`, that is used in creating and
+      decrypting shares.
 
 ### Goals
 
 The following capabilities are goals of this proposal:
 
 1. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
-2. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one
+2. `Keying The Next Roster` - Able to transfer the ledger id and ability for the network to sign a message from one
    set of consensus nodes to another.
 3. `TSS Bootstrap in Test Networks` - Able to setup a test network with a ledger public/private key pair without
    restart.
@@ -79,9 +84,9 @@ The following are not goals of this proposal:
 1. Achieving a fully dynamic address book life-cycle.
 2. Public API for signing blocks.
 3. Removing or replacing the use of the RSA key in
-   1. Signing and verifying events.
-   2. Signing and verifying the state.
-   3. ISS detection.
+    1. Signing and verifying events.
+    2. Signing and verifying the state.
+    3. ISS detection.
 4. Modifying how reconnect works.
 5. Explaining how state transplants between networks or resets of the ledger id work.
 6. TSS Bootstrapping for new networks.
@@ -99,27 +104,27 @@ Dependencies on the TSS-Roster
 
 - Delivery of TSS-Ledger-ID will require that the TSS-Roster proposal is delivered in a prior release.
 - Development of the TSS-Ledger-ID proposal is dependent on TSS-Roster proposal in the following ways:
-  - The `Roster` data structures must be defined and stored in state.
-  - To modify the roster adoption lifecycle with TSS conditions, the TSS-Roster life-cycle must be implemented.
+    - The `Roster` data structures must be defined and stored in state.
+    - To modify the roster adoption lifecycle with TSS conditions, the TSS-Roster life-cycle must be implemented.
 
 Impacts of TSS-Ledger-ID to Services Team
 
-- The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
-  roster to have key material generated.
-- Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
+- Services will need to generate a candidate roster at midnight each day when the node weights are calculated and
+  submit the roster to the `TssBaseService` for keying.
+- Services may need to know or detect when the candidate roster fails to be adopted due to not having enough key
   material generated.
-- More than half and preferably all the nodes' public `tssEncryptionKeys` will need to be added to the address book.
-  - This requires modification of the HAPI transactions that manage the address book.
+- More than half and preferably all the nodes' public `tssEncryptionKeys` will need to be added to the address book
+  before the ledger id can be generated.
+    - This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
 
 - Each consensus node will need a new `tssEncryptionKey` in addition to the existing RSA key.
-  - EC Key generation will have to happen before a node can join the network.
-- A new node added to an existing network will need to be given a state from an existing node after the network has
-  adopted the roster containing the new node. The new node must be in the active roster to join the network.
-- If a node is added, removed, or updated in the address book and the candidate roster
-  is not adopted in the next software upgrade, the change to that node is not applied.
-- config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
+    - Key generation will have to happen before a node can join the network.
+    - The public keys will need to be added to the address book through signed HAPI transactions.
+- Changes to the address book must be made sufficiently far in advance (preferably, more than one day in advance) of
+  an upgrade to allow sufficient time for keying to occur so the roster can be adopted at the next upgrade.
+- Config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
   has received enough yes votes.
 
 Implications Of Completion
@@ -132,7 +137,7 @@ Implications Of Completion
 
 TSS Core Requirements
 
-| Requirement ID |                                                        Requirement Description                                                        |
+| Requirement ID | Requirement Description                                                                                                               |
 |----------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.                        |
 | TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                            |
@@ -148,7 +153,7 @@ TSS Core Requirements
 
 Block Signing Requirements
 
-| Requirement ID |                                   Requirement Description                                   |
+| Requirement ID | Requirement Description                                                                     |
 |----------------|---------------------------------------------------------------------------------------------|
 | TSSBS-001      | The initial block in the block stream SHOULD be signable and verifiable with the ledger id. |
 | TSSBS-002      | On a new network, the initial block MUST be block 1                                         |
@@ -163,12 +168,17 @@ application to manage state changes and startup behavior. The `TSS Base Service`
 
 #### New Address Book Life-Cycle
 
-The TSS-Ledger-ID proposal modifies the address book and roster lifecycle presented in TSS-Roster as follows:
+Each day, on the first transaction after midnight, after the staking information has been updated by the app, it will
+generate a new roster and call a public API on `TSS Base Service`, which will then use this as the new candidate
+roster, and proceed with generation of TSS key material. This new roster, once keyed, is not used, unless there is
+a network upgrade.
 
-1. The `Roster` format does not change.
-2. The app will generate a candidate roster and generate the TSS key material for it before setting it as the next
-   candidate roster in the platform.
-3. The keyed candidate roster is always adopted on software upgrade, consistent with the TSS-Roster proposal.
+On the day the network is upgraded, the candidate roster will have started the keying process at midnight (UTC-0).
+The upgrade is usually performed during business hours, after 8:00 am (UTC-5). This is a 13-hour window for the
+key material to be computed. It is expected that this is sufficient time to compute the key material, but under
+certain conditions there is a possibility that the key material will not be computed in time. If the key material
+is not computed in time, the candidate roster will not be adopted and the network will continue to use the previous
+active roster.
 
 ![TSS Roster Lifecycle](./TSS-Roster-Lifecycle.drawio.svg)
 
@@ -192,7 +202,7 @@ assigned to it. Each share is an EC key pair on the same curve. All public keys 
 aggregating a threshold number of share public keys will produce the ledger id. Each node only has access to the
 private key of its own shares, and none other. Each node must keep their private keys secret because a threshold
 number of share private keys can aggregate to recover the ledger private key. A threshold number of signatures
-on the same message from the shar private keys will aggregate to produce a ledger signature on the message.
+on the same message from the share private keys will aggregate to produce a ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
@@ -300,9 +310,8 @@ Proof Sketch by Dr. Leemon Baird:
 
 ###### Threshold for Votes to Adopt a Candidate Roster
 
-The threshold for votes to adopt a candidate roster will be 1/2 of the consensus weight. This is above the 1/3
-consensus weight threshold to ensure at least one honest node has validated the TSS key material, and it should be
-easily achievable since 2/3 consensus weight is required to advance consensus.
+The threshold for votes to adopt a candidate roster will be at least 1/3 of the consensus weight to ensure that at
+least 1 honest node has validated the TSS key material.
 
 ###### Impacts on Service's Calculation of Weight from Staked HBars
 
@@ -373,7 +382,7 @@ If a candidate roster is set, it will be keyed to inherit the ledger id generate
 
 ##### TSS Bootstrap Process - Alternatives Considered
 
-| N |                                                    Option                                                     | 1-1 round to block | round # == block # | Ledger signs initial block | Ledger signs block 1 | TSS keying in hashgraph history | TSS keying in block history | Minimal DevOps Impact | Implementation Complexity |                                       Notes                                        |
+| N | Option                                                                                                        | 1-1 round to block | round # == block # | Ledger signs initial block | Ledger signs block 1 | TSS keying in hashgraph history | TSS keying in block history | Minimal DevOps Impact | Implementation Complexity | Notes                                                                              |
 |---|---------------------------------------------------------------------------------------------------------------|--------------------|--------------------|----------------------------|----------------------|---------------------------------|-----------------------------|-----------------------|---------------------------|------------------------------------------------------------------------------------|
 | 1 | TSS Setup in block history, initial block > 1 and not signed                                                  | YES                | YES                | NO                         | NO                   | YES                             | YES                         | YES                   | LOW                       | Mainnet if Block Streams ships before Block Proofs                                 |
 | 2 | TSS Setup not in block history, initial block > 1 and is signed                                               | YES                | YES                | YES                        | NO                   | YES                             | NO                          | YES                   | LOW                       | Mainnet if Block Streams ships with Block Proofs                                   |
@@ -704,22 +713,22 @@ The following startup sequence will occur:
    reading the private `tssEncryptionKey`)
 2. The app will validate the cryptography and state.
 3. If a software upgrade is detected,
-   1. If the existing active roster and candidate roster do not have complete
-      key material and the network does not yet have a ledger id, the node will
-      adopt the candidate roster immediately on software upgrade.
-      - This will retain the pre-ledger-id behavior of the network until the
-        ledger id can be created for the first time.
-   2. If the candidate roster exists, has key material, and the number of yes
-      votes passes the threshold for adoption, then the candidate roster
-      will be adopted and become the new active roster.
-      1. Validation Check: if the state already has a ledger id set, the ledger
-         id recovered from the key material must match the ledger id
-         in the state.
-      2. If there is no ledger id in the state and the previously active roster
-         has no key material, the ledger id recovered from the candidate roster
-         key material will be set in the state as the new ledger id.
-   3. In all other cases the existing active roster will remain the
-      active roster.
+    1. If the existing active roster and candidate roster do not have complete
+       key material and the network does not yet have a ledger id, the node will
+       adopt the candidate roster immediately on software upgrade.
+        - This will retain the pre-ledger-id behavior of the network until the
+          ledger id can be created for the first time.
+    2. If the candidate roster exists, has key material, and the number of yes
+       votes passes the threshold for adoption, then the candidate roster
+       will be adopted and become the new active roster.
+        1. Validation Check: if the state already has a ledger id set, the ledger
+           id recovered from the key material must match the ledger id
+           in the state.
+        2. If there is no ledger id in the state and the previously active roster
+           has no key material, the ledger id recovered from the candidate roster
+           key material will be set in the state as the new ledger id.
+    3. In all other cases the existing active roster will remain the
+       active roster.
 4. The application will provide the platform with the active roster to use.
 5. The platform will continue through its normal startup sequence.
 
@@ -741,31 +750,31 @@ ledger signature from the network.
 
 The TSS Base Service will be broken out into one interface and two components.
 
-1. `TssService` - the interface that defines the public API for the TSS Base Service.
+1. `TssBaseService` - the interface that defines the public API for the TSS Base Service.
 2. `TssStateManager` - executes on the transaction handling thread and updates state.
 3. `TssCryptographyManager` - executes on a separate thread and is responsible for cryptographic operations.
 4. Transaction Resubmission
 
 ![TSS Platform Wiring](./TSS-Wiring-Diagram.drawio.svg)
 
-#### TssService
+#### TssBAseService
 
-The `TssService` interface provides the inter-service API for the TSS Base Service. It is responsible for setting the
-candidate roster for the TSS service to generate key material. This is a necessary step before the roster can be
-adopted. In the `TSS-Ledger-ID-Block-Signing` proposal, the `TssService` will be expanded to include the ability to
-request ledger signatures on messages.
+The `TssBaseService` interface provides the inter-service API for the TSS Base Service. It is responsible for
+setting the candidate roster for the TSS base service to generate key material. This is a necessary step before the
+roster can be adopted. In the `TSS-Ledger-ID-Block-Signing` proposal, the `TssBaseService` will be expanded to include
+the ability to request ledger signatures on messages.
 
 ```java
 
 /**
- * The TssService will attempt to generate TSS key material for any set candidate roster, giving it a ledger id and
+ * The TssBaseService will attempt to generate TSS key material for any set candidate roster, giving it a ledger id and
  * the ability to generate ledger signatures that can be verified by the ledger id.  Once the candidate roster has
  * received its full TSS key material, it will be made available for adoption by the platform.
  */
-public interface TssService {
+public interface TssBaseService {
 
     /**
-     * Set the candidate roster for the TSS service to generate key material.  This is a necessary step before the
+     * Set the candidate roster for the TSS base service to generate key material.  This is a necessary step before the
      * roster can be adopted by the platform.  There can be only one candidate roster at a time. If there is an existing
      * candidate roster in the state, it will be replaced and all related data will be removed from the state. For
      * this reason, setting the candidate roster does not guarantee its adoption.
@@ -784,38 +793,38 @@ writing the state during round handling.
 Responsibilities:
 
 1. At node startup
-   - Read all rosters, `TssMessageTransactions`, and `TssVoteTransactions` from the state.
-   - If the active roster has TSS key material, compute the ledger id from the public shares of the active roster's
-     `TssMessageTransactions` and verify it matches the ledger id in the state, log an error and throw an illegal
-     state exception if it does not match.
-     - NOTE: handling changes to the LedgerId are addressed in the `TSS-Ledger-ID-Updates` proposal.
-   - If conditions are met, adopt the candidate roster and cleanup the state.
-     - If there was no Ledger Id in the state and the candidate roster has a ledger id, set the ledger id in the
-       state.
-   - Give the active roster to the `TssCryptographyManager`.
-   - Give all `TssVoteTransactions` to the `TssCryptographyManager`.
-   - Give all `TssMessageTransactions` to the `TssCryptographyManager`.
-   - If it exists, give the candidate roster to the `TssCryptographyManager`.
-     - setting the candidate roster last ensures that `TssCryptographyManager` can avoid sending unnecessary
-       `TssMessageTransactions` to the network.
-   - Give/Send/Set the active roster in the PlatformBuilder before building the platform.
+    - Read all rosters, `TssMessageTransactions`, and `TssVoteTransactions` from the state.
+    - If the active roster has TSS key material, compute the ledger id from the public shares of the active roster's
+      `TssMessageTransactions` and verify it matches the ledger id in the state, log an error and throw an illegal
+      state exception if it does not match.
+        - NOTE: handling changes to the LedgerId are addressed in the `TSS-Ledger-ID-Updates` proposal.
+    - If conditions are met, adopt the candidate roster and cleanup the state.
+        - If there was no Ledger Id in the state and the candidate roster has a ledger id, set the ledger id in the
+          state.
+    - Give the active roster to the `TssCryptographyManager`.
+    - Give all `TssVoteTransactions` to the `TssCryptographyManager`.
+    - Give all `TssMessageTransactions` to the `TssCryptographyManager`.
+    - If it exists, give the candidate roster to the `TssCryptographyManager`.
+        - setting the candidate roster last ensures that `TssCryptographyManager` can avoid sending unnecessary
+          `TssMessageTransactions` to the network.
+    - Give/Send/Set the active roster in the PlatformBuilder before building the platform.
 2. Handle `TssMessageTransaction` system transactions.
-   - Handle items in consensus order.
-   - Determine the next sequence number to use for the `TssMessageMap` key.
-   - Insert into the `TssMessageMap` if it is correct to do so.
-     - Don’t insert multiple messages for the same share index.
-   - If inserted into the `TssMessageMap`, send the `TssMessageTransaction` to the `TssCryptographyManager`.
+    - Handle items in consensus order.
+    - Determine the next sequence number to use for the `TssMessageMap` key.
+    - Insert into the `TssMessageMap` if it is correct to do so.
+        - Don’t insert multiple messages for the same share index.
+    - If inserted into the `TssMessageMap`, send the `TssMessageTransaction` to the `TssCryptographyManager`.
 3. Handle `TssVoteTransaction` system transactions.
-   - If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte
-     array, have already been received for the candidate roster, then discard the `TssVoteTransaction`.
-   - Insert into the `TssVoteMap` if it is correct to do so.
-     - Don’t insert multiple votes from the same node; discard it if it is redundant.
-   - Send the `TssVoteTransaction` to the `TssCryptographyManager`.
+    - If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte
+      array, have already been received for the candidate roster, then discard the `TssVoteTransaction`.
+    - Insert into the `TssVoteMap` if it is correct to do so.
+        - Don’t insert multiple votes from the same node; discard it if it is redundant.
+    - Send the `TssVoteTransaction` to the `TssCryptographyManager`.
 4. Method `setCandidateRoster(Roster candidateRoster)`:
-   - If there already exists a candidate roster in the state, erase it and its related data from the `TssMessageMap`
-     and `TssVoteMap`.
-   - Set the new candidate roster in the state.
-   - Send the candidate roster to the `TssCryptographyManager`.
+    - If there already exists a candidate roster in the state, erase it and its related data from the `TssMessageMap`
+      and `TssVoteMap`.
+    - Set the new candidate roster in the state.
+    - Send the candidate roster to the `TssCryptographyManager`.
 
 #### `TssCryptographyManager`
 
@@ -871,33 +880,33 @@ Outputs:
 `On Active Roster`: (Non-Dynamic AddressBook Semantics)
 
 1. If there is an existing active roster, log an error and throw an illegal state exception.
-   - This behavior will change in the future when we have fully dynamic address book.
+    - This behavior will change in the future when we have fully dynamic address book.
 2. Set the active roster.
 3. Compute the share counts per node for the active roster.
 4. If `keyActiveRoster` is true and there is no key material for the active roster, generate the key material.
-   1. Set `createNewLedgerId` to true
-   2. Create a random share for the node.
-   3. Send a `TssMessageTransaction` to the network generated from the random share targeting the active roster.
+    1. Set `createNewLedgerId` to true
+    2. Create a random share for the node.
+    3. Send a `TssMessageTransaction` to the network generated from the random share targeting the active roster.
 
 `On Candidate Roster`:
 
 1. If there is an existing candidate roster.
-   1. If the roster hash of the new candidate roster is the same as the existing candidate roster, do nothing and
-      return.
-   2. Otherwise, replace the candidate roster with the new candidate roster and clear out the old candidate roster
-      data.
+    1. If the roster hash of the new candidate roster is the same as the existing candidate roster, do nothing and
+       return.
+    2. Otherwise, replace the candidate roster with the new candidate roster and clear out the old candidate roster
+       data.
 2. Compute the share counts per node for the candidate roster.
 3. If the active roster does not have TSS key material and `keyActiveRoster` is not true, generate key material for a
    new ledger id.
-   1. Set `createNewLedgerId` to true
-   2. Create a random share for the node.
-   3. Send a `TssMessageTransaction` to the network generated from the random share targeting the candidate roster.
+    1. Set `createNewLedgerId` to true
+    2. Create a random share for the node.
+    3. Send a `TssMessageTransaction` to the network generated from the random share targeting the candidate roster.
 4. If the active roster has TSS key material,
-   1. If the candidate roster has enough votes for adoption, add the roster hash to `votingClosed` and send the
-      candidate roster to the platform for adoption.
-   2. If the candidate roster has key material from this node and all of its shares, do nothing and return.
-   3. Otherwise generate any missing key material for the candidate roster from this node's shares and submit a
-      `TssMessageTransaction` for each share.
+    1. If the candidate roster has enough votes for adoption, add the roster hash to `votingClosed` and send the
+       candidate roster to the platform for adoption.
+    2. If the candidate roster has key material from this node and all of its shares, do nothing and return.
+    3. Otherwise generate any missing key material for the candidate roster from this node's shares and submit a
+       `TssMessageTransaction` for each share.
 
 `On TssMessageTransaction`:
 
@@ -906,39 +915,39 @@ Outputs:
 1. If a TSS Message already exists for the share index of the origin roster for the target roster, do nothing.
 2. Add it to the list of `TssMessageTransactions` for the target roster.
 3. If the target roster hash is not in the `votingClosed` set and does not have a `TssVoteTransaction` from this node:
-   1. Validate the TSS Message in the `TssMessageTransaction`.
-   2. Update the sequence number bit in the vote vector with the results of validation for the TssMessageTransaction.
+    1. Validate the TSS Message in the `TssMessageTransaction`.
+    2. Update the sequence number bit in the vote vector with the results of validation for the TssMessageTransaction.
 4. Let `tssMessageThresholdMet` be true under the following conditions and false otherwise:
-   - if `createNewLedgerId` is false and there are a source roster's threshold number of valid TSS Messages indicated
-     as valid in the vote vector
-   - if `createNewLedgerId` is true and there are enough valid TssMessages from nodes to account for >= 1/2
-     consensus weight.
+    - if `createNewLedgerId` is false and there are a source roster's threshold number of valid TSS Messages indicated
+      as valid in the vote vector
+    - if `createNewLedgerId` is true and there are enough valid TssMessages from nodes to account for >= 1/2
+      consensus weight.
 5. If the public keys for the target roster have not been computed and `tssMessageThresholdMet` is true:
-   1. Compute the public keys and save it in the public keys map for the target roster.
-   2. Aggregate the public key to retrieve the ledger id and save it in the ledger id map.
-   3. If this node is in the target roster with the same public `tssEncryptionKey`, recover the private keys and
-      save it in the map for the target roster.
-      - NOTE: If the node is in the roster, but the `tssEncryptionKey` is different, a restart may be required to
-        pickup the correct encryption key from disk.
-   4. If the target roster hash is not in the `votingClosed` set and there is no `TssVoteTransaction` from this node:
-      1. Sign the ledger id with the RSA signing key of this node.
-      2. Construct a `TssVoteTransaction` with the ledger id and the vote vector and submit it to the platform.
+    1. Compute the public keys and save it in the public keys map for the target roster.
+    2. Aggregate the public key to retrieve the ledger id and save it in the ledger id map.
+    3. If this node is in the target roster with the same public `tssEncryptionKey`, recover the private keys and
+       save it in the map for the target roster.
+        - NOTE: If the node is in the roster, but the `tssEncryptionKey` is different, a restart may be required to
+          pickup the correct encryption key from disk.
+    4. If the target roster hash is not in the `votingClosed` set and there is no `TssVoteTransaction` from this node:
+        1. Sign the ledger id with the RSA signing key of this node.
+        2. Construct a `TssVoteTransaction` with the ledger id and the vote vector and submit it to the platform.
 
 `On TssVoteTransaction`:
 
 1. If voting is closed for the target roster or the vote is a second vote from the originating node, do nothing.
 2. Add the `TssVoteTransaction` to the list for the target roster.
 3. If the voting threshold is met by at least 1/2 consensus weight voting yes:
-   1. add the target roster hash to the` `votingClosed` set.
-   2. Non-Dynamic Address Book Semantics
-      1. if `keyActiveRoster` is false, do nothing here, rely on the startup logic to rotate the candidate roster to
-         the active roster.
-      2. if `keyActiveRoster` is true, adopt the ledger id in the state.
-         - Since this computation is not on the transaction handling thread, adoption of the ledger id must be
-           scheduled for the `TssStateManager` to handle on the next round.
-   3. **(NOT IMPLEMENTED in this proposal)**: Full Dynamic Address Book Semantics
-      1. Rotate the candidate roster to the active roster and schedule the roster for adoption with the platform a
-         safe number of rounds into the future.
+    1. add the target roster hash to the` `votingClosed` set.
+    2. Non-Dynamic Address Book Semantics
+        1. if `keyActiveRoster` is false, do nothing here, rely on the startup logic to rotate the candidate roster to
+           the active roster.
+        2. if `keyActiveRoster` is true, adopt the ledger id in the state.
+            - Since this computation is not on the transaction handling thread, adoption of the ledger id must be
+              scheduled for the `TssStateManager` to handle on the next round.
+    3. **(NOT IMPLEMENTED in this proposal)**: Full Dynamic Address Book Semantics
+        1. Rotate the candidate roster to the active roster and schedule the roster for adoption with the platform a
+           safe number of rounds into the future.
 
 #### Transaction Resubmission
 
@@ -981,12 +990,12 @@ transaction handling thread should be basic bookkeeping calculations.
 Apart from the obvious unit testing of methods and classes, the following scenarios should be unit tested:
 
 - Failure Scenarios
-  - Bad TssMessages
-  - Failure to reach threshold number of votes
+    - Bad TssMessages
+    - Failure to reach threshold number of votes
 - HAPI Tests
-  - A down node during pre-genesis needing to get the key material from post-genesis node.
-  - Down nodes during bootstrap and re-keying
-  - Multi-release migrations
+    - A down node during pre-genesis needing to get the key material from post-genesis node.
+    - Down nodes during bootstrap and re-keying
+    - Multi-release migrations
 
 ### Integration Tests
 
@@ -994,7 +1003,7 @@ Additional Integration Tests:
 
 - TSS bootstrap for New Networks
 - TSS bootstrap for Existing Networks
-  - Multiple software upgrades to check transfer of the ledger id.
+    - Multiple software upgrades to check transfer of the ledger id.
 - Network State Transplant
 
 ### Performance Tests
