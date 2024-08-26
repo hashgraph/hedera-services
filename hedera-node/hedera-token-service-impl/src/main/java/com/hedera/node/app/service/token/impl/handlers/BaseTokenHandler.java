@@ -317,16 +317,15 @@ public class BaseTokenHandler {
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
-            @NonNull final Account account,
+            @NonNull final AccountID accountId,
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final Configuration config) {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
-
-        final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
+        final var account = accountStore.get(accountId);
         // If token is already associated, no need to associate again
         final var existingRel = tokenRelStore.get(accountId, tokenId);
         validateTrue(existingRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);

@@ -1196,8 +1196,12 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 createHollow(1, i -> BOB),
                 getAliasedAccountInfo(BOB)
                         .has(accountWith().maxAutoAssociations(-1).hasEmptyKey().noAlias()),
-                cryptoUpdate(BOB).sigMapPrefixes(uniqueWithFullPrefixesFor(BOB)).maxAutomaticAssociations(1),
-                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB))
+                        .signedBy(BOB, ALICE)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(BOB))
+                        .payingWith(BOB),
+                // Bob account is finalized with the token airdrop transaction
+                getAliasedAccountInfo(BOB).has(accountWith().hasNonEmptyKey()),
                 // no tokenClaimAirdrop needed here
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
