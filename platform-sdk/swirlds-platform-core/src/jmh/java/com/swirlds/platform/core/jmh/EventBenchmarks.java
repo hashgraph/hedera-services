@@ -60,7 +60,7 @@ public class EventBenchmarks {
     @Param({"10"})
     public int numSys;
 
-    @Param({"LEGACY", "PBJ_BYTES_DIGEST", "PBJ_STREAM_DIGEST"})
+    @Param({"PBJ_BYTES_DIGEST", "PBJ_STREAM_DIGEST"})
     public HasherType hasherType;
 
     private PlatformEvent event;
