@@ -27,7 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +58,7 @@ class BirthRoundMigrationShimTests {
                 .overrideSelfParentGeneration(generation - 1)
                 .build();
 
-        new StatefulEventHasher().hashEvent(event);
+        new DefaultEventHasher().hashEvent(event);
 
         return event;
     }
@@ -101,7 +101,7 @@ class BirthRoundMigrationShimTests {
 
             // The hash of the event should not have changed
             event.invalidateHash();
-            new StatefulEventHasher().hashEvent(event);
+            new DefaultEventHasher().hashEvent(event);
             assertEquals(originalHash, event.getHash());
         }
     }
@@ -145,7 +145,7 @@ class BirthRoundMigrationShimTests {
 
             // The hash of the event should not have changed
             event.invalidateHash();
-            new StatefulEventHasher().hashEvent(event);
+            new DefaultEventHasher().hashEvent(event);
             assertEquals(originalHash, event.getHash());
         }
     }
@@ -188,7 +188,7 @@ class BirthRoundMigrationShimTests {
 
             // The hash of the event should not have changed
             event.invalidateHash();
-            new StatefulEventHasher().hashEvent(event);
+            new DefaultEventHasher().hashEvent(event);
             assertEquals(originalHash, event.getHash());
         }
     }
