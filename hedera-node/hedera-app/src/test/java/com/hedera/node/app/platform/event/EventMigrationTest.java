@@ -54,7 +54,6 @@ public class EventMigrationTest {
      * contains a {@link SerializableSemVers} which is a services class
      */
     @Test
-    @Disabled("disabled until #15101 is merged")
     public void migration() throws URISyntaxException, IOException {
         final int numEventsExpected = 637;
         final int unmatchedHashesExpected = 4;
