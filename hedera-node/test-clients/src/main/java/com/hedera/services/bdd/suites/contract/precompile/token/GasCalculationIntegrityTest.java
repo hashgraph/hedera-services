@@ -218,7 +218,7 @@ public class GasCalculationIntegrityTest {
                 updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContractComplex
                         .call("createFungibleToken", EXPIRY_RENEW, EXPIRY_RENEW, 10000L, BigInteger.TEN, BigInteger.TWO)
-                        .gas(10080_800L)
+                        .gas(165_800L)
                         .sending(THOUSAND_HBAR)
                         .via("createFungibleToken")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
