@@ -34,6 +34,7 @@ import java.util.Objects;
 public class TinybarValues {
     private final ExchangeRate exchangeRate;
     private final boolean isGasPrecisionLossFixEnabled;
+    private final boolean isCanonicalViewGasEnabled;
     private final FunctionalityResourcePrices topLevelResourcePrices;
     // Only non-null for a top-level transaction, since queries cannot have child transactions
     @Nullable
@@ -79,6 +80,7 @@ public class TinybarValues {
         this.topLevelResourcePrices = Objects.requireNonNull(topLevelResourcePrices);
         this.childTransactionResourcePrices = childTransactionResourcePrices;
         this.isGasPrecisionLossFixEnabled = contractsConfig.isGasPrecisionLossFixEnabled();
+        this.isCanonicalViewGasEnabled = contractsConfig.isCanonicalViewGasEnabled();
     }
 
     /**
@@ -187,5 +189,13 @@ public class TinybarValues {
      */
     public boolean isGasPrecisionLossFixEnabled() {
         return isGasPrecisionLossFixEnabled;
+    }
+
+    /**
+     * This can be removed after the dynamic gas for view operations is confirmed.
+     * We have it as a temporary measure to allow for easy rollback in case of issues.
+     */
+    public boolean isCanonicalViewGasEnabled() {
+        return isCanonicalViewGasEnabled;
     }
 }

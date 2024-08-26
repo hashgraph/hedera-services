@@ -85,6 +85,8 @@ public record ContractsConfig(
                 boolean systemContractUpdateCustomFeesEnabled,
         @ConfigProperty(value = "systemContract.precisionLossFixForGas.enabled", defaultValue = "true") @NetworkProperty
                 boolean isGasPrecisionLossFixEnabled,
+        @ConfigProperty(value = "systemContract.canonicalViewGas.enabled", defaultValue = "true") @NetworkProperty
+                boolean isCanonicalViewGasEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "true") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty

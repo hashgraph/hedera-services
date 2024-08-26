@@ -106,8 +106,8 @@ public class SystemContractGasCalculator {
      * @return the gas requirement for a view operation
      */
     public long viewGasRequirement() {
-        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
-        if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
+        // isCanonicalViewGasEnabled is a temporary feature flag that will be removed in the future.
+        if (!tinybarValues.isCanonicalViewGasEnabled()) {
             return FIXED_VIEW_GAS_COST;
         }
         final var gasRequirement = gasRequirementFromTinyCents(
