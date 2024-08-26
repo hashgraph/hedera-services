@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_APPEND;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
@@ -33,6 +34,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.services.bdd.junit.support.translators.impl.NoExplicitSideEffectsTranslator.NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR;
 import static java.util.Objects.requireNonNull;
@@ -51,6 +53,7 @@ import com.hedera.services.bdd.junit.support.translators.impl.NodeCreateTranslat
 import com.hedera.services.bdd.junit.support.translators.impl.ScheduleCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.SubmitMessageTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.TokenMintTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TopicCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.UtilPrngTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
@@ -87,6 +90,7 @@ public class BlockTransactionalUnitTranslator {
                     put(CRYPTO_APPROVE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CRYPTO_CREATE, new CryptoCreateTranslator());
                     put(CRYPTO_TRANSFER, new CryptoTransferTranslator());
+                    put(CRYPTO_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(FILE_APPEND, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(FILE_CREATE, new FileCreateTranslator());
                     put(FILE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
@@ -96,6 +100,7 @@ public class BlockTransactionalUnitTranslator {
                     put(SCHEDULE_CREATE, new ScheduleCreateTranslator());
                     put(TOKEN_ASSOCIATE_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_CREATE, new TokenCreateTranslator());
+                    put(TOKEN_MINT, new TokenMintTranslator());
                     put(UTIL_PRNG, new UtilPrngTranslator());
                 }
             };

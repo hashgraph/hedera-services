@@ -37,6 +37,7 @@ import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransaction
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -46,21 +47,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Implements shared translation logic for transaction records, in particular providing a
  * source of token types by {@link com.hedera.hapi.node.base.TokenID}.
  */
 public class BaseTranslator {
-    private static final Logger log = LogManager.getLogger(BaseTranslator.class);
-
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
     private long highestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -107,6 +105,7 @@ public class BaseTranslator {
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
         nextCreatedNums.clear();
+        highestPutSerialNos.clear();
         scanUnit(unit);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
@@ -114,8 +113,22 @@ public class BaseTranslator {
             list.addAll(distinctNums);
             list.sort(Comparator.naturalOrder());
         });
+        highestPutSerialNos.values().forEach(list -> list.sort(Collections.reverseOrder()));
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Provides the next {@code n} serial numbers that were minted for the given token in the transactional unit.
+     * @param tokenId the token to query
+     * @param n the number of serial numbers to provide
+     * @return the next {@code n} serial numbers that were minted for the token
+     */
+    public List<Long> nextNMints(@NonNull final TokenID tokenId, final int n) {
+        final var serialNos = highestPutSerialNos.get(tokenId);
+        final var mints = new ArrayList<>(serialNos.subList(0, n));
+        serialNos.removeAll(mints);
+        return mints.reversed();
     }
 
     /**
@@ -147,9 +160,7 @@ public class BaseTranslator {
                 .paidStakingRewards(parts.paidStakingRewards());
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
-        if (txnId.nonce() == 0) {
-            receiptBuilder.exchangeRate(activeRates);
-        }
+        receiptBuilder.exchangeRate(activeRates);
         final AtomicReference<TokenType> tokenType = new AtomicReference<>();
         final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
         spec.accept(receiptBuilder, recordBuilder, sidecarRecords, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
@@ -209,6 +220,12 @@ public class BaseTranslator {
                                 .computeIfAbsent(ACCOUNT, ignore -> new LinkedList<>())
                                 .add(num);
                     }
+                } else if (key.hasNftIdKey()) {
+                    final var nftId = key.nftIdKeyOrThrow();
+                    final var tokenId = nftId.tokenId();
+                    highestPutSerialNos
+                            .computeIfAbsent(tokenId, ignore -> new LinkedList<>())
+                            .add(nftId.serialNumber());
                 }
             }
         });

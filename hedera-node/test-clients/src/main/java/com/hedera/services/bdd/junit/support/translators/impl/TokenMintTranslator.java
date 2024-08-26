@@ -17,27 +17,23 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.TransactionOutput;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Translates a contract create transaction into a {@link SingleTransactionRecord}.
+ * Translates a token mint transaction into a {@link SingleTransactionRecord}.
  */
-public class ContractCreateTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(ContractCreateTranslator.class);
+public class TokenMintTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(TokenMintTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
@@ -48,34 +44,32 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
-            Optional.ofNullable(parts.transactionOutput())
-                    .map(TransactionOutput::contractCreateOrThrow)
-                    .ifPresent(createContractOutput -> {
-                        final var result = createContractOutput.contractCreateResultOrThrow();
-                        recordBuilder.contractCreateResult(result);
-                        receiptBuilder.contractID(result.contractID());
-                        sidecarRecords.addAll(createContractOutput.sidecars());
-                    });
             if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
+                final var op = parts.body().tokenMintOrThrow();
+                final var tokenId = op.tokenOrThrow();
+                final var numMints = op.metadata().size();
+                final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
                     if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
-                        final var accountId =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().accountIdKeyOrThrow();
-                        if (accountId.accountNumOrThrow() == createdNum) {
-                            receiptBuilder.contractID(ContractID.newBuilder()
-                                    .contractNum(createdNum)
-                                    .build());
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasNftIdKey()) {
+                        final var nftId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().nftIdKeyOrThrow();
+                        if (!nftId.tokenIdOrThrow().equals(tokenId)) {
+                            continue;
+                        }
+                        final var serialNo = nftId.serialNumber();
+                        if (mintedSerialNos.remove(serialNo)) {
                             iter.remove();
-                            return;
+                            if (mintedSerialNos.isEmpty()) {
+                                return;
+                            }
                         }
                     }
                 }
                 log.error(
-                        "No matching state change found for successful contract create with id {}",
+                        "Not all mints had matching state changes found for successful mint with id {}",
                         parts.transactionIdOrThrow());
             }
         });

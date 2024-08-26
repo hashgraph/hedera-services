@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -93,8 +94,10 @@ public class EndOfStakingPeriodUpdater {
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
      * @param context the context of the transaction used to end the staking period
+     * @param exchangeRateSet the active exchange rate set
      */
-    public @Nullable StreamBuilder updateNodes(@NonNull final TokenContext context) {
+    public @Nullable StreamBuilder updateNodes(
+            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
@@ -262,6 +265,7 @@ public class EndOfStakingPeriodUpdater {
         return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record")
+                .exchangeRate(exchangeRates)
                 .status(SUCCESS);
     }
 
