@@ -59,6 +59,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRA
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -208,7 +209,7 @@ public class BlockImplUtils {
 
     public static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
         try {
-            final var digest = MessageDigest.getInstance("SHA-384");
+            final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
             digest.update(leftHash);
             digest.update(rightHash);
             return digest.digest();
