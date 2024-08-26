@@ -53,7 +53,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -109,28 +108,10 @@ public class GasCalculationIntegrityTest {
 
     private record RatesProvider(int hBarEquiv, int centEquiv) {}
 
-    private static final AtomicReference<ByteString> validRates = new AtomicReference<>();
-
-    @AfterAll
-    public static void afterAll(final @NonNull TestLifecycle lifecycle) {
-        // Reset exchange rates
-        lifecycle.doAdhoc(fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get()));
-    }
-
     @BeforeAll
     public static void beforeAll(final @NonNull TestLifecycle lifecycle) {
         // Fetch exchange rates before tests
         lifecycle.doAdhoc(
-                //  Save exchange rates
-                withOpContext((spec, opLog) -> {
-                    var fetch = getFileContents(EXCHANGE_RATES);
-                    CustomSpecAssert.allRunFor(spec, fetch);
-                    validRates.set(fetch.getResponse()
-                            .getFileGetContents()
-                            .getFileContents()
-                            .getContents());
-                }),
-
                 // Authorizations
                 fungibleToken.authorizeContracts(numericContractComplex),
                 nft.authorizeContracts(numericContractComplex),
@@ -150,28 +131,34 @@ public class GasCalculationIntegrityTest {
     @Order(1)
     @DisplayName("when using nft via redirect proxy contract")
     public Stream<DynamicTest> approveViaProxyNft() {
+        AtomicReference<ByteString> validRates = new AtomicReference<>();
         return testCases.flatMap(rates -> hapiTest(
-                // updateRates(rates.hBarEquiv, rates.centEquiv),
+                saveRates(validRates),
+                updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContract
                         .call("approveRedirect", nft, bob, BigInteger.valueOf(7))
                         .gas(756_729L)
                         .via("approveRedirectTxn")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                getTxnRecord("approveRedirectTxn").logged()));
+                getTxnRecord("approveRedirectTxn").logged(),
+                fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get())));
     }
 
     @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
     @Order(2)
     @DisplayName("when using fungible token hts system contract")
     public Stream<DynamicTest> approveFungibleToken() {
+        AtomicReference<ByteString> validRates = new AtomicReference<>();
         return testCases.flatMap(rates -> hapiTest(
-                //  updateRates(rates.hBarEquiv, rates.centEquiv),
+                saveRates(validRates),
+                updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContract
                         .call("approve", fungibleToken, alice, BigInteger.TWO)
                         .gas(1500_877L)
                         .via("approveTxn")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                getTxnRecord("approveTxn").logged()));
+                getTxnRecord("approveTxn").logged(),
+                fileUpdate(EXCHANGE_RATES).contents(spec -> validRates.get())));
     }
 
     @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
@@ -426,7 +413,17 @@ public class GasCalculationIntegrityTest {
         return fileUpdate(EXCHANGE_RATES).contents(spec -> {
             ByteString newRates =
                     spec.ratesProvider().rateSetWith(hbarEquiv, centEquiv).toByteString();
+            spec.registry().saveBytes("rates", newRates);
             return newRates;
+        });
+    }
+
+    private CustomSpecAssert saveRates(final AtomicReference<ByteString> validRates) {
+        return withOpContext((spec, opLog) -> {
+            var fetch = getFileContents(EXCHANGE_RATES).logged();
+            CustomSpecAssert.allRunFor(spec, fetch);
+            validRates.set(
+                    fetch.getResponse().getFileGetContents().getFileContents().getContents());
         });
     }
 }
