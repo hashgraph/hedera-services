@@ -53,7 +53,7 @@ class TinybarValuesTest {
 
     private TinybarValues subject;
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
-    private ContractsConfig contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
+    private final ContractsConfig contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
 
     @BeforeEach
     void setUp() {
@@ -70,8 +70,7 @@ class TinybarValuesTest {
     @Test
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
-        final var expectedRbhPrice = RBH_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
-        assertEquals(expectedRbhPrice, subject.topLevelTinyCentRbhPrice());
+        assertEquals(RBH_FEE_SCHEDULE_PRICE, subject.topLevelTinyCentRbhPrice());
     }
 
     @Test

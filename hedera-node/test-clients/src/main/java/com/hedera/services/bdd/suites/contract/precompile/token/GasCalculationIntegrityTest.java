@@ -150,6 +150,7 @@ public class GasCalculationIntegrityTest {
                         .gas(756_729L)
                         .via("approveRedirectTxn")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("approveRedirectTxn").logged()));
     }
 
@@ -164,6 +165,7 @@ public class GasCalculationIntegrityTest {
                         .gas(1500_877L)
                         .via("approveTxn")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("approveTxn").logged()));
     }
 
@@ -188,6 +190,7 @@ public class GasCalculationIntegrityTest {
                         .sending(THOUSAND_HBAR)
                         .via("createWithCustomFeeFractional")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("createWithCustomFeeFractional").logged()));
     }
 
@@ -204,6 +207,7 @@ public class GasCalculationIntegrityTest {
                         .payingWith(alice)
                         .via("createWithCustomFeeRoyalty")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("createWithCustomFeeRoyalty").logged()));
     }
 
@@ -218,6 +222,7 @@ public class GasCalculationIntegrityTest {
                         .sending(THOUSAND_HBAR)
                         .via("createFungibleToken")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("createFungibleToken").logged()));
     }
 
@@ -234,6 +239,7 @@ public class GasCalculationIntegrityTest {
                         .payingWith(alice)
                         .via("createNonFungibleTokenV3")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("createNonFungibleTokenV3").logged()));
     }
 
@@ -248,6 +254,7 @@ public class GasCalculationIntegrityTest {
                         .gas(33_304L)
                         .via("cryptoTransferV2")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("cryptoTransferV2").logged()));
     }
 
@@ -266,6 +273,7 @@ public class GasCalculationIntegrityTest {
                                 bob)
                         .via("cryptoTransferFungibleV1")
                         .gas(763_480L),
+                restoreOriginalRates(),
                 getTxnRecord("cryptoTransferFungibleV1").logged()));
     }
 
@@ -280,6 +288,7 @@ public class GasCalculationIntegrityTest {
                         .gas(761_070L)
                         .via("cryptoTransferNonFungible")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                restoreOriginalRates(),
                 getTxnRecord("cryptoTransferNonFungible").logged(),
                 bob.transferNFTsTo(nft.treasury(), nft, 1L)));
     }
@@ -294,6 +303,7 @@ public class GasCalculationIntegrityTest {
                         .call("transferNFTs", nft, nft.treasury(), alice, new long[] {4L})
                         .via("transferNFTs")
                         .gas(761_519L),
+                restoreOriginalRates(),
                 getTxnRecord("transferNFTs").logged(),
                 alice.transferNFTsTo(nft.treasury(), nft, 4L)));
     }
@@ -308,6 +318,7 @@ public class GasCalculationIntegrityTest {
                         .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, 1L)
                         .via("transferTokenTest")
                         .gas(758_568L),
+                restoreOriginalRates(),
                 getTxnRecord("transferTokenTest").logged()));
     }
 
@@ -322,6 +333,7 @@ public class GasCalculationIntegrityTest {
                         .call("transferNFTTest", nft, nft.treasury(), alice, 3L)
                         .via("transferNFTTest")
                         .gas(42_235L),
+                restoreOriginalRates(),
                 getTxnRecord("transferNFTTest").logged(),
                 alice.transferNFTsTo(nft.treasury(), nft, 3L)));
     }
@@ -337,6 +349,7 @@ public class GasCalculationIntegrityTest {
                         .call("transferFrom", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                         .via("transferFrom")
                         .gas(42_264L),
+                restoreOriginalRates(),
                 getTxnRecord("transferFrom").logged()));
     }
 
@@ -351,6 +364,7 @@ public class GasCalculationIntegrityTest {
                         .call("transferFromERC", fungibleToken, fungibleToken.treasury(), alice, BigInteger.ONE)
                         .via("transferFromERC")
                         .gas(44_900L),
+                restoreOriginalRates(),
                 getTxnRecord("transferFromERC").logged()));
     }
 
@@ -366,6 +380,7 @@ public class GasCalculationIntegrityTest {
                         .via("transferFromNFT")
                         .gas(42_263L),
                 getTxnRecord("transferFromNFT").logged(),
+                restoreOriginalRates(),
                 alice.transferNFTsTo(nft.treasury(), nft, 2L)));
     }
 
@@ -379,6 +394,7 @@ public class GasCalculationIntegrityTest {
                         .call("getInformationForToken", token)
                         .gas(78_805L)
                         .via("tokenInfo"),
+                restoreOriginalRates(),
                 getTxnRecord("tokenInfo").logged()));
     }
 
@@ -392,6 +408,7 @@ public class GasCalculationIntegrityTest {
                         .call("getCustomFeesForToken", token)
                         .gas(31_421L)
                         .via("customFees"),
+                restoreOriginalRates(),
                 getTxnRecord("customFees").logged()));
     }
 
@@ -402,6 +419,7 @@ public class GasCalculationIntegrityTest {
         return testCases.flatMap(ratesProvider -> hapiTest(
                 updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 erc20Contract.call("name", token).gas(30_207L).via("name"),
+                restoreOriginalRates(),
                 getTxnRecord("name").logged()));
     }
 
