@@ -17,7 +17,6 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -38,7 +37,6 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -151,20 +149,21 @@ public class BlockStreamBuilder
     private Instant parentConsensus;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
+    private boolean hasAssessedCustomFees = false;
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
-    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
     private TransferList transferList = TransferList.DEFAULT;
+    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
-    private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
     private long newTotalSupply = 0L;
-    private final TransactionOutput.Builder transactionOutputBuilder = TransactionOutput.newBuilder();
+    // If non-null, a builder to be used to set the transaction output
+    private TransactionOutput.Builder transactionOutputBuilder = null;
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
@@ -183,7 +182,10 @@ public class BlockStreamBuilder
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
     private long transactionFee;
+    // If non-null, a contract function result
     private ContractFunctionResult contractFunctionResult;
+    // If true, the contract function result is a call result; otherwise, a create result
+    private boolean isCreateResult;
 
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
@@ -201,7 +203,8 @@ public class BlockStreamBuilder
     private TokenID tokenID;
     private TokenType tokenType;
     private Bytes ethereumHash;
-    private TransactionID scheduledTransactionID;
+    private boolean createsOrDeletesSchedule;
+    private TransactionID scheduledTransactionId;
 
     public BlockStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -236,8 +239,8 @@ public class BlockStreamBuilder
         final var resultBlockItem = getTransactionResultBlockItem();
         blockItems.add(resultBlockItem);
 
-        final var output = getTransactionOutputBuilder().build();
-        if (output.transaction().kind() != TransactionOutput.TransactionOneOfType.UNSET) {
+        final var output = getTransactionOutput();
+        if (output != null) {
             blockItems.add(BlockItem.newBuilder().transactionOutput(output).build());
         }
 
@@ -251,81 +254,6 @@ public class BlockStreamBuilder
             blockItems.add(stateChangesBlockItem);
         }
         return blockItems;
-    }
-
-    @NonNull
-    private BlockItem getTransactionResultBlockItem() {
-        if (!automaticTokenAssociations.isEmpty()) {
-            transactionResultBuilder.automaticTokenAssociations(automaticTokenAssociations);
-        }
-        final var transactionResultBlockItem = BlockItem.newBuilder()
-                .transactionResult(transactionResultBuilder.build())
-                .build();
-        return transactionResultBlockItem;
-    }
-
-    @NonNull
-    private TransactionOutput.Builder getTransactionOutputBuilder() {
-        var function = HederaFunctionality.NONE;
-        try {
-            function = functionOf(transactionBody());
-        } catch (Exception e) {
-            // No-op
-        }
-        final var sideCars = getSideCars();
-        if (!sideCars.isEmpty()) {
-            if (function == HederaFunctionality.CONTRACT_CALL) {
-                transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
-                        .contractCallResult(contractFunctionResult)
-                        .sidecars(sideCars)
-                        .build());
-            } else if (function == HederaFunctionality.ETHEREUM_TRANSACTION) {
-                transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
-                        .ethereumHash(ethereumHash)
-                        .sidecars(sideCars)
-                        .build());
-            } else if (function == HederaFunctionality.CONTRACT_CREATE) {
-                transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
-                        .sidecars(sideCars)
-                        .contractCreateResult(contractFunctionResult)
-                        .build());
-            }
-        }
-        if (function == HederaFunctionality.SCHEDULE_CREATE) {
-            transactionOutputBuilder.createSchedule(CreateScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionID)
-                    .build());
-        } else if (function == HederaFunctionality.SCHEDULE_SIGN) {
-            transactionOutputBuilder.signSchedule(SignScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionID)
-                    .build());
-        }
-        return transactionOutputBuilder;
-    }
-
-    private List<TransactionSidecarRecord> getSideCars() {
-        final var timestamp = asTimestamp(consensusNow);
-        // create list of sidecar records
-        final List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
-        contractStateChanges.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        timestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        contractActions.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        timestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        contractBytecodes.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        timestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        return transactionSidecarRecords;
     }
 
     /**
@@ -497,10 +425,11 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
-        transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
-                .contractCallResult(contractCallResult)
-                .build());
         this.contractFunctionResult = contractCallResult;
+        if (contractCallResult != null) {
+            ensureOutputBuilder();
+            isCreateResult = false;
+        }
         return this;
     }
 
@@ -510,10 +439,11 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
-        transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
-                .contractCreateResult(contractCreateResult)
-                .build());
         this.contractFunctionResult = contractCreateResult;
+        if (contractCreateResult != null) {
+            ensureOutputBuilder();
+            isCreateResult = true;
+        }
         return this;
     }
 
@@ -533,7 +463,6 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
-        transactionResultBuilder.transferList(transferList);
         return this;
     }
 
@@ -591,11 +520,9 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
-        requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
-        this.assessedCustomFees = assessedCustomFees;
-        transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
-                .assessedCustomFees(assessedCustomFees)
-                .build());
+        this.assessedCustomFees = requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
+        ensureOutputBuilder();
+        hasAssessedCustomFees = true;
         return this;
     }
 
@@ -615,10 +542,8 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
-        requireNonNull(ethereumHash, "ethereumHash must not be null");
-        transactionOutputBuilder.ethereumCall(
-                EthereumOutput.newBuilder().ethereumHash(ethereumHash).build());
-        this.ethereumHash = ethereumHash;
+        this.ethereumHash = requireNonNull(ethereumHash, "ethereumHash must not be null");
+        ensureOutputBuilder();
         return this;
     }
 
@@ -648,8 +573,8 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder entropyNumber(final int num) {
-        transactionOutputBuilder.utilPrng(
-                UtilPrngOutput.newBuilder().prngNumber(num).build());
+        ensureOutputBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngNumber(num).build());
         return this;
     }
 
@@ -659,9 +584,9 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
-        requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
-        transactionOutputBuilder.utilPrng(
-                UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
+        requireNonNull(prngBytes);
+        ensureOutputBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
         return this;
     }
 
@@ -758,7 +683,6 @@ public class BlockStreamBuilder
     public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         transactionResultBuilder.exchangeRate(exchangeRate);
-        this.exchangeRate = exchangeRate;
         return this;
     }
 
@@ -866,7 +790,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
-        // No-op
+        this.createsOrDeletesSchedule = true;
         return this;
     }
 
@@ -876,7 +800,8 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
-        this.scheduledTransactionID = scheduledTransactionID;
+        this.scheduledTransactionId = requireNonNull(scheduledTransactionID);
+        ensureOutputBuilder();
         return this;
     }
 
@@ -1038,16 +963,92 @@ public class BlockStreamBuilder
         transactionResultBuilder.automaticTokenAssociations(emptyList());
         transactionResultBuilder.congestionPricingMultiplier(0);
 
-        transactionOutputBuilder.cryptoTransfer((CryptoTransferOutput) null);
-        transactionOutputBuilder.utilPrng((UtilPrngOutput) null);
-        transactionOutputBuilder.contractCall((CallContractOutput) null);
-        transactionOutputBuilder.ethereumCall((EthereumOutput) null);
-        transactionOutputBuilder.contractCreate((CreateContractOutput) null);
-        transactionOutputBuilder.createSchedule((CreateScheduleOutput) null);
-        transactionOutputBuilder.signSchedule((SignScheduleOutput) null);
+        transactionOutputBuilder = null;
+    }
+
+    @NonNull
+    private BlockItem getTransactionResultBlockItem() {
+        if (!automaticTokenAssociations.isEmpty()) {
+            transactionResultBuilder.automaticTokenAssociations(automaticTokenAssociations);
+        }
+        return BlockItem.newBuilder()
+                .transactionResult(
+                        transactionResultBuilder.transferList(transferList).build())
+                .build();
+    }
+
+    @Nullable
+    private TransactionOutput getTransactionOutput() {
+        if (transactionOutputBuilder == null) {
+            return null;
+        }
+        if (contractFunctionResult != null) {
+            final var sidecars = getSidecars();
+            if (ethereumHash != null) {
+                transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
+                        .ethereumHash(ethereumHash)
+                        .sidecars(sidecars)
+                        .build());
+            } else if (!isCreateResult) {
+                transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
+                        .contractCallResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+            } else {
+                transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
+                        .contractCreateResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+            }
+        } else if (createsOrDeletesSchedule && scheduledTransactionId != null) {
+            transactionOutputBuilder.createSchedule(CreateScheduleOutput.newBuilder()
+                    .scheduledTransactionId(scheduledTransactionId)
+                    .build());
+        } else if (scheduledTransactionId != null) {
+            transactionOutputBuilder.signSchedule(SignScheduleOutput.newBuilder()
+                    .scheduledTransactionId(scheduledTransactionId)
+                    .build());
+        } else if (hasAssessedCustomFees) {
+            transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
+                    .assessedCustomFees(assessedCustomFees)
+                    .build());
+        }
+        return transactionOutputBuilder.build();
+    }
+
+    private List<TransactionSidecarRecord> getSidecars() {
+        final var timestamp = asTimestamp(consensusNow);
+        // create list of sidecar records
+        final List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
+        contractStateChanges.stream()
+                .map(pair -> new TransactionSidecarRecord(
+                        timestamp,
+                        pair.getValue(),
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, pair.getKey())))
+                .forEach(transactionSidecarRecords::add);
+        contractActions.stream()
+                .map(pair -> new TransactionSidecarRecord(
+                        timestamp,
+                        pair.getValue(),
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
+                .forEach(transactionSidecarRecords::add);
+        contractBytecodes.stream()
+                .map(pair -> new TransactionSidecarRecord(
+                        timestamp,
+                        pair.getValue(),
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
+                .forEach(transactionSidecarRecords::add);
+        return transactionSidecarRecords;
     }
 
     private Bytes getSerializedTransaction() {
         return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);
+    }
+
+    private TransactionOutput.Builder ensureOutputBuilder() {
+        if (transactionOutputBuilder == null) {
+            transactionOutputBuilder = TransactionOutput.newBuilder();
+        }
+        return transactionOutputBuilder;
     }
 }

@@ -63,9 +63,6 @@ public class BlockStreamBuilderTest {
     public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
     public static final int ENTROPY_NUMBER = 87372879;
-    public static final long TOPIC_SEQUENCE_NUMBER = 928782L;
-    public static final long TOPIC_RUNNING_HASH_VERSION = 153513L;
-    public static final long NEW_TOTAL_SUPPLY = 34134546L;
     public static final String MEMO = "Yo Memo";
     private Transaction transaction = Transaction.newBuilder()
             .body(TransactionBody.newBuilder()
