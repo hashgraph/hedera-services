@@ -18,11 +18,22 @@ package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_APPEND;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.services.bdd.junit.support.translators.impl.NoExplicitSideEffectsTranslator.NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR;
 import static java.util.Objects.requireNonNull;
 
@@ -30,11 +41,18 @@ import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.impl.ConsensusSubmitMessageTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.ContractCallTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.ContractCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.ContractDeleteTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.CryptoCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.CryptoTransferTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.FileCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.NodeCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.ScheduleCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.SubmitMessageTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.TokenCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TopicCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.UtilPrngTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -61,13 +79,24 @@ public class BlockTransactionalUnitTranslator {
     private final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators =
             new EnumMap<>(HederaFunctionality.class) {
                 {
-                    put(CONSENSUS_SUBMIT_MESSAGE, new ConsensusSubmitMessageTranslator());
+                    put(CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
                     put(CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
+                    put(CONTRACT_CALL, new ContractCallTranslator());
+                    put(CONTRACT_CREATE, new ContractCreateTranslator());
+                    put(CONTRACT_DELETE, new ContractDeleteTranslator());
+                    put(CRYPTO_APPROVE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CRYPTO_CREATE, new CryptoCreateTranslator());
                     put(CRYPTO_TRANSFER, new CryptoTransferTranslator());
+                    put(FILE_APPEND, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(FILE_CREATE, new FileCreateTranslator());
+                    put(FILE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(FREEZE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(NODE_CREATE, new NodeCreateTranslator());
                     put(NODE_STAKE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(SCHEDULE_CREATE, new ScheduleCreateTranslator());
+                    put(TOKEN_ASSOCIATE_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(TOKEN_CREATE, new TokenCreateTranslator());
+                    put(UTIL_PRNG, new UtilPrngTranslator());
                 }
             };
 

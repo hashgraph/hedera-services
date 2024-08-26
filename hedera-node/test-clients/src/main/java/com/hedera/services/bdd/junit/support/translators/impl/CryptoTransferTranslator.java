@@ -24,6 +24,9 @@ import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransaction
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * Translates a crypto transfer transaction into a {@link SingleTransactionRecord}.
+ */
 public class CryptoTransferTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(

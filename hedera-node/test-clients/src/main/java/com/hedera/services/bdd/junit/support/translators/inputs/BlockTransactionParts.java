@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -56,6 +57,14 @@ public record BlockTransactionParts(
      */
     public ResponseCodeEnum status() {
         return transactionResult.status();
+    }
+
+    /**
+     * Returns the body of the transaction.
+     * @return the body
+     */
+    public TransactionBody body() {
+        return transactionParts.body();
     }
 
     /**
@@ -143,6 +152,15 @@ public record BlockTransactionParts(
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return Bytes.wrap(noThrowSha384HashOf(transactionBytes.toByteArray()));
+    }
+
+    /**
+     * Returns the output of the transaction.
+     * @return the output
+     * @throws NullPointerException if the output is not present
+     */
+    public TransactionOutput outputOrThrow() {
+        return requireNonNull(transactionOutput);
     }
 
     /**

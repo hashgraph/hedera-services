@@ -103,7 +103,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
-        final var op = handleContext.body().nodeUpdate();
+        final var op = handleContext.body().nodeUpdateOrThrow();
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);

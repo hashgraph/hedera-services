@@ -31,8 +31,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Translates a consensus submit message into a {@link SingleTransactionRecord}.
  */
-public class ConsensusSubmitMessageTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(ConsensusSubmitMessageTranslator.class);
+public class SubmitMessageTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(SubmitMessageTranslator.class);
 
     // For explanation about this constant value, see
     // https://github.com/hashgraph/hedera-protobufs/blob/pbj-storage-spec-review/block/stream/output/consensus_service.proto#L6
@@ -60,7 +60,7 @@ public class ConsensusSubmitMessageTranslator implements BlockTransactionPartsTr
                     }
                 }
                 log.error(
-                        "No topic state change found for successful consensus submit message with id {}",
+                        "No topic state change found for successful submit message with id {}",
                         parts.transactionIdOrThrow());
             }
         });

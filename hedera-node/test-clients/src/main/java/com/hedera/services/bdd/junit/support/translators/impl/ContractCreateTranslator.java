@@ -16,43 +16,68 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.config.types.EntityType.ACCOUNT;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.TransactionOutput;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(ContractCreateTranslator.class);
+/**
+ * Translates a contract create transaction into a {@link SingleTransactionRecord}.
+ */
+public class ContractCreateTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(ContractCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        final var recordBuilder = TransactionRecord.newBuilder();
-
-        final var txnOutput = transaction.output();
-        if (txnOutput != null && txnOutput.hasContractCreate()) {
-            final var contractCreateResult = txnOutput.contractCreate().contractCreateResult();
-            receiptBuilder.contractID(contractCreateResult.contractID());
-            recordBuilder
-                    .receipt(receiptBuilder.build())
-                    .contractCreateResult(contractCreateResult)
-                    .evmAddress(contractCreateResult.evmAddress());
-        } else {
-            logger.info("Was not able to translate ContractCreate operation");
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.build(),
-                txnOutput != null ? txnOutput.contractCreate().sidecars() : List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        requireNonNull(parts);
+        requireNonNull(baseTranslator);
+        requireNonNull(remainingStateChanges);
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            Optional.ofNullable(parts.transactionOutput())
+                    .map(TransactionOutput::contractCreateOrThrow)
+                    .ifPresent(createContractOutput -> {
+                        final var result = createContractOutput.contractCreateResultOrThrow();
+                        recordBuilder.contractCallResult(result);
+                        receiptBuilder.contractID(result.contractID());
+                        sidecarRecords.addAll(createContractOutput.sidecars());
+                    });
+            if (parts.status() == SUCCESS) {
+                final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
+                        final var accountId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().accountIdKeyOrThrow();
+                        if (accountId.accountNumOrThrow() == createdNum) {
+                            receiptBuilder.contractID(ContractID.newBuilder()
+                                    .contractNum(createdNum)
+                                    .build());
+                            iter.remove();
+                            return;
+                        }
+                    }
+                }
+                log.error(
+                        "No matching state change found for successful contract create with id {}",
+                        parts.transactionIdOrThrow());
+            }
+        });
     }
 }

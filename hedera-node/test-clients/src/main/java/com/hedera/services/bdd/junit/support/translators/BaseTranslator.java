@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
+import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
 
@@ -191,6 +192,13 @@ public class BaseTranslator {
                                 .add(num);
                     } else if (num == EXCHANGE_RATES_FILE_NUM) {
                         updateActiveRates(stateChange);
+                    }
+                } else if (key.hasScheduleIdKey()) {
+                    final var num = key.scheduleIdKeyOrThrow().scheduleNum();
+                    if (num > highestKnownEntityNum) {
+                        nextCreatedNums
+                                .computeIfAbsent(SCHEDULE, ignore -> new LinkedList<>())
+                                .add(num);
                     }
                 } else if (key.hasContractIdKey() || key.hasAccountIdKey()) {
                     final var num = key.hasContractIdKey()

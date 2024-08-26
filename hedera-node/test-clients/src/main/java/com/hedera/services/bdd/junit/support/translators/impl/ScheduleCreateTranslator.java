@@ -16,46 +16,59 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.config.types.EntityType.SCHEDULE;
+import static java.util.Objects.requireNonNull;
 
-public class ScheduleCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * Translates a schedule create transaction into a {@link SingleTransactionRecord}.
+ */
+public class ScheduleCreateTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(ScheduleCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        final var recordBuilder = TransactionRecord.newBuilder();
-
-        if (stateChanges != null) {
-            maybeAssignScheduleID(stateChanges, receiptBuilder);
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.receipt(receiptBuilder.build()).build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
-    }
-
-    private void maybeAssignScheduleID(
-            final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasScheduleIdKey()) {
-                        receiptBuilder.scheduleID(stateChange.mapUpdate().key().scheduleIdKey());
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        requireNonNull(parts);
+        requireNonNull(baseTranslator);
+        requireNonNull(remainingStateChanges);
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            if (parts.status() == SUCCESS) {
+                final var createdNum = baseTranslator.nextCreatedNum(SCHEDULE);
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasScheduleIdKey()) {
+                        final var scheduleId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().scheduleIdKeyOrThrow();
+                        if (scheduleId.scheduleNum() == createdNum) {
+                            receiptBuilder
+                                    .scheduleID(scheduleId)
+                                    .scheduledTransactionID(parts.outputOrThrow()
+                                            .createScheduleOrThrow()
+                                            .scheduledTransactionId());
+                            iter.remove();
+                            return;
+                        }
                     }
-                });
+                }
+                log.error(
+                        "No matching state change found for successful schedule create with id {}",
+                        parts.transactionIdOrThrow());
+            }
+        });
     }
 }

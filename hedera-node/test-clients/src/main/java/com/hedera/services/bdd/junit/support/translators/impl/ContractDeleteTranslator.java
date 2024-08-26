@@ -17,10 +17,11 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.config.types.EntityType.TOKEN;
+import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
@@ -30,11 +31,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Translates a token create transaction into a {@link SingleTransactionRecord}.
- */
-public class TokenCreateTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(TokenCreateTranslator.class);
+public class ContractDeleteTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(ContractDeleteTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
@@ -46,23 +44,36 @@ public class TokenCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(TOKEN);
+                final var targetId =
+                        parts.body().contractDeleteInstanceOrThrow().contractIDOrThrow();
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
                     if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasTokenIdKey()) {
-                        final var tokenId =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().tokenIdKeyOrThrow();
-                        if (tokenId.tokenNum() == createdNum) {
-                            receiptBuilder.tokenID(tokenId);
-                            iter.remove();
-                            return;
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
+                        final var account =
+                                stateChange.mapUpdateOrThrow().valueOrThrow().accountValueOrThrow();
+                        if (account.deleted()) {
+                            var isTarget = false;
+                            final long accountNum = account.accountIdOrThrow().accountNumOrThrow();
+                            switch (targetId.contract().kind()) {
+                                case UNSET -> throw new IllegalStateException("Contract kind should be set");
+                                case CONTRACT_NUM -> isTarget = accountNum == targetId.contractNumOrThrow();
+                                case EVM_ADDRESS -> isTarget =
+                                        targetId.evmAddressOrThrow().equals(extractEvmAddress(account.alias()));
+                            }
+                            if (isTarget) {
+                                receiptBuilder.contractID(ContractID.newBuilder()
+                                        .contractNum(accountNum)
+                                        .build());
+                                iter.remove();
+                                return;
+                            }
                         }
                     }
                 }
                 log.error(
-                        "No matching state change found for successful file create with id {}",
+                        "No matching state change found for successful crypto delete with id {}",
                         parts.transactionIdOrThrow());
             }
         });

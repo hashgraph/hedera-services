@@ -16,40 +16,34 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import com.hedera.hapi.block.stream.output.CallContractOutput;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Optional;
 
-public class ContractCallTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(ContractCallTranslator.class);
-
+/**
+ * Translates a contract call transaction into a {@link SingleTransactionRecord}.
+ */
+public class ContractCallTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
-            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var txnOutput = transaction.output();
-        var contractCallOutput = CallContractOutput.DEFAULT;
-
-        if (txnOutput != null && txnOutput.hasContractCall()) {
-            contractCallOutput = txnOutput.contractCall();
-            final var contractCallResult = contractCallOutput.contractCallResult();
-            recordBuilder.contractCallResult(contractCallResult);
-        } else {
-            logger.info("Was not able to translate ContractCall operation");
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.build(),
-                txnOutput != null ? contractCallOutput.sidecars() : List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        return baseTranslator.recordFrom(
+                parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> Optional.ofNullable(
+                                parts.transactionOutput())
+                        .map(TransactionOutput::contractCallOrThrow)
+                        .ifPresent(callContractOutput -> {
+                            final var result = callContractOutput.contractCallResultOrThrow();
+                            recordBuilder.contractCallResult(result);
+                            receiptBuilder.contractID(result.contractID());
+                            sidecarRecords.addAll(callContractOutput.sidecars());
+                        }));
     }
 }

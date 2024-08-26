@@ -18,41 +18,31 @@ package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
 import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class UtilPrngTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger logger = LogManager.getLogger(UtilPrngTranslator.class);
-
+public class UtilPrngTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
-            @NonNull SingleTransactionBlockItems transaction, @Nullable StateChanges stateChanges) {
-        final var recordBuilder = TransactionRecord.newBuilder();
-        final var txOutput = transaction.output();
-        if (txOutput != null && txOutput.hasUtilPrng()) {
-            final var entropy = txOutput.utilPrng().entropy();
-            if (entropy.kind() == PRNG_BYTES) {
-                recordBuilder.prngBytes(entropy.as());
-            } else if (entropy.kind() == PRNG_NUMBER) {
-                recordBuilder.prngNumber(entropy.as());
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            if (parts.status() == SUCCESS) {
+                final var output = parts.outputOrThrow().utilPrngOrThrow();
+                switch (output.entropy().kind()) {
+                    case UNSET -> throw new IllegalStateException("Successful UtilPrng output missing entropy");
+                    case PRNG_BYTES -> recordBuilder.prngBytes(output.prngBytesOrThrow());
+                    case PRNG_NUMBER -> recordBuilder.prngNumber(output.prngNumberOrThrow());
+                }
             }
-        } else {
-            logger.info("Was not able to translate UtilPrng operation");
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+        });
     }
 }
