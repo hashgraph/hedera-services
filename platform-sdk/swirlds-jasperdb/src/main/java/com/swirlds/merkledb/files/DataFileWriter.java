@@ -98,7 +98,6 @@ public final class DataFileWriter {
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationTime,
-                0, // backwards compatibility: data version
                 compactionLevel);
         Files.createFile(path);
         writeHeader();

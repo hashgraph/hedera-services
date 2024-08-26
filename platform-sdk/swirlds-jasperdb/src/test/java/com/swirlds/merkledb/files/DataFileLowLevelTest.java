@@ -174,11 +174,8 @@ class DataFileLowLevelTest {
         assertEquals(TEST_START, dataFileMetadata.getCreationDate(), "unexpected creation date");
         assertEquals(DATA_FILE_INDEX, dataFileMetadata.getIndex(), "unexpected Index");
         if (testType == FilesTestType.fixed) {
-            String expectedToString = "DataFileMetadata["
-                    + "itemsCount=1000,index=123,creationDate="
-                    + TEST_START
-                    + ","
-                    + "serializationVersion=0]";
+            String expectedToString =
+                    "DataFileMetadata[" + "itemsCount=1000,index=123,creationDate=" + TEST_START + "]";
             assertEquals(expectedToString, dataFileMetadata.toString(), "unexpected toString() value");
         }
     }
@@ -192,7 +189,6 @@ class DataFileLowLevelTest {
         assertEquals(1000, dataFileMetadata.getDataItemCount(), "unexpected data item count");
         assertEquals(TEST_START, dataFileMetadata.getCreationDate(), "unexpected creation date");
         assertEquals(DATA_FILE_INDEX, dataFileMetadata.getIndex(), "unexpected Index value");
-        assertEquals(0, dataFileMetadata.getSerializationVersion(), "unexpected data version");
     }
 
     @Order(200)

@@ -125,8 +125,11 @@ public final class DataFileCommon {
             new FieldDefinition("creationDateNanos", FieldType.UINT32, false, false, false, 3);
     static final FieldDefinition FIELD_DATAFILEMETADATA_ITEMS_COUNT =
             new FieldDefinition("itemsCount", FieldType.FIXED64, false, false, false, 4);
+
+    @Deprecated
     static final FieldDefinition FIELD_DATAFILEMETADATA_ITEM_VERSION =
             new FieldDefinition("itemsVersion", FieldType.UINT64, false, true, false, 5);
+
     static final FieldDefinition FIELD_DATAFILEMETADATA_COMPACTION_LEVEL =
             new FieldDefinition("compactionLevel", FieldType.UINT32, false, true, false, 6);
 

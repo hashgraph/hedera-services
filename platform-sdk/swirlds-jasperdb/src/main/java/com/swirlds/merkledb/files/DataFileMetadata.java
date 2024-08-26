@@ -62,9 +62,6 @@ public final class DataFileMetadata {
      */
     private volatile long itemsCount;
 
-    /** Serialization version for data stored in the file */
-    private final long serializationVersion;
-
     /** The level of compaction this file has. See {@link DataFileCompactor}*/
     private final byte compactionLevel;
 
@@ -78,18 +75,12 @@ public final class DataFileMetadata {
      * @param index The file index, in a data file collection
      * @param creationDate The creation data of this file, this is critical as it is used when
      *     merging two files to know which files data is newer.
-     * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
-            final long itemsCount,
-            final int index,
-            final Instant creationDate,
-            final long serializationVersion,
-            final int compactionLevel) {
+            final long itemsCount, final int index, final Instant creationDate, final int compactionLevel) {
         this.itemsCount = itemsCount;
         this.index = index;
         this.creationDate = creationDate;
-        this.serializationVersion = serializationVersion;
         assert compactionLevel >= 0 && compactionLevel < MAX_COMPACTION_LEVEL;
         this.compactionLevel = (byte) compactionLevel;
     }
@@ -106,7 +97,6 @@ public final class DataFileMetadata {
         long creationSeconds = 0;
         int creationNanos = 0;
         long itemsCount = 0;
-        long serializationVersion = 0;
         byte compactionLevel = 0;
 
         // Read values from the file, skipping all data items
@@ -131,7 +121,7 @@ public final class DataFileMetadata {
                             } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEMS_COUNT.number()) {
                                 itemsCount = in.readLong();
                             } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_ITEM_VERSION.number()) {
-                                serializationVersion = in.readVarLong(false);
+                                in.readVarLong(false); // this field is no longer used
                             } else if (metadataFieldNum == FIELD_DATAFILEMETADATA_COMPACTION_LEVEL.number()) {
                                 final int compactionLevelInt = in.readVarInt(false);
                                 assert compactionLevelInt < MAX_COMPACTION_LEVEL;
@@ -161,7 +151,6 @@ public final class DataFileMetadata {
         this.index = index;
         this.creationDate = Instant.ofEpochSecond(creationSeconds, creationNanos);
         this.itemsCount = itemsCount;
-        this.serializationVersion = serializationVersion;
         this.compactionLevel = compactionLevel;
     }
 
@@ -182,10 +171,6 @@ public final class DataFileMetadata {
         dataItemCountHeaderOffset = out.position();
         ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_ITEMS_COUNT);
         out.writeLong(0); // will be updated later
-        if (getSerializationVersion() != 0) {
-            ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_ITEM_VERSION);
-            out.writeVarLong(getSerializationVersion(), false);
-        }
         if (getCompactionLevel() != 0) {
             ProtoWriterTools.writeTag(out, FIELD_DATAFILEMETADATA_COMPACTION_LEVEL);
             out.writeVarInt(compactionLevel, false);
@@ -224,11 +209,6 @@ public final class DataFileMetadata {
         return creationDate;
     }
 
-    /** Get the serialization version for data stored in this file */
-    public long getSerializationVersion() {
-        return serializationVersion;
-    }
-
     // For testing purposes. In low-level data file tests, skip this number of bytes from the
     // beginning of the file before reading data items, assuming file metadata is always written
     // first, then data items
@@ -250,11 +230,6 @@ public final class DataFileMetadata {
         size += ProtoWriterTools.sizeOfVarInt64(creationDate.getNano());
         size += ProtoWriterTools.sizeOfTag(FIELD_DATAFILEMETADATA_ITEMS_COUNT, ProtoConstants.WIRE_TYPE_FIXED_64_BIT);
         size += Long.BYTES;
-        if (serializationVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(
-                    FIELD_DATAFILEMETADATA_ITEM_VERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-            size += ProtoWriterTools.sizeOfVarInt64(serializationVersion);
-        }
         if (compactionLevel != 0) {
             size += ProtoWriterTools.sizeOfTag(
                     FIELD_DATAFILEMETADATA_COMPACTION_LEVEL, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
@@ -274,7 +249,6 @@ public final class DataFileMetadata {
                 .append("itemsCount", itemsCount)
                 .append("index", index)
                 .append("creationDate", creationDate)
-                .append("serializationVersion", serializationVersion)
                 .toString();
     }
 
@@ -292,7 +266,6 @@ public final class DataFileMetadata {
         final DataFileMetadata that = (DataFileMetadata) o;
         return itemsCount == that.itemsCount
                 && index == that.index
-                && serializationVersion == that.serializationVersion
                 && compactionLevel == that.compactionLevel
                 && Objects.equals(this.creationDate, that.creationDate);
     }
@@ -302,6 +275,6 @@ public final class DataFileMetadata {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(itemsCount, index, creationDate, serializationVersion, compactionLevel);
+        return Objects.hash(itemsCount, index, creationDate, compactionLevel);
     }
 }
