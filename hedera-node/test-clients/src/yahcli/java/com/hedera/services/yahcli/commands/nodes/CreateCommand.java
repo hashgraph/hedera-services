@@ -18,6 +18,7 @@ package com.hedera.services.yahcli.commands.nodes;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asCsServiceEndpoints;
+import static com.hedera.services.yahcli.commands.nodes.NodesCommand.validatedX509Cert;
 import static com.hedera.services.yahcli.config.ConfigUtils.keyFileFor;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
@@ -64,8 +65,18 @@ public class CreateCommand implements Callable<Integer> {
 
     @CommandLine.Option(
             names = {"-c", "--gossipCaCertificate"},
-            paramLabel = "path to the X.509 CA certificate for node's gossip key")
+            paramLabel = "path to the X.509 CA certificate for the node's gossip key")
     String gossipCaCertificatePath;
+
+    @CommandLine.Option(
+            names = {"-x", "--gossipCaCertificatePfx"},
+            paramLabel = "path to a .pfx (PKCS#12) file with a X.509 CA certificate for the node's gossip key")
+    String gossipCaCertificatePfxPath;
+
+    @CommandLine.Option(
+            names = {"-l", "--gossipCaCertificateAlias"},
+            paramLabel = "alias in the given .pfx (PKCS#12) file for the X.509 CA certificate of the node's gossip key")
+    String gossipCaCertificatePfxAlias;
 
     @CommandLine.Option(
             names = {"-h", "--hapiCertificate"},
@@ -91,14 +102,16 @@ public class CreateCommand implements Callable<Integer> {
                     + ", payer and admin key signatures must meet its signing requirements");
         }
 
+        final var gossipCert = validatedX509Cert(
+                gossipCaCertificatePath, gossipCaCertificatePfxPath, gossipCaCertificatePfxAlias, yahcli);
         final var delegate = new CreateNodeSuite(
                 config.asSpecConfig(),
                 accountId,
                 Optional.ofNullable(description).orElse(""),
                 asCsServiceEndpoints(gossipEndpoints),
                 asCsServiceEndpoints(serviceEndpoints),
-                NodesCommand.validatedX509Cert(gossipCaCertificatePath, yahcli),
-                noThrowSha384HashOf(NodesCommand.validatedX509Cert(hapiCertificatePath, yahcli)),
+                gossipCert,
+                noThrowSha384HashOf(validatedX509Cert(hapiCertificatePath, null, null, yahcli)),
                 adminKeyPath,
                 maybeFeeAccountKeyPath);
         delegate.runSuiteSync();

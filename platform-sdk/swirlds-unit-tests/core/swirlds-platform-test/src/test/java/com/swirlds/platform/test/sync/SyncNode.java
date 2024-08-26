@@ -197,7 +197,7 @@ public class SyncNode {
 
             // Only add the event to the graphs and the list of generated events if the test passes
             if (shouldAddToGraph.test(newEvent)) {
-                addToShadowGraph(newEvent);
+                addToShadowGraph(newEvent.getBaseEvent());
                 if (saveGeneratedEvents) {
                     generatedEvents.add(newEvent);
                 }
@@ -209,7 +209,7 @@ public class SyncNode {
         return List.copyOf(newEvents);
     }
 
-    private void addToShadowGraph(final EventImpl newEvent) {
+    private void addToShadowGraph(final PlatformEvent newEvent) {
         try {
             shadowGraph.addEvent(newEvent);
         } catch (ShadowgraphInsertionException e) {
