@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -61,6 +63,7 @@ public class TokenAirdropBase {
     // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    protected static final String NFT_FOR_CONTRACT_TESTS = "nonFungibleTokens";
     // tokens with custom fees
     protected static final String FT_WITH_HBAR_FIXED_FEE = "fungibleTokenWithHbarCustomFee";
     protected static final String FT_WITH_HTS_FIXED_FEE = "fungibleTokenWithHtsCustomFee";
@@ -119,7 +122,17 @@ public class TokenAirdropBase {
                         IntStream.range(10, 20)
                                 .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
                                 .toList()),
-
+                tokenCreate(NFT_FOR_CONTRACT_TESTS)
+                        .treasury(OWNER)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .name(NON_FUNGIBLE_TOKEN)
+                        .supplyKey(nftSupplyKey),
+                mintToken(
+                        NFT_FOR_CONTRACT_TESTS,
+                        IntStream.range(1, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
                 // all kind of receivers
                 cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
                 cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0),
@@ -210,5 +223,17 @@ public class TokenAirdropBase {
      */
     protected HapiTokenCreate createTokenWithName(String tokenName) {
         return tokenCreate(tokenName).tokenType(TokenType.FUNGIBLE_COMMON).treasury(OWNER);
+    }
+
+    protected SpecOperation[] deployMutableContract(String name, int maxAutoAssociations) {
+        var t = List.of(
+                newKeyNamed(name),
+                uploadInitCode(name),
+                contractCreate(name)
+                        .maxAutomaticTokenAssociations(maxAutoAssociations)
+                        .adminKey(name)
+                        .gas(500_000L));
+
+        return t.toArray(new SpecOperation[0]);
     }
 }
