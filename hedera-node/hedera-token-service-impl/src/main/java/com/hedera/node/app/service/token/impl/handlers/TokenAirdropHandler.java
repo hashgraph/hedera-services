@@ -152,10 +152,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
                 validateTrue(
-                    pendingStore.sizeOfState()
-                        + fungibleLists.pendingFungibleAmounts().size()
-                        <= tokensConfig.maxAllowedPendingAirdrops(),
-                    MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+                        pendingStore.sizeOfState()
+                                        + fungibleLists.pendingFungibleAmounts().size()
+                                <= tokensConfig.maxAllowedPendingAirdrops(),
+                        MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 // pureChecks validates there is only one debit, so findFirst should return one item
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
@@ -198,9 +198,9 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
                 validateTrue(
-                    pendingStore.sizeOfState() + nftLists.pendingNftList().size()
-                        <= tokensConfig.maxAllowedPendingAirdrops(),
-                    MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+                        pendingStore.sizeOfState() + nftLists.pendingNftList().size()
+                                <= tokensConfig.maxAllowedPendingAirdrops(),
+                        MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 // there is no performant way to find if another serial of the same NFT is already in the pending state
                 // so we always charge for association for NFTs
                 chargeAirdropFee(
