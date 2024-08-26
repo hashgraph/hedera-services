@@ -22,7 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -94,7 +94,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
      * @param event the event to write
      * @throws IOException iff the {@link SyncOutputStream} instance throws
      */
-    public void writeEventData(final EventImpl event) throws IOException {
-        writeSerializable(event.getBaseEvent(), false);
+    public void writeEventData(final PlatformEvent event) throws IOException {
+        writeSerializable(event, false);
     }
 }
