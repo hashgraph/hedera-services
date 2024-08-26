@@ -28,11 +28,7 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
-testModuleInfo {
-    runtimeOnly("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-}
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
 
 sourceSets {
     create("rcdiff")
