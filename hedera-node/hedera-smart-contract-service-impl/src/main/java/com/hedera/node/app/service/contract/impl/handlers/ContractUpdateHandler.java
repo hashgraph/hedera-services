@@ -230,11 +230,13 @@ public class ContractUpdateHandler implements TransactionHandler {
 
     private boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
         return !(op.hasProxyAccountID()
-                        || op.hasFileID()
-                        || affectsMemo(op)
-                        || op.hasAutoRenewPeriod()
-                        || op.hasAdminKey())
-                || op.hasMaxAutomaticTokenAssociations();
+                || op.hasFileID()
+                || affectsMemo(op)
+                || op.hasAutoRenewPeriod()
+                || op.hasAdminKey()
+                || op.hasStakedAccountId()
+                || op.hasStakedNodeId()
+                || op.hasMaxAutomaticTokenAssociations());
     }
 
     private boolean affectsMemo(@NonNull final ContractUpdateTransactionBody op) {
