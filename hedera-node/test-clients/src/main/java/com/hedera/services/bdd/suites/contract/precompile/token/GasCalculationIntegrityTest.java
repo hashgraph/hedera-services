@@ -430,7 +430,6 @@ public class GasCalculationIntegrityTest {
         return testCases.flatMap(ratesProvider -> hapiTest(
                 updateRates(ratesProvider.hBarEquiv, ratesProvider.centEquiv),
                 erc20Contract.call("balanceOf", token, alice).gas(30_074L).via("balance"),
-                // Restore original rates in last test
                 restoreOriginalRates(),
                 getTxnRecord("balance").logged()));
     }
