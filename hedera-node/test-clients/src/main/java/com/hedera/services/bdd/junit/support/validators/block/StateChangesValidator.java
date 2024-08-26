@@ -317,12 +317,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                     mapState.put(
                             mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()),
                             mapValueFor(stateChange.mapUpdateOrThrow().valueOrThrow()));
-                    if (stateChange.mapUpdateOrThrow().keyOrThrow().hasTopicIdKey()) {
-                        logger.info(
-                                "Map update for topic {} in state {}",
-                                stateChange.mapUpdateOrThrow().keyOrThrow().topicIdKeyOrThrow(),
-                                stateKey);
-                    }
                     stateChangesSummary.countMapUpdate(serviceName, stateKey);
                 }
                 case MAP_DELETE -> {
