@@ -247,6 +247,23 @@ public class AirdropHandlerHelper {
     }
 
     /**
+     * Creates a {@link PendingAirdropId} for a fungible token.
+     *
+     * @param tokenId the ID of the token
+     * @param senderId the sender's account ID
+     * @param receiverId the receiver's account ID
+     * @return {@link PendingAirdropId} for storing in the state
+     */
+    public static PendingAirdropId createFungibleTokenPendingAirdropId(
+            TokenID tokenId, AccountID senderId, AccountID receiverId) {
+        return PendingAirdropId.newBuilder()
+                .receiverId(receiverId)
+                .senderId(senderId)
+                .fungibleTokenType(tokenId)
+                .build();
+    }
+
+    /**
      * Creates a {@link PendingAirdropId} for a non-fungible token.
      *
      * @param tokenId the ID of the token
