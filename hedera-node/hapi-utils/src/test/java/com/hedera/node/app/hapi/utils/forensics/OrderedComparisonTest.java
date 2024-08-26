@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -137,20 +136,6 @@ class OrderedComparisonTest {
         assertEquals(3, fileAppends.size());
         final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
         assertEquals(48287857L, appendTarget.getFileNum());
-    }
-
-    @Test
-    void wtf() throws IOException {
-        final var someLoc =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/recordStreams/record0.0.3";
-        final var entries = parseV6RecordStreamEntriesIn(someLoc);
-        final var histograms = statusHistograms(entries);
-        System.out.println(histograms);
-        try (final var fout = Files.newBufferedWriter(Paths.get("records.txt"))) {
-            for (final var entry : entries) {
-                fout.write(entry.toString() + "\n");
-            }
-        }
     }
 
     @Test
