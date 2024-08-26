@@ -43,6 +43,7 @@ tasks.register<JavaExec>("runTestClient") {
 
 val prCheckTags =
     mapOf(
+        "hapiTestAdhoc" to "ONEOFF",
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
         "hapiTestRestart" to "RESTART|UPGRADE",
@@ -53,6 +54,7 @@ val prCheckTags =
     )
 val prCheckStartPorts =
     mapOf(
+        "hapiTestAdhoc" to "25000",
         "hapiTestCrypto" to "26000",
         "hapiTestToken" to "27000",
         "hapiTestRestart" to "28000",
