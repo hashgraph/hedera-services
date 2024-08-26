@@ -127,7 +127,7 @@ public class TinybarValues {
      * Returns the topLevel gas price cost in tinyCents, without denomination, but with congestion multiplier.
      * @return the tinyCents gas price
      */
-    public long topLevelTinyCentsGasPrice() {
+    public long topLevelTinyCentGasPrice() {
         if (!isGasPrecisionLossFixEnabled) {
             return topLevelTinybarGasPrice();
         }
@@ -153,11 +153,11 @@ public class TinybarValues {
     }
 
     /**
-     * Returns the tinyCents gas price for dispatching a child transaction based on the current exchange rate,
+     * Returns the tinyCent gas price for dispatching a child transaction based on the current exchange rate,
      * Without denomination, but with congestion multiplier, saving the precision.
-     * @return the tinyCents gas price
+     * @return the tinyCent gas price
      */
-    public long childTransactionTinyCentsGasPrice() {
+    public long childTransactionTinyCentGasPrice() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
         }

@@ -77,16 +77,15 @@ public class SystemContractGasCalculator {
         }
 
         final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinyCents =
+                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
         // For the rare cases where nominalPriceInTinyBars > minimumPriceInTinyCents:
         // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
         // The minimal nominal price is > 1e6 tinyCents, ensuring enough precision.
         // In most cases, the gas difference is zero.
         // In scenarios where we compare significant price fluctuations (200x, 100x), the gas difference should still be
-        // unlikely to exceed 0 units.
-        final var priceInTinyCents =
-                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
-
-        return gasRequirementFromTinyCents(priceInTinyCents, tinybarValues.childTransactionTinyCentsGasPrice());
+        // unlikely to exceed 0 gas.
+        return gasRequirementFromTinyCents(priceInTinyCents, tinybarValues.childTransactionTinyCentGasPrice());
     }
 
     /**
@@ -100,7 +99,7 @@ public class SystemContractGasCalculator {
 
     /**
      * Estimates the gas requirement for a view operation.
-     * The minimum gas requirement is 100 units.
+     * The minimum gas requirement is 100 gas.
      * For all view operations, the gas requirement is determined using the canonical gas value
      * for the TOKEN_INFO dispatch type, as specified in the canonical-prices.json.
      * The TOKEN_INFO operation is representative of view operations.
@@ -132,7 +131,7 @@ public class SystemContractGasCalculator {
         }
         return gasRequirementFromTinyCents(
                 dispatchPrices.canonicalPriceInTinycents(dispatchType),
-                tinybarValues.childTransactionTinyCentsGasPrice());
+                tinybarValues.childTransactionTinyCentGasPrice());
     }
 
     /**

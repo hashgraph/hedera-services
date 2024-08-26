@@ -262,7 +262,7 @@ class TransactionModuleTest {
                 .willReturn(66000L);
 
         // With each gas costing 2000 tinyCents...
-        given(tinybarValues.childTransactionTinyCentsGasPrice()).willReturn(2000L * FEE_SCHEDULE_UNITS_PER_TINYCENT);
+        given(tinybarValues.childTransactionTinyCentGasPrice()).willReturn(2000L * FEE_SCHEDULE_UNITS_PER_TINYCENT);
         final var calculator =
                 TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
         final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
