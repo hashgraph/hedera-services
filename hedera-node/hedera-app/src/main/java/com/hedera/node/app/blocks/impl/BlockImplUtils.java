@@ -32,6 +32,8 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTERS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTER_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -155,6 +157,11 @@ public class BlockImplUtils {
                     };
                     case "RecordCache" -> switch (stateKey) {
                         case "TransactionReceiptQueue" -> STATE_ID_TRANSACTION_RECEIPTS_QUEUE.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
+                    case "RosterService" -> switch (stateKey) {
+                        case "ROSTERS" -> STATE_ID_ROSTERS.protoOrdinal();
+                        case "ROSTER_STATE" -> STATE_ID_ROSTER_STATE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "ScheduleService" -> switch (stateKey) {

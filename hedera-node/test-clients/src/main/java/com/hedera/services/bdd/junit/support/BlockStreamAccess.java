@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.support;
 
-import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Comparator.comparing;
 
 import com.hedera.hapi.block.stream.Block;
@@ -29,9 +28,9 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -86,11 +85,12 @@ public enum BlockStreamAccess {
     public static List<Node> orderedNodesFrom(@NonNull final List<Block> blocks) {
         final var nodesById = computeMapFromUpdates(
                 blocks,
-                computeLabel("AddressBookService", "NODES"),
                 MapChangeKey::entityNumberKey,
                 updateChange -> Map.entry(
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
-                        updateChange.valueOrThrow().nodeValueOrThrow()));
+                        updateChange.valueOrThrow().nodeValueOrThrow()),
+                "AddressBookService",
+                "NODES");
         return nodesById.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
@@ -107,11 +107,12 @@ public enum BlockStreamAccess {
     public static List<StakingNodeInfo> orderedStakingInfosFrom(@NonNull final List<Block> blocks) {
         final var infosById = computeMapFromUpdates(
                 blocks,
-                computeLabel("TokenService", "STAKING_INFOS"),
                 MapChangeKey::entityNumberKey,
                 updateChange -> Map.entry(
                         updateChange.keyOrThrow().entityNumberKeyOrThrow(),
-                        updateChange.valueOrThrow().stakingNodeInfoValueOrThrow()));
+                        updateChange.valueOrThrow().stakingNodeInfoValueOrThrow()),
+                "TokenService",
+                "STAKING_INFOS");
         return infosById.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
@@ -122,19 +123,21 @@ public enum BlockStreamAccess {
      * Given a list of blocks, computes the last singleton value for a certain state by applying the given
      * function to the {@link SingletonUpdateChange} block items.
      *
-     * @param blocks the list of blocks
-     * @param stateName the name of the state to compute
-     * @param extractFn the function to apply to a {@link SingletonUpdateChange} to get the value
      * @param <V> the value type
+     * @param blocks the list of blocks
+     * @param extractFn the function to apply to a {@link SingletonUpdateChange} to get the value
+     * @param serviceName the name of the service
+     * @param stateKey the key of the state
      * @return the last singleton value
      */
     @Nullable
     public static <V> V computeSingletonValueFromUpdates(
             @NonNull final List<Block> blocks,
-            @NonNull final String stateName,
-            @NonNull final Function<SingletonUpdateChange, V> extractFn) {
+            @NonNull final Function<SingletonUpdateChange, V> extractFn,
+            @NonNull final String serviceName,
+            @NonNull final String stateKey) {
         final AtomicReference<V> lastValue = new AtomicReference<>();
-        final var stateId = StateUtils.stateIdentifierOf(stateName);
+        final var stateId = BlockImplUtils.stateIdFor(serviceName, stateKey);
         stateChangesForState(blocks, stateId)
                 .filter(StateChange::hasSingletonUpdate)
                 .map(StateChange::singletonUpdateOrThrow)
@@ -146,21 +149,23 @@ public enum BlockStreamAccess {
      * Given a list of blocks, computes a map of key-value pairs that reflects the state changes for a certain
      * key type and value type by applying the given functions to the {@link StateChanges} block items.
      *
-     * @param blocks the list of blocks
-     * @param stateName the name of the state to compute
-     * @param deleteFn the function to apply to a {@link MapDeleteChange} to get the key to remove
-     * @param updateFn the function to apply to a {@link MapUpdateChange} to get the key-value pair to update
      * @param <K> the key type
      * @param <V> the value type
+     * @param blocks the list of blocks
+     * @param deleteFn the function to apply to a {@link MapDeleteChange} to get the key to remove
+     * @param updateFn the function to apply to a {@link MapUpdateChange} to get the key-value pair to update
+     * @param serviceName the name of the service
+     * @param stateKey the key of the state
      * @return the map of key-value pairs
      */
     public static <K, V> Map<K, V> computeMapFromUpdates(
             @NonNull final List<Block> blocks,
-            @NonNull final String stateName,
             @NonNull final Function<MapChangeKey, K> deleteFn,
-            @NonNull final Function<MapUpdateChange, Map.Entry<K, V>> updateFn) {
+            @NonNull final Function<MapUpdateChange, Map.Entry<K, V>> updateFn,
+            @NonNull final String serviceName,
+            @NonNull final String stateKey) {
         final Map<K, V> upToDate = new HashMap<>();
-        final var stateId = StateUtils.stateIdentifierOf(stateName);
+        final var stateId = BlockImplUtils.stateIdFor(serviceName, stateKey);
         blocks.forEach(block -> block.items().stream()
                 .filter(BlockItem::hasStateChanges)
                 .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())

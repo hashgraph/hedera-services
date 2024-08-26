@@ -21,13 +21,17 @@ import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
 
+import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.types.EntityType;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,15 +42,22 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implements shared translation logic for transaction records, in particular providing a
  * source of token types by {@link com.hedera.hapi.node.base.TokenID}.
  */
 public class BaseTranslator {
+    private static final Logger log = LogManager.getLogger(BaseTranslator.class);
+
+    private static final long EXCHANGE_RATES_FILE_NUM = 112L;
     private long highestKnownEntityNum = 0L;
+    private ExchangeRateSet activeRates;
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
 
@@ -63,14 +74,45 @@ public class BaseTranslator {
     }
 
     /**
+     * Scans a block for genesis information and returns true if found.
+     * @param block the block to scan
+     * @return true if genesis information was found
+     */
+    public boolean scanMaybeGenesisBlock(@NonNull final Block block) {
+        for (final var item : block.items()) {
+            if (item.hasStateChanges()) {
+                for (final var change : item.stateChangesOrThrow().stateChanges()) {
+                    if (change.hasMapUpdate()
+                            && change.mapUpdateOrThrow().keyOrThrow().hasFileIdKey()) {
+                        final var fileNum = change.mapUpdateOrThrow()
+                                .keyOrThrow()
+                                .fileIdKeyOrThrow()
+                                .fileNum();
+                        if (fileNum == EXCHANGE_RATES_FILE_NUM) {
+                            updateActiveRates(change);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Detects new token types from the given state changes.
      *
      * @param unit the unit to prepare for
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
         nextCreatedNums.clear();
-        scanCreationsIn(unit);
-        nextCreatedNums.values().forEach(list -> list.sort(Comparator.naturalOrder()));
+        scanUnit(unit);
+        nextCreatedNums.values().forEach(list -> {
+            final Set<Long> distinctNums = Set.copyOf(list);
+            list.clear();
+            list.addAll(distinctNums);
+            list.sort(Comparator.naturalOrder());
+        });
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
     }
@@ -91,15 +133,22 @@ public class BaseTranslator {
      * @return the translated record
      */
     public SingleTransactionRecord recordFrom(@NonNull final BlockTransactionParts parts, @NonNull final Spec spec) {
+        final var txnId = parts.transactionIdOrThrow();
         final var recordBuilder = TransactionRecord.newBuilder()
-                .memo(parts.memo())
+                .transactionHash(parts.transactionHash())
                 .consensusTimestamp(parts.consensusTimestamp())
+                .transactionID(txnId)
+                .memo(parts.memo())
                 .transactionFee(parts.transactionFee())
                 .transferList(parts.transferList())
                 .tokenTransferLists(parts.tokenTransferLists())
-                .transactionHash(parts.transactionHash());
+                .automaticTokenAssociations(parts.automaticTokenAssociations())
+                .paidStakingRewards(parts.paidStakingRewards());
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
+        if (txnId.nonce() == 0) {
+            receiptBuilder.exchangeRate(activeRates);
+        }
         final AtomicReference<TokenType> tokenType = new AtomicReference<>();
         final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
         spec.accept(receiptBuilder, recordBuilder, sidecarRecords, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
@@ -110,7 +159,7 @@ public class BaseTranslator {
                 new SingleTransactionRecord.TransactionOutputs(tokenType.get()));
     }
 
-    private void scanCreationsIn(@NonNull final BlockTransactionalUnit unit) {
+    private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
         unit.stateChanges().forEach(stateChange -> {
             if (stateChange.hasMapUpdate()) {
                 final var mapUpdate = stateChange.mapUpdateOrThrow();
@@ -140,6 +189,8 @@ public class BaseTranslator {
                         nextCreatedNums
                                 .computeIfAbsent(FILE, ignore -> new LinkedList<>())
                                 .add(num);
+                    } else if (num == EXCHANGE_RATES_FILE_NUM) {
+                        updateActiveRates(stateChange);
                     }
                 } else if (key.hasContractIdKey() || key.hasAccountIdKey()) {
                     final var num = key.hasContractIdKey()
@@ -153,5 +204,15 @@ public class BaseTranslator {
                 }
             }
         });
+    }
+
+    private void updateActiveRates(@NonNull final StateChange change) {
+        final var contents =
+                change.mapUpdateOrThrow().valueOrThrow().fileValueOrThrow().contents();
+        try {
+            activeRates = ExchangeRateSet.PROTOBUF.parse(contents);
+        } catch (ParseException e) {
+            throw new IllegalStateException("Rates file updated with unparseable contents", e);
+        }
     }
 }

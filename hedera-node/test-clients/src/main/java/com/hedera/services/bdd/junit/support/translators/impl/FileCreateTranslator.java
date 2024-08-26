@@ -16,45 +16,55 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.config.types.EntityType.FILE;
+import static java.util.Objects.requireNonNull;
 
-public class FileCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
+import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
+import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * Translates a file create transaction into a {@link SingleTransactionRecord}.
+ */
+public class FileCreateTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(FileCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        final var recordBuilder = TransactionRecord.newBuilder();
-
-        if (stateChanges != null) {
-            maybeAssignFileID(stateChanges, receiptBuilder);
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.receipt(receiptBuilder.build()).build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
-    }
-
-    private void maybeAssignFileID(final StateChanges stateChanges, final TransactionReceipt.Builder recordBuilder) {
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasFileIdKey()) {
-                        recordBuilder.fileID(stateChange.mapUpdate().key().fileIdKey());
+            @NonNull final BlockTransactionParts parts,
+            @NonNull final BaseTranslator baseTranslator,
+            @NonNull final List<StateChange> remainingStateChanges) {
+        requireNonNull(parts);
+        requireNonNull(baseTranslator);
+        requireNonNull(remainingStateChanges);
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+            if (parts.status() == SUCCESS) {
+                final var createdNum = baseTranslator.nextCreatedNum(FILE);
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasFileIdKey()) {
+                        final var fileId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().fileIdKeyOrThrow();
+                        if (fileId.fileNum() == createdNum) {
+                            receiptBuilder.fileID(fileId);
+                            iter.remove();
+                            return;
+                        }
                     }
-                });
+                }
+                log.error(
+                        "No matching state change found for successful file create with id {}",
+                        parts.transactionIdOrThrow());
+            }
+        });
     }
 }

@@ -515,6 +515,8 @@ public class EndOfStakingPeriodUpdater {
                 .maxStakeRewarded(maxStakeRewarded)
                 .build();
 
-        return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
+        return TransactionBody.newBuilder()
+                .memo("End of staking period calculation record")
+                .nodeStakeUpdate(txnBody);
     }
 }

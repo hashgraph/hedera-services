@@ -43,6 +43,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
@@ -175,6 +176,9 @@ public class KVStateChangeListener implements StateChangeListener {
             case Nft nft -> MapChangeValue.newBuilder().nftValue(nft).build();
             case ProtoString protoString -> MapChangeValue.newBuilder()
                     .protoStringValue(protoString.value())
+                    .build();
+            case Roster roster -> MapChangeValue.newBuilder()
+                    .rosterValue(roster)
                     .build();
             case Schedule schedule -> MapChangeValue.newBuilder()
                     .scheduleValue(schedule)

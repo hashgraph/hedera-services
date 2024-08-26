@@ -27,6 +27,7 @@ import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionalUnitTranslator;
@@ -34,6 +35,8 @@ import com.hedera.services.bdd.junit.support.translators.BlockUnitSplit;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.utils.RcDiff;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,11 +70,33 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         }
     };
 
+    public static void main(String[] args) throws IOException {
+        final var input =
+                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
+        final var loc =
+                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/recordStreams/record0.0.3";
+        final var records = RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(loc, "sidecar");
+
+        final var validator = new TransactionRecordParityValidator();
+        validator.validateBlockVsRecords(blocks, records);
+    }
+
     @Override
     public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
         requireNonNull(blocks);
         requireNonNull(data);
 
+        var foundGenesisBlock = false;
+        for (final var block : blocks) {
+            if (translator.scanBlockForGenesis(block)) {
+                foundGenesisBlock = true;
+                break;
+            }
+        }
+        if (!foundGenesisBlock) {
+            logger.error("Genesis block not found in block stream, at least some receipts will not match");
+        }
         final var expectedEntries = data.records().stream()
                 .flatMap(recordWithSidecars -> recordWithSidecars.recordFile().getRecordStreamItemsList().stream())
                 .map(RecordStreamEntry::from)

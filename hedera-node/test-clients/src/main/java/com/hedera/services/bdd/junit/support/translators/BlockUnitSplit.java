@@ -125,8 +125,8 @@ public class BlockUnitSplit {
         if (unitTxnId == null) {
             return true;
         }
-        return nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
-                && nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
+        return !nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
+                || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
                         .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT));
     }
 

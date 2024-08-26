@@ -19,14 +19,22 @@ package com.hedera.services.bdd.junit.support.translators;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
+import static com.hedera.services.bdd.junit.support.translators.impl.NoExplicitSideEffectsTranslator.NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.impl.ConsensusSubmitMessageTranslator;
-import com.hedera.services.bdd.junit.support.translators.impl.ConsensusTopicCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.CryptoCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.CryptoTransferTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.FileCreateTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.TopicCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -54,10 +62,23 @@ public class BlockTransactionalUnitTranslator {
             new EnumMap<>(HederaFunctionality.class) {
                 {
                     put(CONSENSUS_SUBMIT_MESSAGE, new ConsensusSubmitMessageTranslator());
-                    put(CONSENSUS_CREATE_TOPIC, new ConsensusTopicCreateTranslator());
+                    put(CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
                     put(CRYPTO_CREATE, new CryptoCreateTranslator());
+                    put(CRYPTO_TRANSFER, new CryptoTransferTranslator());
+                    put(FILE_CREATE, new FileCreateTranslator());
+                    put(FREEZE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(NODE_STAKE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                 }
             };
+
+    /**
+     * Scans a block for genesis information and returns true if found.
+     * @param block the block to scan
+     * @return true if genesis information was found
+     */
+    public boolean scanBlockForGenesis(@NonNull final Block block) {
+        return baseTranslator.scanMaybeGenesisBlock(block);
+    }
 
     /**
      * Translates the given {@link BlockTransactionalUnit} into a list of {@link SingleTransactionRecord}s.

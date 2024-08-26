@@ -21,17 +21,11 @@ import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
-import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
-import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,9 +33,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Translates a consensus topic create transaction into a {@link SingleTransactionRecord}.
  */
-public class ConsensusTopicCreateTranslator
-        implements BlockTransactionPartsTranslator, TransactionRecordTranslator<SingleTransactionBlockItems> {
-    private static final Logger log = LogManager.getLogger(ConsensusTopicCreateTranslator.class);
+public class TopicCreateTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(TopicCreateTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
@@ -62,6 +55,7 @@ public class ConsensusTopicCreateTranslator
                         final var topicId =
                                 stateChange.mapUpdateOrThrow().keyOrThrow().topicIdKeyOrThrow();
                         if (topicId.topicNum() == createdNum) {
+                            receiptBuilder.topicID(topicId);
                             iter.remove();
                             return;
                         }
@@ -72,34 +66,5 @@ public class ConsensusTopicCreateTranslator
                         parts.transactionIdOrThrow());
             }
         });
-    }
-
-    @Override
-    public SingleTransactionRecord translate(
-            @NonNull final SingleTransactionBlockItems transaction, @Nullable final StateChanges stateChanges) {
-        final var receiptBuilder = TransactionReceipt.newBuilder();
-        final var recordBuilder = TransactionRecord.newBuilder();
-
-        if (stateChanges != null) {
-            maybeAssignTopicID(stateChanges, receiptBuilder);
-        }
-
-        return new SingleTransactionRecord(
-                transaction.txn(),
-                recordBuilder.receipt(receiptBuilder.build()).build(),
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
-    }
-
-    private void maybeAssignTopicID(final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
-        stateChanges.stateChanges().stream()
-                .filter(StateChange::hasMapUpdate)
-                .findFirst()
-                .ifPresent(stateChange -> {
-                    if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasTopicIdKey()) {
-                        receiptBuilder.topicID(stateChange.mapUpdate().key().topicIdKey());
-                    }
-                });
     }
 }
