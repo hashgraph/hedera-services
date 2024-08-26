@@ -40,7 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcesso
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
@@ -69,7 +69,7 @@ class ContextTransactionProcessorTest {
     private HederaEvmContext hederaEvmContext;
 
     @Mock
-    private ActionSidecarContentTracer tracer;
+    private EvmActionTracer tracer;
 
     @Mock
     private HevmTransactionFactory hevmTransactionFactory;
@@ -105,6 +105,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -142,6 +143,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -178,6 +180,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -208,6 +211,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -236,6 +240,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -263,6 +268,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -292,6 +298,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -320,6 +327,7 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,

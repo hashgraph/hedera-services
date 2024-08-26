@@ -274,15 +274,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void pureChecksTokenTransfersAboveMax() {
-        final var txn = newTokenAirdrop(transactionBodyAboveMaxTransferLimit());
-
-        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.pureChecks(txn))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
-    }
-
-    @Test
     void pureChecksForEmptyHbarTransferAndEmptyTokenTransfers() {
         // It's actually valid to have no token transfers
         final var txn = newTokenAirdrop(Collections.emptyList());
@@ -333,7 +324,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
@@ -366,6 +357,51 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(Objects.requireNonNull(nextAirdrop).hasNextAirdrop()).isFalse();
         assertThat(nextAirdrop.hasPreviousAirdrop()).isTrue();
         assertThat(nextAirdrop.previousAirdrop()).isEqualTo(headPendingAirdropId);
+    }
+
+    @Test
+    void tokenTransfersAboveMax() {
+        givenStoresAndConfig(handleContext);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        var nftWithNoCustomFees = nonFungibleToken
+                .copyBuilder()
+                .customFees(Collections.emptyList())
+                .build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        writableTokenStore.put(nftWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        // airdropping more then 10 airdrops
+        final var txn = TokenAirdropTransactionBody.newBuilder()
+                .tokenTransfers(transactionBodyAboveMaxTransferLimit())
+                .build();
+        givenAirdropTxn(txn, payerId);
+
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
+                .will((invocation) -> {
+                    var pendingAirdropId = PendingAirdropId.newBuilder().build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
+                    var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                            .pendingAirdropId(pendingAirdropId)
+                            .pendingAirdropValue(pendingAirdropValue)
+                            .build();
+
+                    return tokenAirdropRecordBuilder.addPendingAirdrop(pendingAirdropRecord);
+                });
+
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(handleContext.tryToChargePayer(anyLong())).willReturn(true);
+
+        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
     @Test

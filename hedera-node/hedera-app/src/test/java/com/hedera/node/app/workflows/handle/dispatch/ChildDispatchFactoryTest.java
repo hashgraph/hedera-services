@@ -48,7 +48,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -130,7 +130,7 @@ class ChildDispatchFactoryTest {
     private FeeManager feeManager;
 
     @Mock
-    private RecordCache recordCache;
+    private BlockRecordInfo blockRecordInfo;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
@@ -179,9 +179,7 @@ class ChildDispatchFactoryTest {
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
-                blockRecordManager,
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager);
@@ -257,7 +255,9 @@ class ChildDispatchFactoryTest {
                         platformState,
                         CONTRACT_CALL,
                         throttleAdviser,
-                        Instant.ofEpochSecond(12345L)));
+                        Instant.ofEpochSecond(12345L),
+                        blockRecordInfo,
+                        HandleContext.ConsensusThrottling.ON));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

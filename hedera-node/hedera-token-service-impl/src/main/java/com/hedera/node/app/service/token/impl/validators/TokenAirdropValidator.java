@@ -26,11 +26,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -48,6 +46,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -55,7 +54,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TokenAirdropValidator {
-    private static final int MAX_TOKEN_TRANSFERS = 10;
 
     /**
      * Default constructor for injection.
@@ -73,18 +71,20 @@ public class TokenAirdropValidator {
      */
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
-        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION_BODY);
-        // If there is more than one negative transfer we throw an exception
+        // If there is not exactly one debit we throw an exception
         for (var tokenTransfer : tokenTransfers) {
+            if (tokenTransfer.transfers().isEmpty()) {
+                // NFT transfers, skip this check
+                continue;
+            }
             List<AccountAmount> negativeTransfers = tokenTransfer.transfers().stream()
                     .filter(fungibleTransfer -> fungibleTransfer.amount() < 0)
                     .toList();
-
-            if (negativeTransfers.size() > 1) {
+            if (negativeTransfers.size() != 1) {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
         }
-        validateTokenTransfers(op.tokenTransfers());
+        validateTokenTransfers(op.tokenTransfers(), CryptoTransferValidator.AllowanceStrategy.ALLOWANCES_REJECTED);
     }
 
     public void validateSemantics(
@@ -94,9 +94,13 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableNftStore nftStore) {
+        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(
+                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(), INVALID_TRANSACTION_BODY);
+
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
+            validateTrue(tokenHasNoRoyaltyWithFallbackFee(tokenId, tokenStore), INVALID_TRANSACTION);
             // process fungible token transfers if any.
             // PureChecks validates there is only one debit, so findFirst should return one item
             if (!xfers.transfers().isEmpty()) {
@@ -104,7 +108,7 @@ public class TokenAirdropValidator {
                         .filter(item -> item.amount() < 0)
                         .findFirst();
                 final var senderId = senderAccountAmount.orElseThrow().accountIDOrThrow();
-                final var senderAccount = accountStore.get(senderId);
+                final var senderAccount = accountStore.getAliasedAccountById(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 // 1. Validate allowances and token associations
                 validateFungibleTransfers(
@@ -116,7 +120,7 @@ public class TokenAirdropValidator {
                 // 1. validate NFT transfers
                 final var nftTransfer = xfers.nftTransfers().stream().findFirst();
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
-                final var senderAccount = accountStore.get(senderId);
+                final var senderAccount = accountStore.getAliasedAccountById(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                 validateNftTransfers(
                         context.payer(),
@@ -130,19 +134,11 @@ public class TokenAirdropValidator {
         }
     }
 
-    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+    public boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore);
-        final var feeMeta = customFeeMetaFrom(token);
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasFractionalFee()
-                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
-                    return false;
-                }
-            }
-        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            for (var fee : feeMeta.customFees()) {
-                if (fee.hasRoyaltyFee()) {
+        if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            for (var fee : token.customFees()) {
+                if (fee.hasRoyaltyFee() && requireNonNull(fee.royaltyFee()).hasFallbackFee()) {
                     return false;
                 }
             }

@@ -253,6 +253,7 @@ class ProxyWorldUpdaterTest {
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(4321L);
 
         subject.setupInternalCreate(ADDRESS_6);
 
@@ -278,6 +279,7 @@ class ProxyWorldUpdaterTest {
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER).willReturn(NEXT_NUMBER + 1);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupInternalCreate(ADDRESS_6);
 
@@ -311,6 +313,7 @@ class ProxyWorldUpdaterTest {
         given(evmFrameState.getIdNumber(ADDRESS_6))
                 .willReturn(ADDRESS_6.toBigInteger().longValueExact());
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupInternalAliasedCreate(ADDRESS_6, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -324,6 +327,7 @@ class ProxyWorldUpdaterTest {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -346,6 +350,7 @@ class ProxyWorldUpdaterTest {
     void doesNotUseAliasIfBodyCreatedWithoutAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
         subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);

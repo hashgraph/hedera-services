@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep.PLACEHOLDER_SYNTHETIC_ASSOCIATION;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep.associationFeeFor;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountPendingAirdrop;
@@ -30,11 +31,13 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.s
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
@@ -45,6 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -66,6 +70,8 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Inject;
@@ -132,25 +138,31 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         assessAndChargeCustomFee(context, convertedOp);
 
         for (final var xfers : op.tokenTransfers()) {
+            throwIfReceiverCannotClaimAirdrop(xfers, accountStore);
+
             final var tokenId = xfers.tokenOrThrow();
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
 
-            // process fungible token transfers if any. pureChecks validates there is only one debit, so findFirst
-            // should return one item
+            // process fungible token transfers if any.
             if (!xfers.transfers().isEmpty()) {
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
-                chargeAirdropFee(
-                        context,
-                        fungibleLists.pendingFungibleAmounts().size(),
-                        fungibleLists.transfersNeedingAutoAssociation());
-
+                // pureChecks validates there is only one debit, so findFirst should return one item
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
                 final var senderId = senderAccountAmount.orElseThrow().accountIDOrThrow();
+                // for FT, if airdrop is already in the pending state, we don't charge association fee again
+                final var existingPendingAirdropsCount = countExistingPendingAirdrops(
+                        senderId, fungibleLists.pendingFungibleAmounts(), tokenId, pendingStore);
+                chargeAirdropFee(
+                        context,
+                        fungibleLists.pendingFungibleAmounts().size(),
+                        fungibleLists.transfersNeedingAutoAssociation(),
+                        existingPendingAirdropsCount);
+
                 // 2. create and save pending airdrops in to state
                 createPendingAirdropsForFungible(
                         fungibleLists.pendingFungibleAmounts(),
@@ -178,7 +190,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
-                chargeAirdropFee(context, nftLists.pendingNftList().size(), nftLists.transfersNeedingAutoAssociation());
+                // there is no performant way to find if another serial of the same NFT is already in the pending state
+                // so we always charge for association for NFTs
+                chargeAirdropFee(
+                        context, nftLists.pendingNftList().size(), nftLists.transfersNeedingAutoAssociation(), 0);
 
                 // 3. create and save NFT pending airdrops in to state
                 createPendingAirdropsForNFTs(
@@ -204,6 +219,51 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
     }
 
     /**
+     * Currently we are not supporting airdropping to a contract. If any of the receivers is a contract and
+     * the contract doesn't have a key we throw an error
+     */
+    private static void throwIfReceiverCannotClaimAirdrop(
+            @NonNull final TokenTransferList tokenTransferList, @NonNull final WritableAccountStore accountStore) {
+        final var receiverIds = extractAllReceiverIds(tokenTransferList);
+        for (final var receiverId : receiverIds) {
+            final var account = accountStore.getAliasedAccountById(receiverId);
+            // Missing accounts will be treated as auto-creation attempts
+            if (account != null) {
+                validateTrue(isHollow(account) || canClaimAirdrop(account.keyOrThrow()), NOT_SUPPORTED);
+            }
+        }
+    }
+
+    private static boolean canClaimAirdrop(@NonNull final Key key) {
+        return switch (key.key().kind()) {
+            case UNSET -> throw new IllegalStateException("Key kind cannot be UNSET");
+            case CONTRACT_ID -> false;
+            case ED25519 -> true;
+            case RSA_3072 -> false;
+            case ECDSA_384 -> false;
+            case THRESHOLD_KEY -> key.thresholdKeyOrThrow().keysOrThrow().keys().stream()
+                            .filter(TokenAirdropHandler::canClaimAirdrop)
+                            .count()
+                    >= key.thresholdKeyOrThrow().threshold();
+            case KEY_LIST -> key.keyListOrThrow().keys().stream().allMatch(TokenAirdropHandler::canClaimAirdrop);
+            case ECDSA_SECP256K1 -> true;
+            case DELEGATABLE_CONTRACT_ID -> false;
+        };
+    }
+
+    private static Collection<AccountID> extractAllReceiverIds(@NonNull final TokenTransferList tokenTransferList) {
+        final var receivers = new HashSet<AccountID>();
+        receivers.addAll(tokenTransferList.transfers().stream()
+                .filter(t -> t.amount() > 0)
+                .map(AccountAmount::accountID)
+                .toList());
+        receivers.addAll(tokenTransferList.nftTransfers().stream()
+                .map(NftTransfer::receiverAccountID)
+                .toList());
+        return receivers;
+    }
+
+    /**
      * Charges the airdrop fee for the pending airdrops.The fee will be charged from the payer account and will vary
      * based on the number of pending airdrops created. This will be charged in handle method once we assess
      * number of pending airdrops created.No extra association fee is charged because the airdrop fee includes
@@ -212,14 +272,24 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * @param context             the {@link HandleContext} for the transaction
      * @param pendingAirdropsSize the number of pending airdrops created
      * @param numUnlimitedAssociationTransfers the number of unlimited association transfers
+     * @param existingPendingAirdropsCount the number of pending airdrops that doesn't need to be charged for associations
      */
     private void chargeAirdropFee(
             final @NonNull HandleContext context,
             final int pendingAirdropsSize,
-            final int numUnlimitedAssociationTransfers) {
-        final var pendingAirdropFee = airdropFeeForPendingAirdrop(context) * pendingAirdropsSize;
+            final int numUnlimitedAssociationTransfers,
+            final int existingPendingAirdropsCount) {
+        // calculate fee, including association fee for new pending airdrops
+        final var pendingAirdropFeeIncludingAssociationsFee =
+                airdropFeeForPendingAirdrop(context) * (pendingAirdropsSize - existingPendingAirdropsCount);
+        // calculate fee, without association fee for airdrops that already exist in the pending state
+        // this is applicable only for fungible tokens
+        final var pendingAirdropFeeWithoutAssociationsFee =
+                airdropFeeForPendingAirdrop(context, false) * existingPendingAirdropsCount;
         final var airdropFeeForUnlimitedAssociations = airdropFee(context) * numUnlimitedAssociationTransfers;
-        final var totalFee = pendingAirdropFee + airdropFeeForUnlimitedAssociations;
+        final var totalFee = pendingAirdropFeeIncludingAssociationsFee
+                + airdropFeeForUnlimitedAssociations
+                + pendingAirdropFeeWithoutAssociationsFee;
         // There are three cases for the fee charged in an airdrop transaction
         // 1. If there are no pending airdrops created and token is explicitly associated, only the CryptoTransferFee is
         // charged
@@ -252,9 +322,11 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         nftLists.forEach(item -> {
             // Each time it is important to get the latest sender account, as we are updating the account
             // with new pending airdrop
-            final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
-            final var pendingId = createNftPendingAirdropId(
-                    tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
+            final var senderAccount = requireNonNull(accountStore.getAliasedAccountById(senderId));
+            final var receiverAccount =
+                    requireNonNull(accountStore.getAliasedAccountById(item.receiverAccountIDOrThrow()));
+            final var pendingId =
+                    createNftPendingAirdropId(tokenId, item.serialNumber(), senderAccount, receiverAccount);
             // check for existence
             validateTrue(!pendingStore.exists(pendingId), PENDING_NFT_AIRDROP_ALREADY_EXISTS);
             updateNewPendingAirdrop(senderAccount, pendingId, null, accountStore, pendingStore);
@@ -268,7 +340,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * the credits for the receivers.
      * @param fungibleAmounts the fungible airdrop amounts
      * @param sender the sender account id
-     * @param isApproval if the airdrop transfer is sent with an approval
+     * @param isApproval is approval
      * @param transferListBuilder the transfer list builder
      */
     private void addTransfersToTransferList(
@@ -306,9 +378,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         fungibleAmounts.forEach(accountAmount -> {
             // Each time it is important to get the latest sender account , as we are updating the account
             // with new pending airdrop
-            final var senderAccount = requireNonNull(accountStore.getForModify(senderId));
-            final var pendingId =
-                    createFungibleTokenPendingAirdropId(tokenId, senderAccount.accountId(), accountAmount.accountID());
+            final var senderAccount = requireNonNull(accountStore.getAliasedAccountById(senderId));
+            final var receiverAccount =
+                    requireNonNull(accountStore.getAliasedAccountById(accountAmount.accountIDOrThrow()));
+            final var pendingId = createFungibleTokenPendingAirdropId(tokenId, senderAccount, receiverAccount);
             final var pendingValue = PendingAirdropValue.newBuilder()
                     .amount(accountAmount.amount())
                     .build();
@@ -390,9 +463,23 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * @return the airdrop fee
      */
     private long airdropFeeForPendingAirdrop(@NonNull final HandleContext feeContext) {
-        final var associationFee = associationFeeFor(feeContext, PLACEHOLDER_SYNTHETIC_ASSOCIATION);
-        final var airdropFee = airdropFee(feeContext);
-        return associationFee + airdropFee;
+        return airdropFeeForPendingAirdrop(feeContext, true);
+    }
+
+    /**
+     * Gets the airdrop fee for the token airdrop transaction when a pending airdrop is created. It will be
+     * the sum of the association fee and the airdrop fee.
+     * @param feeContext the fee context
+     * @param includeAssociationFee if association fee should be added
+     * @return the airdrop fee
+     */
+    private long airdropFeeForPendingAirdrop(@NonNull final HandleContext feeContext, boolean includeAssociationFee) {
+        var airdropFee = airdropFee(feeContext);
+        if (includeAssociationFee) {
+            final var associationFee = associationFeeFor(feeContext, PLACEHOLDER_SYNTHETIC_ASSOCIATION);
+            airdropFee += associationFee;
+        }
+        return airdropFee;
     }
 
     /**
@@ -446,5 +533,17 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 .build();
 
         return feeContext.dispatchComputeFees(syntheticCryptoTransferTxn, feeContext.payer());
+    }
+
+    private int countExistingPendingAirdrops(
+            AccountID senderId,
+            List<AccountAmount> fungibleAmounts,
+            TokenID tokenId,
+            ReadableAirdropStore pendingStore) {
+        return toIntExact(fungibleAmounts.stream()
+                .map(accountAmount ->
+                        createFungibleTokenPendingAirdropId(tokenId, senderId, accountAmount.accountIDOrThrow()))
+                .filter(pendingStore::exists)
+                .count());
     }
 }

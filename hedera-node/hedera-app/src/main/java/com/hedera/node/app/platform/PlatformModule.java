@@ -17,14 +17,20 @@
 package com.hedera.node.app.platform;
 
 import com.hedera.node.app.annotations.CommonExecutor;
+import com.hedera.node.app.state.listeners.ReconnectListener;
+import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.Platform;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.Charset;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -48,4 +54,18 @@ public interface PlatformModule {
     static Supplier<Charset> provideNativeCharset() {
         return Charset::defaultCharset;
     }
+
+    @Provides
+    @Singleton
+    static IntSupplier provideFrontendThrottleSplit(@NonNull final Platform platform) {
+        return () -> platform.getAddressBook().getSize();
+    }
+
+    @Binds
+    @Singleton
+    ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+
+    @Binds
+    @Singleton
+    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(WriteStateToDiskListener writeStateToDiskListener);
 }

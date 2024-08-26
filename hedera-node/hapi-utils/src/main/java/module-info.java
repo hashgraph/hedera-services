@@ -13,7 +13,6 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.domain;
     exports com.hedera.node.app.hapi.utils.sysfiles;
     exports com.hedera.node.app.hapi.utils.exports;
-    exports com.hedera.node.app.hapi.utils.exception;
     exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires transitive com.hedera.node.hapi;
