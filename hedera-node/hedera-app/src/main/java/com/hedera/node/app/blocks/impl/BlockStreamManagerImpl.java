@@ -27,6 +27,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -52,8 +53,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -69,17 +73,22 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     private final SemanticVersion hapiVersion;
     private final SemanticVersion nodeVersion;
-    private final BlockItemWriter writer;
     private final ExecutorService executor;
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
+    private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final int roundsPerBlock;
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
     private Instant blockTimestamp;
+    private BlockItemWriter writer;
     private List<BlockItem> pendingItems;
+
+    @Nullable
+    private BlockStreamInfo lastBlockStreamInfo;
+
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
     /**
@@ -89,13 +98,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
 
+    private final Queue<PendingBlock> pendingBlocks = new ConcurrentLinkedQueue<>();
+
     @Inject
     public BlockStreamManagerImpl(
-            @NonNull final BlockItemWriter writer,
+            @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
-        this.writer = requireNonNull(writer);
+        this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
@@ -120,8 +131,25 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
+    public void finishBlockProof(final long blockNumber, final Bytes signature) {
+        // FUTURE: TSS service will release this proof
+        if (pendingBlocks.isEmpty() || pendingBlocks.peek().blockNumber != blockNumber) {
+            log.error("Block {} is not having teh same block number", blockNumber);
+            return;
+        }
+
+        final var block = pendingBlocks.poll();
+        final var proof = block.proofBuilder().blockSignature(signature).build();
+        block.writer()
+                .writeItem(BlockItem.PROTOBUF.toBytes(
+                        BlockItem.newBuilder().blockProof(proof).build()));
+        block.writer().closeBlock();
+    }
+
+    @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        if (writer.isClosed()) {
+        if (writer == null) {
+            writer = writerSupplier.get();
             startBlock(round.getConsensusTimestamp(), state);
         }
     }
@@ -208,11 +236,20 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .hapiProtoVersion(hapiVersion))
                 .build());
 
+        final var writableStates = state.getWritableStates(BlockStreamService.NAME);
+        final var blockStreamInfoState = writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+        blockStreamInfoState.put(lastBlockStreamInfo);
+        ((CommittableWritableStates) writableStates).commit();
+
         writer.openBlock(blockNumber);
     }
 
     private void endBlock(@NonNull final State state) {
         requireNonNull(state);
+
+        pendingItems.add(boundaryStateChangeListener.flushChanges());
+        schedulePendingWork();
+        writeFuture.join();
 
         final var inputRootHash = inputTreeHasher.rootHash().join();
         final var outputRootHash = outputTreeHasher.rootHash().join();
@@ -220,24 +257,21 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         final var writableState = state.getWritableStates(BlockStreamService.NAME);
         final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-        final var prevBlockHash = requireNonNull(blockStreamInfoState.get()).lastBlockHash();
+        final var prevBlockHash = blockHashManager.hashOfBlock(blockNumber - 1);
         final var blockHash = computeBlockHash(prevBlockHash, inputRootHash, outputRootHash, stateRootHash);
 
-        // end of round state changes are not part of blockHash computation
-        final var blockStreamInfo = new BlockStreamInfo(
+        final var blockProofBuilder = BlockProof.newBuilder()
+                .block(blockNumber)
+                .previousBlockRootHash(prevBlockHash)
+                .startOfBlockStateRootHash(stateRootHash);
+        pendingBlocks.add(new PendingBlock(writer, blockProofBuilder, blockHash, blockNumber));
+
+        lastBlockStreamInfo = new BlockStreamInfo(
                 blockNumber,
                 blockHash,
                 blockTimestamp(),
                 runningHashManager.latestHashes(),
                 blockHashManager.hashesAfterLatest(blockHash));
-        blockStreamInfoState.put(blockStreamInfo);
-        ((CommittableWritableStates) writableState).commit();
-
-        pendingItems.add(boundaryStateChangeListener.flushChanges());
-
-        schedulePendingWork();
-        writeFuture.join();
-        writer.closeBlock();
     }
 
     /**
@@ -403,8 +437,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
     }
 
-    public enum RoundType {
-        FREEZE,
-        NORMAL
-    }
+    private record PendingBlock(
+            BlockItemWriter writer, BlockProof.Builder proofBuilder, Bytes blockHash, long blockNumber) {}
 }

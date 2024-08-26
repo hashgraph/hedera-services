@@ -28,6 +28,7 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Module
@@ -38,7 +39,7 @@ public interface BlockStreamModule {
 
     @Provides
     @Singleton
-    static BlockItemWriter bindBlockItemWriter(
+    static Supplier<BlockItemWriter> bindBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
             @NonNull final SelfNodeInfo selfNodeInfo,
             @NonNull final FileSystem fileSystem,
@@ -49,8 +50,8 @@ public interface BlockStreamModule {
                 //            case FILE -> new ConcurrentBlockItemWriter(
                 //                    executorService, new FileBlockItemWriter(configProvider, selfNodeInfo,
                 // fileSystem));
-            case FILE -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-            case GRPC -> new GrpcBlockItemWriter();
+            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+            case GRPC -> () -> new GrpcBlockItemWriter();
             default -> throw new IllegalArgumentException(
                     "Unknown BlockStreamWriterMode: " + blockStreamConfig.writerMode());
         };

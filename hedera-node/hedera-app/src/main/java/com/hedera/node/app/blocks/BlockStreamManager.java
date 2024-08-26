@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,8 +64,9 @@ public interface BlockStreamManager extends BlockRecordInfo {
      */
     void writeFreezeRound(@NonNull State state, @NonNull Instant consensusNow);
 
+    void finishBlockProof(long blockNumber, Bytes signature);
+
     default boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
         return roundNumber % roundsPerBlock == 0;
     }
-    ;
 }
