@@ -35,7 +35,7 @@ CentOS7_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.not
 
 CryptoInvalidAccounts, Crypto-Perf-Invalid-Accounts-5k-30m, services, https://www.notion.so/swirldslabs/CryptoInvalidAccounts-Crypto-Perf-Invalid-Accounts-5k-30m-415eec9e73944ac9a37e6621af1d9657
 
-DynamicFreeze, FCM-DynamicFreeze-2.5k-40m, platform, https://www.notion.so/swirldslabs/DynamicFreeze-FCM-DynamicFreeze-2-5k-40m-c600f224f4164170822795f2deac07c9
+DynamicFreeze, FCM-VM-DynamicFreeze-2.5k-40m, platform, https://www.notion.so/swirldslabs/DynamicFreeze-FCM-DynamicFreeze-2-5k-40m-c600f224f4164170822795f2deac07c9
 DynamicFreeze, FCMFCQ-DynamicFreeze-1k-35m, platform, https://www.notion.so/swirldslabs/DynamicFreeze-FCMFCQ-DynamicFreeze-1k-35m-c28b9437015e4c37b471b43d41770080
 
 FCM, FCM-Query-2k-110m, platform, https://www.notion.so/swirldslabs/FCM-FCM-Query-2-5k-110m-6003e1b021c84c5282a63ed059caca2f
@@ -67,7 +67,7 @@ Migration, FCM-Migration-NewNodesFromSavedState-2.5k-10m, platform, https://www.
 MinStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/MinStake-Crypto-NIReconnect-Stake-1k-10m-c3507f7192c8482c890fe13c15803b01
 MinStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/MinStake-Crypto-Restart-Stake-1k-10m-83b985d7fc224dea93ed27aab08f55ca
 MinStake, Crypto-Restart-Stake-2.5k-10m, services, https://www.notion.so/swirldslabs/MinStake-Crypto-Restart-Stake-2-5k-10m-126ac73de3a64e3080f81af00574066e
-MinStake, FCM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/MinStake-FCM-NIReconnect-Stake-125-10m-8ce332c203c54646b6dc80e96c55fcc6
+MinStake, FCM-VM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/MinStake-FCM-NIReconnect-Stake-125-10m-8ce332c203c54646b6dc80e96c55fcc6
 MinStake, FCM-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/MinStake-FCM-Restart-Stake-2-5k-10m-f27947d595a64741b48a6fbd3e687630
 MinStake, FCM-SBReconnect-Stake-2.5k-8m, platform, https://www.notion.so/swirldslabs/MinStake-FCM-SBReconnect-Stake-2-5k-8m-54d53efdd62243baa5bebe41ec5d8e7c
 MinStake, NFT-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/MinStake-NFT-Restart-Stake-2-5k-10m-3d99e7785e114d73b7af09ab04916acb
@@ -77,7 +77,7 @@ Misc, FCM-Migration-5-2m, platform, https://www.notion.so/swirldslabs/Misc-FCM-M
 Misc, FCM-Throttle-2.5k-15m, platform, https://www.notion.so/swirldslabs/Misc-FCM-Throttle-2-5k-15m-62ad129ec240475d8919d5b52fde7a35
 Misc, FCMFCQ-HotspotExpirationStress-2.5k-13m, platform, https://www.notion.so/swirldslabs/Misc-FCMFCQ-HotspotExpirationStress-2-5k-13m-2bbbd9c8cb184015bfdf010c0413b44c
 
-MultiSBReconnect, FCM-MultiSBReconnect-3R-1k-20m, platform, https://www.notion.so/swirldslabs/MultiSBReconnect-FCM-MultiSBReconnect-3R-1k-20m-f65da4179e2c430393d3f59899b47d2e
+MultiSBReconnect, FCM-VM-MultiSBReconnect-3R-1k-20m, platform, https://www.notion.so/swirldslabs/MultiSBReconnect-FCM-MultiSBReconnect-3R-1k-20m-f65da4179e2c430393d3f59899b47d2e
 MultiSBReconnect, SBReconnect-LegacyIntake-20m, platform, https://www.notion.so/swirldslabs/MultiSBReconnect-SBReconnect-LegacyIntake-20m-204390c6fac64234a336889e40900ea4
 
 NDReconnectCorrectness, AllProtectedFilesUpdate-NDReconnect-1-16m, services, https://www.notion.so/swirldslabs/NDReconnectCorrectness-AllProtectedFilesUpdate-NDReconnect-1-16m-ba54bf45373f4a8fa4f72f624459556a
@@ -127,7 +127,7 @@ Restart, Crypto-Restart-50k-20m, platform, https://www.notion.so/swirldslabs/Res
 Restart, Crypto-Restart-Freeze-Bug-1k-9m, services, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-Freeze-Bug-1k-9m-232f30e8ed9c41dab715f1110b82c8ae?pvs=9
 Restart, Crypto-Restart-RecordStreamV6-1.5k-10m, services, https://www.notion.so/swirldslabs/Restart-Crypto-Restart-RecordStreamV6-1-5k-10m-fd583108efa4405ba63ccf6a8def4fbf
 Restart, FCM-Restart-2.5k-15m, platform, https://www.notion.so/swirldslabs/Restart-FCM-Restart-2-5k-15m-a14ebe33d49a446abd994e49370718b4
-Restart, FCMFCQ-RestartEventStream-1k-10m, platform, https://www.notion.so/swirldslabs/Restart-FCMFCQ-RestartEventStream-1k-10m-30524d93738f4be4bb9a467c8198146d
+Restart, FCM-VM-RestartEventStream-1k-10m, platform, https://www.notion.so/swirldslabs/Restart-FCMFCQ-RestartEventStream-1k-10m-30524d93738f4be4bb9a467c8198146d
 Restart, NFT-Restart-2.5k-20m, platform, https://www.notion.so/swirldslabs/Restart-NFT-Restart-2-5k-20m-738a79af30af49019f998ea102eae8a7
 Restart, FCM-Restart-Mainnet-Freeze-Bug-2.5k-7m, platform, https://www.notion.so/swirldslabs/Restart-FCM-Restart-Mainnet-Freeze-Bug-2-5k-7m-0ab90b060762486094cf41c949c56dd4
 Restart, ScheduleFocus-Restart-1.5-22m, services, https://www.notion.so/swirldslabs/Restart-ScheduleFocus-Restart-1-5-22m-1c1c890bab1843f2b26e16463a7572cd
@@ -135,7 +135,7 @@ Restart, ScheduleFocus-Restart-1.5-22m, services, https://www.notion.so/swirldsl
 SimilarStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/SimilarStake-Crypto-NIReconnect-Stake-1k-10m-0bd8caf3dc9b4e09828248bd9002981b
 SimilarStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/SimilarStake-Crypto-Restart-Stake-1k-10m-20d563d096cc4335b501483376274371
 SimilarStake, Crypto-Restart-Stake-2.5k-10m, services, https://www.notion.so/swirldslabs/SimilarStake-Crypto-Restart-Stake-2-5k-10m-05bfa808a09842ce94a1024c3a5f8d15
-SimilarStake, FCM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/SimilarStake-FCM-NIReconnect-Stake-125-10m-bcb5b7206f214ad78f363878aaec9129
+SimilarStake, FCM-VM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/SimilarStake-FCM-NIReconnect-Stake-125-10m-bcb5b7206f214ad78f363878aaec9129
 SimilarStake, FCM-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/SimilarStake-FCM-Restart-Stake-2-5k-10m-df4c6e51217f48a59a6a76bdc0153325
 SimilarStake, FCM-SBReconnect-Stake-2.5k-8m, platform, https://www.notion.so/swirldslabs/SimilarStake-FCM-SBReconnect-Stake-2-5k-8m-2f72c1dea04640868ef315c9464a7304
 SimilarStake, NFT-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/SimilarStake-NFT-Restart-Stake-2-5k-10m-ba74a2ef2b7b4a3e88ed51077182c508
@@ -151,7 +151,7 @@ Ubuntu2204_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.
 UnevenStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/UnevenStake-Crypto-NIReconnect-Stake-1k-10m-9c68e5923c7549dc8fc491880dc20456
 UnevenStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/UnevenStake-Crypto-Restart-Stake-1k-10m-6b39ab0dfd764dd0b0717d34c8238726
 UnevenStake, Crypto-Restart-Stake-2.5k-10m, services, https://www.notion.so/swirldslabs/UnevenStake-Crypto-Restart-Stake-2-5k-10m-6365c7e0989b4c33b0eb7745afa663aa
-UnevenStake, FCM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/UnevenStake-FCM-NIReconnect-Stake-125-10m-6cf8fd9897a544a4b895feb72d050923
+UnevenStake, FCM-VM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/UnevenStake-FCM-NIReconnect-Stake-125-10m-6cf8fd9897a544a4b895feb72d050923
 UnevenStake, FCM-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/UnevenStake-FCM-Restart-Stake-2-5k-10m-1fb96707b5ab46689ba16917f89d43f0
 UnevenStake, FCM-SBReconnect-Stake-2.5k-8m, platform, https://www.notion.so/swirldslabs/UnevenStake-FCM-SBReconnect-Stake-2-5k-8m-a5e7d67e5289445c8e65b07982eaef8d
 UnevenStake, NFT-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/UnevenStake-NFT-Restart-Stake-2-5k-10m-72097243873c47378721ffbebe7eca6b
@@ -205,7 +205,7 @@ VMerkleLong, VMerkle-Basic-2.5k-110m, platform, https://www.notion.so/swirldslab
 ZeroStake, Crypto-NIReconnect-Stake-1k-10m, services, https://www.notion.so/swirldslabs/ZeroStake-Crypto-NIReconnect-Stake-1k-10m-46df7a5ccf544f38b415ab4c44b263a6
 ZeroStake, Crypto-Restart-Stake-1k-10m, services, https://www.notion.so/swirldslabs/ZeroStake-Crypto-Restart-Stake-1k-10m-2c90faab716547a3aa425bbf6cdff856
 ZeroStake, Crypto-Restart-Stake-2.5k-10m, services, https://www.notion.so/swirldslabs/ZeroStake-Crypto-Restart-Stake-2-5k-10m-7b3f32b22e9547ab8528e5fb5d57a075
-ZeroStake, FCM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/ZeroStake-FCM-NIReconnect-Stake-125-10m-36e708b36be8430bbdb4e9b104a70fbb?pvs=9
+ZeroStake, FCM-VM-NIReconnect-Stake-125-10m, platform, https://www.notion.so/swirldslabs/ZeroStake-FCM-NIReconnect-Stake-125-10m-36e708b36be8430bbdb4e9b104a70fbb?pvs=9
 ZeroStake, FCM-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/ZeroStake-FCM-Restart-Stake-2-5k-10m-0246d2dbaf6344c897aa8fa237f77910
 ZeroStake, FCM-SBReconnect-Stake-2.5k-8m, platform, https://www.notion.so/swirldslabs/ZeroStake-FCM-SBReconnect-Stake-2-5k-8m-ff722ff935f54b749a5981793fbdb2a4
 ZeroStake, NFT-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/ZeroStake-NFT-Restart-Stake-2-5k-10m-d976772b7f2d47d08a8f6fb86deea3de

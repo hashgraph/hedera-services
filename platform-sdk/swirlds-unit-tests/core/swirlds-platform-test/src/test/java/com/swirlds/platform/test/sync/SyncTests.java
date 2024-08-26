@@ -56,7 +56,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -783,9 +782,6 @@ public class SyncTests {
                     // Expire the events from the hash graph
                     List<ShadowEvent> callerTips =
                             executor.getCaller().getShadowGraph().getTips();
-                    Set<ShadowEvent> allCallerEvents =
-                            executor.getCaller().getShadowGraph().findAncestors(callerTips, e -> true);
-                    allCallerEvents.forEach(e -> e.getEvent().clear());
 
                     // Expire the events from the shadow graph
                     final EventWindow eventWindow = new EventWindow(
