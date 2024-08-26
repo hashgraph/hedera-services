@@ -308,7 +308,6 @@ public class GasCalculationIntegrityTest {
                         .call("transferTokenTest", fungibleToken, fungibleToken.treasury(), alice, 1L)
                         .via("transferTokenTest")
                         .gas(758_568L),
-                restoreOriginalRates(),
                 getTxnRecord("transferTokenTest").logged()));
     }
 
