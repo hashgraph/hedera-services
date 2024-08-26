@@ -80,13 +80,15 @@ public class EventMigrationTest {
             }
         }
 
-
-        Assertions.assertEquals(numEventsExpected, numEventsFound,
-                "this file is expected to have %d events but has %d".formatted(numEventsExpected,numEventsFound));
+        Assertions.assertEquals(
+                numEventsExpected,
+                numEventsFound,
+                "this file is expected to have %d events but has %d".formatted(numEventsExpected, numEventsFound));
         Assertions.assertEquals(
                 numEventsExpected,
                 eventHashes.size(),
-                "we expected to have %d hashes (one for each event) but have %d".formatted(numEventsExpected, eventHashes.size()));
+                "we expected to have %d hashes (one for each event) but have %d"
+                        .formatted(numEventsExpected, eventHashes.size()));
         eventHashes.removeAll(parentHashes);
         Assertions.assertEquals(
                 unmatchedHashesExpected,
