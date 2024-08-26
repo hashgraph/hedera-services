@@ -179,7 +179,7 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
         resolveMutableBuilderAttributes(
-                fileUpdate, builder, fileServiceConfig, file, accountsConfig, handleContext.payer());
+                fileUpdate, builder, fileServiceConfig, file, fileID, accountsConfig, handleContext.payer());
         fileStore.put(builder.build());
     }
 
@@ -231,8 +231,9 @@ public class FileUpdateHandler implements TransactionHandler {
     private void resolveMutableBuilderAttributes(
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
-            @NonNull final FilesConfig fileServiceConfig,
+            @NonNull final FilesConfig filesConfig,
             @NonNull final File file,
+            @NonNull final FileID fileId,
             @NonNull final AccountsConfig accountsConfig,
             @NonNull final AccountID payerId) {
         if (op.hasKeys()) {
@@ -241,8 +242,10 @@ public class FileUpdateHandler implements TransactionHandler {
             builder.keys(file.keys());
         }
         final var contentLength = op.contents().length();
-        if (contentLength > 0 || accountsConfig.isSuperuser(payerId)) {
-            if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
+        final var zeroLengthShouldClearTarget =
+                accountsConfig.isSuperuser(payerId) && filesConfig.isOverrideFile(fileId);
+        if (contentLength > 0 || zeroLengthShouldClearTarget) {
+            if (contentLength > filesConfig.maxSizeKb() * 1024L) {
                 throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
             }
             builder.contents(op.contents());

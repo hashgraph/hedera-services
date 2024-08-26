@@ -318,6 +318,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
@@ -345,12 +347,12 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
-    void validatesNewContentsAreEmptyIfSuperuserPayer() {
+    void validatesNewContentsAreEmptyIfSuperuserPayerAndOverrideFile() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER
-                .fileID(wellKnownId())
+                .fileID(WELL_KNOWN_SYSTEM_FILE_ID)
                 .contents(Bytes.wrap(new byte[0]))
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
@@ -361,7 +363,7 @@ class FileUpdateTest extends FileTestBase {
         // expect:
         subject.handle(handleContext);
 
-        final var updatedFile = requireNonNull(writableFileState.get(fileId));
+        final var updatedFile = requireNonNull(writableFileState.get(WELL_KNOWN_SYSTEM_FILE_ID));
         assertEquals(0, updatedFile.contents().length());
     }
 
@@ -375,6 +377,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
