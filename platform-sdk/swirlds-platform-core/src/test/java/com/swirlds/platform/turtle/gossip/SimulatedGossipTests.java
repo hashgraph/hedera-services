@@ -34,7 +34,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -145,7 +145,7 @@ class SimulatedGossipTests {
             final NodeId creator = addressBook.getNodeId(randotron.nextInt(networkSize));
             final PlatformEvent event =
                     new TestingEventBuilder(randotron).setCreatorId(creator).build();
-            new StatefulEventHasher().hashEvent(event);
+            new DefaultEventHasher().hashEvent(event);
 
             eventsToGossip.add(event);
         }

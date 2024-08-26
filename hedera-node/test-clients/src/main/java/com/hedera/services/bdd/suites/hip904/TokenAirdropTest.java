@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
@@ -51,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -456,30 +458,101 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0),
                             getAccountBalance(HTS_COLLECTOR).hasTokenBalance(DENOM_TOKEN, htsFee),
-                            getAccountBalance(HTS_COLLECTOR2).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
+                            getAccountBalance(HTS_COLLECTOR).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
         }
 
         @HapiTest
-        @DisplayName("fungible token with fractional fee")
-        final Stream<DynamicTest> fungibleTokenWithFractionalFeesPaidByReceiverFails() {
+        @DisplayName("FT with fractional fee and net of transfers true")
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersTre() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
-                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
-                            cryptoTransfer(
-                                    moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
-                    .when(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
+                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .when(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER)
                             .via("fractionalTxn"))
                     .then(
                             validateChargedUsd("fractionalTxn", 0.1, 10),
+                            // sender should pay 1 token for fractional fee
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 89),
+                            getAccountBalance(HTS_COLLECTOR)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 1),
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 10));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false")
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalse() {
+            return defaultHapiSpec("should be successful transfer")
+                    .given(
+                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
+                            cryptoTransfer(
+                                    moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .when(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE)
+                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER)
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 90),
+                            // the fee is charged from the transfer value
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 9));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false, in pending state")
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseInPendingState() {
+            var sender = "sender";
+            return defaultHapiSpec("the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE)
+                                    .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(sender)
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            // the fee is charged from the transfer value,
+                            // so we expect 90% of the value to be in the pending state
                             getTxnRecord("fractionalTxn")
                                     .hasPriority(recordWith()
-                                            .tokenTransfers(includingFungibleMovement(moving(25, FT_WITH_FRACTIONAL_FEE)
-                                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))),
-                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
-                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 25));
+                                            .pendingAirdrops(
+                                                    includingFungiblePendingAirdrop(moving(90, FT_WITH_FRACTIONAL_FEE)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false and dissociated collector")
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
+            var sender = "sender";
+            return defaultHapiSpec("should have 2 pending airdrops and the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE_2),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(
+                            tokenDissociate(HTS_COLLECTOR, FT_WITH_FRACTIONAL_FEE_2),
+                            tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(sender)
+                                    .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.2, 10),
+                            getTxnRecord("fractionalTxn")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moving(90, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                                    moving(10, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, HTS_COLLECTOR)))));
         }
 
         @HapiTest
@@ -786,6 +859,86 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+        }
+    }
+
+    @Nested
+    @DisplayName("to contracts")
+    class ToContracts {
+        // 1 EOA Airdrops a token to a Contract who is associated to the token
+        @HapiTest
+        @DisplayName("single token to associated contract should transfer")
+        final Stream<DynamicTest> singleTokenToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 2 EOA airdrops multiple tokens to a contract that is associated to all of them
+        @HapiTest
+        @DisplayName("multiple tokens to associated contract should transfer")
+        final Stream<DynamicTest> multipleTokensToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 1).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 1:
+        // associated only to FT
+        @HapiTest
+        @DisplayName("multiple tokens, but only FT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 2).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 2)
+                                            .between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 2:
+        // associated only to NFT
+        @HapiTest
+        @DisplayName("multiple tokens, but only NFT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyNFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 3).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
         }
     }
 }
