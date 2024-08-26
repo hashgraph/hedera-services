@@ -30,8 +30,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -223,7 +223,7 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        final EventHasher hasher = new StatefulEventHasher();
+        final EventHasher hasher = new DefaultEventHasher();
         receivedEvents.forEach(hasher::hashEvent);
     }
 

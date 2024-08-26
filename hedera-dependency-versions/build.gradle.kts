@@ -68,7 +68,7 @@ dependencies.constraints {
     api("com.hedera.cryptography:hedera-cryptography-pairings-signatures:0.1.0-SNAPSHOT") {
         because("com.hedera.cryptography.pairings.signatures")
     }
-    api("com.hedera.pbj:pbj-runtime:0.8.9") {
+    api("com.hedera.pbj:pbj-runtime:0.9.2") {
         because("com.hedera.pbj.runtime")
     }
     api("com.squareup:javapoet:1.13.0") {
