@@ -645,6 +645,10 @@ public abstract class AbstractLongList<C> implements LongList {
     @Override
     public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
         final long max = maxValidIndex.get();
+        if (max < 0) {
+            // Empty list, nothing to do
+            return;
+        }
         for (long i = minValidIndex.get(); i <= max; i++) {
             final long value = get(i);
             if (value != IMPERMISSIBLE_VALUE) {

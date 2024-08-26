@@ -57,6 +57,7 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -545,6 +546,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * @throws IOException If there was a problem reading record from db
      */
     @SuppressWarnings("unchecked")
+    @Nullable
     @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(final K key) throws IOException {
         requireNonNull(key);
@@ -617,6 +619,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * @return loaded record or null if not found
      * @throws IOException If there was a problem reading record from db
      */
+    @Nullable
     @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException {
         if (path < 0) {
@@ -668,6 +671,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     public Hash loadHash(final long path) throws IOException {
         if (path < 0) {
