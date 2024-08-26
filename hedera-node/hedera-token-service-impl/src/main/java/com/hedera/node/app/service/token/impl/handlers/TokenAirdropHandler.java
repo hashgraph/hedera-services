@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -126,6 +127,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
+        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
 
         // validate the transaction body token transfers and NFT transfers
@@ -149,6 +151,11 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
+                validateTrue(
+                        pendingStore.sizeOfState()
+                                        + fungibleLists.pendingFungibleAmounts().size()
+                                <= tokensConfig.maxAllowedPendingAirdrops(),
+                        MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 // pureChecks validates there is only one debit, so findFirst should return one item
                 final var senderAccountAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
@@ -190,6 +197,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
+                validateTrue(
+                        pendingStore.sizeOfState() + nftLists.pendingNftList().size()
+                                <= tokensConfig.maxAllowedPendingAirdrops(),
+                        MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 // there is no performant way to find if another serial of the same NFT is already in the pending state
                 // so we always charge for association for NFTs
                 chargeAirdropFee(
