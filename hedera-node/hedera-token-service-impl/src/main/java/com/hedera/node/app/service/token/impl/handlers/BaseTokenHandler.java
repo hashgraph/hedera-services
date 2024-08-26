@@ -309,7 +309,7 @@ public class BaseTokenHandler {
     /**
      * Creates a new {@link TokenRelation} with the account and token. This is called when there is
      * no association yet, but have open slots for maxAutoAssociations on the account.
-     * @param account the account to link the tokens to
+     * @param accountId the accountId to link the tokens to
      * @param token the token to link to the account
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
