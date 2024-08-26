@@ -359,6 +359,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -388,6 +389,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -418,6 +420,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -450,6 +453,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
