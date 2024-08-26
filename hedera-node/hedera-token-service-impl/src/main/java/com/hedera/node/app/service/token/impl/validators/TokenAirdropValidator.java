@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -36,13 +35,11 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
-import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -96,15 +93,10 @@ public class TokenAirdropValidator {
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final ReadableNftStore nftStore,
-            @NonNull final ReadableAirdropStore airdropStore) {
+            @NonNull final ReadableNftStore nftStore) {
         var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(
                 op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(), INVALID_TRANSACTION_BODY);
-        validateTrue(
-                airdropStore.sizeOfState() + roughAirdropCount(op.tokenTransfers())
-                        <= tokensConfig.maxAllowedPendingAirdrops(),
-                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
@@ -140,26 +132,6 @@ public class TokenAirdropValidator {
                         nftStore);
             }
         }
-    }
-
-    /**
-     * This is rough estimation of the airdrop count. We take the pessimistic approach here and assume that all
-     * transfers will be created as airdrops. In reality some might be a direct crypto transfer.
-     * If we want to calculate the correct airdrop count we will need to create counters in the handle method.
-     * This will add complications to the handle method and the actual check will need to happened at the end of the
-     * method where if the limit is exceeded - the handle operations we did will be discarded.
-     * The only downside of this approach is if we reach 20m airdrops we might error out a bit early but this
-     * doesn't seem like a big issue.
-     */
-    private int roughAirdropCount(List<TokenTransferList> tokenTransfers) {
-        var count = 0;
-        for (var tt : tokenTransfers) {
-            count += tt.nftTransfers().size();
-            // counting only the receiver transfers
-            count +=
-                    tt.transfers().stream().filter(t -> t.amount() > 0).toList().size();
-        }
-        return count;
     }
 
     public boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
