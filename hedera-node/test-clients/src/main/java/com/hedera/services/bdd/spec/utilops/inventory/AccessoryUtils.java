@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.status.StatusConsoleListener;
@@ -56,7 +57,7 @@ public class AccessoryUtils {
     }
 
     public static boolean isValid(File keyFile, Optional<String> passphrase) {
-        return passphrase.isPresent() && unlocks(keyFile, passphrase.get());
+        return passphrase.isPresent() && unlocksPem(keyFile, passphrase.get());
     }
 
     public static Optional<File> passFileFor(File pemFile) {
@@ -71,14 +72,18 @@ public class AccessoryUtils {
         suites.forEach(cls -> setLogLevel(cls, logLevel));
     }
 
-    public static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
-        var pemFile = new File(pemLoc);
+    public static Optional<String> promptForPassphrase(
+            @NonNull final String loc,
+            @NonNull final String prompt,
+            int maxAttempts,
+            @NonNull final BiPredicate<File, String> isUnlocked) {
+        final var f = new File(loc);
         String fullPrompt = prompt + ": ";
         char[] passphrase;
         while (maxAttempts-- > 0) {
             passphrase = readCandidate(fullPrompt);
-            var asString = new String(passphrase);
-            if (unlocks(pemFile, asString)) {
+            final var asString = new String(passphrase);
+            if (isUnlocked.test(f, asString)) {
                 return Optional.of(asString);
             } else {
                 if (maxAttempts > 0) {
@@ -92,7 +97,11 @@ public class AccessoryUtils {
         throw new AssertionError("Impossible!");
     }
 
-    static boolean unlocks(File keyFile, String passphrase) {
+    public static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
+        return promptForPassphrase(pemLoc, prompt, maxAttempts, AccessoryUtils::unlocksPem);
+    }
+
+    public static boolean unlocksPem(File keyFile, String passphrase) {
         try {
             readKeyPairFrom(keyFile, passphrase);
             return true;

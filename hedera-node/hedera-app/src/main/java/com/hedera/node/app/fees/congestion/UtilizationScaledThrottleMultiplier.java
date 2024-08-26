@@ -17,6 +17,7 @@
 package com.hedera.node.app.fees.congestion;
 
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
+import static com.hedera.node.config.types.EntityType.AIRDROP;
 import static com.hedera.node.config.types.EntityType.CONTRACT;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.NFT;
@@ -115,6 +116,9 @@ public class UtilizationScaledThrottleMultiplier {
             case CONSENSUS_CREATE_TOPIC -> entityScaleFactors
                     .scaleForNew(TOPIC, roundedTopicPercentUtil(storeFactory))
                     .scaling((int) throttleMultiplier);
+            case TOKEN_AIRDROP -> entityScaleFactors
+                    .scaleForNew(AIRDROP, roundedAirdropPercentUtil(storeFactory))
+                    .scaling((int) throttleMultiplier);
             default -> throttleMultiplier;
         };
     }
@@ -196,6 +200,17 @@ public class UtilizationScaledThrottleMultiplier {
         final var numOfTopics = topicStore.sizeOfState();
 
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
+    }
+
+    private int roundedAirdropPercentUtil(@NonNull final ReadableStoreFactory storeFactory) {
+        final var configuration = configProvider.getConfiguration();
+        final var maxNumAirdrops =
+                configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
+
+        final var airdropStore = storeFactory.getStore(ReadableAirdropStore.class);
+        final var numPendingAirdrops = airdropStore.sizeOfState();
+
+        return maxNumAirdrops == 0 ? 100 : (int) ((100 * numPendingAirdrops) / maxNumAirdrops);
     }
 
     /**

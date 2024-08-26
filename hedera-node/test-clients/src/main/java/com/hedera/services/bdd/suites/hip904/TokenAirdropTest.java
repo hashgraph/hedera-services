@@ -36,7 +36,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
@@ -49,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -62,6 +67,7 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
@@ -84,6 +90,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         lifecycle.overrideInClass(Map.of(
                 "tokens.airdrops.enabled", "true",
+                "tokens.airdrops.claim.enabled", "true",
                 "entities.unlimitedAutoAssociationsEnabled", "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
@@ -224,6 +231,38 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 // without free auto associations receiver - 0.1 (creates pending airdrop)
                                 validateChargedUsd("non fungible airdrop", 0.2, 1));
             }
+
+            @HapiTest
+            @DisplayName("charge association fee for FT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.05, 1));
+            }
+
+            @HapiTest
+            @DisplayName("charge association fee for NFT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForNFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 2).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.1, 1));
+            }
         }
 
         @HapiTest
@@ -277,6 +316,60 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
                             .signedBy(OWNER)
                             .payingWith(OWNER));
+        }
+
+        @HapiTest
+        @DisplayName("after reject should keep the association")
+        final Stream<DynamicTest> afterRejectShouldKeepTheAssociation() {
+            final var receiver = "receiver";
+            return hapiTest(
+                    cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+
+                    // Token airdrop and verify that the receiver balance is 0
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Claim and verify that receiver balance is 10
+                    tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
+                            .payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+
+                    // Reject and verify that receiver balance is 0
+                    tokenReject(rejectingToken(FUNGIBLE_TOKEN)).payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Airdrop without claim and verify that the receiver balance is 10
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop after claim should result in CryptoTransfer")
+        final Stream<DynamicTest> airdropAfterClaimShouldResultInCryptoTransfer() {
+            final var receiver = "receiver";
+            return hapiTest(
+                    cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+
+                    // Token airdrop and verify that the receiver balance is 0
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Claim and verify that receiver balance is 10
+                    tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
+                            .payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+
+                    // Airdrop without claim and verify that the receiver balance is 20
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 20));
         }
     }
 
@@ -413,7 +506,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> airdropToNonExistingED25519Account() {
             var ed25519key = "ed25519key";
             return defaultHapiSpec("should auto-create and transfer the tokens")
-                    .given(newKeyNamed(ed25519key))
+                    .given(newKeyNamed(ed25519key).shape(SigControl.ED25519_ON))
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, ed25519key))
                             .payingWith(OWNER)
                             .via("ed25519Receiver"))
@@ -428,7 +521,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> airdropToNonExistingSECP256K1Account() {
             var secp256K1 = "secp256K1";
             return defaultHapiSpec("should auto-create and transfer the tokens")
-                    .given(newKeyNamed(secp256K1))
+                    .given(newKeyNamed(secp256K1).shape(SigControl.SECP256K1_ON))
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, secp256K1))
                             .payingWith(OWNER)
                             .via("secp256k1Receiver"))
@@ -641,6 +734,27 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .signedBy(OWNER)
                             .payingWith(OWNER)
                             .hasKnownStatus(NOT_SUPPORTED));
+        }
+
+        @HapiTest
+        @DisplayName("self airdrop fails")
+        final Stream<DynamicTest> selfAirdropFails() {
+            return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, OWNER))
+                    .signedBy(OWNER)
+                    .payingWith(OWNER)
+                    .hasPrecheck(INVALID_TRANSACTION_BODY));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop to 0x0 address")
+        final Stream<DynamicTest> airdropTo0x0Address() {
+            final byte[] publicKey =
+                    CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000");
+            final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+
+            return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
+                    .payingWith(OWNER)
+                    .hasKnownStatus(INVALID_ACCOUNT_ID));
         }
     }
 
