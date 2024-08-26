@@ -165,11 +165,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(accountStore.getContractById(targetContract)).thenReturn(payerAccount);
 
         final var txn = TransactionBody.newBuilder()
-                .contractUpdateInstance(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .contractID(targetContract)
-                                .memo("new memo") // invalid account
-                        )
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .memo("new memo"))
                 .transactionID(transactionID)
                 .build();
         final var context = new FakePreHandleContext(accountStore, txn);
@@ -182,11 +180,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     @Test
     void callsKey1xIfAdminKeyNotRequired() throws PreCheckException {
         final var txn = TransactionBody.newBuilder()
-                .contractUpdateInstance(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .contractID(targetContract)
-                                .expirationTime(Timestamp.newBuilder().seconds(1L)) // invalid account
-                        )
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .expirationTime(Timestamp.newBuilder().seconds(1L)))
                 .transactionID(transactionID)
                 .build();
         final var context = new FakePreHandleContext(accountStore, txn);
