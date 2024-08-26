@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -858,6 +859,86 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+        }
+    }
+
+    @Nested
+    @DisplayName("to contracts")
+    class ToContracts {
+        // 1 EOA Airdrops a token to a Contract who is associated to the token
+        @HapiTest
+        @DisplayName("single token to associated contract should transfer")
+        final Stream<DynamicTest> singleTokenToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 2 EOA airdrops multiple tokens to a contract that is associated to all of them
+        @HapiTest
+        @DisplayName("multiple tokens to associated contract should transfer")
+        final Stream<DynamicTest> multipleTokensToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 1).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 1:
+        // associated only to FT
+        @HapiTest
+        @DisplayName("multiple tokens, but only FT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 2).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 2)
+                                            .between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 2:
+        // associated only to NFT
+        @HapiTest
+        @DisplayName("multiple tokens, but only NFT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyNFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 3).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
         }
     }
 }
