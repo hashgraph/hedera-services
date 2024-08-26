@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.PbjBytesHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -50,32 +49,29 @@ public class EventMigrationTest {
      * events that are read and matching them to the parent descriptors inside the events. The parents of most events
      * will be present in the file, except for a few events at the beginning of the file.
      * <p>
-     * The file being read is from mainnet written by the SDK 0.46.3.
-     * <p>
      * Even though this could be considered a platform test, it needs to be in the services module because the event
      * contains a {@link SerializableSemVers} which is a services class
      */
     @Test
     public void migration() throws URISyntaxException, IOException {
+        final int numEventsExpected = 637;
+        final int unmatchedHashesExpected = 4;
         final Set<Hash> eventHashes = new HashSet<>();
         final Set<Hash> parentHashes = new HashSet<>();
-        int numEvents = 0;
+        int numEventsFound = 0;
 
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
                 new File(this.getClass()
                                 .getClassLoader()
-                                .getResource("eventFiles/previewnet-53/2024-08-20T13_55_10.001053369Z.events")
+                                .getResource("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events")
                                 .toURI())
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
 
-                System.out.println(EventCore.JSON.toJSON(platformEvent.getEventCore()));
-                System.exit(0);
-
-                new PbjBytesHasher().hashEvent(platformEvent);
-                numEvents++;
+                new PbjStreamHasher().hashEvent(platformEvent);
+                numEventsFound++;
                 eventHashes.add(platformEvent.getHash());
                 platformEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
@@ -85,14 +81,15 @@ public class EventMigrationTest {
         }
 
 
-        Assertions.assertEquals(633, numEvents, "this file is expected to have 633 events but has " + numEvents);
+        Assertions.assertEquals(numEventsExpected, numEventsFound,
+                "this file is expected to have %d events but has %d".formatted(numEventsExpected,numEventsFound));
         Assertions.assertEquals(
-                633,
+                numEventsExpected,
                 eventHashes.size(),
-                "we expected to have 633 hashes (one for each event) but have " + eventHashes.size());
+                "we expected to have %d hashes (one for each event) but have %d".formatted(numEventsExpected, eventHashes.size()));
         eventHashes.removeAll(parentHashes);
         Assertions.assertEquals(
-                9,
+                unmatchedHashesExpected,
                 eventHashes.size(),
                 "the hashes of most parents are expected to match the hashes of events."
                         + " Number of unmatched hashes: " + eventHashes.size());
