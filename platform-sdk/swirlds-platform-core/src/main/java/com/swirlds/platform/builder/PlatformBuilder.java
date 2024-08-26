@@ -30,13 +30,11 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
@@ -84,9 +82,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
@@ -95,8 +91,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.security.cert.CertificateEncodingException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -581,6 +575,10 @@ public final class PlatformBuilder {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
 
+        if (bootstrapRoster == null) {
+            bootstrapRoster = createRoster(boostrapAddressBook);
+        }
+
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
@@ -681,64 +679,6 @@ public final class PlatformBuilder {
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
-    }
-
-    /**
-     * Creates a new roster from the bootstrap address book.
-     *
-     * @return a new roster
-     */
-    @NonNull
-    public Roster createRoster() {
-        if (bootstrapAddressBook == null) {
-            throw new IllegalStateException("Illegal attempt to create a Roster from a null AddressBook");
-        }
-        final List<RosterEntry> rosterEntries = new ArrayList<>(bootstrapAddressBook.getSize());
-        for (int i = 0; i < bootstrapAddressBook.getSize(); i++) {
-            final NodeId nodeId = bootstrapAddressBook.getNodeId(i);
-            final Address address = bootstrapAddressBook.getAddress(nodeId);
-
-            final RosterEntry rosterEntry = toRosterEntry(address, nodeId);
-            rosterEntries.add(rosterEntry);
-        }
-        return Roster.newBuilder().rosters(rosterEntries).build();
-    }
-
-    /**
-     * Converts an address to a roster entry.
-     *
-     * @param address the address to convert
-     * @param nodeId  the node ID to use for the roster entry
-     * @return the roster entry
-     */
-    private RosterEntry toRosterEntry(final Address address, final NodeId nodeId) {
-        Objects.requireNonNull(address);
-        Objects.requireNonNull(nodeId);
-        final var signingCertificate = address.getSigCert();
-        Bytes signingCertificateBytes;
-        try {
-            signingCertificateBytes =
-                    signingCertificate == null ? Bytes.EMPTY : Bytes.wrap(signingCertificate.getEncoded());
-        } catch (final CertificateEncodingException e) {
-            signingCertificateBytes = Bytes.EMPTY;
-        }
-
-        final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
-        if (address.getHostnameInternal() != null) {
-            serviceEndpoints.add(
-                    AddressBookUtils.endpointFor(address.getHostnameInternal(), address.getPortInternal()));
-        }
-        if (address.getHostnameExternal() != null) {
-            serviceEndpoints.add(
-                    AddressBookUtils.endpointFor(address.getHostnameExternal(), address.getPortExternal()));
-        }
-
-        return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
-                .weight(address.getWeight())
-                .gossipCaCertificate(signingCertificateBytes)
-                .gossipEndpoint(serviceEndpoints)
-                .build();
     }
 
     /**
