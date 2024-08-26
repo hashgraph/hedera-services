@@ -29,6 +29,7 @@ import java.util.function.ToLongBiFunction;
  */
 public class SystemContractGasCalculator {
     private static final long FIXED_VIEW_GAS_COST = 100L;
+    private static final long FIXED_TINY_CENT_GAS_PRICE_COST = 852_000L;
 
     private final TinybarValues tinybarValues;
     private final CanonicalDispatchPrices dispatchPrices;
@@ -109,7 +110,9 @@ public class SystemContractGasCalculator {
         if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
             return FIXED_VIEW_GAS_COST;
         }
-        return Math.max(FIXED_VIEW_GAS_COST, canonicalGasRequirement(DispatchType.TOKEN_INFO));
+        final var gasRequirement = gasRequirementFromTinyCents(
+                dispatchPrices.canonicalPriceInTinycents(DispatchType.TOKEN_INFO), FIXED_TINY_CENT_GAS_PRICE_COST);
+        return Math.max(FIXED_VIEW_GAS_COST, gasRequirement);
     }
 
     /**

@@ -140,7 +140,6 @@ public class GasCalculationIntegrityTest {
                 fungibleToken.treasury().approveTokenAllowance(fungibleToken, numericContractComplex, 1000L),
                 nft.treasury().approveNFTAllowance(nft, numericContractComplex, true, List.of(1L, 2L, 3L, 4L, 5L)),
                 alice.approveCryptoAllowance(numericContractComplex, ONE_HBAR),
-                updateRates(30000, 16197),
                 // Transfers
                 fungibleToken.treasury().transferUnitsTo(numericContract, 100L, fungibleToken),
                 nft.treasury().transferNFTsTo(numericContract, nft, 7L),
