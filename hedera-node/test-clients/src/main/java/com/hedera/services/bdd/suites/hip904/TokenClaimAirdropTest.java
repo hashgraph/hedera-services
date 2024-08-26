@@ -1224,6 +1224,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
                 getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
+
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {
         return tokenCreate(tokenName)
                 .treasury(treasury)
