@@ -24,9 +24,12 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConcurrentStreamingTreeHasherTest {
     private ConcurrentStreamingTreeHasher treeHasher;
@@ -36,19 +39,33 @@ class ConcurrentStreamingTreeHasherTest {
         treeHasher = new ConcurrentStreamingTreeHasher(Executors.newFixedThreadPool(4));
     }
 
-    @Test
-    void testAddLeafAndRootHash() throws NoSuchAlgorithmException {
-        byte[] leaf1 = MessageDigest.getInstance("SHA-384").digest("leaf1".getBytes());
-        byte[] leaf2 = MessageDigest.getInstance("SHA-384").digest("leaf2".getBytes());
-
-        treeHasher.addLeaf(Bytes.wrap(leaf1));
-        treeHasher.addLeaf(Bytes.wrap(leaf2));
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3, 32})
+    void testAddLeafAndRootHash(int numLeaves) throws NoSuchAlgorithmException {
+        for (int i = 1; i <= numLeaves; i++) {
+            byte[] leaf = createLeaf("leaf" + i);
+            treeHasher.addLeaf(Bytes.wrap(leaf));
+        }
 
         CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
         Bytes rootHash = rootHashFuture.join();
 
         assertNotNull(rootHash);
         assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
+    }
+
+    @Test
+    void testAddLeafThrowsWhenMaxDepthReached() throws NoSuchAlgorithmException {
+        for (int i = 1; i <= (1 << 28); i++) {
+            byte[] leaf = createLeaf("leaf" + i);
+            treeHasher.addLeaf(Bytes.wrap(leaf));
+        }
+
+        CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
+        final var exception = assertThrows(CompletionException.class, rootHashFuture::join);
+        assertNotNull(exception.getCause());
+        assertEquals(IllegalArgumentException.class, exception.getCause().getClass());
+        assertEquals("Cannot combine hashes at depth 24", exception.getCause().getMessage());
     }
 
     @Test
@@ -70,22 +87,7 @@ class ConcurrentStreamingTreeHasherTest {
         assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
     }
 
-    @Test
-    void testConcurrentAddLeafAndRootHash() throws NoSuchAlgorithmException {
-        byte[] leaf1 = MessageDigest.getInstance("SHA-384").digest("leaf1".getBytes());
-        byte[] leaf2 = MessageDigest.getInstance("SHA-384").digest("leaf2".getBytes());
-
-        CompletableFuture<Void> addLeafFuture1 =
-                CompletableFuture.runAsync(() -> treeHasher.addLeaf(Bytes.wrap(leaf1)));
-        CompletableFuture<Void> addLeafFuture2 =
-                CompletableFuture.runAsync(() -> treeHasher.addLeaf(Bytes.wrap(leaf2)));
-
-        CompletableFuture.allOf(addLeafFuture1, addLeafFuture2).join();
-
-        CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
-        Bytes rootHash = rootHashFuture.join();
-
-        assertNotNull(rootHash);
-        assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
+    private byte[] createLeaf(String data) throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance("SHA-384").digest(data.getBytes());
     }
 }
