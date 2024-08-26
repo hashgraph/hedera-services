@@ -1076,7 +1076,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
-    @DisplayName("a hollow account with maxAutoAssociation -1 as receiver should be successful")
+    @DisplayName("a hollow account with maxAutoAssociation 1 as receiver should be successful")
     final Stream<DynamicTest> hollowNoMaxAutoAssociationSuccess() {
         final String ALICE = "ALICE";
         final String BOB = "BOB";
@@ -1086,6 +1086,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 createHollow(1, i -> BOB),
                 getAliasedAccountInfo(BOB)
                         .has(accountWith().maxAutoAssociations(-1).hasEmptyKey().noAlias()),
+                cryptoUpdate(BOB).sigMapPrefixes(uniqueWithFullPrefixesFor(BOB)).maxAutomaticAssociations(1),
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
                 // no tokenClaimAirdrop needed here
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
@@ -1103,7 +1104,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 createHollow(1, i -> BOB),
                 createHollow(1, i -> CAROL),
                 cryptoUpdate(BOB).sigMapPrefixes(uniqueWithFullPrefixesFor(BOB)).maxAutomaticAssociations(0),
-                cryptoUpdate(BOB)
+                cryptoUpdate(CAROL)
                         .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL))
                         .maxAutomaticAssociations(0),
                 tokenAssociate(CAROL, FUNGIBLE_TOKEN_1).sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
