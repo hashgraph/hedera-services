@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -34,6 +33,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -65,8 +65,8 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void testMigrateFromNullPreviousVersion() {
-        when(migrationContext.previousVersion()).thenReturn(null);
+    @DisplayName("For this version, migrate from existing state version returns default.")
+    void testMigrateFromNullRosterStateReturnsDefault() {
         when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
         when(migrationContext.newStates().getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
                 .thenReturn(rosterState);
@@ -76,11 +76,15 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void testMigrateFromNonNullPreviousVersion() {
+    @DisplayName("Migrate from older state version returns default.")
+    void testMigrateFromPreviousStateVersion() {
+        when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
+        when(migrationContext.newStates().getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
+                .thenReturn(rosterState);
         when(migrationContext.previousVersion())
                 .thenReturn(
                         SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());
         subject.migrate(migrationContext);
-        verifyNoInteractions(rosterState);
+        verify(rosterState, times(1)).put(RosterState.DEFAULT);
     }
 }
