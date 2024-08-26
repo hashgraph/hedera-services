@@ -161,7 +161,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
+                final var newRelation = autoAssociate(
+                        newTreasuryAccount.accountIdOrThrow(), token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
                 newTreasuryAccount = requireNonNull(accountStore.getForModify(newTreasury));
