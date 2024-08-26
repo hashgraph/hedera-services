@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -49,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -1071,6 +1073,45 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .payingWith(hollowAcnt)
                         .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAcnt))
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+    }
+
+    @HapiTest
+    @DisplayName("a hollow account with maxAutoAssociation -1 as receiver should be successful")
+    final Stream<DynamicTest> hollowNoMaxAutoAssociationSuccess() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createHollow(1, i -> BOB),
+                getAliasedAccountInfo(BOB)
+                        .has(accountWith().maxAutoAssociations(-1).hasEmptyKey().noAlias()),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                // no tokenClaimAirdrop needed here
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
+    }
+
+    @HapiTest
+    @DisplayName("Hollow account should be created before implementation of HIP-904")
+    final Stream<DynamicTest> hollowAccountBehavior() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        final String CAROL = "CAROL";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createHollow(1, i -> BOB),
+                createHollow(1, i -> CAROL),
+                cryptoUpdate(BOB).sigMapPrefixes(uniqueWithFullPrefixesFor(BOB)).maxAutomaticAssociations(0),
+                cryptoUpdate(BOB)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL))
+                        .maxAutomaticAssociations(0),
+                tokenAssociate(CAROL, FUNGIBLE_TOKEN_1).sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, CAROL)).payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {
