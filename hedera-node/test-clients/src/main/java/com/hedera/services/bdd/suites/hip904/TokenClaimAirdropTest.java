@@ -813,18 +813,16 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
 
     @HapiTest
     @DisplayName("Attempt to claim an airdrop by the sender")
-    final Stream<DynamicTest> claimWithDifferentAccounts() {
+    final Stream<DynamicTest> claimWithSenderAccount() {
         var receiver = "receiver";
-        var randomAccount = "randomAccount";
         // CLAIM_50
         return hapiTest(flattened(
                 setUpTokensAndAllReceivers(),
                 cryptoCreate(receiver),
-                cryptoCreate(randomAccount),
                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver)).payingWith(OWNER),
                 tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
-                        .payingWith(randomAccount)
-                        .signedBy(randomAccount)
+                        .payingWith(OWNER)
+                        .signedBy(OWNER)
                         .hasKnownStatus(INVALID_SIGNATURE)));
     }
 
