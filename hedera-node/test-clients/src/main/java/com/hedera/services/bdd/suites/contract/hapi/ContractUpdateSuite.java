@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
@@ -479,10 +480,6 @@ public class ContractUpdateSuite {
                                 .signedBy(payer)
                                 .newMemo(NEW_MEMO)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer, INITIAL_ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract)
                                 .payingWith(payer)
                                 .newMemo(BETTER_MEMO)
@@ -626,5 +623,68 @@ public class ContractUpdateSuite {
                         .newStakedAccountId(STAKED_ACCOUNT)
                         .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
                 contractUpdate(CONTRACT).newStakedNodeId(1).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cannotUpdateContractExceptExpiryWithWrongKey() {
+        final var someValidExpiry = new AtomicLong(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 1234L);
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(NEW_ADMIN_KEY),
+                cryptoCreate(AUTO_RENEW_ACCOUNT),
+                cryptoCreate(STAKED_ACCOUNT),
+                cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newAutoRenew(1)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newDeclinedReward(true)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newExpirySecs(someValidExpiry.get())
+                        .hasKnownStatus(SUCCESS),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newKey(ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newMaxAutomaticAssociations(100)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newMemo("The new memo")
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newProxy(CONTRACT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newStakedAccountId(STAKED_ACCOUNT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newStakedNodeId(1)
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 }
