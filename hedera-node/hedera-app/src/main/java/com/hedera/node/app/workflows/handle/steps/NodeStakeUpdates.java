@@ -99,7 +99,8 @@ public class NodeStakeUpdates {
             }
             try {
                 // handle staking updates
-                final var streamBuilder = stakingCalculator.updateNodes(tokenContext);
+                final var streamBuilder =
+                        stakingCalculator.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }

@@ -351,7 +351,8 @@ public class HandleWorkflow {
             } else {
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
-                    systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
+                    systemSetup.externalizeInitSideEffects(
+                            userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
                 final var streamsRecords = configProvider

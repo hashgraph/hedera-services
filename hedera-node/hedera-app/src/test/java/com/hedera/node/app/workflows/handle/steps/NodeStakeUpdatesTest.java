@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -91,7 +92,7 @@ class NodeStakeUpdatesTest {
     void processUpdateCalledForGenesisTxn() {
         subject.process(stack, context, true);
 
-        verify(stakingPeriodCalculator).updateNodes(context);
+        verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -133,7 +134,9 @@ class NodeStakeUpdatesTest {
         subject.process(stack, context, false);
 
         verify(stakingPeriodCalculator)
-                .updateNodes(argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())));
+                .updateNodes(
+                        argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
+                        ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -141,7 +144,7 @@ class NodeStakeUpdatesTest {
     void processUpdateExceptionIsCaught() {
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
-                .updateNodes(any());
+                .updateNodes(any(), ExchangeRateSet.DEFAULT);
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
@@ -150,7 +153,7 @@ class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
         Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false));
-        verify(stakingPeriodCalculator).updateNodes(context);
+        verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
