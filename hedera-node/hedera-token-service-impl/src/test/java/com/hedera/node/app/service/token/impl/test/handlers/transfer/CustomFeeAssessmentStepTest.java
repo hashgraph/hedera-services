@@ -68,7 +68,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -384,7 +385,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                                 .transfers(List.of(aaWith(payerId, -10), aaWith(ownerId, +10)))
                                 .build())
                 .build();
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation = new TokenRelation(fungibleTokenId, ownerId, 1, false, true, true, null, null);
                     final var relation1 =
