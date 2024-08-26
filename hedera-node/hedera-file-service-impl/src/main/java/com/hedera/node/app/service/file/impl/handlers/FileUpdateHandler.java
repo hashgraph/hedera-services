@@ -57,6 +57,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.LongPair;
@@ -176,7 +177,9 @@ public class FileUpdateHandler implements TransactionHandler {
         builder.deleted(file.deleted());
 
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
+        final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
+        resolveMutableBuilderAttributes(
+                fileUpdate, builder, fileServiceConfig, file, accountsConfig, handleContext.payer());
         fileStore.put(builder.build());
     }
 
@@ -229,14 +232,16 @@ public class FileUpdateHandler implements TransactionHandler {
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
             @NonNull final FilesConfig fileServiceConfig,
-            @NonNull final File file) {
+            @NonNull final File file,
+            @NonNull final AccountsConfig accountsConfig,
+            @NonNull final AccountID payerId) {
         if (op.hasKeys()) {
             builder.keys(op.keys());
         } else {
             builder.keys(file.keys());
         }
-        var contentLength = op.contents().length();
-        if (contentLength > 0) {
+        final var contentLength = op.contents().length();
+        if (contentLength > 0 || accountsConfig.isSuperuser(payerId)) {
             if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
                 throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
             }

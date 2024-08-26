@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -51,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.writeToNodeWorkingDirs;
 import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSystemFiles;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.SelectedItemsAssertion.SELECTED_ITEMS_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
@@ -260,6 +262,43 @@ public class SystemFileExportsTest {
                                         ByteString.copyFromUtf8("TOO"),
                                         ByteString.copyFromUtf8("MANY")))
                         .hasKnownStatus(BATCH_SIZE_LIMIT_EXCEEDED));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticPropertyOverridesUpdateCanBeEmptyFile() {
+        return hapiTest(
+                streamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.networkProperties",
+                                ServicesConfigurationList.getDefaultInstance(),
+                                SystemFileExportsTest::parseConfigList),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overridingTwo(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString(),
+                        "tokens.nfts.maxBatchSizeMint",
+                        "2")),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradePropertyOverridesFile",
+                        propOverridesFile -> writeToNodeWorkingDirs("", propOverridesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the previous override properties are cleared
+                tokenCreate("nft").supplyKey(DEFAULT_PAYER),
+                mintToken(
+                        "nft",
+                        List.of(
+                                ByteString.copyFromUtf8("ONCE"),
+                                ByteString.copyFromUtf8("AGAIN"),
+                                ByteString.copyFromUtf8("OK"))),
+                getFileContents(APP_PROPERTIES).hasContents(ignore -> new byte[0]));
     }
 
     @GenesisHapiTest
