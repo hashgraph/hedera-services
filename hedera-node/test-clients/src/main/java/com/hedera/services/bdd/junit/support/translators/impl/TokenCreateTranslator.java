@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.support.translators;
+package com.hedera.services.bdd.junit.support.translators.impl;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
+import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-class FileCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+public class TokenCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     @Override
     public SingleTransactionRecord translate(
@@ -34,7 +36,7 @@ class FileCreateTranslator implements TransactionRecordTranslator<SingleTransact
         final var recordBuilder = TransactionRecord.newBuilder();
 
         if (stateChanges != null) {
-            maybeAssignFileID(stateChanges, receiptBuilder);
+            maybeAssignTokenID(stateChanges, receiptBuilder);
         }
 
         return new SingleTransactionRecord(
@@ -44,14 +46,14 @@ class FileCreateTranslator implements TransactionRecordTranslator<SingleTransact
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 
-    private void maybeAssignFileID(final StateChanges stateChanges, final TransactionReceipt.Builder recordBuilder) {
+    private void maybeAssignTokenID(final StateChanges stateChanges, final TransactionReceipt.Builder recordBuilder) {
         stateChanges.stateChanges().stream()
                 .filter(StateChange::hasMapUpdate)
                 .findFirst()
                 .ifPresent(stateChange -> {
                     if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasFileIdKey()) {
-                        recordBuilder.fileID(stateChange.mapUpdate().key().fileIdKey());
+                            && stateChange.mapUpdate().key().hasTokenIdKey()) {
+                        recordBuilder.tokenID(stateChange.mapUpdate().key().tokenIdKey());
                     }
                 });
     }

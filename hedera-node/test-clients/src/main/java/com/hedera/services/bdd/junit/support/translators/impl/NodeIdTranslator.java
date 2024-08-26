@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.support.translators;
+package com.hedera.services.bdd.junit.support.translators.impl;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.services.bdd.junit.support.translators.SingleTransactionBlockItems;
+import com.hedera.services.bdd.junit.support.translators.TransactionRecordTranslator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-class ConsensusTopicCreateTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
+/**
+ * This translator extracts a node ID from NodeCreate, NodeUpdate, and NodeDelete transactions.
+ */
+public class NodeIdTranslator implements TransactionRecordTranslator<SingleTransactionBlockItems> {
 
     @Override
     public SingleTransactionRecord translate(
@@ -34,7 +39,7 @@ class ConsensusTopicCreateTranslator implements TransactionRecordTranslator<Sing
         final var recordBuilder = TransactionRecord.newBuilder();
 
         if (stateChanges != null) {
-            maybeAssignTopicID(stateChanges, receiptBuilder);
+            maybeAssignNodeID(stateChanges, receiptBuilder);
         }
 
         return new SingleTransactionRecord(
@@ -44,14 +49,16 @@ class ConsensusTopicCreateTranslator implements TransactionRecordTranslator<Sing
                 new SingleTransactionRecord.TransactionOutputs(null));
     }
 
-    private void maybeAssignTopicID(final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
+    private void maybeAssignNodeID(final StateChanges stateChanges, final TransactionReceipt.Builder receiptBuilder) {
         stateChanges.stateChanges().stream()
                 .filter(StateChange::hasMapUpdate)
                 .findFirst()
                 .ifPresent(stateChange -> {
-                    if (stateChange.mapUpdate().hasKey()
-                            && stateChange.mapUpdate().key().hasTopicIdKey()) {
-                        receiptBuilder.topicID(stateChange.mapUpdate().key().topicIdKey());
+                    if (stateChange.mapUpdate().hasValue()
+                            && stateChange.mapUpdate().value().hasNodeValue()) {
+                        final var nodeId =
+                                stateChange.mapUpdate().value().nodeValue().nodeId();
+                        receiptBuilder.nodeId(nodeId);
                     }
                 });
     }

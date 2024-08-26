@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
@@ -121,7 +122,6 @@ public class SystemSetup {
      * @param dispatch the genesis transaction dispatch
      */
     public void doGenesisSetup(@NonNull final Dispatch dispatch) {
-        // TODO - stream all genesis state definitions
         final var systemContext = systemContextFor(dispatch);
         fileService.createSystemEntities(systemContext);
     }
@@ -240,7 +240,8 @@ public class SystemSetup {
                         .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
                 controlledNum.put(new EntityNumber(entityNum - 1));
                 final var recordBuilder = dispatch.handleContext()
-                        .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
+                        .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId)
+                        .exchangeRate(ExchangeRateSet.DEFAULT);
                 if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error(
                             "Failed to dispatch system create transaction {} for entity {} - {}",
@@ -311,6 +312,12 @@ public class SystemSetup {
             systemAccounts = null;
         }
 
+        if (!treasuryClones.isEmpty()) {
+            createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
+            log.info("Queued {} treasury clone account records", treasuryClones.size());
+            treasuryClones = null;
+        }
+
         if (!stakingAccounts.isEmpty()) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - firstConsensusTime.getEpochSecond();
             createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
@@ -322,12 +329,6 @@ public class SystemSetup {
             createAccountRecordBuilders(miscAccounts, context, null);
             log.info("Queued {} misc account records", miscAccounts.size());
             miscAccounts = null;
-        }
-
-        if (!treasuryClones.isEmpty()) {
-            createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
-            log.info("Queued {} treasury clone account records", treasuryClones.size());
-            treasuryClones = null;
         }
 
         if (!blocklistAccounts.isEmpty()) {
