@@ -38,6 +38,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -120,10 +121,11 @@ public class TokenAirdropValidator {
             if (!xfers.nftTransfers().isEmpty()) {
                 for (var transfer : xfers.nftTransfers()) {
                     final var receiver = transfer.receiverAccountID();
-                    if (!isExemptFromCustomFees(token, receiver)) {
-                        validateTrue(
-                                tokenHasNoRoyaltyWithFallbackFee(token.tokenId(), tokenStore),
-                                TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
+                    for (final var fee : token.customFees()) {
+                        if (fee.hasRoyaltyFee() && fee.royaltyFeeOrThrow().hasFallbackFee()) {
+                            validateTrue(
+                                    isExemptFromCustomFees(token, receiver, fee), TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY);
+                        }
                     }
                 }
 
@@ -151,9 +153,8 @@ public class TokenAirdropValidator {
      * they are exempt from paying the custom fees thus we don't need to check if there are custom fees.
      * This method returns if the receiver is the fee collector or the treasury account.
      */
-    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId) {
-        return token.customFees().stream()
-                .anyMatch(customFee -> CustomFeeExemptions.isPayerExempt(token, customFee, receiverId));
+    private static boolean isExemptFromCustomFees(Token token, AccountID receiverId, final CustomFee fee) {
+        return CustomFeeExemptions.isPayerExempt(token, fee, receiverId);
     }
 
     public boolean tokenHasNoRoyaltyWithFallbackFee(TokenID tokenId, ReadableTokenStore tokenStore) {
