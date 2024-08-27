@@ -39,13 +39,14 @@ javaModules {
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
 
+    // Hedera EVM
+    directory("hedera-evm") {
+        group = "com.hedera.evm"
+    }
+
     // The Hedera services modules
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
-
-        // EVM has its own group
-        module("hedera-evm") { group = "com.hedera.evm"}
-        module("hedera-evm-impl") { group = "com.hedera.evm"}
 
         // Configure 'artifact' for projects where the folder does not correspond to the artifact name
         module("cli-clients") { artifact = "services-cli" }
