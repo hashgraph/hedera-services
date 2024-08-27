@@ -227,12 +227,6 @@ public interface HapiPropertySource {
                 .build();
     }
 
-    static AccountID asAliasAccount(String v) {
-        return AccountID.newBuilder()
-                .setAlias(ByteString.copyFrom(v.getBytes()))
-                .build();
-    }
-
     static AccountID asAccount(ByteString v) {
         return AccountID.newBuilder().setAlias(v).build();
     }

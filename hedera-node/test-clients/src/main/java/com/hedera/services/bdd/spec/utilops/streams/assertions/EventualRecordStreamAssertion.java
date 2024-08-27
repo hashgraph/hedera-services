@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
@@ -109,7 +109,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return spec.targetNetworkOrThrow()
                 .nodes()
                 .getFirst()
-                .getExternalPath(STREAMS_DIR)
+                .getExternalPath(RECORD_STREAMS_DIR)
                 .toString();
     }
 

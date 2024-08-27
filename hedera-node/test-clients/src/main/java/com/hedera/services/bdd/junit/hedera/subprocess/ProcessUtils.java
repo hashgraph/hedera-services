@@ -58,7 +58,9 @@ public class ProcessUtils {
     private static final int FIRST_AGENT_PORT = 5005;
     private static final long NODE_ID_TO_SUSPEND = -1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
-    public static final String STREAMS_DIR = "recordStreams";
+    public static final String SAVED_STATES_DIR = "saved";
+    public static final String RECORD_STREAMS_DIR = "recordStreams";
+    public static final String BLOCK_STREAMS_DIR = "block-streams";
     private static final long WAIT_SLEEP_MILLIS = 100L;
 
     public static final Executor EXECUTOR = Executors.newCachedThreadPool();
@@ -163,7 +165,7 @@ public class ProcessUtils {
                 // JVM system
                 "-Dfile.encoding=UTF-8",
                 "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
-                "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + STREAMS_DIR,
+                "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + RECORD_STREAMS_DIR,
                 "-Dhedera.profiles.active=DEV",
                 "-Dhedera.workflows.enabled=true",
                 "com.hedera.node.app.ServicesMain",
