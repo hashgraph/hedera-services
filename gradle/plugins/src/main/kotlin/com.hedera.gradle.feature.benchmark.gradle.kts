@@ -54,8 +54,3 @@ configurations {
     jmhCompileClasspath { attributes { attribute(javaModule, false) } }
     jmhAnnotationProcessor { attributes { attribute(javaModule, false) } }
 }
-
-tasks.assemble {
-    // 'assemble' compiles all sources, including 'jmh'
-    dependsOn(tasks.named("jmhClasses"))
-}
