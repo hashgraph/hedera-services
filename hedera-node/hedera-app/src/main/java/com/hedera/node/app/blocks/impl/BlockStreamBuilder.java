@@ -256,20 +256,12 @@ public class BlockStreamBuilder
         return blockItems;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }
 
-    /**
-     * Returns the number of automatic token associations
-     *
-     * @return the number of associations
-     */
     @Override
     public int getNumAutoAssociations() {
         return automaticTokenAssociations.size();
@@ -278,9 +270,6 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
@@ -292,9 +281,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder consensusTimestamp(@NonNull final Instant now) {
@@ -306,9 +292,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder transaction(@NonNull final Transaction transaction) {
@@ -322,9 +305,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
@@ -332,18 +312,12 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public TransactionID transactionID() {
         return transactionID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
@@ -351,9 +325,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public BlockStreamBuilder syncBodyIdFromRecordId() {
@@ -365,9 +336,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder memo(@NonNull final String memo) {
@@ -378,26 +346,17 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public Transaction transaction() {
         return transaction;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long transactionFee() {
         return transactionFee;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public BlockStreamBuilder transactionFee(final long transactionFee) {
@@ -419,9 +378,6 @@ public class BlockStreamBuilder
         return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
@@ -433,9 +389,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
@@ -447,18 +400,12 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public TransferList transferList() {
         return transferList;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
@@ -466,45 +413,34 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
-        this.tokenTransferLists = requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.tokenTransferLists = tokenTransferLists;
         transactionResultBuilder.tokenTransferLists(tokenTransferLists);
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<TokenTransferList> tokenTransferLists() {
         return tokenTransferLists;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
-        this.tokenType = requireNonNull(tokenType, "tokenType must not be null");
+        this.tokenType = requireNonNull(tokenType);
         return this;
     }
 
     @Override
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecord, "pendingAirdropRecord must not be null");
+        requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
@@ -513,21 +449,15 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
-        this.assessedCustomFees = requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
+        this.assessedCustomFees = requireNonNull(assessedCustomFees);
         ensureOutputBuilder();
         hasAssessedCustomFees = true;
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     public BlockStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
@@ -535,39 +465,24 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
-        this.ethereumHash = requireNonNull(ethereumHash, "ethereumHash must not be null");
+        this.ethereumHash = requireNonNull(ethereumHash);
         ensureOutputBuilder();
         return this;
     }
 
-    @NonNull
-    @Override
-    public EthereumTransactionStreamBuilder feeChargedToPayer(long amount) {
-        transactionResultBuilder.transactionFeeCharged(transactionFee + amount);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
         // These need not be externalized to block streams
-        this.paidStakingRewards = requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
+        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
+        this.paidStakingRewards = paidStakingRewards;
         transactionResultBuilder.paidStakingRewards(paidStakingRewards);
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder entropyNumber(final int num) {
@@ -576,21 +491,15 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
-        requireNonNull(prngBytes, "prngBytes must not be null");
+        requireNonNull(prngBytes);
         ensureOutputBuilder()
                 .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
@@ -607,9 +516,6 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
@@ -618,34 +524,22 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public ResponseCodeEnum status() {
         return status;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasContractResult() {
         return this.contractFunctionResult != null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getGasUsedForContractTxn() {
         return this.contractFunctionResult.gasUsed();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
@@ -653,9 +547,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
@@ -663,9 +554,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
@@ -673,20 +561,14 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate, "exchangeRate must not be null");
+        requireNonNull(exchangeRate);
         transactionResultBuilder.exchangeRate(exchangeRate);
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
@@ -696,9 +578,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
@@ -706,9 +585,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
@@ -716,9 +592,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
@@ -726,9 +599,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
@@ -736,27 +606,19 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
-        this.tokenID = requireNonNull(tokenID, "tokenID must not be null");
+        requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public TokenID tokenID() {
         return tokenID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder nodeID(long nodeId) {
@@ -764,26 +626,17 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getNewTotalSupply() {
         return newTotalSupply;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
@@ -791,30 +644,22 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
-        this.scheduledTransactionId = requireNonNull(scheduledTransactionID, "scheduledTransactionID must not be null");
+        this.scheduledTransactionId = requireNonNull(scheduledTransactionID);
         ensureOutputBuilder();
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
-        this.serialNumbers = requireNonNull(serialNumbers, "serialNumbers must not be null");
+        requireNonNull(serialNumbers, "serialNumbers must not be null");
+        this.serialNumbers = serialNumbers;
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public List<Long> serialNumbers() {
@@ -824,9 +669,6 @@ public class BlockStreamBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractStateChanges(
@@ -836,9 +678,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractActions(
@@ -848,9 +687,6 @@ public class BlockStreamBuilder
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public BlockStreamBuilder addContractBytecode(
@@ -862,9 +698,6 @@ public class BlockStreamBuilder
 
     // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
@@ -873,44 +706,29 @@ public class BlockStreamBuilder
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getNumberOfDeletedAccounts() {
         return deletedAccountBeneficiaries.size();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Nullable
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
         return deletedAccountBeneficiaries.get(deletedAccountID);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public TransactionBody transactionBody() {
         return inProgressBody();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     private TransactionBody inProgressBody() {
         try {
             final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
@@ -921,27 +739,18 @@ public class BlockStreamBuilder
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public HandleContext.TransactionCategory category() {
         return category;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void nullOutSideEffectFields() {
         serialNumbers.clear();

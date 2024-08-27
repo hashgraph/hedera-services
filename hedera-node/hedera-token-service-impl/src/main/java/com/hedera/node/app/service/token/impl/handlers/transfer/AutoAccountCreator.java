@@ -123,8 +123,8 @@ public class AutoAccountCreator {
      */
     public TransactionBody.Builder createHollowAccount(
             @NonNull final Bytes alias, final long balance, final int maxAutoAssociations, @NonNull final String memo) {
-        requireNonNull(alias, "alias must not be null");
-        requireNonNull(memo, "memo must not be null");
+        requireNonNull(alias);
+        requireNonNull(memo);
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
         return TransactionBody.newBuilder().memo(memo).cryptoCreateAccount(baseBuilder.build());

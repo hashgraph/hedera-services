@@ -261,6 +261,27 @@ public class HollowAccountFinalizationSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> hollowAccountCompletionWithHollowPayer() {
+        return defaultHapiSpec("hollowAccountCompletionWithHollowPayer")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        cryptoCreate("test"))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().maxAutoAssociations(-1).hasEmptyKey()),
+                        cryptoTransfer(moving(1, VANILLA_TOKEN).between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                .signedBy(SECP_256K1_SOURCE_KEY, TOKEN_TREASURY)
+                                .payingWith(SECP_256K1_SOURCE_KEY)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY)),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().hasNonEmptyKey()));
+    }
+
+    @HapiTest
     final Stream<DynamicTest> hollowAccountCompletionWithTokenAssociation() {
         return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
                 .given(

@@ -44,9 +44,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param payerID       the validated {@link AccountID} of the payer extracted from {@link #transactionID}
  * @param signatureMap  the {@link SignatureMap} (either from {@link Transaction#sigMap()} or
  *                      from {@link SignedTransaction#sigMap()}). Not all transactions require a signature map....
- * @param signedBytes   the bytes to use for signature verification.
+ * @param signedBytes   the bytes to use for signature verification
  * @param functionality the {@link HederaFunctionality} representing the transaction.
- * @param serializedTransaction the bytes representing the serialized transaction.
  */
 public record TransactionInfo(
         @NonNull Transaction transaction,

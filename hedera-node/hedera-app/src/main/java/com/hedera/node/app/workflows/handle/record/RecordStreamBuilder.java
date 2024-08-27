@@ -17,14 +17,11 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -150,9 +147,6 @@ public class RecordStreamBuilder
     // base transaction data
     private Transaction transaction;
 
-    @Nullable
-    private Bytes serializedTransaction;
-
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -209,16 +203,6 @@ public class RecordStreamBuilder
 
     private TokenID tokenID;
     private TokenType tokenType;
-
-    /**
-     * Creates new transaction record builder where reversion will leave its record in the stream
-     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
-     *
-     */
-    @VisibleForTesting
-    public RecordStreamBuilder() {
-        this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-    }
 
     public RecordStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -375,7 +359,7 @@ public class RecordStreamBuilder
 
     @Override
     public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
-        this.serializedTransaction = serializedTransaction;
+        // No-op, the record stream does not need the serialized transaction
         return this;
     }
 
@@ -587,8 +571,8 @@ public class RecordStreamBuilder
      * @return the builder
      */
     @Override
-    public RecordStreamBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
+    public RecordStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
@@ -1076,20 +1060,6 @@ public class RecordStreamBuilder
     }
 
     /**
-     * Sets the contractActions which are part of sidecar records.
-     *
-     * @param contractActions the contractActions
-     * @return the builder
-     */
-    @NonNull
-    public RecordStreamBuilder contractActions(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions) {
-        requireNonNull(contractActions, "contractActions must not be null");
-        this.contractActions = contractActions;
-        return this;
-    }
-
-    /**
      * Adds contractActions to sidecar records.
      *
      * @param contractActions the contractActions to add
@@ -1105,26 +1075,13 @@ public class RecordStreamBuilder
     }
 
     /**
-     * Sets the contractBytecodes which are part of sidecar records.
-     *
-     * @param contractBytecodes the contractBytecodes
-     * @return the builder
-     */
-    @NonNull
-    public RecordStreamBuilder contractBytecodes(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes) {
-        requireNonNull(contractBytecodes, "contractBytecodes must not be null");
-        this.contractBytecodes = contractBytecodes;
-        return this;
-    }
-
-    /**
      * Adds contractBytecodes to sidecar records.
      *
      * @param contractBytecode the contractBytecode to add
      * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
+    @Override
     @NonNull
     public RecordStreamBuilder addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
@@ -1198,12 +1155,6 @@ public class RecordStreamBuilder
         } catch (Exception e) {
             throw new IllegalStateException("Record being built for unparseable transaction", e);
         }
-    }
-
-    @NonNull
-    public EthereumTransactionStreamBuilder feeChargedToPayer(long amount) {
-        transactionRecordBuilder.transactionFee(transactionFee + amount);
-        return this;
     }
 
     /**

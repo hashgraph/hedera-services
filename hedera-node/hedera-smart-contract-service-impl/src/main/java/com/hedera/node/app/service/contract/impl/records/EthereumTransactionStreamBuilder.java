@@ -68,7 +68,4 @@ public interface EthereumTransactionStreamBuilder extends ContractOperationStrea
      */
     @NonNull
     EthereumTransactionStreamBuilder ethereumHash(@NonNull Bytes ethereumHash);
-
-    @NonNull
-    EthereumTransactionStreamBuilder feeChargedToPayer(long amount);
 }

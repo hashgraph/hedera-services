@@ -28,6 +28,8 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
+
 sourceSets {
     create("rcdiff")
     create("yahcli")
@@ -43,7 +45,7 @@ tasks.register<JavaExec>("runTestClient") {
 
 val prCheckTags =
     mapOf(
-        "hapiTestAdhoc" to "ADHOC",
+        "hapiTestAdhoc" to "ONEOFF",
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
         "hapiTestRestart" to "RESTART|UPGRADE",

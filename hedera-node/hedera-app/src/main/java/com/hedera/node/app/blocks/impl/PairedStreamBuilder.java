@@ -267,9 +267,7 @@ public class PairedStreamBuilder
 
     @Override
     public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
-        recordBuilder.congestionMultiplier(congestionMultiplier);
-        blockStreamBuilder.congestionMultiplier(congestionMultiplier);
-        return this;
+        return null;
     }
 
     @NonNull
@@ -357,14 +355,6 @@ public class PairedStreamBuilder
     public EthereumTransactionStreamBuilder ethereumHash(@NonNull Bytes ethereumHash) {
         recordBuilder.ethereumHash(ethereumHash);
         blockStreamBuilder.ethereumHash(ethereumHash);
-        return this;
-    }
-
-    @NonNull
-    @Override
-    public EthereumTransactionStreamBuilder feeChargedToPayer(long amount) {
-        recordBuilder.feeChargedToPayer(amount);
-        blockStreamBuilder.feeChargedToPayer(amount);
         return this;
     }
 
