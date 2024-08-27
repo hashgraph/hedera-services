@@ -44,4 +44,8 @@ public record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
     public boolean isUsedForPauseKey() {
         return (keyType & 64) != 0;
     }
+
+    public boolean isUsedForMetadataKey() {
+        return (keyType & 128) != 0;
+    }
 }
