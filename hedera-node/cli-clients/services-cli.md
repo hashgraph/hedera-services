@@ -27,9 +27,9 @@ Following a successful build, the jar file should in the `build/libs` directory 
 
 The services CLI is organized into commands and subcommands, with each command having its own set of options.
 The jar file can be run directly, but it's more convenient to use the [`services-cli.sh`](services-cli.sh)shell script.
-Inspired by the platform's [`pcli.sh`](../../platform-sdk/pcli.sh) script, `services-cli.sh`likewise provides a convenient
-wrapper for the jar file, particularly for computing the jar's needed classpath. (Note: these commands should
-also work correctly with the PCLI tool or its scripts, e.g. `pcli.sh`)
+Inspired by the platform's [`pcli.sh`](../../platform-sdk/swirlds-cli/pcli.sh) script, `services-cli.sh`
+likewise provides a convenient wrapper for the jar file, particularly for computing the jar's needed classpath.
+(Note: these commands should also work correctly with the PCLI tool or its scripts, e.g. `pcli.sh`)
 
 Using the shell script, the format of a command is as follows:
 
@@ -48,7 +48,7 @@ classes will be annotated with picocli's `@CommandLine.Command`, for example[`Ac
 The subcommands, on the other hand, are normally the real workhorses of the CLI, providing implementations for the
 actual tasks in class files annotated with _both_ `@CommandLine.Command` _and_ `@SubcommandOf`. To continue the
 `AccountBalanceCommand` example, the account balance command has a `SignBalance` subcommand, which is implemented
-in the [`SignBalanceCommand`](src/main/java/com/hedera/services/cli/sign/SignBalanceCommand.java) class.
+in the [`SignBalanceCommand`](src/main/java/com/hedera/services/cli/sign/AccountBalanceSignCommand.java) class.
 
 The `[sub/command options]` portion is a list of flags and arguments that are specific to the subcommand. There
 are some options applicable to the jar as a whole, but by and large the majority of arguments used by the script are
@@ -82,9 +82,9 @@ or command-specific options must come _after_ the command.
 The most notable PCLI option is `--load`. The `--load` option is used to specify classpath arguments that will
 load any jars necessary to run commands. By default, *both PCLI and Services CLI do _not_ load _any_ jars on
 the execution classpath, so this option is essentially required.* Both the PCLI and Services CLI scripts accept
-directory paths as arguments, and can be specified multiple times. While the easiest way to load any project-
-related jars would be to specify the project root directory, unfortunately this doesn't work (reason unknown).
-Instead, load the platform jars and the services jars separately, and in said order:
+directory paths as arguments, and can be specified multiple times. While the easiest way to load any project-related
+jars would be to specify the project root directory, unfortunately this doesn't work (reason unknown). Instead, load
+the platform jars and the services jars separately, and in said order:
 
 ```shell
 ./services-cli.sh --load "<project-root>/platform-sdk" --load "<project-root>/hedera-node>" <rest of cmd...>
@@ -115,6 +115,7 @@ We will use multi-line commands throughout this document, but be aware that they
 
 The following commands are available in the services CLI:
 
+* [BlockCommand](#BlockCommand)
 * [ContractCommand](#ContractCommand)
 * [AccountBalanceCommand](#AccountBalanceCommand)
 * [RecordStreamCommand](#RecordStreamCommand)
@@ -123,6 +124,10 @@ The following commands are available in the services CLI:
 * [SummarizeSignedStateFileCommand](#SummarizeSignedStateFileCommand)
 
 Each is discussed in more detail below.
+
+### BlockCommand
+
+TODO
 
 ### ContractCommand
 
@@ -133,12 +138,18 @@ TODO
 The account balance command also only has one subcommand, providing a way to sign account balance files.
 ***Note***: As of this writing, account balance files are either deprecated or soon-to-be-deprecated.
 
-#### Sign
+#### Account `sign`
 
 The `sign` subcommand is used to sign an account balance file with a cryptographic key provided by the user.
-Along with the key, an input account balance file is given, which the tool then uses to generate a signature
-that verifies the authenticity of the account balance file. This signature (or signatures) will be output to
-a separate file by the tool.
+Along with the key, an input account balance file path (or file paths) is given, which the tool then uses to
+generate a signature file that verifies the authenticity of the account balance files. This signature will be
+output to a separate file by the tool. In the case of multiple input files, the tool will generate a signature
+file for each input file. The signature file will have the same name as the input file, with `_sig` appended to
+the end.
+
+This command is a subcommand of the Platform CLI's `sign` command, which code can be referenced [here](../../platform-sdk/swirlds-platform-core/src/main/java/com/swirlds/platform/cli/SignCommand.java).
+
+##### Syntax
 
 The syntax of the sign subcommand is as follows:
 
@@ -151,11 +162,13 @@ account-balance sign \
 
 There are three required arguments for the sign subcommand:
 * `keyFilePath` - the path to the key file used to sign the account balance file. This file is expected to
-be a pfx private key.
-* `keyFilePassword` - the password needed to use the key file
-* `keyAlias` - the alias of the key in the key file
+be a .pfx private key.
+* `keyFilePassword` - the password needed to use the key file (typed in plaintext)
+* `keyAlias` - the alias of the key in the key file (also typed in plaintext)
 
-There are also some optional arguments:
+##### Options
+
+The account `sign` command accepts the following optional arguments:
 * `-p, --paths-to-sign` - a list of paths/files to sign. This option can contain single files as well as
 directories. If this option is not provided, the tool defaults to searching the current working directory.
 _Note:_ this option does _not_ recursively search for files to sign. If a directory is provided, only the
@@ -296,7 +309,46 @@ copy of each account balance file. The new `signatures` directory would therefor
 
 ### RecordStreamCommand
 
-TODO
+The `RecordStreamCommand` is used to perform operations on record files (`.rcd` or `.rcd.gz`), also known as record
+stream files. As with the [account balance](#AccountBalanceCommand) command, the record stream command has only one
+subcommand, the `sign` command.
+
+***NOTE:*** As of this writing, record stream files will soon be replaced with block stream files. (See the
+[BlockCommand](#BlockCommand) for more information on block files.)
+
+#### Record File `sign`
+
+Much like the account balance [`sign`](#Account-sign) command, the record stream's `sign` command is used to sign record
+files. Given a set of input paths and a private key, this command finds all relevant record files and signs each
+with the private key. The output is a resulting `_sig` file for each included record file, each of which can be used
+to verify the authenticity of its corresponding record file.
+
+This command is a subcommand of the Platform CLI's `sign` command, which code can be referenced [here](../../platform-sdk/swirlds-platform-core/src/main/java/com/swirlds/platform/cli/SignCommand.java).
+
+##### Syntax
+
+The syntax of the sign subcommand is almost identical to the account balance `sign` command. The only difference is
+the command name&ndash;use `record-stream` instead of `account-balance`:
+
+```shell
+./services-cli.sh [PCLI options] \
+record-stream sign \    # <-- Use record-stream instead of account-balance
+[sub/command options] \
+<keyFilePath> <keyFilePassword> <keyAlias>
+```
+
+The same three arguments are required to sign a record file. See the account balance `sign` command's [syntax](#Syntax)
+for more information.
+
+##### Options
+
+The record stream `sign` command accepts the same optional arguments as the account balance `sign` command.
+See its [options](#Options) for more details.
+
+#### Example Usage
+
+The record stream `sign` command should function identically to the account balance `sign` command. See its
+[example usage](#Example-Usage) section for detailed examples.
 
 ### DumpStateCommand
 
@@ -307,9 +359,5 @@ TODO
 TODO
 
 ### SummarizeSignedStateFileCommand
-
-TODO
-
-## Examples
 
 TODO
