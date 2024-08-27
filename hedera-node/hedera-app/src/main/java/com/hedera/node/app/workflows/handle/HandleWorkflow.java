@@ -29,17 +29,20 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -68,6 +71,7 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -78,6 +82,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,6 +99,8 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
+    // Temporary flag to control stream mode during transition to block streams
+    public static StreamMode STREAM_MODE = RECORDS;
 
     private final NetworkInfo networkInfo;
     private final NodeStakeUpdates nodeStakeUpdates;
@@ -107,6 +114,7 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
+    private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
@@ -135,6 +143,7 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
@@ -160,6 +169,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
@@ -173,6 +183,11 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = requireNonNull(migrationStateChanges);
+        // Temporary flag to control stream mode during transition to block streams
+        STREAM_MODE = configProvider
+                .getConfiguration()
+                .getConfigData(BlockStreamConfig.class)
+                .streamMode();
     }
 
     /**
@@ -187,7 +202,7 @@ public class HandleWorkflow {
         cacheWarmer.warm(state, round);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
-            // FUTURE: Calls StartRound on the BlockStreamManager
+            blockStreamManager.startRound(round, state);
         }
         recordCache.resetRoundReceipts();
         try {
@@ -199,12 +214,12 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(@NonNull State state, @NonNull Round round) {
+    private void handleEvents(@NonNull final State state, @NonNull final Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
             if (blockStreamConfig.streamBlocks()) {
-                // FUTURE: Stream EventMetadata
+                streamMetadata(event);
             }
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
@@ -232,7 +247,9 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, event, creator, platformTxn);
+                        handlePlatformTransaction(state, event, creator, platformTxn, blockStreamConfig);
+                    } else {
+                        // TODO - handle block and signature transactions here?
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -252,8 +269,15 @@ public class HandleWorkflow {
             blockRecordManager.endRound(state);
         }
         if (blockStreamConfig.streamBlocks()) {
-            // FUTURE: Calls EndRound on the BlockStreamManager
+            blockStreamManager.endRound(state);
         }
+    }
+
+    private void streamMetadata(@NonNull final ConsensusEvent event) {
+        final var metadataItem = BlockItem.newBuilder()
+                .eventHeader(new EventHeader(event.getEventCore(), event.getSignature()))
+                .build();
+        blockStreamManager.writeItem(metadataItem);
     }
 
     /**
@@ -265,28 +289,38 @@ public class HandleWorkflow {
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
+     * @param blockStreamConfig the block stream configuration
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction txn) {
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final BlockStreamConfig blockStreamConfig) {
         final var handleStart = System.nanoTime();
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.startUserTransaction(consensusNow, state);
+        }
+        // Because synthetic account creation records are only externalized on the first user transaction, we
+        // also postpone externalizing migration state changes until that same transactional unit
+        if (blockStreamConfig.streamBlocks() && !migrationStateChanges.isEmpty()) {
+            migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
+                    .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
+                            .build())
+                    .build()));
+            migrationStateChanges.clear();
         }
         final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
         }
         if (blockStreamConfig.streamBlocks()) {
-            // FUTURE: Writes block items using BlockStreamManager
+            handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
         }
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
