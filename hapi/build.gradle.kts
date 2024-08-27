@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.gradle.protobuf")
-    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.module.library")
+    id("com.hedera.gradle.feature.protobuf")
     id("com.hedera.gradle.feature.test-fixtures")
     id("com.hedera.pbj.pbj-compiler") version "0.9.2"
 }
@@ -55,4 +55,16 @@ testModuleInfo {
     requires("com.google.protobuf.util")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+}
+
+tasks.test {
+    // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
+    // class run in parallel.
+    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
+    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+    // limit amount of threads, so we do not use all CPU
+    systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.9"
+    // us parallel GC to keep up with high temporary garbage creation,
+    // and allow GC to use 40% of CPU if needed
+    jvmArgs("-XX:+UseParallelGC", "-XX:GCTimeRatio=90")
 }

@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.java") }
+plugins { id("com.hedera.gradle.module.application") }
 
 val sdkDir = layout.projectDirectory.dir("sdk")
 
-tasks.register<JavaExec>("run") {
-    group = "application"
+tasks.named<JavaExec>("run") {
     workingDir = sdkDir.asFile
-    mainClass.set("com.swirlds.platform.Browser")
+    mainClass = "com.swirlds.platform.Browser"
     classpath = sdkDir.asFileTree.matching { include("*.jar") }
     jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n")
     maxHeapSize = "8g"
 
-    // Running ':assemble' of all 'platform-sdk' subprojects before, will trigger
-    // copyLib/copyApp, of all projects that provide an application.
-    dependsOn(
-        rootProject.subprojects
-            .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
-            .map { "${it.path}:assemble" }
-    )
+    // Build everything for the 'sdk' folder
+    dependsOn(":swirlds:assemble")
 }
 
 val cleanRun =

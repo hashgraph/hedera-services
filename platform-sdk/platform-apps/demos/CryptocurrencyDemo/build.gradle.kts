@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("com.hedera.gradle.module.application") }
 
-application.mainClass.set("com.swirlds.demo.crypto.CryptocurrencyDemoMain")
+application.mainClass = "com.swirlds.demo.crypto.CryptocurrencyDemoMain"

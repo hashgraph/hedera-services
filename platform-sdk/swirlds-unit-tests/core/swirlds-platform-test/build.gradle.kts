@@ -15,8 +15,22 @@
  */
 
 plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.feature.benchmark")
+    id("java-library")
+    id("jacoco")
+    id("com.hedera.gradle.base.jpms-modules")
+    id("com.hedera.gradle.base.lifecycle")
+    id("com.hedera.gradle.base.version")
+    id("com.hedera.gradle.check.dependencies")
+    id("com.hedera.gradle.check.javac-lint")
+    id("com.hedera.gradle.check.spotless")
+    id("com.hedera.gradle.check.spotless-java")
+    id("com.hedera.gradle.check.spotless-kotlin")
+    id("com.hedera.gradle.feature.git-properties-file")
+    id("com.hedera.gradle.feature.java-compile")
+    id("com.hedera.gradle.feature.java-doc")
+    id("com.hedera.gradle.feature.java-execute")
+    id("com.hedera.gradle.feature.test")
+    id("com.hedera.gradle.report.test-logger")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default

@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+plugins { id("com.hedera.gradle.module.library") }
 
 description = "Hedera Smart Contract Service API"
 

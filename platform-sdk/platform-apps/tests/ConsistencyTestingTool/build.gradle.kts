@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("com.hedera.gradle.module.application") }
 
-application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
+application.mainClass = "com.swirlds.demo.consistency.ConsistencyTestingToolMain"
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 
