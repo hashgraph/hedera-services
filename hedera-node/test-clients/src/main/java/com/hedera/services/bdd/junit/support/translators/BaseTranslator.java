@@ -168,6 +168,11 @@ public class BaseTranslator {
      * @return the next created entity number
      */
     public long nextCreatedNum(@NonNull final EntityType type) {
+        final var createdNums = nextCreatedNums.get(type);
+        if (createdNums == null) {
+            log.error("No created numbers found for entity type {}", type);
+            return -1L;
+        }
         return nextCreatedNums.get(type).removeFirst();
     }
 
