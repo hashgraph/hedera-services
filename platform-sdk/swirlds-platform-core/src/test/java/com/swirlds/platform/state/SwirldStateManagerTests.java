@@ -122,9 +122,7 @@ class SwirldStateManagerTests {
         final MerkleStateRoot state =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
 
-        final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
-        when(platformState.copy()).thenReturn(platformState);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
 
         state.updatePlatformState(platformState);
