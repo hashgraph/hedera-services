@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -67,6 +68,8 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -1114,5 +1117,18 @@ public class CreatePrecompileSuite {
                                                 .build()),
                                         199L),
                         getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))));
+    }
+
+    @Contract(contract = "CreateTokenVTwo", creationGas = 1_000_000L)
+    static SpecContract createTokenV2;
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenV2HappyPath() {
+        return hapiTest(
+                createTokenV2
+                        .call("createTokenWithMetadata")
+                        .sending(2 * ONE_HBAR)
+                        .andAssert(txn -> txn.logged()),
+                getTxnRecord("asd").logged());
     }
 }
