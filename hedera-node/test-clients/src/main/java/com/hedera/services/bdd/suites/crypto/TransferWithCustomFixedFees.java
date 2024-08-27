@@ -64,7 +64,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 public class TransferWithCustomFixedFees {
     private static final long hbarFee = 1_000L;
-    private static final long htsFee = 100L;
+    public static final long htsFee = 100L;
     private static final long tokenTotal = 1_000L;
     private static final long numerator = 1L;
     private static final long denominator = 10L;

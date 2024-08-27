@@ -933,6 +933,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .tinybarBalance(Long.MAX_VALUE)
                 .headNftId((NftID) null)
                 .headNftSerialNumber(0L)
+                .receiverSigRequired(false)
                 .build();
         tokenReceiverNoAssociationsAccount = givenValidAccountBuilder()
                 .build()

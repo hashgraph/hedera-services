@@ -99,7 +99,6 @@ public class TokenHandlersTest {
     private TokenCancelAirdropHandler tokenCancelAirdropHandler;
     private TokenClaimAirdropHandler tokenClaimAirdropHandler;
     private TokenAirdropHandler tokenAirdropHandler;
-
     private TokenHandlers tokenHandlers;
 
     @BeforeEach
