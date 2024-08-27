@@ -203,9 +203,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
             updateRunningEventHash(consensusRound);
 
-            final StateAndRound stateAndRound = createSignedState(consensusRound);
-            swirldStateManager.sealConsensusRound(consensusRound);
-            return stateAndRound;
+            return createSignedState(consensusRound);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
             Thread.currentThread().interrupt();
@@ -275,6 +273,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
+        swirldStateManager.sealConsensusRound(consensusRound);
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
         final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();

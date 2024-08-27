@@ -369,7 +369,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public void sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
-        lifecycles.onSealConsensusRound(round);
+        throwIfImmutable();
+        lifecycles.onSealConsensusRound(round, this);
     }
 
     /**

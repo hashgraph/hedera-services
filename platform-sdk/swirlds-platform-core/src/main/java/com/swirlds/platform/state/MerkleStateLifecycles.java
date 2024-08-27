@@ -64,7 +64,7 @@ public interface MerkleStateLifecycles {
      * Called by the platform after it has made all its changes to this state for the given round.
      * @param round the round whose platform state changes are completed
      */
-    void onSealConsensusRound(@NonNull Round round);
+    void onSealConsensusRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Called when the platform is initializing the network state.

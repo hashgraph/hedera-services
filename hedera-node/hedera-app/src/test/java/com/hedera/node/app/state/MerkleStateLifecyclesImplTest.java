@@ -100,9 +100,9 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnSealConsensusRound() {
-        subject.onSealConsensusRound(round);
+        subject.onSealConsensusRound(round, merkleStateRoot);
 
-        verify(hedera).onSealConsensusRound(round);
+        verify(hedera).onSealConsensusRound(round, merkleStateRoot);
     }
 
     @Test
