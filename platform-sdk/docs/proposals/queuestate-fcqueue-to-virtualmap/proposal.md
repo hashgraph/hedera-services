@@ -66,7 +66,7 @@ No changes to `ReadableQueueStateImpl` and `WritableQueueStateImpl` classes.
 The underlying `VirtualMap` will map longs to E, where E is the type of the queue. The longs
 will be used to organize the links between queue elements: if an element has position N, then
 its next element has position N+1. When an empty queue is created, its head and tail are both
-pointing to 0. The head is _the next_ position to add, the tails is _the first_ position to
+pointing to 0. The head is _the next_ position to add, the tails is _the current_ position to
 remove. If head and tail positions are equal, the queue is empty.
 
 ![Map keys](map-keys.svg)
@@ -140,19 +140,19 @@ state will be used to start a node with the latest version that includes queue s
 
 ## Performance impact
 
-Queue operations (add, remove): both `FCQueue` and `VirtualMap` add and remove elements fast.
+**Queue operations (add, remove)**: both `FCQueue` and `VirtualMap` add and remove elements fast.
 No performance impact is expected.
 
-Hashing: `FCQueue` has a very efficient hashing algorithm, it hashes only newly inserted
+**Hashing**: `FCQueue` has a very efficient hashing algorithm, it hashes only newly inserted
 elements and "unhashes" removed elements. It's done on a single thread, however. `VirtualMap`
 needs to rehash more entities because of its tree structure, but it's done in parallel on
 many threads. No significant performance impact is expected.
 
-Serialization (including snapshots): `VirtualMap` is much faster than `FCQueue`, since it
+**Serialization (including snapshots)**: `VirtualMap` is much faster than `FCQueue`, since it
 only needs to serialize a small portion of its data (virtual node cache), while `FCQueue`
 always serializes all its elements. Positive performance impact is expected.
 
-Reconnects: `FCQueue` is transferred to the learner completely, even if just a few elements
+**Reconnects**: `FCQueue` is transferred to the learner completely, even if just a few elements
 are dirty in the queue. It's done by serializing the queue node to the socket stream, which
 is slow in itself. `VirtualMap` is synchronized more efficiently, using many threads and
 sending only dirty virtual nodes (plus some overhead). Minor positive performance impact is
