@@ -50,19 +50,10 @@ public class BlockingSwirldState extends MerkleStateRoot {
             throw new RuntimeException(e);
         }
     }
-
-    // The version history of this class.
-    // Versions that have been released must NEVER be given a different value.
-    /**
-     * In this version, serialization was performed by copyTo/copyToExtra and deserialization was performed by
-     * copyFrom/copyFromExtra. This version is not supported by later deserialization methods and must be handled
-     * specially by the platform.
-     */
-    private static final int VERSION_ORIGINAL = 1;
     /**
      * In this version, serialization was performed by serialize/deserialize.
      */
-    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = MerkleStateRoot.VERSION_2;
+    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = MerkleStateRoot.CURRENT_VERSION;
 
     private static final int CLASS_VERSION = VERSION_MIGRATE_TO_SERIALIZABLE;
 

@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state.service;
 
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjAddressBook;
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjConsensusSnapshot;
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjPlatformState;
-import static com.swirlds.platform.state.service.impl.PbjConverter.toPbjTimestamp;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjConsensusSnapshot;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjTimestamp;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -37,12 +37,13 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * Extends the read-only platform state store to provide write access to the platform state.
  */
-public class WritablePlatformStateStore extends ReadablePlatformStateStore implements PlatformStateAccessor {
+public class WritablePlatformStateStore extends ReadablePlatformStateStore {
     private final WritableStates writableStates;
     private final WritableSingletonState<PlatformState> state;
 
@@ -71,10 +72,20 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
         this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
     }
 
+    /**
+     * Overwrite the current platform state with the provided state.
+     */
     public void setAllFrom(@NonNull final PlatformStateAccessor accessor) {
         this.update(toPbjPlatformState(accessor));
     }
 
+    private void setAllFrom(@NonNull final PlatformStateValueAccumulator accumulator) {
+        this.update(toPbjPlatformState(stateOrThrow(), accumulator));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         requireNonNull(creationVersion);
@@ -82,18 +93,27 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
         update(previousState.copyBuilder().creationSoftwareVersion(creationVersion.getPbjSemanticVersion()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
         update(previousState.copyBuilder().addressBook(toPbjAddressBook(addressBook)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
         final var previousState = stateOrThrow();
         update(previousState.copyBuilder().previousAddressBook(toPbjAddressBook(addressBook)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setRound(final long round) {
         final var previousState = stateOrThrow();
@@ -105,6 +125,9 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                         .round(round)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         final var previousState = stateOrThrow();
@@ -114,6 +137,9 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                         legacyRunningEventHash == null ? Bytes.EMPTY : legacyRunningEventHash.getBytes()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         requireNonNull(consensusTimestamp);
@@ -126,12 +152,18 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                         .consensusTimestamp(toPbjTimestamp(consensusTimestamp))));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setRoundsNonAncient(final int roundsNonAncient) {
         final var previousState = stateOrThrow();
         update(previousState.copyBuilder().roundsNonAncient(roundsNonAncient));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setSnapshot(@NonNull final com.swirlds.platform.consensus.ConsensusSnapshot snapshot) {
         requireNonNull(snapshot);
@@ -139,18 +171,27 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
         update(previousState.copyBuilder().consensusSnapshot(toPbjConsensusSnapshot(snapshot)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setFreezeTime(@Nullable final Instant freezeTime) {
         final var previousState = stateOrThrow();
         update(previousState.copyBuilder().freezeTime(toPbjTimestamp(freezeTime)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         final var previousState = stateOrThrow();
         update(previousState.copyBuilder().lastFrozenTime(toPbjTimestamp(lastFrozenTime)));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setFirstVersionInBirthRoundMode(@NonNull final SoftwareVersion firstVersionInBirthRoundMode) {
         requireNonNull(firstVersionInBirthRoundMode);
@@ -161,6 +202,9 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 .build());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
@@ -170,12 +214,25 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
                 .build());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         final var previousState = stateOrThrow();
         update(previousState
                 .copyBuilder()
                 .lowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeBirthRoundMode));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bulkUpdate(@NonNull final Consumer<PlatformStateAccessor> updater) {
+        final var accumulator = new PlatformStateValueAccumulator();
+        updater.accept(accumulator);
+        setAllFrom(accumulator);
     }
 
     private @NonNull PlatformState stateOrThrow() {

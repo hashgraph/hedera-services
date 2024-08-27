@@ -110,8 +110,11 @@ class StateRegistryTests {
         final MerkleStateRoot stateToSerialize =
                 new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         final var platformState = stateToSerialize.getPlatformState();
-        platformState.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
-        platformState.setLegacyRunningEventHash(new Hash());
+        platformState.bulkUpdate(v -> {
+            v.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
+            v.setLegacyRunningEventHash(new Hash());
+        });
+
         states.add(stateToSerialize);
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);

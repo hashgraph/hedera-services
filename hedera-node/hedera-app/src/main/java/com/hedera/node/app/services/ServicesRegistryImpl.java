@@ -63,6 +63,10 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         this.entries = new TreeSet<>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
     public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
         requireNonNull(serviceNames);

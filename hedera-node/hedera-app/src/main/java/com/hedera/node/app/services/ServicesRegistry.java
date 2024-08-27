@@ -84,5 +84,6 @@ public interface ServicesRegistry {
      * @param serviceNames the names of the services to include in the sub-registry
      * @return the sub-registry
      */
+    @NonNull
     ServicesRegistry subRegistryFor(@NonNull String... serviceNames);
 }

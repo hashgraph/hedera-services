@@ -24,6 +24,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 /**
  * This interface represents the platform state and provide access to the state's properties.
@@ -240,4 +241,10 @@ public interface PlatformStateAccessor {
      *                                                  enabled
      */
     void setLowestJudgeGenerationBeforeBirthRoundMode(long lowestJudgeGenerationBeforeBirthRoundMode);
+
+    /**
+     * This is a convenience method to update multiple fields in the platform state in a single operation.
+     * @param updater a consumer that updates the platform state
+     */
+    void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater);
 }

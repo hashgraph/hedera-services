@@ -96,6 +96,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -1301,7 +1302,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     @Override
     public void init(
-            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);

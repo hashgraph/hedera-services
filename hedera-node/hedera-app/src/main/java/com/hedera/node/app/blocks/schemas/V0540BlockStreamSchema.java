@@ -63,9 +63,15 @@ public class V0540BlockStreamSchema extends Schema {
     private static final String SHARED_BLOCK_RECORD_INFO = "SHARED_BLOCK_RECORD_INFO";
     private static final String SHARED_RUNNING_HASHES = "SHARED_RUNNING_HASHES";
 
+    /**
+     * The version of the schema.
+     */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
+    /**
+     * Schema constructor.
+     */
     public V0540BlockStreamSchema() {
         super(VERSION);
     }

@@ -43,6 +43,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -376,7 +377,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     @Override
     public void init(
-            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         this.platform = (SwirldsPlatform) platform;
 
         if (trigger == InitTrigger.GENESIS) {
