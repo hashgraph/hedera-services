@@ -30,7 +30,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -53,7 +52,6 @@ public record RecordDispatch(
         @NonNull SavepointStackImpl stack,
         @NonNull HandleContext.TransactionCategory txnCategory,
         @NonNull FinalizeContext finalizeContext,
-        @NonNull PlatformState platformState,
         @NonNull PreHandleResult preHandleResult,
         @NonNull HandleContext.ConsensusThrottling throttleStrategy)
         implements Dispatch {}

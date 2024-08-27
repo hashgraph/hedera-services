@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.swirlds.platform.system.address;
 
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.Round;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Listener invoked for each consensus round that occurs. */
-@FunctionalInterface
-public interface HandleConsensusRoundListener {
-    void onConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
-}
+/**
+ * Signals that a new roster has been selected. This happens once per round regardless of whether or not the new roster
+ * is any different that the prior roster.
+ *
+ * @param effectiveRound    the round in which this roster becomes effective
+ * @param addressBook        the new address book
+ */
+public record RoundAddressBookRecord(long effectiveRound, @NonNull AddressBook addressBook) {}

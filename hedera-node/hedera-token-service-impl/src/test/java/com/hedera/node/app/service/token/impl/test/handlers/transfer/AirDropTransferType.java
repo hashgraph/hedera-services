@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.roster;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
-import com.swirlds.platform.system.address.AddressBook;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-/**
- * Signals that a new roster has been selected. This happens once per round regardless of whether or not the new roster
- * is any different that the prior roster.
- *
- * @param effectiveRound the round in which this roster becomes effective
- * @param roster         the new roster
- */
-public record UpdatedRoster(long effectiveRound, @NonNull AddressBook roster) {}
+public enum AirDropTransferType {
+    TOKEN_AIRDROP,
+    NFT_AIRDROP,
+    TOKEN_AND_NFT_AIRDROP
+}
