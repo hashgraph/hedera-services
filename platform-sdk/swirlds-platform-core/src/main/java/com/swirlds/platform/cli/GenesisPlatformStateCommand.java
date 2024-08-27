@@ -77,12 +77,14 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformStateAccessor platformState =
                     reservedSignedState.get().getState().getPlatformState();
-            System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformStateAccessor.GENESIS_ROUND);
-            platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
-            System.out.printf("Nullifying Address Books %n");
-            platformState.setAddressBook(null);
-            platformState.setPreviousAddressBook(null);
+            platformState.bulkUpdate(v -> {
+                System.out.printf("Replacing platform data %n");
+                v.setRound(PlatformStateAccessor.GENESIS_ROUND);
+                v.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+                System.out.printf("Nullifying Address Books %n");
+                v.setAddressBook(null);
+                v.setPreviousAddressBook(null);
+            });
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

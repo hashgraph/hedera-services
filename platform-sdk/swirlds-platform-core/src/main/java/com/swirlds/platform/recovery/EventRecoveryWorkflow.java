@@ -381,14 +381,16 @@ public final class EventRecoveryWorkflow {
 
         final PlatformStateAccessor platformState = newState.getPlatformState();
 
-        platformState.setRound(round.getRoundNum());
-        platformState.setLegacyRunningEventHash(getHashEventsCons(
-                previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
-        platformState.setConsensusTimestamp(currentRoundTimestamp);
-        platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
-                round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
-        platformState.setCreationSoftwareVersion(
-                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+        platformState.bulkUpdate(v -> {
+            v.setRound(round.getRoundNum());
+            v.setLegacyRunningEventHash(getHashEventsCons(
+                    previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
+            v.setConsensusTimestamp(currentRoundTimestamp);
+            v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
+                    round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
+            v.setCreationSoftwareVersion(
+                    previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+        });
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),

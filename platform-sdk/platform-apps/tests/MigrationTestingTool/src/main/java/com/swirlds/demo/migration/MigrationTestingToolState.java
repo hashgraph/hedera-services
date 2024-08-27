@@ -43,6 +43,8 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -218,8 +220,9 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     @Override
     public void init(
-            final Platform platform, final InitTrigger trigger, final SoftwareVersion previousSoftwareVersion) {
-
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
         if (merkleMap != null) {
             logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());

@@ -185,12 +185,14 @@ public class RandomSignedStateGenerator {
 
         final PlatformStateAccessor platformState = stateInstance.getPlatformState();
 
-        platformState.setSnapshot(consensusSnapshotInstance);
-        platformState.setAddressBook(addressBookInstance);
-        platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setCreationSoftwareVersion(softwareVersionInstance);
-        platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setConsensusTimestamp(consensusTimestampInstance);
+        platformState.bulkUpdate(v -> {
+            v.setSnapshot(consensusSnapshotInstance);
+            v.setAddressBook(addressBookInstance);
+            v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
+            v.setCreationSoftwareVersion(softwareVersionInstance);
+            v.setRoundsNonAncient(roundsNonAncientInstance);
+            v.setConsensusTimestamp(consensusTimestampInstance);
+        });
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;

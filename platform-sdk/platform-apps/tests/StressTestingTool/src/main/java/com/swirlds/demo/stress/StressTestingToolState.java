@@ -40,6 +40,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 
@@ -82,7 +83,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     public void init(
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
-            @NonNull final SoftwareVersion previousSoftwareVersion) {
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
     }
 

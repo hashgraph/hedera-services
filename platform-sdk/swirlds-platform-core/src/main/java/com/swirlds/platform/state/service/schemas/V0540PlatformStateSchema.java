@@ -25,6 +25,10 @@ import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
+/**
+ * This is a schema for the platform state that is represented by a singleton. The schema is responsible for
+ * registering {@link #GENESIS_PLATFORM_STATE} state if an instance of the state does not exist.
+ */
 public class V0540PlatformStateSchema extends Schema {
     public static final PlatformState GENESIS_PLATFORM_STATE =
             new PlatformState(SemanticVersion.DEFAULT, 0, null, null, null, Bytes.EMPTY, 0L, 0L, null, null, null);

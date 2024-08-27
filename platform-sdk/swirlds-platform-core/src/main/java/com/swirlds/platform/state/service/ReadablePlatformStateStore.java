@@ -16,10 +16,9 @@
 
 package com.swirlds.platform.state.service;
 
-import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjAddressBook;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjConsensusSnapshot;
-import static com.swirlds.platform.state.service.impl.PbjConverter.fromPbjTimestamp;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjAddressBook;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjConsensusSnapshot;
+import static com.swirlds.platform.state.service.PbjConverter.fromPbjTimestamp;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
@@ -36,6 +35,7 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -71,24 +71,36 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         this(readableStates, UNKNOWN_VERSION_FACTORY);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public SoftwareVersion getCreationSoftwareVersion() {
         return versionFactory.apply(stateOrThrow().creationSoftwareVersionOrThrow());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public AddressBook getAddressBook() {
         return fromPbjAddressBook(stateOrThrow().addressBook());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public AddressBook getPreviousAddressBook() {
         return fromPbjAddressBook(stateOrThrow().previousAddressBook());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getRound() {
         final var consensusSnapshot = stateOrThrow().consensusSnapshot();
@@ -99,6 +111,9 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public Hash getLegacyRunningEventHash() {
@@ -106,6 +121,9 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         return hash.length() == 0 ? null : new Hash(hash.toByteArray());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public Instant getConsensusTimestamp() {
@@ -116,6 +134,9 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         return fromPbjTimestamp(consensusSnapshot.consensusTimestamp());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getAncientThreshold() {
         final var consensusSnapshot = stateOrThrow().consensusSnapshot();
@@ -128,29 +149,44 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         return minimumJudgeInfos.getFirst().minimumJudgeAncientThreshold();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getRoundsNonAncient() {
         return stateOrThrow().roundsNonAncient();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public ConsensusSnapshot getSnapshot() {
         return fromPbjConsensusSnapshot(stateOrThrow().consensusSnapshot());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Instant getFreezeTime() {
         return fromPbjTimestamp(stateOrThrow().freezeTime());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public Instant getLastFrozenTime() {
         return fromPbjTimestamp(stateOrThrow().lastFrozenTime());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public SoftwareVersion getFirstVersionInBirthRoundMode() {
@@ -158,78 +194,131 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
         return version == null ? null : versionFactory.apply(version);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getLastRoundBeforeBirthRoundMode() {
         return stateOrThrow().lastRoundBeforeBirthRoundMode();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getLowestJudgeGenerationBeforeBirthRoundMode() {
         return stateOrThrow().lowestJudgeGenerationBeforeBirthRoundMode();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setAddressBook(@Nullable AddressBook addressBook) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setPreviousAddressBook(@Nullable AddressBook addressBook) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setRound(long round) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLegacyRunningEventHash(@Nullable Hash legacyRunningEventHash) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setConsensusTimestamp(@NonNull Instant consensusTimestamp) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setRoundsNonAncient(int roundsNonAncient) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setSnapshot(@NonNull ConsensusSnapshot snapshot) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setFreezeTime(@Nullable Instant freezeTime) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLastFrozenTime(@Nullable Instant lastFrozenTime) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLastRoundBeforeBirthRoundMode(long lastRoundBeforeBirthRoundMode) {
         throw new MutabilityException("Platform state is read-only");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(long lowestJudgeGenerationBeforeBirthRoundMode) {
+        throw new MutabilityException("Platform state is read-only");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
         throw new MutabilityException("Platform state is read-only");
     }
 

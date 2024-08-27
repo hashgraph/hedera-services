@@ -205,7 +205,7 @@ public class ReadableFreezeUpgradeActions {
      * @return true if a freeze is scheduled, false otherwise
      */
     public boolean isFreezeScheduled(@NonNull final ReadablePlatformStateStore platformStateStore) {
-        requireNonNull(platformStateStore, "Cannot check freeze schedule without access to the dual state");
+        requireNonNull(platformStateStore, "Cannot check freeze schedule without access to the platform state");
         final var freezeTime = platformStateStore.getFreezeTime();
         return freezeTime != null && !freezeTime.equals(platformStateStore.getLastFrozenTime());
     }
