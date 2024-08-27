@@ -37,7 +37,8 @@ public record BlockStreamConfig(
         /* [FILE|GRPC] */
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation) {
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
+        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {
     public boolean streamBlocks() {
         return streamMode == StreamMode.BLOCKS || streamMode == StreamMode.BOTH;
     }

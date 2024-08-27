@@ -269,7 +269,7 @@ public class HandleWorkflow {
             blockRecordManager.endRound(state);
         }
         if (blockStreamConfig.streamBlocks()) {
-            blockStreamManager.endRound(state);
+            blockStreamManager.endRound(state, round.getRoundNum());
         }
     }
 

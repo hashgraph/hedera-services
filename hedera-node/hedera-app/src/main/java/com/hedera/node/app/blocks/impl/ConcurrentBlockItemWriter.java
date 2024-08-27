@@ -78,6 +78,11 @@ public class ConcurrentBlockItemWriter implements BlockItemWriter {
         appendSerialAsyncTask(writer::closeBlock);
     }
 
+    @Override
+    public boolean isClosed() {
+        return writer.isClosed();
+    }
+
     private synchronized void appendSerialAsyncTask(@NonNull final Runnable task) {
         // Check if the lastFuture completed exceptionally
         if (lastFutureRef.isCompletedExceptionally()) {

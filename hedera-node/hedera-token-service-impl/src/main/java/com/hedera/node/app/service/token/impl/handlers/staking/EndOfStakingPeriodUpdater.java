@@ -98,6 +98,8 @@ public class EndOfStakingPeriodUpdater {
      */
     public @Nullable StreamBuilder updateNodes(
             @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+        requireNonNull(context);
+        requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 

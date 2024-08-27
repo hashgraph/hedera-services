@@ -87,7 +87,7 @@ final class BlockStreamServiceTest {
 
             schema.migrate(migrationContext);
             assertEquals(
-                    new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture.getValue());
+                    new BlockStreamInfo(0, null, Bytes.EMPTY, null, Bytes.EMPTY), blockInfoCapture.getValue());
             return null;
         });
         BlockStreamService blockStreamService = new BlockStreamService(DEFAULT_CONFIG);
