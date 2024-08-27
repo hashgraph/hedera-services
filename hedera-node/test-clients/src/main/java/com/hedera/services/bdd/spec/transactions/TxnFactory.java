@@ -451,15 +451,15 @@ public class TxnFactory {
                 .build();
     }
 
+    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
+        return builder -> {};
+    }
+
     public Consumer<TokenCancelAirdropTransactionBody.Builder> defaultDefTokenCancelAirdropTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<TokenClaimAirdropTransactionBody.Builder> defaultDefTokenClaimAirdropTransactionBody() {
-        return builder -> {};
-    }
-
-    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
         return builder -> {};
     }
 }
