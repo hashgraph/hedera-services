@@ -22,7 +22,6 @@ public class TestTags {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static final String ADHOC = "ADHOC";
     public static final String CRYPTO = "CRYPTO";
     public static final String SMART_CONTRACT = "SMART_CONTRACT";
     public static final String LONG_RUNNING = "LONG_RUNNING";
@@ -48,4 +47,8 @@ public class TestTags {
      * ECDSA keys (whose signatures are inherently random).
      */
     public static final String NOT_REPEATABLE = "NOT_REPEATABLE";
+    /**
+     * Tags a test that can be run alone, without any other tests.
+     */
+    public static final String ADHOC = "ADHOC";
 }
