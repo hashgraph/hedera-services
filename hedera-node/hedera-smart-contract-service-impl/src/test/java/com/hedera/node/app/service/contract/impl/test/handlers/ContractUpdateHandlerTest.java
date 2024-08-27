@@ -160,6 +160,39 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     }
 
     @Test
+    void callsKey2xIfAdminKeyRequired() throws PreCheckException {
+        when(payerAccount.keyOrThrow()).thenReturn(AN_ED25519_KEY);
+        when(accountStore.getContractById(targetContract)).thenReturn(payerAccount);
+
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .memo("new memo"))
+                .transactionID(transactionID)
+                .build();
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
+
+        verify(payerAccount, times(2)).key();
+    }
+
+    @Test
+    void callsKey1xIfAdminKeyNotRequired() throws PreCheckException {
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .expirationTime(Timestamp.newBuilder().seconds(1L)))
+                .transactionID(transactionID)
+                .build();
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
+
+        verify(payerAccount, times(1)).key();
+    }
+
+    @Test
     void handleWithNullContextFails() {
         final HandleContext context = null;
         assertThrows(NullPointerException.class, () -> subject.handle(context));
