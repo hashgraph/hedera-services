@@ -36,11 +36,14 @@ public class UtilPrngTranslator implements BlockTransactionPartsTranslator {
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
-                final var output = parts.outputOrThrow().utilPrngOrThrow();
-                switch (output.entropy().kind()) {
-                    case UNSET -> throw new IllegalStateException("Successful UtilPrng output missing entropy");
-                    case PRNG_BYTES -> recordBuilder.prngBytes(output.prngBytesOrThrow());
-                    case PRNG_NUMBER -> recordBuilder.prngNumber(output.prngNumberOrThrow());
+                final var output = parts.outputOrThrow();
+                if (output.hasUtilPrng()) {
+                    final var utilPrng = output.utilPrngOrThrow();
+                    switch (utilPrng.entropy().kind()) {
+                        case UNSET -> throw new IllegalStateException("Successful UtilPrng output missing entropy");
+                        case PRNG_BYTES -> recordBuilder.prngBytes(utilPrng.prngBytesOrThrow());
+                        case PRNG_NUMBER -> recordBuilder.prngNumber(utilPrng.prngNumberOrThrow());
+                    }
                 }
             }
         });

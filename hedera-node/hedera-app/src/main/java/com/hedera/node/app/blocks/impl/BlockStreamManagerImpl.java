@@ -178,17 +178,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         block.writer().closeBlock();
     }
 
-    // FUTURE - remove this after updating DefaultTransactionHandler to call into the block stream manager
-    // after setting the last frozen time and running event hash; this is a hack to capture the last of
-    // those state changes in the freeze round
-    @Override
-    public void writeFreezeBlock(@NonNull final State state, @NonNull final Instant consensusNow) {
-        requireNonNull(state);
-        requireNonNull(consensusNow);
-        startBlock(consensusNow, state);
-        endBlock(MOCK_HASH);
-    }
-
     @Override
     public void writeItem(@NonNull final BlockItem item) {
         pendingItems.add(item);

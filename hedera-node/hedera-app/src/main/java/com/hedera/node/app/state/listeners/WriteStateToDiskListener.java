@@ -18,7 +18,6 @@ package com.hedera.node.app.state.listeners;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
@@ -52,15 +51,12 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     private final Supplier<AutoCloseableWrapper<State>> stateAccessor;
     private final Executor executor;
     private final ConfigProvider configProvider;
-    private final BlockStreamManager blockStreamManager;
 
     @Inject
     public WriteStateToDiskListener(
             @NonNull final Supplier<AutoCloseableWrapper<State>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final BlockStreamManager blockStreamManager) {
-        this.blockStreamManager = blockStreamManager;
+            @NonNull final ConfigProvider configProvider) {
         requireNonNull(stateAccessor);
         requireNonNull(executor);
         requireNonNull(configProvider);
@@ -96,7 +92,6 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                         readableStakingInfoStore);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
-                blockStreamManager.writeFreezeBlock(wrappedState.get(), notification.getConsensusTimestamp());
             } catch (Exception e) {
                 log.error("Error while responding to freeze state notification", e);
             }

@@ -104,7 +104,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onSealConsensusRound(@NonNull Round round) {
+        public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
             // No-op
         }
 

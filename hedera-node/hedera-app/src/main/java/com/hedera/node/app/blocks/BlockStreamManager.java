@@ -22,7 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -58,11 +57,6 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
-
-    /**
-     * Writes the final block items for the freeze round to a new block.
-     */
-    void writeFreezeBlock(@NonNull State state, @NonNull Instant consensusNow);
 
     /**
      * Completes the block proof for the given block with the given signature.

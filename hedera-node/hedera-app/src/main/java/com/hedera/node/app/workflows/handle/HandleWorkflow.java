@@ -268,9 +268,6 @@ public class HandleWorkflow {
         if (userTransactionsHandled.get() && blockStreamConfig.streamRecords()) {
             blockRecordManager.endRound(state);
         }
-        if (blockStreamConfig.streamBlocks()) {
-            blockStreamManager.endRound(state, round.getRoundNum());
-        }
     }
 
     private void streamMetadata(@NonNull final ConsensusEvent event) {

@@ -630,6 +630,11 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
 
             @Override
+            public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
             public void onStateInitialized(
                     @NonNull State state,
                     @NonNull Platform platform,
