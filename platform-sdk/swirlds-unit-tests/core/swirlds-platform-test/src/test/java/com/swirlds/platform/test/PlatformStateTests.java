@@ -57,8 +57,8 @@ class PlatformStateTests {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final PlatformState platformState =
-                SignedStateUtils.randomSignedState(0).getState().getPlatformState();
+        final PlatformState platformState = new PlatformState();
+
         final PlatformState copy = platformState.copy();
 
         MerkleCryptoFactory.getInstance().digestTreeSync(platformState);
@@ -81,7 +81,7 @@ class PlatformStateTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final InputOutputStream io = new InputOutputStream();
-        final PlatformState state = randomPlatformState();
+        final PlatformState state = (PlatformState) randomPlatformState();
         io.getOutput().writeMerkleTree(testDirectory, state);
 
         io.startReading();

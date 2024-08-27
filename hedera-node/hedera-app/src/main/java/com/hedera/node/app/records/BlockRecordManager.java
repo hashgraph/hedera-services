@@ -19,7 +19,6 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -67,14 +66,12 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * <p>The BlockRecordManager may choose to close one or more files if the consensus time threshold has passed.
      *
      * @param consensusTime The consensus time of the user transaction we are about to start executing. It must be the
-     *                      adjusted consensus time, not the platform assigned consensus time. Assuming the two are
-     *                      different.
-     * @param state         The state to read BlockInfo from and update when new blocks are created
-     * @param platformState The platform state, which contains the last freeze time
-     * @return               true if a new block was created, false otherwise
+     * adjusted consensus time, not the platform assigned consensus time. Assuming the two are
+     * different.
+     * @param state The state to read BlockInfo from and update when new blocks are created
+     * @return true if a new block was created, false otherwise
      */
-    boolean startUserTransaction(
-            @NonNull Instant consensusTime, @NonNull State state, @NonNull PlatformState platformState);
+    boolean startUserTransaction(@NonNull Instant consensusTime, @NonNull State state);
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
@@ -89,7 +86,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * be called after the user transaction has been committed to state and is 100% done. It must include the record of
      * the user transaction along with all preceding child transactions and any child or transactions after. System
      * transactions are treated as though they were user transactions, calling
-     * {@link #startUserTransaction(Instant, State, PlatformState)} and this method.
+     * {@link #startUserTransaction(Instant, State)} and this method.
      *
      * @param recordStreamItems Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from

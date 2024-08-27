@@ -39,7 +39,7 @@ public class MerkleStateUtils {
     @NonNull
     public static String createInfoString(
             int hashDepth,
-            @NonNull final PlatformState platformState,
+            @NonNull final PlatformStateAccessor platformState,
             @NonNull final Hash rootHash,
             @NonNull final MerkleNode state) {
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();

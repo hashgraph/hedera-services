@@ -52,7 +52,7 @@ import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -313,7 +313,6 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getPlatformState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
                         initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
@@ -380,16 +379,18 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
-        final PlatformState platformState = newState.getPlatformState();
+        final PlatformStateAccessor platformState = newState.getPlatformState();
 
-        platformState.setRound(round.getRoundNum());
-        platformState.setLegacyRunningEventHash(getHashEventsCons(
-                previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
-        platformState.setConsensusTimestamp(currentRoundTimestamp);
-        platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
-                round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
-        platformState.setCreationSoftwareVersion(
-                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+        platformState.bulkUpdate(v -> {
+            v.setRound(round.getRoundNum());
+            v.setLegacyRunningEventHash(getHashEventsCons(
+                    previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
+            v.setConsensusTimestamp(currentRoundTimestamp);
+            v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
+                    round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
+            v.setCreationSoftwareVersion(
+                    previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+        });
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
@@ -476,7 +477,7 @@ public final class EventRecoveryWorkflow {
     static void applyTransactions(
             final SwirldState immutableState,
             final SwirldState mutableState,
-            final PlatformState platformState,
+            final PlatformStateAccessor platformState,
             final Round round) {
 
         mutableState.throwIfImmutable();

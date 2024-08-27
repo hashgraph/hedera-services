@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,7 +41,8 @@ public record SignedStateValidationData(
         @Nullable Hash addressBookHash,
         @NonNull Hash consensusEventsRunningHash) {
 
-    public SignedStateValidationData(@NonNull final PlatformState that, @Nullable final AddressBook addressBook) {
+    public SignedStateValidationData(
+            @NonNull final PlatformStateAccessor that, @Nullable final AddressBook addressBook) {
         this(
                 that.getRound(),
                 that.getConsensusTimestamp(),

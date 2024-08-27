@@ -25,6 +25,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
@@ -36,7 +37,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -156,10 +159,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
-    public boolean startUserTransaction(
-            @NonNull final Instant consensusTime,
-            @NonNull final State state,
-            @NonNull final PlatformState platformState) {
+    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final State state) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now
@@ -180,12 +180,16 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var currentBlockPeriod = getBlockPeriod(lastBlockInfo.firstConsTimeOfCurrentBlock());
         final var newBlockPeriod = getBlockPeriod(consensusTime);
 
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
         // Also check to see if this is the first transaction we're handling after a freeze restart. If so, we also
         // start a new block.
-        final var isFirstTransactionAfterFreezeRestart = platformState.getFreezeTime() != null
-                && platformState.getFreezeTime().equals(platformState.getLastFrozenTime());
+        final var isFirstTransactionAfterFreezeRestart = platformState.freezeTime() != null
+                && platformState.freezeTimeOrThrow().equals(platformState.freezeTime());
         if (isFirstTransactionAfterFreezeRestart) {
-            platformState.setFreezeTime(null);
+            new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME)).setFreezeTime(null);
         }
         // Now we test if we need to start a new block. If so, create the new block
         if (newBlockPeriod > currentBlockPeriod || isFirstTransactionAfterFreezeRestart) {
