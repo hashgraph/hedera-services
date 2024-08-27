@@ -19,18 +19,25 @@ package com.hedera.node.app.blocks;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema;
+import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Service for BlockStreams implementation responsible for tracking state changes
+ * and writing them to a block
+ */
 public class BlockStreamService implements Service {
     public static final String NAME = "BlockStreamService";
 
     private final boolean enabled;
 
+    /**
+     * Service constructor.
+     */
     public BlockStreamService(final Configuration config) {
         this.enabled = config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS;
     }
@@ -45,7 +52,7 @@ public class BlockStreamService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         if (enabled) {
-            registry.register(new V0XX0BlockStreamSchema());
+            registry.register(new V0540BlockStreamSchema());
         }
     }
 }

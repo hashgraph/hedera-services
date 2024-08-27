@@ -98,18 +98,18 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.github/workflows/                             @hashgraph/devops-ci
+/.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Legacy Maven project files
 **/pom.xml                                      @hashgraph/devops-ci
 
 # Gradle project files and inline plugins
-/gradle/                                        @hashgraph/devops-ci
-gradlew                                         @hashgraph/devops-ci
-gradlew.bat                                     @hashgraph/devops-ci
-**/build-logic/                                 @hashgraph/devops-ci
-**/gradle.*                                     @hashgraph/devops-ci
-**/*.gradle.*                                   @hashgraph/devops-ci
+/gradle/                                        @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew.bat                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/build-logic/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/gradle.*                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/*.gradle.*                                   @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Codacy Tool Configurations
 /config/                                        @hashgraph/devops-ci @hashgraph/release-engineering-managers
