@@ -17,7 +17,6 @@
 package com.hedera.node.app.blocks.schemas;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
-import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.lastBlockHash;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -90,9 +89,8 @@ public class V0540BlockStreamSchema extends Schema {
                 final RunningHashes runningHashes =
                         (RunningHashes) requireNonNull(ctx.sharedValues().get(SHARED_RUNNING_HASHES));
                 state.put(BlockStreamInfo.newBuilder()
-                        .lastBlockTime(blockInfo.firstConsTimeOfLastBlock())
-                        .lastBlockNumber(blockInfo.lastBlockNumber())
-                        .lastBlockHash(requireNonNull(lastBlockHash(blockInfo)))
+                        .blockTime(blockInfo.firstConsTimeOfLastBlock())
+                        .blockNumber(blockInfo.lastBlockNumber())
                         .trailingBlockHashes(blockInfo.blockHashes())
                         .trailingOutputHashes(appendedHashes(runningHashes))
                         .build());

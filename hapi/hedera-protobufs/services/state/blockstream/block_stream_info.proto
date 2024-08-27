@@ -47,37 +47,35 @@ option java_multiple_files = true;
  */
 message BlockStreamInfo {
     /**
-     * A block number.<br/>
-     * This is the block number of the last completed block.
+     * The number of the block this state has information about.
      */
-    uint64 last_block_number = 1;
+    uint64 block_number = 1;
 
     /**
-     * A block hash value.<br/>
-     * This is the hash of the last completed block.
-     */
-    bytes last_block_hash = 2;
-
-    /**
-     * A consensus time for the last completed block.
+     * The first consensus time in this block.
      * This is used to determine if this block was the first across an
      * important boundary in consensus time, such as UTC midnight.
      * This may also be used to purge entities expiring between the last
      * block time and this time.
      */
-    proto.Timestamp last_block_time = 3;
+    proto.Timestamp block_time = 2;
 
     /**
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
      * is used as a seed value for a pseudo-random number generator.
      */
-    bytes trailing_output_hashes = 4;
+    bytes trailing_output_hashes = 3;
 
     /**
      * A concatenation of hash values.<br/>
      * This combines the last 256 trailing block hashes, and is required to
      * support the EVM `BLOCKHASH` opcode.
      */
-    bytes trailing_block_hashes = 5;
+    bytes trailing_block_hashes = 4;
+
+    /**
+     * The hash of the state at the start of the block.
+     */
+    bytes starting_state_hash = 5;
 }

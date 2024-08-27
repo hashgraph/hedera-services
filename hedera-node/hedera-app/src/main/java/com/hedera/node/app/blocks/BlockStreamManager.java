@@ -62,7 +62,7 @@ public interface BlockStreamManager extends BlockRecordInfo {
     /**
      * Writes the final block items for the freeze round to a new block.
      */
-    void writeFreezeRound(@NonNull State state, @NonNull Instant consensusNow);
+    void writeFreezeBlock(@NonNull State state, @NonNull Instant consensusNow);
 
     void finishBlockProof(long blockNumber, Bytes signature);
 
