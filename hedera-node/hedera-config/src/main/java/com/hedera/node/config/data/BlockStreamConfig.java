@@ -33,7 +33,7 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("blockStream")
 public record BlockStreamConfig(
         // Default value of BOTH enables both record and block stream
-        @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
+        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
         /* [FILE|GRPC] */
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
