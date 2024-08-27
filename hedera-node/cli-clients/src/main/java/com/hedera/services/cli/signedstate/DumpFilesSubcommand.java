@@ -255,6 +255,7 @@ public class DumpFilesSubcommand {
      * (Seems like it should be provided by the `Map` class, but maybe not.)
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     @NonNull
     static <K, V> Map<K, V> merge(@NonNull final BinaryOperator<V> mergeFunction, @NonNull final Map<K, V>... maps) {
         return Stream.of(maps)

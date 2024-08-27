@@ -99,7 +99,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
-    public static final String ALICE_ALIAS = "Alice Alias";
     protected MapWritableKVState<AccountID, Account> accountsState;
     protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
     protected State state;
