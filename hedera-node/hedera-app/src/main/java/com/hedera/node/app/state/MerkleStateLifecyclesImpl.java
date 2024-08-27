@@ -105,6 +105,13 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
+    public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
+        requireNonNull(state);
+        requireNonNull(round);
+        hedera.onSealConsensusRound(round, state);
+    }
+
+    @Override
     public void onStateInitialized(
             @NonNull final State state,
             @NonNull final Platform platform,

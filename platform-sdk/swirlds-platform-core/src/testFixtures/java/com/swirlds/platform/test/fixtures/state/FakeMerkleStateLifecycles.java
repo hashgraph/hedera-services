@@ -126,6 +126,12 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     }
 
     @Override
+    public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
+        // Touch this round
+        round.getRoundNum();
+    }
+
+    @Override
     public void onStateInitialized(
             @NonNull State state,
             @NonNull Platform platform,
