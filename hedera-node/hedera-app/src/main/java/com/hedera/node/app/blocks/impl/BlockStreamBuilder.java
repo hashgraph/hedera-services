@@ -210,9 +210,9 @@ public class BlockStreamBuilder
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
-        this.reversingBehavior = reversingBehavior;
-        this.customizer = customizer;
-        this.category = category;
+        this.reversingBehavior = requireNonNull(reversingBehavior);
+        this.customizer = requireNonNull(customizer);
+        this.category = requireNonNull(category);
     }
 
     @Override
@@ -847,6 +847,11 @@ public class BlockStreamBuilder
     }
 
     private Bytes getSerializedTransaction() {
+        if (customizer != null) {
+            transaction = customizer.apply(transaction);
+            transactionBytes = transaction.signedTransactionBytes();
+            return Transaction.PROTOBUF.toBytes(transaction);
+        }
         return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);
     }
 

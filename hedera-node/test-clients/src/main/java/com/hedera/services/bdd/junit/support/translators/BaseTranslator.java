@@ -36,6 +36,8 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -56,6 +58,7 @@ public class BaseTranslator {
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
     private long highestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
+    private Instant userTimestamp;
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
@@ -228,6 +231,9 @@ public class BaseTranslator {
                             .add(nftId.serialNumber());
                 }
             }
+        });
+        unit.blockTransactionParts().forEach(parts -> {
+            
         });
     }
 
