@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -1101,7 +1102,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .hasPrecheck(PENDING_AIRDROP_ID_REPEATED)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
     @DisplayName("account created with same alias should fail")
     final Stream<DynamicTest> accountCreatedWithSAmeAliasShouldFail() {
         final String ALIAS = "alias";
@@ -1109,12 +1110,9 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 // add common entities, you can create your own ones
                 flattened(
                         setUpTokensAndAllReceivers(),
+                        logIt("preparation is over"),
                         // stop the unlimitedAutoAssociations, in order to create the account and send the airdrop to
-                        // pending state
-                        // you can create the first aliased account in setUpEntitiesPreHIP904(), instead of overriding
-                        // here
                         overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
-
                         // create key
                         newKeyNamed(ALIAS),
                         // create first aliased account
