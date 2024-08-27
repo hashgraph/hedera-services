@@ -44,7 +44,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     @Override
     public void addLeaf(@NonNull final Bytes leaf) {
         if (rootHashRequested) {
-            return;
+            throw new IllegalStateException("Root hash already requested");
         }
         leaves.add(leaf);
     }
