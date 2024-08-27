@@ -18,14 +18,14 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A {@code StreamBuilder} specialization for tracking the side effects of a {@code ContractDelete}.
  */
-public interface ContractDeleteStreamBuilder extends DeleteCapableTransactionRecordBuilder {
+public interface ContractDeleteStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**
      * Tracks the contract id deleted by a successful top-level contract deletion.
      *
