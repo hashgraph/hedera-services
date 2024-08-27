@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.EventWindow;
@@ -145,6 +146,8 @@ class DefaultTransactionHandlerTests {
                 pcesRound,
                 handlerOutput.reservedSignedState().get().isPcesRound(),
                 "the state should match the PCES boolean");
+        verify(tester.getSwirldStateManager().getConsensusState().getSwirldState())
+                .sealConsensusRound(consensusRound);
     }
 
     @Test

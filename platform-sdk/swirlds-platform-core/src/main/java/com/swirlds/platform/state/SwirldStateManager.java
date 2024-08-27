@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -32,7 +33,6 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -86,12 +86,12 @@ public class SwirldStateManager implements FreezePeriodChecker {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(selfId);
+        requireNonNull(platformContext);
+        requireNonNull(addressBook);
+        requireNonNull(selfId);
         this.stats = new SwirldStateMetrics(platformContext.getMetrics());
-        Objects.requireNonNull(statusActionSubmitter);
-        this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        requireNonNull(statusActionSubmitter);
+        this.softwareVersion = requireNonNull(softwareVersion);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker = new UptimeTracker(
                 platformContext, addressBook, statusActionSubmitter, selfId, platformContext.getTime());
@@ -103,7 +103,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param state the initial state
      */
     public void setInitialState(@NonNull final MerkleRoot state) {
-        Objects.requireNonNull(state);
+        requireNonNull(state);
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
@@ -127,6 +127,16 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
         uptimeTracker.handleRound(round, state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
+    }
+
+    /**
+     * Seals the platform's state changes for the given round.
+     * @param round the round to seal
+     */
+    public void sealConsensusRound(@NonNull final Round round) {
+        requireNonNull(round);
+        final MerkleRoot state = stateRef.get();
+        state.getSwirldState().sealConsensusRound(round);
     }
 
     /**

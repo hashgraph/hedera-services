@@ -203,7 +203,9 @@ public class DefaultTransactionHandler implements TransactionHandler {
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
             updateRunningEventHash(consensusRound);
 
-            return createSignedState(consensusRound);
+            final StateAndRound stateAndRound = createSignedState(consensusRound);
+            swirldStateManager.sealConsensusRound(consensusRound);
+            return stateAndRound;
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
             Thread.currentThread().interrupt();
