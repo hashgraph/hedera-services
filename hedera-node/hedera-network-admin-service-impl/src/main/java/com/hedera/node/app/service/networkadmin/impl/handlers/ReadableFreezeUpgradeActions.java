@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
@@ -275,13 +276,6 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private long getNextNodeID(@NonNull List<ActiveNode> nodes) {
-        requireNonNull(nodes);
-        final long maxNodeId =
-                nodes.stream().mapToLong(a -> a.node.nodeId()).max().orElse(-1L);
-        return maxNodeId + 1;
-    }
-
     private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
@@ -292,7 +286,7 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
-        final var nextNodeId = getNextNodeID(activeNodes);
+        final var nextNodeId = getNextNodeID(nodeStore);
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
