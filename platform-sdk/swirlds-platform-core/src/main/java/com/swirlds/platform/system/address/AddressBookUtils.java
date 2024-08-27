@@ -359,12 +359,10 @@ public class AddressBookUtils {
 
         final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
         if (address.getHostnameInternal() != null) {
-            serviceEndpoints.add(
-                    AddressBookUtils.endpointFor(address.getHostnameInternal(), address.getPortInternal()));
+            serviceEndpoints.add(endpointFor(address.getHostnameInternal(), address.getPortInternal()));
         }
         if (address.getHostnameExternal() != null) {
-            serviceEndpoints.add(
-                    AddressBookUtils.endpointFor(address.getHostnameExternal(), address.getPortExternal()));
+            serviceEndpoints.add(endpointFor(address.getHostnameExternal(), address.getPortExternal()));
         }
 
         return RosterEntry.newBuilder()

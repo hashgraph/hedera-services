@@ -21,8 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.builder.PlatformBuilder;
@@ -36,6 +40,9 @@ import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -131,5 +138,55 @@ class AddressBookNetworkUtilsTests {
 
         assertNotNull(roster);
         assertTrue(roster.rosters().isEmpty());
+    }
+
+    @Test
+    void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
+        final X509Certificate certificate = mock(X509Certificate.class);
+        final Address address = new Address().copySetSigCert(certificate);
+        when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
+
+        final AddressBook addressBook = new AddressBook(List.of(address));
+        final Roster roster = AddressBookUtils.createRoster(addressBook);
+
+        assertEquals(Bytes.EMPTY, roster.rosters().getFirst().gossipCaCertificate());
+    }
+
+    @Test
+    void testToRosterEntryWithExternalHostname() {
+        final Address address = new Address().copySetHostnameExternal("hostnameExternal");
+        final AddressBook addressBook = new AddressBook(List.of(address));
+        final Roster roster = AddressBookUtils.createRoster(addressBook);
+
+        assertEquals(1, roster.rosters().size());
+        assertEquals(
+                "hostnameExternal",
+                roster.rosters().getFirst().gossipEndpoint().getFirst().domainName());
+    }
+
+    @Test
+    void testToRosterEntryWithInternalHostname() {
+        final Address address = new Address().copySetHostnameInternal("hostnameInternal");
+        final AddressBook addressBook = new AddressBook(List.of(address));
+        final Roster roster = AddressBookUtils.createRoster(addressBook);
+
+        assertEquals(1, roster.rosters().size());
+        assertEquals(
+                "hostnameInternal",
+                roster.rosters().getFirst().gossipEndpoint().getFirst().domainName());
+    }
+
+    @Test
+    void testEndpointForValidIpV4Address() {
+        final ServiceEndpoint endpoint = AddressBookUtils.endpointFor("192.168.1.1", 2);
+        assertEquals(endpoint.ipAddressV4(), Bytes.wrap(new byte[]{(byte) 192, (byte) 168, 1, 1}));
+    }
+
+    @Test
+    void testEndpointForInvalidIpAddressConvertsToDomainName() {
+        final String invalidIpAddress = "192.168.is.bad";
+        assertEquals(
+                Bytes.EMPTY, AddressBookUtils.endpointFor(invalidIpAddress, 2).ipAddressV4());
+        assertEquals(AddressBookUtils.endpointFor(invalidIpAddress, 2).domainName(), invalidIpAddress);
     }
 }
