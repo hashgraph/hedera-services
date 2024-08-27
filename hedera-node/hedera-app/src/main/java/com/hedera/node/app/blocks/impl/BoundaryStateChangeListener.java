@@ -36,6 +36,7 @@ import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
+import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -176,6 +177,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         switch (value) {
             case BlockInfo blockInfo -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_INFO_VALUE, blockInfo);
+            }
+            case RosterState rosterState -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.ROSTER_STATE_VALUE, rosterState);
             }
             case CongestionLevelStarts congestionLevelStarts -> {
                 return new OneOf<>(

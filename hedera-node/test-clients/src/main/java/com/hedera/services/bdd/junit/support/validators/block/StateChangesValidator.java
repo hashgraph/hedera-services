@@ -23,10 +23,8 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
-import static com.hedera.services.bdd.junit.support.BlockStreamAccess.computeSingletonValueFromUpdates;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -52,6 +50,7 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -144,13 +143,17 @@ public class StateChangesValidator implements BlockStreamValidator {
     private MerkleStateRoot state;
 
     public static void main(String[] args) {
-        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/test-streams/";
-        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(loc));
-        final var lastPlatformState = computeSingletonValueFromUpdates(
-                blocks,
-                computeLabel("PlatformStateService", "PLATFORM_STATE"),
-                SingletonUpdateChange::platformStateValueOrThrow);
-        System.out.println(lastPlatformState);
+        final var validator = new StateChangesValidator(
+                Bytes.fromHex(
+                        "a1d57e05d0607f76d13bc2ed31c40585adc294927e767df1f3443f065cc7a3348d3e0c4dd5581e6922c718e16b787231"),
+                Paths.get(
+                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log"),
+                Paths.get(
+                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/config.txt"));
+        final var input =
+                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
+        validator.validateBlocks(blocks);
     }
 
     public static final Factory FACTORY = new Factory() {
@@ -444,6 +447,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
+                        new RosterServiceImpl(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }
@@ -664,6 +668,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TIMESTAMP_VALUE -> singletonUpdateChange.timestampValueOrThrow();
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
+            case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
         };
     }
 
@@ -713,6 +718,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TOPIC_VALUE -> mapChangeValue.topicValueOrThrow();
             case NODE_VALUE -> mapChangeValue.nodeValueOrThrow();
             case ACCOUNT_PENDING_AIRDROP_VALUE -> mapChangeValue.accountPendingAirdropValueOrThrow();
+            case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
         };
     }
 

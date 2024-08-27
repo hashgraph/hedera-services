@@ -32,6 +32,8 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTERS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTER_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EQUALITY;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_EXPIRY;
@@ -57,6 +59,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRA
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -157,6 +160,11 @@ public class BlockImplUtils {
                         case "TransactionReceiptQueue" -> STATE_ID_TRANSACTION_RECEIPTS_QUEUE.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
+                    case "RosterService" -> switch (stateKey) {
+                        case "ROSTERS" -> STATE_ID_ROSTERS.protoOrdinal();
+                        case "ROSTER_STATE" -> STATE_ID_ROSTER_STATE.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
                     case "ScheduleService" -> switch (stateKey) {
                         case "SCHEDULES_BY_EQUALITY" -> STATE_ID_SCHEDULES_BY_EQUALITY.protoOrdinal();
                         case "SCHEDULES_BY_EXPIRY_SEC" -> STATE_ID_SCHEDULES_BY_EXPIRY.protoOrdinal();
@@ -201,7 +209,7 @@ public class BlockImplUtils {
 
     public static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
         try {
-            final var digest = MessageDigest.getInstance("SHA-384");
+            final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
             digest.update(leftHash);
             digest.update(rightHash);
             return digest.digest();

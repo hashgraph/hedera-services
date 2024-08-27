@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.block.stream.schema.BlockSchema;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
@@ -46,10 +48,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(FileBlockItemWriter.class);
 
     /** The file extension for block files. */
-    public static final String RECORD_EXTENSION = "blk";
+    private static final String RECORD_EXTENSION = "blk";
 
     /** The suffix added to RECORD_EXTENSION when they are compressed. */
-    public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
+    private static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
 
     /** Whether to compress the block files. */
     private final boolean compressFiles;
@@ -57,10 +59,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
     /** The node-specific path to the directory where block files are written */
     private final Path nodeScopedBlockDir;
 
-    /** The path to the record file we are writing */
-    private Path blockFilePath;
-
-    /** The file output stream we are writing to, which writes to {@link #blockFilePath} */
+    /** The file output stream we are writing to, which writes to the configured block file path */
     private WritableStreamingData writableStreamingData;
 
     /** The state of this writer */
@@ -79,15 +78,19 @@ public class FileBlockItemWriter implements BlockItemWriter {
     }
 
     /**
+     * Construct a new FileBlockItemWriter.
      *
-     * @param configProvider
-     * @param nodeInfo
-     * @param fileSystem
+     * @param configProvider configuration provider
+     * @param nodeInfo information about the current node
+     * @param fileSystem the file system to use for writing block files
      */
     public FileBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
             @NonNull final SelfNodeInfo nodeInfo,
             @NonNull final FileSystem fileSystem) {
+        requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
+        requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' cannot be null!");
+        requireNonNull(fileSystem, "The supplied argument 'fileSystem' cannot be null!");
 
         this.state = State.UNINITIALIZED;
         final var config = configProvider.getConfiguration();
@@ -107,16 +110,16 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void openBlock(long blockNumber) {
         if (state == State.OPEN) throw new IllegalStateException("Cannot initialize a FileBlockItemWriter twice");
-
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
 
         this.blockNumber = blockNumber;
-
-        this.blockFilePath = getBlockFilePath(blockNumber);
-
+        final var blockFilePath = getBlockFilePath(blockNumber);
         OutputStream out = null;
         try {
             out = Files.newOutputStream(blockFilePath);
@@ -149,9 +152,13 @@ public class FileBlockItemWriter implements BlockItemWriter {
         state = State.OPEN;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeItem(@NonNull Bytes serializedItem) {
-        assert serializedItem.length() > 0 : "BlockItem must be non-empty";
+        requireNonNull(serializedItem, "The supplied argument 'serializedItem' cannot be null!");
+        if (serializedItem.length() <= 0) throw new IllegalArgumentException("Item must be non-empty");
         if (state != State.OPEN) {
             throw new IllegalStateException(
                     "Cannot write to a FileBlockItemWriter that is not open for block: " + this.blockNumber);
@@ -165,6 +172,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         serializedItem.writeTo(writableStreamingData);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void closeBlock() {
         if (state.ordinal() < State.OPEN.ordinal()) {
@@ -189,10 +199,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
     }
 
     /**
-     * Get the record file path for a record file with the given consensus time
+     * Get the path for a block file with the block number.
      *
      * @param blockNumber the block number for the block file
-     * @return Path to a record file for that block number
+     * @return Path to a block file for that block number
      */
     @NonNull
     private Path getBlockFilePath(final long blockNumber) {
@@ -202,11 +212,11 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
     /**
      * Convert a long to a 36-character string, padded with leading zeros.
-     * @param value
-     * @return
+     * @param value the long to convert
+     * @return the 36-character string padded with leading zeros
      */
     @NonNull
-    public static String longToFileName(final long value) {
+    private static String longToFileName(final long value) {
         // Convert the signed long to an unsigned long using BigInteger for correct representation
         BigInteger unsignedValue =
                 BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));

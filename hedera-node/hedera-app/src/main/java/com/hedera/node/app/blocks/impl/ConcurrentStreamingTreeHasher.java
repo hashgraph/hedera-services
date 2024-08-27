@@ -74,6 +74,9 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         this.executorService = requireNonNull(executorService);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void addLeaf(@NonNull final Bytes leaf) {
         requireNonNull(leaf);
@@ -87,6 +90,9 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
@@ -95,7 +101,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
         final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
         maxDepth = numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
-        return hashed.thenCompose((ignore) -> combiner.finalCombination());
+        return hashed.thenCompose(ignore -> combiner.finalCombination());
     }
 
     private void schedulePendingWork() {

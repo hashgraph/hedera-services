@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class V0540RosterSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
-    public static final String ROSTER_KEY = "ROSTER";
+    public static final String ROSTER_KEY = "ROSTERS";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
     /** this can't be increased later so we pick some number large enough, 2^16. */
     private static final long MAX_ROSTERS = 65_536L;

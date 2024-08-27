@@ -17,16 +17,60 @@
 package com.hedera.node.app.blocks.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.block.stream.output.StateIdentifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class BlockImplUtilsTest {
+    @Test
+    void testCombineNormalCase() throws NoSuchAlgorithmException {
+        byte[] leftHash = MessageDigest.getInstance("SHA-384").digest("left".getBytes());
+        byte[] rightHash = MessageDigest.getInstance("SHA-384").digest("right".getBytes());
+        byte[] combinedHash = BlockImplUtils.combine(leftHash, rightHash);
+
+        assertNotNull(combinedHash);
+        assertEquals(48, combinedHash.length); // SHA-384 produces 48-byte hash
+    }
+
+    @Test
+    void testCombineEmptyHashes() throws NoSuchAlgorithmException {
+        byte[] emptyHash = MessageDigest.getInstance("SHA-384").digest(new byte[0]);
+        byte[] combinedHash = BlockImplUtils.combine(emptyHash, emptyHash);
+
+        assertNotNull(combinedHash);
+        assertEquals(48, combinedHash.length); // SHA-384 produces 48-byte hash
+    }
+
+    @Test
+    void testCombineDifferentHashes() throws NoSuchAlgorithmException {
+        byte[] leftHash = MessageDigest.getInstance("SHA-384").digest("left".getBytes());
+        byte[] rightHash = MessageDigest.getInstance("SHA-384").digest("right".getBytes());
+        byte[] combinedHash1 = BlockImplUtils.combine(leftHash, rightHash);
+        byte[] combinedHash2 = BlockImplUtils.combine(rightHash, leftHash);
+
+        assertNotNull(combinedHash1);
+        assertNotNull(combinedHash2);
+        assertNotEquals(new String(combinedHash1), new String(combinedHash2));
+    }
+
+    @Test
+    void testCombineWithNull() {
+        assertThrows(NullPointerException.class, () -> BlockImplUtils.combine(null, new byte[0]));
+        assertThrows(NullPointerException.class, () -> BlockImplUtils.combine(new byte[0], null));
+    }
+
     @ParameterizedTest
     @MethodSource("stateIdsByName")
     void stateIdsByNameAsExpected(@NonNull final String stateName, @NonNull final StateIdentifier stateId) {
@@ -66,6 +110,8 @@ class BlockImplUtilsTest {
             case STATE_ID_FREEZE_TIME -> "FreezeService.FREEZE_TIME";
             case STATE_ID_UPGRADE_FILE_HASH -> "FreezeService.UPGRADE_FILE_HASH";
             case STATE_ID_PLATFORM_STATE -> "PlatformStateService.PLATFORM_STATE";
+            case STATE_ID_ROSTER_STATE -> "RosterService.ROSTER_STATE";
+            case STATE_ID_ROSTERS -> "RosterService.ROSTERS";
             case STATE_ID_TRANSACTION_RECEIPTS_QUEUE -> "RecordCache.TransactionReceiptQueue";
             case STATE_ID_SCHEDULES_BY_EQUALITY -> "ScheduleService.SCHEDULES_BY_EQUALITY";
             case STATE_ID_SCHEDULES_BY_EXPIRY -> "ScheduleService.SCHEDULES_BY_EXPIRY_SEC";

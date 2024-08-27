@@ -17,7 +17,6 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -38,7 +37,6 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -151,20 +149,21 @@ public class BlockStreamBuilder
     private Instant parentConsensus;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
+    private boolean hasAssessedCustomFees = false;
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
-    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
     private TransferList transferList = TransferList.DEFAULT;
+    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
-    private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
     private long newTotalSupply = 0L;
-    private final TransactionOutput.Builder transactionOutputBuilder = TransactionOutput.newBuilder();
+    // If non-null, a builder to be used to set the transaction output
+    private TransactionOutput.Builder transactionOutputBuilder = null;
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
     private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
@@ -183,7 +182,10 @@ public class BlockStreamBuilder
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
     private long transactionFee;
+    // If non-null, a contract function result
     private ContractFunctionResult contractFunctionResult;
+    // If true, the contract function result is a call result; otherwise, a create result
+    private boolean isCreateResult;
 
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
@@ -201,7 +203,8 @@ public class BlockStreamBuilder
     private TokenID tokenID;
     private TokenType tokenType;
     private Bytes ethereumHash;
-    private TransactionID scheduledTransactionID;
+    private boolean createsOrDeletesSchedule;
+    private TransactionID scheduledTransactionId;
 
     public BlockStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -236,8 +239,8 @@ public class BlockStreamBuilder
         final var resultBlockItem = getTransactionResultBlockItem();
         blockItems.add(resultBlockItem);
 
-        final var output = getTransactionOutputBuilder().build();
-        if (output.transaction().kind() != TransactionOutput.TransactionOneOfType.UNSET) {
+        final var output = getTransactionOutput();
+        if (output != null) {
             blockItems.add(BlockItem.newBuilder().transactionOutput(output).build());
         }
 
@@ -253,57 +256,572 @@ public class BlockStreamBuilder
         return blockItems;
     }
 
+    @Override
+    @NonNull
+    public ReversingBehavior reversingBehavior() {
+        return reversingBehavior;
+    }
+
+    @Override
+    public int getNumAutoAssociations() {
+        return automaticTokenAssociations.size();
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------
+    // base transaction data
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
+        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
+        transactionResultBuilder.parentConsensusTimestamp(Timestamp.newBuilder()
+                .seconds(parentConsensus.getEpochSecond())
+                .nanos(parentConsensus.getNano())
+                .build());
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder consensusTimestamp(@NonNull final Instant now) {
+        this.consensusNow = requireNonNull(now, "consensus time must not be null");
+        transactionResultBuilder.consensusTimestamp(Timestamp.newBuilder()
+                .seconds(now.getEpochSecond())
+                .nanos(now.getNano())
+                .build());
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder transaction(@NonNull final Transaction transaction) {
+        this.transaction = requireNonNull(transaction, "transaction must not be null");
+        return this;
+    }
+
+    @Override
+    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
+        this.serializedTransaction = serializedTransaction;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
+        this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public TransactionID transactionID() {
+        return transactionID;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
+        this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public BlockStreamBuilder syncBodyIdFromRecordId() {
+        final var newTransactionID = transactionID;
+        final var body =
+                inProgressBody().copyBuilder().transactionID(newTransactionID).build();
+        this.transaction = StreamBuilder.transactionWith(body);
+        this.transactionBytes = transaction.signedTransactionBytes();
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder memo(@NonNull final String memo) {
+        // No-op
+        return this;
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------
+    // fields needed for TransactionRecord
+
+    @Override
+    @NonNull
+    public Transaction transaction() {
+        return transaction;
+    }
+
+    @Override
+    public long transactionFee() {
+        return transactionFee;
+    }
+
+    @NonNull
+    @Override
+    public BlockStreamBuilder transactionFee(final long transactionFee) {
+        transactionResultBuilder.transactionFeeCharged(transactionFee);
+        this.transactionFee = transactionFee;
+        return this;
+    }
+
+    @Override
+    public void trackExplicitRewardSituation(@NonNull final AccountID accountId) {
+        if (explicitRewardReceiverIds == null) {
+            explicitRewardReceiverIds = new LinkedHashSet<>();
+        }
+        explicitRewardReceiverIds.add(accountId);
+    }
+
+    @Override
+    public Set<AccountID> explicitRewardSituationIds() {
+        return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
+        this.contractFunctionResult = contractCallResult;
+        if (contractCallResult != null) {
+            ensureOutputBuilder();
+            isCreateResult = false;
+        }
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
+        this.contractFunctionResult = contractCreateResult;
+        if (contractCreateResult != null) {
+            ensureOutputBuilder();
+            isCreateResult = true;
+        }
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public TransferList transferList() {
+        return transferList;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
+        this.transferList = transferList;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.tokenTransferLists = tokenTransferLists;
+        transactionResultBuilder.tokenTransferLists(tokenTransferLists);
+        return this;
+    }
+
+    @Override
+    public List<TokenTransferList> tokenTransferLists() {
+        return tokenTransferLists;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
+        this.tokenType = requireNonNull(tokenType);
+        return this;
+    }
+
+    @Override
+    public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
+        requireNonNull(scheduleRef, "scheduleRef must not be null");
+        transactionResultBuilder.scheduleRef(scheduleRef);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
+        this.assessedCustomFees = requireNonNull(assessedCustomFees);
+        ensureOutputBuilder();
+        hasAssessedCustomFees = true;
+        return this;
+    }
+
+    @NonNull
+    public BlockStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
+        requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
+        automaticTokenAssociations.add(automaticTokenAssociation);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
+        this.ethereumHash = requireNonNull(ethereumHash);
+        ensureOutputBuilder();
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
+        // These need not be externalized to block streams
+        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
+        this.paidStakingRewards = paidStakingRewards;
+        transactionResultBuilder.paidStakingRewards(paidStakingRewards);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder entropyNumber(final int num) {
+        ensureOutputBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngNumber(num).build());
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
+        requireNonNull(prngBytes);
+        ensureOutputBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public List<AssessedCustomFee> getAssessedCustomFees() {
+        return assessedCustomFees;
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------
+    // fields needed for TransactionReceipt
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
+        this.status = requireNonNull(status, "status must not be null");
+        transactionResultBuilder.status(status);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public ResponseCodeEnum status() {
+        return status;
+    }
+
+    @Override
+    public boolean hasContractResult() {
+        return this.contractFunctionResult != null;
+    }
+
+    @Override
+    public long getGasUsedForContractTxn() {
+        return this.contractFunctionResult.gasUsed();
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
+        // No-op
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+        requireNonNull(exchangeRate);
+        transactionResultBuilder.exchangeRate(exchangeRate);
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
+        if (congestionMultiplier != 0) {
+            transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
+        }
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
+        // No-op
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
+        // TOD0: Need to confirm what the value should be
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
+        requireNonNull(tokenID, "tokenID must not be null");
+        this.tokenID = tokenID;
+        return this;
+    }
+
+    @Override
+    public TokenID tokenID() {
+        return tokenID;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder nodeID(long nodeId) {
+        // No-op
+        return this;
+    }
+
+    @NonNull
+    public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
+        this.newTotalSupply = newTotalSupply;
+        return this;
+    }
+
+    @Override
+    public long getNewTotalSupply() {
+        return newTotalSupply;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
+        this.createsOrDeletesSchedule = true;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
+        this.scheduledTransactionId = requireNonNull(scheduledTransactionID);
+        ensureOutputBuilder();
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
+        requireNonNull(serialNumbers, "serialNumbers must not be null");
+        this.serialNumbers = serialNumbers;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public List<Long> serialNumbers() {
+        return serialNumbers;
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------
+    // Sidecar data, booleans are the migration flag
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder addContractStateChanges(
+            @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
+        requireNonNull(contractStateChanges, "contractStateChanges must not be null");
+        this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder addContractActions(
+            @NonNull final ContractActions contractActions, final boolean isMigration) {
+        requireNonNull(contractActions, "contractActions must not be null");
+        this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public BlockStreamBuilder addContractBytecode(
+            @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
+        requireNonNull(contractBytecode, "contractBytecode must not be null");
+        contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
+        return this;
+    }
+
+    // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
+
+    @Override
+    public void addBeneficiaryForDeletedAccount(
+            @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
+        requireNonNull(deletedAccountID, "deletedAccountID must not be null");
+        requireNonNull(beneficiaryForDeletedAccount, "beneficiaryForDeletedAccount must not be null");
+        deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
+    }
+
+    @Override
+    public int getNumberOfDeletedAccounts() {
+        return deletedAccountBeneficiaries.size();
+    }
+
+    @Override
+    @Nullable
+    public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
+        return deletedAccountBeneficiaries.get(deletedAccountID);
+    }
+
+    @Override
+    @NonNull
+    public ContractFunctionResult contractFunctionResult() {
+        return contractFunctionResult;
+    }
+
+    @Override
+    @NonNull
+    public TransactionBody transactionBody() {
+        return inProgressBody();
+    }
+
+    private TransactionBody inProgressBody() {
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+        } catch (Exception e) {
+            throw new IllegalStateException("Record being built for unparseable transaction", e);
+        }
+    }
+
+    @NonNull
+    @Override
+    public List<AccountAmount> getPaidStakingRewards() {
+        return paidStakingRewards;
+    }
+
+    @Override
+    @NonNull
+    public HandleContext.TransactionCategory category() {
+        return category;
+    }
+
+    @Override
+    public void nullOutSideEffectFields() {
+        serialNumbers.clear();
+        tokenTransferLists.clear();
+        automaticTokenAssociations.clear();
+        transferList = TransferList.DEFAULT;
+        paidStakingRewards.clear();
+        assessedCustomFees.clear();
+
+        newTotalSupply = 0L;
+        transactionFee = 0L;
+        contractFunctionResult = null;
+        // Note that internal contract creations are removed instead of reversed
+        transactionResultBuilder.scheduleRef((ScheduleID) null);
+        transactionResultBuilder.automaticTokenAssociations(emptyList());
+        transactionResultBuilder.congestionPricingMultiplier(0);
+
+        transactionOutputBuilder = null;
+    }
+
     @NonNull
     private BlockItem getTransactionResultBlockItem() {
         if (!automaticTokenAssociations.isEmpty()) {
             transactionResultBuilder.automaticTokenAssociations(automaticTokenAssociations);
         }
-        final var transactionResultBlockItem = BlockItem.newBuilder()
-                .transactionResult(transactionResultBuilder.build())
+        return BlockItem.newBuilder()
+                .transactionResult(
+                        transactionResultBuilder.transferList(transferList).build())
                 .build();
-        return transactionResultBlockItem;
     }
 
-    @NonNull
-    private TransactionOutput.Builder getTransactionOutputBuilder() {
-        var function = HederaFunctionality.NONE;
-        try {
-            function = functionOf(transactionBody());
-        } catch (Exception e) {
-            // No-op
+    @Nullable
+    private TransactionOutput getTransactionOutput() {
+        if (transactionOutputBuilder == null) {
+            return null;
         }
-        final var sideCars = getSideCars();
-        if (!sideCars.isEmpty()) {
-            if (function == HederaFunctionality.CONTRACT_CALL) {
-                transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
-                        .contractCallResult(contractFunctionResult)
-                        .sidecars(sideCars)
-                        .build());
-            } else if (function == HederaFunctionality.ETHEREUM_TRANSACTION) {
+        if (contractFunctionResult != null) {
+            final var sidecars = getSidecars();
+            if (ethereumHash != null) {
                 transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
                         .ethereumHash(ethereumHash)
-                        .sidecars(sideCars)
+                        .sidecars(sidecars)
                         .build());
-            } else if (function == HederaFunctionality.CONTRACT_CREATE) {
+            } else if (!isCreateResult) {
+                transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
+                        .contractCallResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+            } else {
                 transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
-                        .sidecars(sideCars)
                         .contractCreateResult(contractFunctionResult)
+                        .sidecars(sidecars)
                         .build());
             }
-        }
-        if (function == HederaFunctionality.SCHEDULE_CREATE) {
+        } else if (createsOrDeletesSchedule && scheduledTransactionId != null) {
             transactionOutputBuilder.createSchedule(CreateScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionID)
+                    .scheduledTransactionId(scheduledTransactionId)
                     .build());
-        } else if (function == HederaFunctionality.SCHEDULE_SIGN) {
+        } else if (scheduledTransactionId != null) {
             transactionOutputBuilder.signSchedule(SignScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionID)
+                    .scheduledTransactionId(scheduledTransactionId)
+                    .build());
+        } else if (hasAssessedCustomFees) {
+            transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
+                    .assessedCustomFees(assessedCustomFees)
                     .build());
         }
-        return transactionOutputBuilder;
+        return transactionOutputBuilder.build();
     }
 
-    private List<TransactionSidecarRecord> getSideCars() {
+    private List<TransactionSidecarRecord> getSidecars() {
         final var timestamp = asTimestamp(consensusNow);
         // create list of sidecar records
         final List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
@@ -328,719 +846,14 @@ public class BlockStreamBuilder
         return transactionSidecarRecords;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public ReversingBehavior reversingBehavior() {
-        return reversingBehavior;
-    }
-
-    /**
-     * Returns the number of automatic token associations
-     *
-     * @return the number of associations
-     */
-    @Override
-    public int getNumAutoAssociations() {
-        return automaticTokenAssociations.size();
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------------
-    // base transaction data
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
-        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
-        transactionResultBuilder.parentConsensusTimestamp(Timestamp.newBuilder()
-                .seconds(parentConsensus.getEpochSecond())
-                .nanos(parentConsensus.getNano())
-                .build());
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder consensusTimestamp(@NonNull final Instant now) {
-        this.consensusNow = requireNonNull(now, "consensus time must not be null");
-        transactionResultBuilder.consensusTimestamp(Timestamp.newBuilder()
-                .seconds(now.getEpochSecond())
-                .nanos(now.getNano())
-                .build());
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder transaction(@NonNull final Transaction transaction) {
-        this.transaction = requireNonNull(transaction, "transaction must not be null");
-        return this;
-    }
-
-    @Override
-    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
-        this.serializedTransaction = serializedTransaction;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
-        this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public TransactionID transactionID() {
-        return transactionID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
-        this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public BlockStreamBuilder syncBodyIdFromRecordId() {
-        final var newTransactionID = transactionID;
-        final var body =
-                inProgressBody().copyBuilder().transactionID(newTransactionID).build();
-        this.transaction = StreamBuilder.transactionWith(body);
-        this.transactionBytes = transaction.signedTransactionBytes();
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder memo(@NonNull final String memo) {
-        // No-op
-        return this;
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------------
-    // fields needed for TransactionRecord
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public Transaction transaction() {
-        return transaction;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long transactionFee() {
-        return transactionFee;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public BlockStreamBuilder transactionFee(final long transactionFee) {
-        transactionResultBuilder.transactionFeeCharged(transactionFee);
-        this.transactionFee = transactionFee;
-        return this;
-    }
-
-    @Override
-    public void trackExplicitRewardSituation(@NonNull final AccountID accountId) {
-        if (explicitRewardReceiverIds == null) {
-            explicitRewardReceiverIds = new LinkedHashSet<>();
-        }
-        explicitRewardReceiverIds.add(accountId);
-    }
-
-    @Override
-    public Set<AccountID> explicitRewardSituationIds() {
-        return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
-        transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
-                .contractCallResult(contractCallResult)
-                .build());
-        this.contractFunctionResult = contractCallResult;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
-        transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
-                .contractCreateResult(contractCreateResult)
-                .build());
-        this.contractFunctionResult = contractCreateResult;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public TransferList transferList() {
-        return transferList;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder transferList(@Nullable final TransferList transferList) {
-        this.transferList = transferList;
-        transactionResultBuilder.transferList(transferList);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.tokenTransferLists = tokenTransferLists;
-        transactionResultBuilder.tokenTransferLists(tokenTransferLists);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<TokenTransferList> tokenTransferLists() {
-        return tokenTransferLists;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
-        this.tokenType = requireNonNull(tokenType);
-        return this;
-    }
-
-    @Override
-    public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecord);
-        this.pendingAirdropRecords.add(pendingAirdropRecord);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
-        requireNonNull(scheduleRef, "scheduleRef must not be null");
-        transactionResultBuilder.scheduleRef(scheduleRef);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
-        requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
-        this.assessedCustomFees = assessedCustomFees;
-        transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
-                .assessedCustomFees(assessedCustomFees)
-                .build());
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    public BlockStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
-        requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
-        automaticTokenAssociations.add(automaticTokenAssociation);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
-        requireNonNull(ethereumHash, "ethereumHash must not be null");
-        transactionOutputBuilder.ethereumCall(
-                EthereumOutput.newBuilder().ethereumHash(ethereumHash).build());
-        this.ethereumHash = ethereumHash;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
-        // These need not be externalized to block streams
-        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
-        this.paidStakingRewards = paidStakingRewards;
-        transactionResultBuilder.paidStakingRewards(paidStakingRewards);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder entropyNumber(final int num) {
-        transactionOutputBuilder.utilPrng(
-                UtilPrngOutput.newBuilder().prngNumber(num).build());
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
-        requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
-        transactionOutputBuilder.utilPrng(
-                UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
-        // No-op
-        return this;
-    }
-
-    @Override
-    @NonNull
-    public List<AssessedCustomFee> getAssessedCustomFees() {
-        return assessedCustomFees;
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------------
-    // fields needed for TransactionReceipt
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder status(@NonNull final ResponseCodeEnum status) {
-        this.status = requireNonNull(status, "status must not be null");
-        transactionResultBuilder.status(status);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public ResponseCodeEnum status() {
-        return status;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasContractResult() {
-        return this.contractFunctionResult != null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getGasUsedForContractTxn() {
-        return this.contractFunctionResult.gasUsed();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate, "exchangeRate must not be null");
-        transactionResultBuilder.exchangeRate(exchangeRate);
-        this.exchangeRate = exchangeRate;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
-        if (congestionMultiplier != 0) {
-            transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
-        }
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
-        // TOD0: Need to confirm what the value should be
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
-        requireNonNull(tokenID, "tokenID must not be null");
-        this.tokenID = tokenID;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TokenID tokenID() {
-        return tokenID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder nodeID(long nodeId) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    public BlockStreamBuilder newTotalSupply(final long newTotalSupply) {
-        this.newTotalSupply = newTotalSupply;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getNewTotalSupply() {
-        return newTotalSupply;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
-        // No-op
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
-        this.scheduledTransactionID = scheduledTransactionID;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
-        requireNonNull(serialNumbers, "serialNumbers must not be null");
-        this.serialNumbers = serialNumbers;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public List<Long> serialNumbers() {
-        return serialNumbers;
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------------
-    // Sidecar data, booleans are the migration flag
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder addContractStateChanges(
-            @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
-        requireNonNull(contractStateChanges, "contractStateChanges must not be null");
-        this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder addContractActions(
-            @NonNull final ContractActions contractActions, final boolean isMigration) {
-        requireNonNull(contractActions, "contractActions must not be null");
-        this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public BlockStreamBuilder addContractBytecode(
-            @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
-        requireNonNull(contractBytecode, "contractBytecode must not be null");
-        contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
-        return this;
-    }
-
-    // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addBeneficiaryForDeletedAccount(
-            @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
-        requireNonNull(deletedAccountID, "deletedAccountID must not be null");
-        requireNonNull(beneficiaryForDeletedAccount, "beneficiaryForDeletedAccount must not be null");
-        deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNumberOfDeletedAccounts() {
-        return deletedAccountBeneficiaries.size();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Nullable
-    public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
-        return deletedAccountBeneficiaries.get(deletedAccountID);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public ContractFunctionResult contractFunctionResult() {
-        return contractFunctionResult;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public TransactionBody transactionBody() {
-        return inProgressBody();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    private TransactionBody inProgressBody() {
-        try {
-            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                    transaction.signedTransactionBytes().toReadableSequentialData());
-            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
-        } catch (Exception e) {
-            throw new IllegalStateException("Record being built for unparseable transaction", e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public List<AccountAmount> getPaidStakingRewards() {
-        return paidStakingRewards;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public HandleContext.TransactionCategory category() {
-        return category;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void nullOutSideEffectFields() {
-        serialNumbers.clear();
-        tokenTransferLists.clear();
-        automaticTokenAssociations.clear();
-        transferList = TransferList.DEFAULT;
-        paidStakingRewards.clear();
-        assessedCustomFees.clear();
-
-        newTotalSupply = 0L;
-        transactionFee = 0L;
-        contractFunctionResult = null;
-        // Note that internal contract creations are removed instead of reversed
-        transactionResultBuilder.scheduleRef((ScheduleID) null);
-        transactionResultBuilder.automaticTokenAssociations(emptyList());
-        transactionResultBuilder.congestionPricingMultiplier(0);
-
-        transactionOutputBuilder.cryptoTransfer((CryptoTransferOutput) null);
-        transactionOutputBuilder.utilPrng((UtilPrngOutput) null);
-        transactionOutputBuilder.contractCall((CallContractOutput) null);
-        transactionOutputBuilder.ethereumCall((EthereumOutput) null);
-        transactionOutputBuilder.contractCreate((CreateContractOutput) null);
-        transactionOutputBuilder.createSchedule((CreateScheduleOutput) null);
-        transactionOutputBuilder.signSchedule((SignScheduleOutput) null);
-    }
-
     private Bytes getSerializedTransaction() {
         return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);
+    }
+
+    private TransactionOutput.Builder ensureOutputBuilder() {
+        if (transactionOutputBuilder == null) {
+            transactionOutputBuilder = TransactionOutput.newBuilder();
+        }
+        return transactionOutputBuilder;
     }
 }

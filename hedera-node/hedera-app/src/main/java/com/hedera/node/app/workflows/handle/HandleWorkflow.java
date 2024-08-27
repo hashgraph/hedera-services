@@ -203,13 +203,6 @@ public class HandleWorkflow {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
             blockStreamManager.startRound(round, state);
-            if (!migrationStateChanges.isEmpty()) {
-                migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
-                        .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
-                                .build())
-                        .build()));
-                migrationStateChanges.clear();
-            }
         }
         recordCache.resetRoundReceipts();
         try {
@@ -221,7 +214,7 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(@NonNull State state, @NonNull Round round) {
+    private void handleEvents(@NonNull final State state, @NonNull final Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
@@ -254,7 +247,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, event, creator, platformTxn);
+                        handlePlatformTransaction(state, event, creator, platformTxn, blockStreamConfig);
                     } else {
                         // TODO - handle block and signature transactions here?
                     }
@@ -296,21 +289,31 @@ public class HandleWorkflow {
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
+     * @param blockStreamConfig the block stream configuration
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction txn) {
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final BlockStreamConfig blockStreamConfig) {
         final var handleStart = System.nanoTime();
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.startUserTransaction(consensusNow, state);
+        }
+        // Because synthetic account creation records are only externalized on the first user transaction, we
+        // also postpone externalizing migration state changes until that same transactional unit
+        if (blockStreamConfig.streamBlocks() && !migrationStateChanges.isEmpty()) {
+            migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
+                    .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
+                            .build())
+                    .build()));
+            migrationStateChanges.clear();
         }
         final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
@@ -348,7 +351,8 @@ public class HandleWorkflow {
             } else {
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
-                    systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
+                    systemSetup.externalizeInitSideEffects(
+                            userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
                 final var streamsRecords = configProvider
