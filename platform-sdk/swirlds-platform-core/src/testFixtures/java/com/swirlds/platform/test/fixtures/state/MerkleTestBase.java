@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
@@ -30,6 +33,7 @@ import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 
 /**
@@ -55,6 +59,10 @@ import org.junit.jupiter.api.AfterEach;
  * even if they don't need it, I just use it for virtual map specific tests).
  */
 public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.MerkleTestBase {
+
+    protected SemanticVersion v1 = SemanticVersion.newBuilder().major(1).build();
+    protected final Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier =
+            version -> new BasicSoftwareVersion(version.major());
 
     protected StateMetadata<String, String> fruitMetadata;
     protected StateMetadata<String, String> fruitVirtualMetadata;
