@@ -130,7 +130,7 @@ public final class PlatformBuilder {
      */
     private AddressBook bootstrapAddressBook;
 
-    private Roster bootstrapRoster;
+    private Roster roster;
 
     /**
      * This node's cryptographic keys.
@@ -394,13 +394,13 @@ public final class PlatformBuilder {
      * Provide the roster to use for bootstrapping the system. If not provided then the roster is created from the
      * bootstrap address book.
      *
-     * @param bootstrapRoster the roster to use for bootstrapping
+     * @param roster the roster to use for bootstrapping
      * @return this
      */
     @NonNull
-    public PlatformBuilder withBootstrapRoster(@NonNull final Roster bootstrapRoster) {
+    public PlatformBuilder withRoster(@NonNull final Roster roster) {
         throwIfAlreadyUsed();
-        this.bootstrapRoster = Objects.requireNonNull(bootstrapRoster);
+        this.roster = Objects.requireNonNull(roster);
         return this;
     }
 
@@ -575,8 +575,8 @@ public final class PlatformBuilder {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
 
-        if (bootstrapRoster == null) {
-            bootstrapRoster = createRoster(boostrapAddressBook);
+        if (roster == null) {
+            roster = createRoster(boostrapAddressBook);
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

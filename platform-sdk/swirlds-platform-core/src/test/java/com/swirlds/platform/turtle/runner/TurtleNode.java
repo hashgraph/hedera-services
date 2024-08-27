@@ -111,7 +111,7 @@ public class TurtleNode {
                 .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withBootstrapAddressBook(addressBook)
-                .withBootstrapRoster(createRoster(addressBook))
+                .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(privateKeys);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
