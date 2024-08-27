@@ -16,6 +16,10 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
@@ -36,7 +40,6 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +58,7 @@ import java.util.function.Consumer;
  * source of token types by {@link com.hedera.hapi.node.base.TokenID}.
  */
 public class BaseTranslator {
+    private static final Set<String> AUTO_CREATION_MEMOS = Set.of(LAZY_MEMO, AUTO_MEMO);
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
     private long highestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
@@ -163,7 +167,15 @@ public class BaseTranslator {
                 .paidStakingRewards(parts.paidStakingRewards());
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
-        receiptBuilder.exchangeRate(activeRates);
+        final boolean followsUserRecord = asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
+        if (followsUserRecord) {
+            recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
+        }
+        if (!followsUserRecord || AUTO_CREATION_MEMOS.contains(parts.memo())) {
+            // Only preceding and user transactions get exchange rates in their receipts; note that
+            // auto-account creations are always preceding dispatches and so get exchange rates
+            receiptBuilder.exchangeRate(activeRates);
+        }
         final AtomicReference<TokenType> tokenType = new AtomicReference<>();
         final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
         spec.accept(receiptBuilder, recordBuilder, sidecarRecords, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
@@ -233,7 +245,9 @@ public class BaseTranslator {
             }
         });
         unit.blockTransactionParts().forEach(parts -> {
-            
+            if (parts.transactionIdOrThrow().nonce() == 0) {
+                userTimestamp = asInstant(parts.consensusTimestamp());
+            }
         });
     }
 

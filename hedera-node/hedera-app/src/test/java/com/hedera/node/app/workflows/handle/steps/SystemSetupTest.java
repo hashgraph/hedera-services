@@ -268,6 +268,7 @@ class SystemSetupTest {
                 })
                 .when(syntheticAccountCreator)
                 .generateSyntheticAccounts(any(), any(), any(), any(), any(), any());
+        given(genesisAccountRecordBuilder.accountID(any())).willReturn(genesisAccountRecordBuilder);
 
         // Call the first time to make sure records are generated
         subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT);

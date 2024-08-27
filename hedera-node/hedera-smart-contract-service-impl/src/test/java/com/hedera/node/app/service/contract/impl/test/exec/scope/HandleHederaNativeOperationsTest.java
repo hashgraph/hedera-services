@@ -65,7 +65,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
-import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
@@ -180,6 +179,7 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatching() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
@@ -192,6 +192,7 @@ class HandleHederaNativeOperationsTest {
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+        given(cryptoCreateRecordBuilder.memo(LAZY_CREATION_MEMO)).willReturn(cryptoCreateRecordBuilder);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);
         assertEquals(OK, status);
@@ -203,6 +204,7 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatchingDoesNotThrowErrors() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
@@ -222,7 +224,6 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void finalizeHollowAccountAsContractUsesApiAndStore() {
-        final var entityNumGenerator = mock(EntityNumGenerator.class);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);

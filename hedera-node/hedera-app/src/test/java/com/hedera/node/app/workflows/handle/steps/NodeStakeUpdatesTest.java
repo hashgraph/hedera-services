@@ -20,6 +20,7 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -90,6 +91,8 @@ class NodeStakeUpdatesTest {
 
     @Test
     void processUpdateCalledForGenesisTxn() {
+        given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
+
         subject.process(stack, context, true);
 
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
@@ -130,21 +133,23 @@ class NodeStakeUpdatesTest {
         Assertions.assertThat(
                         NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
+        given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
         subject.process(stack, context, false);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
                         argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
-                        ExchangeRateSet.DEFAULT);
+                        eq(ExchangeRateSet.DEFAULT));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
     @Test
     void processUpdateExceptionIsCaught() {
+        given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
-                .updateNodes(any(), ExchangeRateSet.DEFAULT);
+                .updateNodes(any(), eq(ExchangeRateSet.DEFAULT));
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
