@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.reports") }
+plugins {
+    id("com.hedera.gradle.base.lifecycle")
+    id("com.hedera.gradle.report.code-coverage")
+}
 
 dependencies {
     implementation(project(":app"))
