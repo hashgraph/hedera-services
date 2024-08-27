@@ -20,7 +20,6 @@ plugins {
     id("com.hedera.gradle.lifecycle")
     id("com.hedera.gradle.repositories")
     id("com.hedera.gradle.jpms-modules")
-    id("com.hedera.gradle.jpms-module-dependencies")
 }
 
 dependencies {

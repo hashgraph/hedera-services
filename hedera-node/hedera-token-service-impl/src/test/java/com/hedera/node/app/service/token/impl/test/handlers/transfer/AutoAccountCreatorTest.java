@@ -76,7 +76,7 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathECKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -107,7 +107,7 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathEDKeyAliasWorks() {
         accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -139,7 +139,7 @@ class AutoAccountCreatorTest extends StepsBase {
         accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

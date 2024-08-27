@@ -97,6 +97,10 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
     /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
+        if (minValidIndex.get() < 0) {
+            // Empty list, nothing to read
+            return;
+        }
         final int totalNumberOfChunks = calculateNumberOfChunks(size());
         final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
         final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
