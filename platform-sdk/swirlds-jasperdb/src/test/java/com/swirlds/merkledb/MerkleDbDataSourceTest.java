@@ -144,7 +144,7 @@ class MerkleDbDataSourceTest {
                     IllegalArgumentException.class,
                     () -> dataSource.loadHash(-1),
                     "loadInternalRecord should throw IAE on invalid path");
-            assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
+            assertEquals("Path (-1) is not valid", e.getMessage(), "Detail message should capture the failure");
 
             // close data source
             dataSource.close();
@@ -239,7 +239,7 @@ class MerkleDbDataSourceTest {
                     IllegalArgumentException.class,
                     () -> dataSource.loadHash(-1),
                     "Loading a negative path should fail");
-            assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
+            assertEquals("Path (-1) is not valid", e.getMessage(), "Detail message should capture the failure");
         });
     }
 
@@ -338,6 +338,39 @@ class MerkleDbDataSourceTest {
                     dataSource.loadLeafRecord(500),
                     "creating/loading same LeafRecord gives different results");
             assertLeaf(testType, dataSource, 250, 500);
+        });
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void createAndDeleteAllLeaves(final TestType testType) throws IOException {
+        final int count = 1000;
+        createAndApplyDataSource(testDirectory, "test3", testType, count, dataSource -> {
+            // create some leaves
+            dataSource.saveRecords(
+                    count,
+                    count * 2,
+                    IntStream.range(count, count * 2).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                    IntStream.range(count, count * 2)
+                            .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
+                    Stream.empty());
+            // check all the leaf data
+            IntStream.range(count, count * 2).forEach(i -> assertLeaf(testType, dataSource, i, i));
+
+            // delete everything
+            dataSource.saveRecords(
+                    -1,
+                    -1,
+                    Stream.empty(),
+                    Stream.empty(),
+                    IntStream.range(count, count * 2)
+                            .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)));
+            // check the data source is empty
+            for (int i = 0; i < count * 2; i++) {
+                assertNull(dataSource.loadHash(i));
+                assertNull(dataSource.loadLeafRecord(i));
+                assertNull(dataSource.loadLeafRecord(testType.dataType().createVirtualLongKey(i)));
+            }
         });
     }
 
@@ -669,7 +702,9 @@ class MerkleDbDataSourceTest {
                 assertEquals(
                         2L, metrics.getMetric("merkle_db", "merkledb_count").get(ValueType.VALUE));
                 copy.copyStatisticsFrom(dataSource);
-                copy.saveRecords(4, 8, Stream.empty(), Stream.of(dirtyLeaves.get(1)), Stream.empty(), false);
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf1 = dirtyLeaves.get(1);
+                leaf1.setPath(4);
+                copy.saveRecords(4, 8, Stream.empty(), Stream.of(leaf1), Stream.empty(), false);
                 final IntegerGauge copyCounter = (IntegerGauge)
                         metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "ds_files_leavesStoreFileCount_" + label);
                 assertEquals(2L, copyCounter.get());
