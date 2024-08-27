@@ -57,7 +57,7 @@ permissions:
 jobs:
   Deploy-Preview:
     name: ${{ inputs.custom-job-label || 'Deploy Preview' }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     outputs:
       version: ${{ steps.effective-version.outputs.number }}
     steps:

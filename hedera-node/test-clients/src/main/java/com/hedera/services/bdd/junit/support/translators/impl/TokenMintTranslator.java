@@ -46,31 +46,33 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenMintOrThrow();
-                final var tokenId = op.tokenOrThrow();
                 final var numMints = op.metadata().size();
-                final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
-                final var iter = remainingStateChanges.listIterator();
-                while (iter.hasNext()) {
-                    final var stateChange = iter.next();
-                    if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasNftIdKey()) {
-                        final var nftId =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().nftIdKeyOrThrow();
-                        if (!nftId.tokenIdOrThrow().equals(tokenId)) {
-                            continue;
-                        }
-                        final var serialNo = nftId.serialNumber();
-                        if (mintedSerialNos.remove(serialNo)) {
-                            iter.remove();
-                            if (mintedSerialNos.isEmpty()) {
-                                return;
+                if (numMints > 0) {
+                    final var tokenId = op.tokenOrThrow();
+                    final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
+                    final var iter = remainingStateChanges.listIterator();
+                    while (iter.hasNext()) {
+                        final var stateChange = iter.next();
+                        if (stateChange.hasMapUpdate()
+                                && stateChange.mapUpdateOrThrow().keyOrThrow().hasNftIdKey()) {
+                            final var nftId =
+                                    stateChange.mapUpdateOrThrow().keyOrThrow().nftIdKeyOrThrow();
+                            if (!nftId.tokenIdOrThrow().equals(tokenId)) {
+                                continue;
+                            }
+                            final var serialNo = nftId.serialNumber();
+                            if (mintedSerialNos.remove(serialNo)) {
+                                iter.remove();
+                                if (mintedSerialNos.isEmpty()) {
+                                    return;
+                                }
                             }
                         }
                     }
+                    log.error(
+                            "Not all mints had matching state changes found for successful mint with id {}",
+                            parts.transactionIdOrThrow());
                 }
-                log.error(
-                        "Not all mints had matching state changes found for successful mint with id {}",
-                        parts.transactionIdOrThrow());
             }
         });
     }

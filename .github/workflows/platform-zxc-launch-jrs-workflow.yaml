@@ -50,7 +50,7 @@ defaults:
 jobs:
   launch-workflow:
     name: Launch Workflow
-    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    runs-on: network-node-linux-small-scheduler
     steps:
       - name: Install Github CLI
         env:

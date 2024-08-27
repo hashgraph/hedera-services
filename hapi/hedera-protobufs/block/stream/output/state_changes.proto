@@ -792,7 +792,7 @@ message MapChangeValue {
         proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
 
         /**
-         * A pending airdrop value.
+         * A pending roster value.
          */
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
     }
