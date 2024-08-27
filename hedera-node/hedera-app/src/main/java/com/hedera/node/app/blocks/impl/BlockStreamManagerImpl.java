@@ -132,7 +132,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     public void finishBlockProof(final long blockNumber, final Bytes signature) {
         // FUTURE: TSS service will release this proof
         if (pendingBlocks.isEmpty() || pendingBlocks.peek().blockNumber != blockNumber) {
-            log.error("Block {} is not having teh same block number", blockNumber);
+            log.error("Block {} is not having the same block number", blockNumber);
             return;
         }
 
@@ -242,6 +242,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var writableState = state.getWritableStates(BlockStreamService.NAME);
         final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
         final var stateRootHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
+        // Ensure all runningHashManager futures are complete
+        writeFuture.join();
+
         blockStreamInfoState.put(new BlockStreamInfo(
                 blockNumber,
                 blockTimestamp(),
@@ -266,10 +269,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         pendingBlocks.add(new PendingBlock(writer, blockProofBuilder, blockNumber));
         lastBlockHash = blockHash;
         final long blockNumberToComplete = this.blockNumber;
+        writer = null;
         CompletableFuture.runAsync(
-                () -> {
-                    finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48]));
-                },
+                () -> finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48])),
                 executor);
     }
 
