@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -289,6 +290,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
+                        new BlockStreamService(bootstrapConfig),
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
