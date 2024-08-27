@@ -80,8 +80,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
@@ -378,6 +381,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
     // custom fees
     @Nested
     @DisplayName("with custom fees for")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AirdropTokensWithCustomFees {
 
         private static long hbarFee = 1_000L;
@@ -391,6 +395,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
+        @Order(1)
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
             final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
@@ -425,6 +430,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("NFT with 2 layers fixed Hts fee")
+        @Order(2)
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
@@ -463,6 +469,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee and net of transfers true")
+        @Order(3)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersTre() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
@@ -485,6 +492,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false")
+        @Order(4)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalse() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
@@ -505,6 +513,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false, in pending state")
+        @Order(5)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseInPendingState() {
             var sender = "sender";
             return defaultHapiSpec("the value should be reduced")
@@ -530,6 +539,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false and dissociated collector")
+        @Order(6)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
             var sender = "sender";
             return defaultHapiSpec("should have 2 pending airdrops and the value should be reduced")
@@ -557,6 +567,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("NFT with royalty fee")
+        @Order(7)
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
             return defaultHapiSpec("should fail - INVALID_TRANSACTION")
                     .given()

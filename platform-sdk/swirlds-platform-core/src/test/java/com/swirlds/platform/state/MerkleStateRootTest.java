@@ -104,6 +104,11 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
+        public void onSealConsensusRound(@NonNull Round round) {
+            // No-op
+        }
+
+        @Override
         public void onPreHandle(@NonNull Event event, @NonNull State state) {
             onPreHandleCalled.set(true);
         }

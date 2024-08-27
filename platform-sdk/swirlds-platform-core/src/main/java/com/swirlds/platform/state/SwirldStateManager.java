@@ -130,6 +130,16 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     /**
+     * Seals the platform's state changes for the given round.
+     * @param round the round to seal
+     */
+    public void sealConsensusRound(@NonNull final Round round) {
+        Objects.requireNonNull(round);
+        final MerkleRoot state = stateRef.get();
+        state.getSwirldState().sealConsensusRound(round);
+    }
+
+    /**
      * Returns the consensus state. The consensus state could become immutable at any time. Modifications must not be
      * made to the returned state.
      */
