@@ -1,6 +1,6 @@
 /**
  * The Hedera implementation of the Hedera Node Schedule Service (as defined in
- * {@link com.hedera.node.app.service.schedule}).
+ * {@code com.hedera.node.app.service.schedule}).
  * The Schedule Service implements the handlers needed to support the following transactions:<br/>
  * <ul>
  *     <li>Schedule Create</li>

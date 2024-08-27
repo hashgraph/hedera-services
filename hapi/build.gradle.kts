@@ -34,7 +34,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     // tag = "v0.53.0"
     // uncomment below to use a specific branch
-    branch = "add-throttle-at-consensus"
+    branch = "main"
 }
 
 sourceSets {
@@ -43,11 +43,13 @@ sourceSets {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
         }
         proto {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
         }
     }
 }

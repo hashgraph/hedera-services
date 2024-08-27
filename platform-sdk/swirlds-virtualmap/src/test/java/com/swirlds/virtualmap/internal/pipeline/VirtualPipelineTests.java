@@ -825,13 +825,13 @@ class VirtualPipelineTests {
             final Deque<DummyVirtualRoot> copies, final int expectedTimeMs) {
         final DummyVirtualRoot copy = copies.getLast().copy();
         copies.add(copy);
-        final Duration duration = copy.getPipeline().calculateFlushBackpressurePause();
-        if (duration == null) {
+        final long duration = copy.getPipeline().calculateFlushBackpressurePause();
+        if (duration <= 0) {
             // no backpressure applied
             return;
         }
 
-        assertEquals(expectedTimeMs, duration.toMillis());
+        assertEquals(expectedTimeMs, duration);
     }
 
     /**
@@ -841,13 +841,13 @@ class VirtualPipelineTests {
             final Deque<DummyVirtualRoot> copies, final int expectedTimeMs) {
         final DummyVirtualRoot copy = copies.getLast().copy();
         copies.add(copy);
-        final Duration duration = copy.getPipeline().calculateFamilySizeBackpressurePause();
-        if (duration == null) {
+        final long duration = copy.getPipeline().calculateFamilySizeBackpressurePause();
+        if (duration <= 0) {
             // no backpressure applied
             return;
         }
 
-        assertEquals(expectedTimeMs, duration.toMillis());
+        assertEquals(expectedTimeMs, duration);
     }
 
     @Test

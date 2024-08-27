@@ -24,15 +24,15 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -450,7 +450,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
             return previousTimestamp;
         }
 
-        final IndexedEvent previousEvent = source.getLatestEvent(getRandom());
+        final EventImpl previousEvent = source.getLatestEvent(getRandom());
         final Instant previousTimestampForSource =
                 previousEvent == null ? Instant.ofEpochSecond(0) : previousEvent.getTimeCreated();
 
@@ -480,26 +480,25 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent buildNextEvent(final long eventIndex) {
+    public EventImpl buildNextEvent(final long eventIndex) {
         final EventSource<?> source = getNextEventSource(eventIndex);
         final EventSource<?> otherParentSource = getNextOtherParentSource(eventIndex, source);
 
         final long birthRound = consensus.getLastRoundDecided() + 1;
 
-        final IndexedEvent next = source.generateEvent(
+        final EventImpl next = source.generateEvent(
                 getRandom(),
                 eventIndex,
                 otherParentSource,
                 getNextTimestamp(source, otherParentSource.getNodeId()),
                 birthRound);
-        next.setGeneratorIndex(eventIndex);
 
         // The event given to the internal consensus needs its own EventImpl & PlatformEvent for metadata to be kept
         // separate from the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl
         // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
-        new StatefulEventHasher().hashEvent(next.getBaseEvent());
+        new DefaultEventHasher().hashEvent(next.getBaseEvent());
         final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
         consensus.addEvent(inOrderLinker.linkEvent(tmp));
