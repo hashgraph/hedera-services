@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
@@ -135,8 +136,8 @@ public class DispatchProcessor {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
-            // Only user transactions can trigger system updates in the current system
-            if (dispatch.txnCategory() == USER) {
+            // Only user or preceding transactions can trigger system updates in the current system
+            if (dispatch.txnCategory() == USER || dispatch.txnCategory() == PRECEDING) {
                 handleSystemUpdates(dispatch);
             }
         } catch (HandleException e) {

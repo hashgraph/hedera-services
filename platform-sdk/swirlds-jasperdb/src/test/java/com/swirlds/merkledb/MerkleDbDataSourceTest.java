@@ -147,7 +147,7 @@ class MerkleDbDataSourceTest {
                     IllegalArgumentException.class,
                     () -> dataSource.loadHash(-1),
                     "loadInternalRecord should throw IAE on invalid path");
-            assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
+            assertEquals("Path (-1) is not valid", e.getMessage(), "Detail message should capture the failure");
 
             // close data source
             dataSource.close();
@@ -246,7 +246,7 @@ class MerkleDbDataSourceTest {
                     IllegalArgumentException.class,
                     () -> dataSource.loadHash(-1),
                     "Loading a negative path should fail");
-            assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
+            assertEquals("Path (-1) is not valid", e.getMessage(), "Detail message should capture the failure");
         });
     }
 
@@ -361,6 +361,45 @@ class MerkleDbDataSourceTest {
                     dataSource.loadLeafRecord(500).toRecord(keySerializer, valueSerializer),
                     "creating/loading same LeafRecord gives different results");
             assertLeaf(testType, keySerializer, valueSerializer, dataSource, 250, 500);
+        });
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void createAndDeleteAllLeaves(final TestType testType) throws IOException {
+        final int count = 1000;
+        final KeySerializer keySerializer = testType.dataType().getKeySerializer();
+        final ValueSerializer valueSerializer = testType.dataType().getValueSerializer();
+        createAndApplyDataSource(testDirectory, "test3", testType, count, dataSource -> {
+            // create some leaves
+            dataSource.saveRecords(
+                    count,
+                    count * 2,
+                    IntStream.range(count, count * 2).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                    IntStream.range(count, count * 2)
+                            .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
+                            .map(r -> r.toBytes(keySerializer, valueSerializer)),
+                    Stream.empty());
+            // check all the leaf data
+            IntStream.range(count, count * 2)
+                    .forEach(i -> assertLeaf(testType, keySerializer, valueSerializer, dataSource, i, i));
+
+            // delete everything
+            dataSource.saveRecords(
+                    -1,
+                    -1,
+                    Stream.empty(),
+                    Stream.empty(),
+                    IntStream.range(count, count * 2)
+                            .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i))
+                            .map(r -> r.toBytes(keySerializer, valueSerializer)));
+            // check the data source is empty
+            for (int i = 0; i < count * 2; i++) {
+                assertNull(dataSource.loadHash(i));
+                assertNull(dataSource.loadLeafRecord(i));
+                final VirtualKey key = testType.dataType().createVirtualLongKey(i);
+                assertNull(dataSource.loadLeafRecord(keySerializer.toBytes(key), key.hashCode()));
+            }
         });
     }
 
@@ -718,11 +757,13 @@ class MerkleDbDataSourceTest {
                 assertEquals(
                         2L, metrics.getMetric("merkle_db", "merkledb_count").get(ValueType.VALUE));
                 copy.copyStatisticsFrom(dataSource);
+                final VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> leaf1 = dirtyLeaves.get(1);
+                leaf1.setPath(4);
                 copy.saveRecords(
                         4,
                         8,
                         Stream.empty(),
-                        Stream.of(dirtyLeaves.get(1)).map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        Stream.of(leaf1).map(r -> r.toBytes(keySerializer, valueSerializer)),
                         Stream.empty(),
                         false);
                 final IntegerGauge copyCounter = (IntegerGauge)

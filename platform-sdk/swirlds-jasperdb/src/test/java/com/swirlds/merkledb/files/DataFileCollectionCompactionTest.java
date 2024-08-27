@@ -81,6 +81,9 @@ class DataFileCollectionCompactionTest {
 
     private static long[] readDataItem(final DataFileCollection coll, final long location) throws IOException {
         final BufferedData data = coll.readDataItem(location);
+        if (data == null) {
+            return null;
+        }
         final long[] items = new long[Math.toIntExact(data.remaining() / Long.BYTES)];
         for (int i = 0; i < items.length; i++) {
             items[i] = data.readLong();
@@ -152,6 +155,7 @@ class DataFileCollectionCompactionTest {
             assertNotNull(location, "failed on " + i);
 
             long[] data = readDataItem(coll, location);
+            assertNotNull(data);
             final var key = data[0];
             final var value = data[1];
             assertTrue(key > prevKey, "failed on " + i + " key=" + key + ", prev=" + prevKey + ", value=" + value);
@@ -393,6 +397,7 @@ class DataFileCollectionCompactionTest {
                 store.startWriting();
                 for (int j = 0; j < MAX_KEYS; ++j) {
                     long[] dataItem = readDataItem(store, index.get(j));
+                    assertNotNull(dataItem);
                     dataItem[1] += j;
                     index.set(j, storeDataItem(store, dataItem));
                 }
@@ -443,6 +448,7 @@ class DataFileCollectionCompactionTest {
             try {
                 for (int j = 0; j < MAX_KEYS; ++j) {
                     final long[] dataItem = readDataItem(store, reindex.get(j));
+                    assertNotNull(dataItem);
                     assertEquals(j, dataItem[0]);
                     assertEquals(NUM_UPDATES * j, dataItem[1]);
                 }
@@ -464,6 +470,7 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
         Files.createDirectories(testDir);
         final LongListOffHeap index = new LongListOffHeap();
+        index.updateValidRange(0, numFiles * numValues);
         final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
         final DataFileCompactor compactor =
                 new DataFileCompactor(config, storeName, store, index, null, null, null, null);
@@ -564,6 +571,7 @@ class DataFileCollectionCompactionTest {
         for (int i = 0; i < index2.size(); i++) {
             final long dataLocation = index2.get(i);
             final long[] value = readDataItem(store2, dataLocation);
+            assertNotNull(value);
             assertEquals(i, value[0]);
             assertEquals(i + 1, value[1]);
         }
@@ -586,6 +594,7 @@ class DataFileCollectionCompactionTest {
                 new DataFileCompactor(config, storeName, store, index, null, null, null, null);
 
         final int numFiles = 2;
+        index.updateValidRange(0, numFiles * MAXKEYS);
         for (long i = 0; i < numFiles; i++) {
             store.startWriting();
             for (int j = 0; j < MAXKEYS; ++j) {

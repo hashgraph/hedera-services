@@ -141,6 +141,7 @@ class DataFileCollectionTest {
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        storedOffsets.updateValidRange(0, 1100);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
         int count = 0;
@@ -640,6 +641,7 @@ class DataFileCollectionTest {
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        storedOffsets.updateValidRange(0, 1100);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
         populateDataFileCollection(testType, fileCollection, storedOffsets);
@@ -726,6 +728,7 @@ class DataFileCollectionTest {
         // init file collection with some content to compact
         final DataFileCollection fileCollection = new DataFileCollection(config, dbDir, storeName, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        storedOffsets.updateValidRange(0, 1100);
         final DataFileCompactor compactor =
                 new DataFileCompactor(config, storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);

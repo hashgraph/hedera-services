@@ -50,7 +50,16 @@ class LongListValidRangeTest {
     @DisplayName("Update min valid index behavior with invalid boundaries")
     void testUpdateMinValidIndexNegativeValue(AbstractLongList<?> list) {
         this.list = list;
-        assertThrows(IndexOutOfBoundsException.class, () -> list.updateValidRange(-1, maxValidIndex()));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.updateValidRange(-2, maxValidIndex()));
+    }
+
+    @Tag(TestComponentTags.VMAP)
+    @ParameterizedTest
+    @MethodSource("defaultLongListProvider")
+    @DisplayName("Update min and max index to -1")
+    void testUpdateMinMaxMinuxOne(AbstractLongList<?> list) {
+        this.list = list;
+        assertDoesNotThrow(() -> list.updateValidRange(-1, -1));
     }
 
     @Tag(TestComponentTags.VMAP)
@@ -68,8 +77,9 @@ class LongListValidRangeTest {
     @DisplayName("Min/max valid indexes exceeds the list size")
     void testUpdateValidRangeOnEmptyList(AbstractLongList<?> list) {
         this.list = list;
+        list.updateValidRange(0, 0);
         // it's allowed to update min valid index to the index that exceeds the list size
-        assertDoesNotThrow(() -> list.updateValidRange(1, maxValidIndex()));
+        assertDoesNotThrow(() -> list.updateValidRange(1, 1));
         // no chunks are created
         assertMemoryChunksNumber(0);
         // an attempt to put a value to the index that is lower than min valid index should fail
@@ -79,15 +89,15 @@ class LongListValidRangeTest {
         // it shall have no effect
         assertDoesNotThrow(() -> list.updateValidRange(1, MAX_LONGS - 1));
 
-        assertDoesNotThrow(() -> list.updateValidRange(0, maxValidIndex()));
+        assertDoesNotThrow(() -> list.updateValidRange(0, MAX_LONGS - 1));
         fill(2);
         assertMemoryChunksNumber(1);
 
-        assertDoesNotThrow(() -> list.updateValidRange(3, maxValidIndex()));
+        assertDoesNotThrow(() -> list.updateValidRange(3, MAX_LONGS - 1));
         // no additional chunks created
         assertMemoryChunksNumber(1);
 
-        assertDoesNotThrow(() -> list.updateValidRange(100, maxValidIndex()));
+        assertDoesNotThrow(() -> list.updateValidRange(100, MAX_LONGS - 1));
     }
 
     @SuppressWarnings("resource")
@@ -644,7 +654,7 @@ class LongListValidRangeTest {
 
             list.updateValidRange(0, maxValidIndex());
             // creating a "hole" in the list - only the first and the last chunks have data
-            fill(0);
+            fill(0, false);
             // memory consumption reduced to size of a single chunk
             assertEquals(48, list.getOffHeapConsumption());
         }
@@ -707,7 +717,14 @@ class LongListValidRangeTest {
      *
      * @param maxIndexInclusive right boundary of a segment with values
      */
-    public void fill(final int maxIndexInclusive) {
+    void fill(final int maxIndexInclusive) {
+        fill(maxIndexInclusive, true);
+    }
+
+    void fill(final int maxIndexInclusive, boolean updateValidRange) {
+        if (updateValidRange) {
+            list.updateValidRange(0, maxIndexInclusive);
+        }
         for (int i = 0; i <= maxIndexInclusive; i++) {
             list.put(i, i + 1);
         }
@@ -734,7 +751,7 @@ class LongListValidRangeTest {
     }
 
     private long maxValidIndex() {
-        return list.size() - 1;
+        return list.getMaxValidIndex();
     }
 
     @AfterEach

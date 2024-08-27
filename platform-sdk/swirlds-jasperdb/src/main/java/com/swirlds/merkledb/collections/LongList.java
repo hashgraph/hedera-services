@@ -119,14 +119,17 @@ public interface LongList extends CASableLongIndex, Closeable {
     void writeToFile(Path file) throws IOException;
 
     /**
-     * After invocation of this method, {@link LongList#get(long)}) calls
+     * Updates min and max valid indexes in this list. If both values are -1, this indicates
+     * the list is empty.
+     *
+     * <p>After invocation of this method, {@link LongList#get(long)}) calls
      * will return {@link LongList#IMPERMISSIBLE_VALUE} for indices that
      * are before {@code newMinValidIndex} and after {@code newMaxValidIndex}
      * Also, a call to this method releases memory taken by unused chunks.
      * For in-memory implementation it means the chunk clean up and memory release,
      * while file-based reuse the file space in further writes.
-     * <p>
-     * Note that {@code newMinValidIndex} is allowed to exceed the current size of the list.
+     *
+     * <p>Note that {@code newMinValidIndex} is allowed to exceed the current size of the list.
      * If {@code newMaxValidIndex} exceeds the current size of the list, there will be no effect.
      *
      * @param newMinValidIndex minimal valid index of the list
@@ -135,6 +138,20 @@ public interface LongList extends CASableLongIndex, Closeable {
      * {@code newMaxValidIndex} exceeds max number of chunks allowed.
      */
     void updateValidRange(long newMinValidIndex, long newMaxValidIndex);
+
+    /**
+     * Min valid index in this list. If the list is empty, the min index is -1.
+     *
+     * @return min valid index
+     */
+    long getMinValidIndex();
+
+    /**
+     * Max valid index in this list. If the list is empty, the max index is -1;
+     *
+     * @return max valid index
+     */
+    long getMaxValidIndex();
 
     /** {@inheritDoc} */
     @Override

@@ -19,23 +19,21 @@ package com.swirlds.virtualmap.test.fixtures;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-@ConstructableIgnored
 public class TestKeySerializer implements KeySerializer<TestKey> {
 
     public static final TestKeySerializer INSTANCE = new TestKeySerializer();
 
     @Override
     public long getClassId() {
-        throw new UnsupportedOperationException("This key serializer should never be serialized/deserialized");
+        return 0x592a33a2329ec4b9L;
     }
 
     @Override
     public int getVersion() {
-        throw new UnsupportedOperationException("This key serializer should never be serialized/deserialized");
+        return 1;
     }
 
     @Override

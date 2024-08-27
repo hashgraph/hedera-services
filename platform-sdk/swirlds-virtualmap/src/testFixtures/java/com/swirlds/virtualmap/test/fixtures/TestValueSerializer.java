@@ -18,24 +18,22 @@ package com.swirlds.virtualmap.test.fixtures;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 
-@ConstructableIgnored
 public class TestValueSerializer implements ValueSerializer<TestValue> {
 
     public static final TestValueSerializer INSTANCE = new TestValueSerializer();
 
     @Override
     public long getClassId() {
-        throw new UnsupportedOperationException("This value serializer should never be serialized/deserialized");
+        return 0x51c8d5d21f7125e8L;
     }
 
     @Override
     public int getVersion() {
-        throw new UnsupportedOperationException("This value serializer should never be serialized/deserialized");
+        return 1;
     }
 
     @Override

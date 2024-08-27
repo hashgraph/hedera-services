@@ -361,7 +361,8 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
          * @throws IOException in case of emergency
          */
         private void save(final Map<Long, Long> cache) throws IOException {
-            coll.startWriting(firstPath, lastPath);
+            coll.updateValidKeyRange(firstPath, lastPath);
+            coll.startWriting();
             final List<Long> sortedKeys = cache.keySet().stream().sorted().toList();
             for (final long key : sortedKeys) {
                 if (key < firstPath || key > lastPath || key == DELETED) {

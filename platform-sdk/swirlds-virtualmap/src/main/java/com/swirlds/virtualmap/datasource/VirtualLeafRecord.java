@@ -128,11 +128,20 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     }
 
     public VirtualLeafBytes toBytes(final KeySerializer<K> keySerializer, final ValueSerializer<V> valueSerializer) {
+        if (key == null) {
+            throw new IllegalStateException("Leaf records with null keys should not be serialized");
+        }
         final byte[] keyBytes = new byte[keySerializer.getSerializedSize(key)];
         keySerializer.serialize(key, BufferedData.wrap(keyBytes));
-        final byte[] valueBytes = new byte[valueSerializer.getSerializedSize(value)];
-        valueSerializer.serialize(value, BufferedData.wrap(valueBytes));
-        return new VirtualLeafBytes(path, Bytes.wrap(keyBytes), key.hashCode(), Bytes.wrap(valueBytes));
+        final byte[] valueBytes;
+        if (value != null) {
+            valueBytes = new byte[valueSerializer.getSerializedSize(value)];
+            valueSerializer.serialize(value, BufferedData.wrap(valueBytes));
+        } else {
+            valueBytes = null;
+        }
+        return new VirtualLeafBytes(
+                path, Bytes.wrap(keyBytes), key.hashCode(), valueBytes != null ? Bytes.wrap(valueBytes) : null);
     }
 
     /**

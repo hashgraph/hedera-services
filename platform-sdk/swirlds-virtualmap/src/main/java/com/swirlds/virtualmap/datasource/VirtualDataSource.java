@@ -23,6 +23,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -134,15 +135,18 @@ public interface VirtualDataSource {
      * @return the leaf's record if one was stored for the given key or null if not stored
      * @throws IOException if there was a problem reading the leaf record
      */
+    @Nullable
     VirtualLeafBytes loadLeafRecord(final Bytes keyBytes, final int keyHashCode) throws IOException;
 
     /**
-     * Load virtual record bytes for a leaf node by path.
+     * Load virtual record bytes for a leaf node by path. If the path is outside the current
+     * data source's leaf path range, this method returns {@code null}.
      *
      * @param path the path for a leaf
      * @return the leaf's record if one was stored for the given path or null if not stored
      * @throws IOException if there was a problem reading the leaf record
      */
+    @Nullable
     VirtualLeafBytes loadLeafRecord(final long path) throws IOException;
 
     /**
@@ -150,8 +154,8 @@ public interface VirtualDataSource {
      *
      * <p>Key hash code may look redundant here, but it's currently not. In the future, key
      * hash codes will be calculated as {@code keyBytes}' hash code. However, keys stored in
-     * the data source before it's migrated to bytes could be different from hashcodes from
-     * bytes. Therefore to load the existing keys, key hash codes must be passed explicitly.
+     * the data source before it's migrated to bytes could be different from hash codes from
+     * bytes. Therefore, to load the existing keys, key hash codes must be passed explicitly.
      *
      * @param keyBytes the key bytes
      * @param keyHashCode the key hash code
@@ -161,7 +165,8 @@ public interface VirtualDataSource {
     long findKey(final Bytes keyBytes, final int keyHashCode) throws IOException;
 
     /**
-     * Load a virtual node hash by path.
+     * Load a virtual node hash by path. If the path is outside [0, last leaf path] range, this
+     * method returns {@code null}.
      *
      * @param path virtual node path
      * @return The node's record if one was stored for the given path; {@code null} if not stored or
@@ -169,6 +174,7 @@ public interface VirtualDataSource {
      * @throws IOException
      * 		If there was a problem loading the leaf's hash from data source
      */
+    @Nullable
     Hash loadHash(final long path) throws IOException;
 
     /**

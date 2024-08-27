@@ -75,9 +75,26 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         this.assertionFactory = assertionFactory;
     }
 
+    /**
+     * Returns an {@link EventualRecordStreamAssertion} that will pass as long as the given assertion does not
+     * throw an {@link AssertionError} before its timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must not fail
+     */
     public static EventualRecordStreamAssertion eventuallyAssertingNoFailures(
             final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
         return new EventualRecordStreamAssertion(assertionFactory, true);
+    }
+
+    /**
+     * Returns an {@link EventualRecordStreamAssertion} that will pass only if the given assertion explicitly
+     * passes within the default timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must pass
+     */
+    public static EventualRecordStreamAssertion eventuallyAssertingExplicitPass(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+        return new EventualRecordStreamAssertion(assertionFactory, false);
     }
 
     /**

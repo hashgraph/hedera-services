@@ -1468,6 +1468,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         originalMap = (VirtualRootNode<K, V>) originalNode;
         this.dataSourceBuilder = originalMap.dataSourceBuilder;
 
+        this.keySerializer = originalMap.keySerializer;
+        this.valueSerializer = originalMap.valueSerializer;
+
         // shutdown background compaction on original data source as it is no longer needed to be running as all data
         // in that data source is only there as a starting point for reconnect now. So compacting it further is not
         // helpful and will just burn resources.

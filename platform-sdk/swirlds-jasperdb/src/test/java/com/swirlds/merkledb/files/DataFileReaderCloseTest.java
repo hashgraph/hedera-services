@@ -59,6 +59,7 @@ class DataFileReaderCloseTest {
         final int COUNT = 100;
         collection.startWriting();
         final LongList index = new LongListOffHeap();
+        index.updateValidRange(0, COUNT);
         for (int i = 0; i < COUNT; i++) {
             final int fi = i;
             index.put(
@@ -122,6 +123,7 @@ class DataFileReaderCloseTest {
                 filePath = writer.getPath();
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();
+                index.updateValidRange(0, i);
                 index.put(
                         0,
                         writer.storeDataItem(

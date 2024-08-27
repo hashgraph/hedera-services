@@ -29,6 +29,9 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * Virtual leaf record bytes.
@@ -59,7 +62,7 @@ import com.swirlds.virtualmap.serialize.ValueSerializer;
  * @param keyHashCode virtual key hash code
  * @param valueBytes virtual value bytes
  */
-public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes valueBytes) {
+public record VirtualLeafBytes(long path, @NonNull Bytes keyBytes, int keyHashCode, @Nullable Bytes valueBytes) {
 
     public static final FieldDefinition FIELD_LEAFRECORD_PATH =
             new FieldDefinition("path", FieldType.FIXED64, false, true, false, 1);
@@ -108,6 +111,8 @@ public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes
             }
         }
 
+        Objects.requireNonNull(keyBytes, "Missing key bytes in the input");
+
         // Key hash code is not deserialized
         return new VirtualLeafBytes(path, keyBytes, 0, valueBytes);
     }
@@ -117,9 +122,7 @@ public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes
         // Path is FIXED64
         size += ProtoWriterTools.sizeOfTag(FIELD_LEAFRECORD_PATH);
         size += Long.BYTES;
-        if (keyBytes != null) {
-            size += ProtoWriterTools.sizeOfDelimited(FIELD_LEAFRECORD_KEY, Math.toIntExact(keyBytes.length()));
-        }
+        size += ProtoWriterTools.sizeOfDelimited(FIELD_LEAFRECORD_KEY, Math.toIntExact(keyBytes.length()));
         // Key hash code is not serialized
         if (valueBytes != null) {
             size += ProtoWriterTools.sizeOfDelimited(FIELD_LEAFRECORD_VALUE, Math.toIntExact(valueBytes.length()));
@@ -136,10 +139,8 @@ public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes
         final long pos = out.position();
         ProtoWriterTools.writeTag(out, FIELD_LEAFRECORD_PATH);
         out.writeLong(path);
-        if (keyBytes != null) {
-            ProtoWriterTools.writeDelimited(
-                    out, FIELD_LEAFRECORD_KEY, Math.toIntExact(keyBytes.length()), keyBytes::writeTo);
-        }
+        ProtoWriterTools.writeDelimited(
+                out, FIELD_LEAFRECORD_KEY, Math.toIntExact(keyBytes.length()), keyBytes::writeTo);
         // Key hash code is not serialized
         if (valueBytes != null) {
             ProtoWriterTools.writeDelimited(
@@ -164,7 +165,7 @@ public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes
         return new VirtualLeafRecord<>(
                 path,
                 keySerializer.deserialize(keyBytes.toReadableSequentialData()),
-                valueSerializer.deserialize(valueBytes.toReadableSequentialData()));
+                valueBytes != null ? valueSerializer.deserialize(valueBytes.toReadableSequentialData()) : null);
     }
 
     @Override
@@ -173,7 +174,9 @@ public record VirtualLeafBytes(long path, Bytes keyBytes, int keyHashCode, Bytes
         if (!(obj instanceof VirtualLeafBytes that)) {
             return false;
         }
-        return (path == that.path) && (keyBytes.equals(that.keyBytes)) && (valueBytes.equals(that.valueBytes));
+        return (path == that.path)
+                && Objects.equals(keyBytes, that.keyBytes)
+                && Objects.equals(valueBytes, that.valueBytes);
     }
 
     @Override

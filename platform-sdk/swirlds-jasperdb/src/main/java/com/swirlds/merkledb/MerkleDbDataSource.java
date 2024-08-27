@@ -54,6 +54,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -279,6 +280,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final boolean hashIndexEmpty = pathToDiskLocationInternalNodes.size() == 0;
             final LoadedDataCallback hashRecordLoadedCallback;
             if (hashIndexEmpty) {
+                if (validLeafPathRange.getMaxValidKey() >= 0) {
+                    pathToDiskLocationInternalNodes.updateValidRange(0, validLeafPathRange.getMaxValidKey());
+                }
                 hashRecordLoadedCallback = (dataLocation, hashData) -> {
                     final VirtualHashRecord hashRecord = VirtualHashRecord.parseFrom(hashData);
                     pathToDiskLocationInternalNodes.put(hashRecord.path(), dataLocation);
@@ -332,6 +336,10 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         final LoadedDataCallback leafRecordLoadedCallback;
         final boolean needRestorePathToDiskLocationLeafNodes = pathToDiskLocationLeafNodes.size() == 0;
         if (needRestorePathToDiskLocationLeafNodes) {
+            if (validLeafPathRange.getMaxValidKey() >= 0) {
+                pathToDiskLocationLeafNodes.updateValidRange(
+                        validLeafPathRange.getMinValidKey(), validLeafPathRange.getMaxValidKey());
+            }
             leafRecordLoadedCallback = (dataLocation, leafData) -> {
                 final VirtualLeafBytes leafBytes = VirtualLeafBytes.parseFrom(leafData);
                 pathToDiskLocationLeafNodes.put(leafBytes.path(), dataLocation);
@@ -550,6 +558,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      * @return loaded record or null if not found
      * @throws IOException If there was a problem reading record from db
      */
+    @Nullable
     @Override
     public VirtualLeafBytes loadLeafRecord(final Bytes keyBytes, final int keyHashCode) throws IOException {
         requireNonNull(keyBytes);
@@ -611,17 +620,22 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     }
 
     /**
-     * Load a leaf record by path
+     * Load a leaf record by path. This method returns {@code null}, if the path is outside the
+     * valid path range.
      *
      * @param path the path for the leaf we are loading
      * @return loaded record or null if not found
      * @throws IOException If there was a problem reading record from db
      */
+    @Nullable
     @Override
     public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
+        if (path < 0) {
+            throw new IllegalArgumentException("Path (" + path + ") is not valid");
+        }
         final KeyRange leafPathRange = validLeafPathRange;
         if (!leafPathRange.withinRange(path)) {
-            throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
+            return null;
         }
         statisticsUpdater.countLeafReads();
         return VirtualLeafBytes.parseFrom(pathToKeyValue.get(path));
@@ -664,10 +678,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     public Hash loadHash(final long path) throws IOException {
         if (path < 0) {
-            throw new IllegalArgumentException("path is less than 0");
+            throw new IllegalArgumentException("Path (" + path + ") is not valid");
         }
 
         // It is possible that the caller will ask for an internal node that the database doesn't
@@ -1060,13 +1075,22 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      * Write all hashes to hashStore
      */
     private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
-        if ((dirtyHashes == null) || (maxValidPath <= 0)) {
+        if (hasDiskStoreForHashes) {
+            if (maxValidPath < 0) {
+                // Empty store
+                hashStoreDisk.updateValidKeyRange(-1, -1);
+            } else {
+                hashStoreDisk.updateValidKeyRange(0, maxValidPath);
+            }
+        }
+
+        if ((dirtyHashes == null) || (maxValidPath < 0)) {
             // nothing to do
             return;
         }
 
         if (hasDiskStoreForHashes) {
-            hashStoreDisk.startWriting(0, maxValidPath);
+            hashStoreDisk.startWriting();
         }
 
         dirtyHashes.forEach(rec -> {
@@ -1105,12 +1129,19 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 .iterator();
         final Iterator<VirtualLeafBytes> deletedIterator = deletedLeaves.iterator();
 
+        if (lastLeafPath < 0) {
+            // Empty store
+            pathToKeyValue.updateValidKeyRange(-1, -1);
+        } else {
+            pathToKeyValue.updateValidKeyRange(firstLeafPath, lastLeafPath);
+        }
+
         if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
             // Nothing to do
             return;
         }
 
-        pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
+        pathToKeyValue.startWriting();
         keyToPath.startWriting();
 
         // Iterate over leaf records

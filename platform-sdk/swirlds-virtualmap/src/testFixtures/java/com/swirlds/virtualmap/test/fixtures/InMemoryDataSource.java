@@ -302,7 +302,10 @@ public class InMemoryDataSource implements VirtualDataSource {
             final var rec = itr.next();
             final long path = rec.path();
             final Bytes key = rec.keyBytes();
-            final long oldPath = keyToPathMap.get(key);
+            final Long oldPath = keyToPathMap.get(key);
+            if (oldPath == null) {
+                continue;
+            }
             if (!isReconnectContext || path == oldPath) {
                 this.keyToPathMap.remove(key);
                 this.leafRecords.remove(path);

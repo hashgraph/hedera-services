@@ -100,11 +100,6 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private final DataFileCollection fileCollection;
 
     /**
-     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
-     * percent full
-     */
-    private final int minimumBuckets;
-    /**
      * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so
      * that we can optimize and avoid the cost of doing a % to find the bucket index from hash code.
      */
@@ -204,7 +199,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                                 + METADATA_FILE_FORMAT_VERSION
                                 + "].");
                     }
-                    minimumBuckets = metaIn.readInt();
+                    metaIn.readInt(); // backwards compatibility, was: minimumBuckets
                     numOfBuckets = metaIn.readInt();
                 }
                 if (loadedLegacyMetadata) {
@@ -241,9 +236,9 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             // create new index
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
-            minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
-            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
-            numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
+            final int minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 2
+            numOfBuckets = Math.max(Integer.highestOneBit(minimumBuckets) * 2, 2);
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
             // write metadata
@@ -255,6 +250,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                     minimumBuckets,
                     numOfBuckets);
         }
+        bucketIndexToBucketLocation.updateValidRange(0, numOfBuckets - 1);
         // create file collection
         fileCollection = new DataFileCollection(
                 // Need: propagate MerkleDb config from the database
@@ -265,7 +261,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         try (DataOutputStream metaOut =
                 new DataOutputStream(Files.newOutputStream(dir.resolve(storeName + METADATA_FILENAME_SUFFIX)))) {
             metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
-            metaOut.writeInt(minimumBuckets);
+            metaOut.writeInt(0); // backwards compatibility, was: minimumBuckets
             metaOut.writeInt(numOfBuckets);
             metaOut.flush();
         }
@@ -565,12 +561,10 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 """
                         HalfDiskHashMap Stats {
                         	mapSize = {}
-                        	minimumBuckets = {}
                         	numOfBuckets = {}
                         	GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
                         }""",
                 mapSize,
-                minimumBuckets,
                 numOfBuckets,
                 GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
     }

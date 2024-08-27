@@ -40,6 +40,7 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
@@ -213,8 +214,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
      * This node contains 100 entries, but only 88 of them are valid. The other 12 are deleted.
      */
     @Test
-    void testDeserializeFromFileOfVersion1() throws IOException, InterruptedException {
-        deserializeRootNodeAndVerify(getClass().getResourceAsStream("/virtualRootNode_ver1/rootNode.bin"));
+    void testDeserializeFromFileOfVersion2() throws IOException, InterruptedException {
+        deserializeRootNodeAndVerify(
+                getClass().getResourceAsStream("/virtualRootNode_ver2/rootNode.bin"),
+                ClassVersion.VERSION_2_KEYVALUE_SERIALIZERS);
     }
 
     /**
@@ -228,14 +231,14 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
 
         deserializeRootNodeAndVerify(
-                new FileInputStream(tempDir.resolve(fileName).toFile()));
+                new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
 
-    private void deserializeRootNodeAndVerify(InputStream resourceAsStream) throws IOException {
+    private void deserializeRootNodeAndVerify(InputStream resourceAsStream, int version) throws IOException {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
 
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
-            root.deserialize(input, tempDir, -1);
+            root.deserialize(input, tempDir, version);
             root.postInit(new DummyVirtualStateAccessor());
             for (int i = 0; i < 100; i++) {
                 if (i % 7 != 0) {
@@ -510,7 +513,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(1, createRoot().getVersion());
+        assertEquals(2, createRoot().getVersion());
     }
 
     @Test
