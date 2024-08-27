@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.services.ServicesRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
@@ -66,5 +69,17 @@ public class FakeServicesRegistry implements ServicesRegistry {
     @Override
     public SortedSet<FakeServicesRegistry.Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
+    }
+
+    @NonNull
+    @Override
+    public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
+        requireNonNull(serviceNames);
+        final var selections = Set.of(serviceNames);
+        final var subRegistry = new FakeServicesRegistry();
+        subRegistry.entries.addAll(entries.stream()
+                .filter(registration -> selections.contains(registration.serviceName()))
+                .toList());
+        return subRegistry;
     }
 }

@@ -64,14 +64,14 @@ public final class StartupStateUtils {
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
      * if no valid state is found on disk.
      *
-     * @param platformContext     the platform context
-     * @param softwareVersion     the software version of the app
-     * @param genesisStateBuilder a supplier that can build a genesis state
-     * @param snapshotStateReader a function to read an existing state snapshot
-     * @param mainClassName       the name of the app's SwirldMain class
-     * @param swirldName          the name of this swirld
-     * @param selfId              the node id of this node
-     * @param configAddressBook   the address book from config.txt
+     * @param platformContext         the platform context
+     * @param softwareVersion         the software version of the app
+     * @param genesisStateBuilder     a supplier that can build a genesis state
+     * @param snapshotStateReader     a function to read an existing state snapshot
+     * @param mainClassName           the name of the app's SwirldMain class
+     * @param swirldName              the name of this swirld
+     * @param selfId                  the node id of this node
+     * @param configAddressBook       the address book from config.txt
      * @return the initial state to be used by this node
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states

@@ -193,6 +193,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -539,19 +540,22 @@ public class UtilVerbs {
         return withOpContext((spec, opLog) -> {
             if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
                 final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
-                final var platformState = embeddedHedera.platformState();
+                final var fakeState = embeddedHedera.state();
                 // First make the freeze and last freeze times non-null and identical
                 final var aTime = spec.consensusTime();
-                platformState.setLastFrozenTime(aTime);
-                platformState.setFreezeTime(aTime);
+                // This store immediately commits mutations, hence no cast and call to commit
+                final var writablePlatformStateStore =
+                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
+                writablePlatformStateStore.setLastFrozenTime(aTime);
+                writablePlatformStateStore.setFreezeTime(aTime);
                 // Next mark the migration records as not streamed
-                final var writableStates = embeddedHedera.state().getWritableStates("BlockRecordService");
-                final var blockInfo = writableStates.<BlockInfo>getSingleton("BLOCKS");
+                final var writableBlockStates = fakeState.getWritableStates("BlockRecordService");
+                final var blockInfo = writableBlockStates.<BlockInfo>getSingleton("BLOCKS");
                 blockInfo.put(requireNonNull(blockInfo.get())
                         .copyBuilder()
                         .migrationRecordsStreamed(false)
                         .build());
-                ((CommittableWritableStates) writableStates).commit();
+                ((CommittableWritableStates) writableBlockStates).commit();
             } else {
                 throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
             }

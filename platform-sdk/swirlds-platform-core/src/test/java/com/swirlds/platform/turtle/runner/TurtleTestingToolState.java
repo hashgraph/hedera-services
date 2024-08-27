@@ -22,7 +22,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
@@ -82,7 +82,7 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
         state = NonCryptographicHashing.hash64(
                 state,
                 round.getRoundNum(),

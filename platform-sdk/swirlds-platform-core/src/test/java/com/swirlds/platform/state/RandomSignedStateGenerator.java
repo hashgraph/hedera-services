@@ -19,6 +19,8 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -37,7 +39,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -113,16 +114,22 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
+        final SoftwareVersion softwareVersionInstance;
+        if (softwareVersion == null) {
+            softwareVersionInstance = new BasicSoftwareVersion(random.nextInt(1, 100));
+        } else {
+            softwareVersionInstance = softwareVersion;
+        }
+
         final MerkleRoot stateInstance;
+        registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
-                stateInstance = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
+                stateInstance = new MerkleStateRoot(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            PlatformState platformState = new PlatformState();
-            platformState.setAddressBook(addressBookInstance);
-            stateInstance.setPlatformState(platformState);
         } else {
             stateInstance = state;
         }
@@ -162,13 +169,6 @@ public class RandomSignedStateGenerator {
             roundsNonAncientInstance = roundsNonAncient;
         }
 
-        final SoftwareVersion softwareVersionInstance;
-        if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
-        } else {
-            softwareVersionInstance = softwareVersion;
-        }
-
         final ConsensusSnapshot consensusSnapshotInstance;
         if (consensusSnapshot == null) {
             consensusSnapshotInstance = new ConsensusSnapshot(
@@ -183,14 +183,16 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformState platformState = stateInstance.getPlatformState();
+        final PlatformStateAccessor platformState = stateInstance.getPlatformState();
 
-        platformState.setRound(roundInstance);
-        platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setConsensusTimestamp(consensusTimestampInstance);
-        platformState.setCreationSoftwareVersion(softwareVersionInstance);
-        platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setSnapshot(consensusSnapshotInstance);
+        platformState.bulkUpdate(v -> {
+            v.setSnapshot(consensusSnapshotInstance);
+            v.setAddressBook(addressBookInstance);
+            v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
+            v.setCreationSoftwareVersion(softwareVersionInstance);
+            v.setRoundsNonAncient(roundsNonAncientInstance);
+            v.setConsensusTimestamp(consensusTimestampInstance);
+        });
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;

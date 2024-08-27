@@ -103,4 +103,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
         mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(prevEntityNum.get()));
         mapWritableStates.commit();
     }
+
+    @Override
+    public SemanticVersion creationVersionOf(@NonNull final State state) {
+        if (!(state instanceof FakeState)) {
+            throw new IllegalArgumentException("Can only be used with FakeState instances");
+        }
+        // Fake states are always from genesis and have no creation version
+        return null;
+    }
 }

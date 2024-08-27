@@ -38,21 +38,21 @@ RUN set -eux; \
         ARCH="$(dpkg --print-architecture)"; \
         case "${ARCH}" in \
            aarch64|arm64) \
-             ESUM='e184dc29a6712c1f78754ab36fb48866583665fa345324f1a79e569c064f95e9'; \
-             BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.1_12.tar.gz'; \
-             ;; \
+            ESUM='d768eecddd7a515711659e02caef8516b7b7177fa34880a56398fd9822593a79'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.4_7.tar.gz'; \
+            ;; \
           amd64|i386:x86-64) \
-            ESUM='1a6fa8abda4c5caed915cfbeeb176e7fbd12eb6b222f26e290ee45808b529aa1'; \
-            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_x64_linux_hotspot_21.0.1_12.tar.gz'; \
+            ESUM='51fb4d03a4429c39d397d3a03a779077159317616550e4e71624c9843083e7b9'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.4_7.tar.gz'; \
             ;; \
            ppc64el|powerpc:common64) \
-             ESUM='9574828ef3d735a25404ced82e09bf20e1614f7d6403956002de9cfbfcb8638f'; \
-             BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jdk_ppc64le_linux_hotspot_21.0.1_12.tar.gz'; \
-             ;; \
+            ESUM='c208cd0fb90560644a90f928667d2f53bfe408c957a5e36206585ad874427761'; \
+            BINARY_URL='https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.4%2B7/OpenJDK21U-jdk_ppc64le_linux_hotspot_21.0.4_7.tar.gz'; \
+            ;; \
            *) \
-             echo "Unsupported arch: ${ARCH}"; \
-             exit 1; \
-             ;; \
+            echo "Unsupported arch: ${ARCH}"; \
+            exit 1; \
+            ;; \
         esac; \
     curl -LfsSo /tmp/openjdk.tar.gz ${BINARY_URL}; \
     echo "${ESUM} */tmp/openjdk.tar.gz" | sha256sum -c -; \
@@ -222,7 +222,7 @@ FROM operating-system-base AS production-image-interim
 ARG SOURCE_DATE_EPOCH
 
 # Define Standard Environment Variables
-ENV JAVA_VERSION "jdk-21.0.1+12"
+ENV JAVA_VERSION "jdk-21.0.4+7"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
@@ -256,7 +256,7 @@ FROM scratch AS production-image
 COPY --from=production-image-interim / /
 
 # Define Standard Environment Variables
-ENV JAVA_VERSION "jdk-21.0.1+12"
+ENV JAVA_VERSION "jdk-21.0.4+7"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 

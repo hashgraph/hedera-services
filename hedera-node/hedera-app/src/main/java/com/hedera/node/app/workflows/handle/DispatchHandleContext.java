@@ -69,7 +69,6 @@ import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,7 +93,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final StoreFactoryImpl storeFactory;
     private final AccountID payerId;
     private final AppKeyVerifier verifier;
-    private final PlatformState platformState;
     private final HederaFunctionality topLevelFunction;
     private final Key payerKey;
     private final ExchangeRateManager exchangeRateManager;
@@ -122,7 +120,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID payerId,
             @NonNull final AppKeyVerifier verifier,
-            @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final Key payerKey,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -145,7 +142,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.storeFactory = requireNonNull(storeFactory);
         this.payerId = requireNonNull(payerId);
         this.verifier = requireNonNull(verifier);
-        this.platformState = requireNonNull(platformState);
         this.topLevelFunction = requireNonNull(topLevelFunction);
         this.payerKey = requireNonNull(payerKey);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
@@ -488,7 +484,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 stack,
                 storeFactory.asReadOnly(),
                 creatorInfo,
-                platformState,
                 topLevelFunction,
                 throttleAdviser,
                 consensusNow,
