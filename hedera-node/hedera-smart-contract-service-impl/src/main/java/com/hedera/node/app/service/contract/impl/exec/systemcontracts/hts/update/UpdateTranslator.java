@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_WITH_METADATA;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -49,6 +50,8 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")", ReturnTypes.INT);
+    public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
+            new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
@@ -61,7 +64,10 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
         return attempt.isSelector(
-                TOKEN_UPDATE_INFO_FUNCTION_V1, TOKEN_UPDATE_INFO_FUNCTION_V2, TOKEN_UPDATE_INFO_FUNCTION_V3);
+                TOKEN_UPDATE_INFO_FUNCTION_V1,
+                TOKEN_UPDATE_INFO_FUNCTION_V2,
+                TOKEN_UPDATE_INFO_FUNCTION_V3,
+                TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA);
     }
 
     @Override
@@ -83,8 +89,10 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
             return decoder.decodeTokenUpdateV1(attempt);
         } else if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V2)) {
             return decoder.decodeTokenUpdateV2(attempt);
-        } else {
+        } else if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V3)) {
             return decoder.decodeTokenUpdateV3(attempt);
+        } else {
+            return decoder.decodeTokenUpdateWithMetadata(attempt);
         }
     }
 }

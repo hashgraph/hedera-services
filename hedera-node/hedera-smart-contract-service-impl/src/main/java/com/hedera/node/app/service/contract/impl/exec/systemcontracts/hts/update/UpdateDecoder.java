@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -121,6 +122,18 @@ public class UpdateDecoder {
     }
 
     /**
+     * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public @Nullable TransactionBody decodeTokenUpdateWithMetadata(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdate(call, attempt.addressIdConverter());
+    }
+
+    /**
      * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V3} into a synthetic {@link TransactionBody}.
      *
      * @param attempt the attempt
@@ -167,6 +180,7 @@ public class UpdateDecoder {
         final var memo = (String) hederaToken.get(3);
         final List<TokenKeyWrapper> tokenKeys = decodeTokenKeys(hederaToken.get(7), addressIdConverter);
         final var tokenExpiry = decodeTokenExpiry(hederaToken.get(8), addressIdConverter);
+        final Bytes tokenMetadata = hederaToken.size() > 9 ? Bytes.wrap((byte[]) hederaToken.get(9)) : null;
 
         // Build the transaction body
         final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
@@ -194,6 +208,9 @@ public class UpdateDecoder {
         if (tokenExpiry.autoRenewPeriod() != null
                 && tokenExpiry.autoRenewPeriod().seconds() != 0) {
             txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
+        }
+        if (tokenMetadata != null) {
+            txnBodyBuilder.metadata(tokenMetadata);
         }
 
         try {
