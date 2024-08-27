@@ -636,6 +636,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         daggerApp.handleWorkflow().handleRound(state, round);
     }
 
+    /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     *
+     * @param round the round whose platform state changes are completed
+     * @param state the state after the platform has made all its changes
+     */
+    public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
+        requireNonNull(state);
+        requireNonNull(round);
+        // FUTURE - daggerApp.blockStreamManager().endRound(state, round.getRoundNum());
+    }
+
     /*==================================================================================================================
     *
     * gRPC Server Lifecycle
