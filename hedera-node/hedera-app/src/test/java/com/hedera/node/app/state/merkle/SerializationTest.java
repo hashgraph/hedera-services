@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -90,7 +91,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     Schema createV1Schema() {
-        return new TestSchema(1) {
+        return new TestSchema(v1) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
@@ -238,7 +239,8 @@ class SerializationTest extends MerkleTestBase {
 
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor = () -> new MerkleStateRoot(lifecycles);
+        final Supplier<RuntimeConstructable> constructor =
+                () -> new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
@@ -252,14 +254,13 @@ class SerializationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
                 new HashMap<>());
-        loadedTree.migrate(1);
+        loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
 
         return loadedTree;
     }
 
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
-        final var v1 = version(1, 0, 0);
-        final var originalTree = new MerkleStateRoot(lifecycles);
+        final var originalTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);

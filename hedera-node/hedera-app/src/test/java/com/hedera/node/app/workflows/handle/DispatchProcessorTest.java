@@ -494,7 +494,7 @@ class DispatchProcessorTest {
         subject.processDispatch(dispatch);
 
         verifyUtilization();
-        verify(platformStateUpdates).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
+        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         assertFinished();
@@ -513,7 +513,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         assertFinished();
@@ -531,7 +531,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         assertFinished();
     }
@@ -582,7 +582,6 @@ class DispatchProcessorTest {
         given(systemFileUpdates.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(recordBuilder.exchangeRate(ExchangeRateSet.DEFAULT)).willReturn(recordBuilder);
-        given(dispatch.platformState()).willReturn(platformState);
     }
 
     private void givenAuthorization() {

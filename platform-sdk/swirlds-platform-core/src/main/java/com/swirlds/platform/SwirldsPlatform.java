@@ -59,7 +59,7 @@ import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -378,7 +378,7 @@ public class SwirldsPlatform implements Platform {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformState platformState = state.getPlatformState();
+        final PlatformStateAccessor platformState = state.getPlatformState();
 
         return new DefaultBirthRoundMigrationShim(
                 platformContext,

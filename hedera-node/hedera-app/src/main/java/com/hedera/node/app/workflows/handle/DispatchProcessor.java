@@ -176,8 +176,7 @@ public class DispatchProcessor {
                 .status(fileUpdateResult);
 
         // Notify if platform state was updated
-        platformStateUpdates.handleTxBody(
-                dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
+        platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody());
     }
 
     /**
