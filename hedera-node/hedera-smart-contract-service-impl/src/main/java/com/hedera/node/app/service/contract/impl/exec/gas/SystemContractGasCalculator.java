@@ -69,19 +69,26 @@ public class SystemContractGasCalculator {
         return gasRequirementWithTinyCents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
+    /**
+     * Compares the canonical price and the feeCalculator's calculated price and uses the maximum of the two to
+     * calculate the gas requirement and returns it.
+     * @param body the transaction body
+     * @param payer the payer of the transaction
+     * @param minimumPriceInTinyCents the minimum price in tiny cents
+     * @return the gas requirement for the transaction
+     */
     public long gasRequirementWithTinyCents(
             @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
         // If not enabled, make the calculation using the old method.
         if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
             return gasRequirementOldWithPrecisionLoss(body, payer, minimumPriceInTinyCents);
         }
-
-        final var nominalPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
+        final var computedPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
         final var priceInTinyCents =
-                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(nominalPriceInTinyBars));
-        // For the rare cases where nominalPriceInTinyBars > minimumPriceInTinyCents:
+                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(computedPriceInTinyBars));
+        // For the rare cases where computedPrice > minimumPriceInTinyCents:
         // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
-        // The minimal nominal price is > 1e6 tinyCents, ensuring enough precision.
+        // The minimal computed price is > 1e6 tinyCents, ensuring enough precision.
         // In most cases, the gas difference is zero.
         // In scenarios where we compare significant price fluctuations (200x, 100x), the gas difference should still be
         // unlikely to exceed 0 gas.
@@ -120,6 +127,7 @@ public class SystemContractGasCalculator {
      * Given a dispatch type, returns the canonical gas requirement for that dispatch type.
      * Useful when providing a ballpark gas requirement in the absence of a valid
      * transaction body for the dispatch type.
+     * Used for non-query operations.
      *
      * @param dispatchType the dispatch type
      * @return the canonical gas requirement for that dispatch type
