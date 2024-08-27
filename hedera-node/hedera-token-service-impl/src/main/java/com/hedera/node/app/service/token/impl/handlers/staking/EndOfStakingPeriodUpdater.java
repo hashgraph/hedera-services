@@ -94,10 +94,12 @@ public class EndOfStakingPeriodUpdater {
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
      * @param context the context of the transaction used to end the staking period
-     * @param exchangeRateSet the active exchange rate set
+     * @param exchangeRates the active exchange rate set
      */
     public @Nullable StreamBuilder updateNodes(
             @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+        requireNonNull(context);
+        requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 

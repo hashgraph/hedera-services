@@ -48,7 +48,7 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * to reflect the end of the last-started round.
      *
      * @param state    the mutable state of the network at the end of the round
-     * @param roundNum
+     * @param roundNum the number of the round that has just ended
      */
     void endRound(@NonNull State state, final long roundNum);
 
@@ -64,9 +64,10 @@ public interface BlockStreamManager extends BlockRecordInfo {
      */
     void writeFreezeBlock(@NonNull State state, @NonNull Instant consensusNow);
 
-    void finishBlockProof(long blockNumber, Bytes signature);
-
-    default boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
-        return roundNumber % roundsPerBlock == 0;
-    }
+    /**
+     * Completes the block proof for the given block with the given signature.
+     * @param blockNumber the number of the block to finish
+     * @param signature the signature to use in the block proof
+     */
+    void finishBlockProof(long blockNumber, @NonNull Bytes signature);
 }

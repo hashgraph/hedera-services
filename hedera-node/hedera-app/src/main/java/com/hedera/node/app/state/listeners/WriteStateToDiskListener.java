@@ -97,6 +97,8 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
                 blockStreamManager.writeFreezeBlock(wrappedState.get(), notification.getConsensusTimestamp());
+            } catch (Exception e) {
+                log.error("Error while responding to freeze state notification", e);
             }
         }
     }
