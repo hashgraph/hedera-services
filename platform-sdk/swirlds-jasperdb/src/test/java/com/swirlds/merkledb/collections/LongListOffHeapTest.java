@@ -80,6 +80,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     void testCustomNumberOfLongs() throws IOException {
         try (final LongListOffHeap list =
                 createFullyParameterizedLongListWith(DEFAULT_NUM_LONGS_PER_CHUNK, getSampleSize())) {
+            list.updateValidRange(0, getSampleSize() - 1);
             for (int i = 0; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
@@ -95,6 +96,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     @Test
     void testInsertAtTheEndOfTheList() {
         final LongListOffHeap list = createLongList();
+        list.updateValidRange(0, DEFAULT_MAX_LONGS_TO_STORE - 1);
         assertDoesNotThrow(() -> list.put(DEFAULT_MAX_LONGS_TO_STORE - 1, 1));
     }
 
@@ -102,6 +104,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     void testInsertAtTheEndOfTheListCustomConfigured() {
         final int maxLongs = 10;
         final LongListOffHeap list = createFullyParameterizedLongListWith(10, maxLongs);
+        list.updateValidRange(0, maxLongs - 1);
         assertDoesNotThrow(() -> list.put(maxLongs - 1, 1));
     }
 
@@ -111,6 +114,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
                 getSampleSize())) {
+            list.updateValidRange(0, getSampleSize() - 1);
             for (int i = 1; i < getSampleSize(); i++) {
                 list.put(i, i);
             }
@@ -135,6 +139,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
                 getSampleSize())) {
+            list.updateValidRange(0, getSampleSize() - 1);
             for (int i = 1; i < getSampleSize(); i++) {
                 list.put(i, i);
             }
@@ -159,6 +164,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 sampleSize / 100, // 100 chunks, 100 longs each
                 sampleSize + DEFAULT_NUM_LONGS_PER_CHUNK)) {
+            list.updateValidRange(0, getSampleSize() - 1);
             for (int i = 0; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
@@ -192,6 +198,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 sampleSize / 100, // 100 chunks, 100 longs each
                 sampleSize + DEFAULT_NUM_LONGS_PER_CHUNK)) {
+            list.updateValidRange(0, getSampleSize() - 1);
             for (int i = 1; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
