@@ -141,7 +141,13 @@ public class FeeCalculatorImpl implements FeeCalculator {
         this.storeFactory = storeFactory;
         try {
             this.txInfo = new TransactionInfo(
-                    Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody), null);
+                    Transaction.DEFAULT,
+                    txBody,
+                    SignatureMap.DEFAULT,
+                    Bytes.EMPTY,
+                    functionOf(txBody),
+                    // serialized transaction bytes does not affect fee calculation
+                    null);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException("Invalid transaction body " + txBody, e);
         }
@@ -180,6 +186,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
                 functionality,
+                // serialized transaction bytes does not affect fee calculation
                 null);
     }
 
