@@ -27,7 +27,7 @@ defaults:
 jobs:
   trigger-task:
     name: Trigger Daily Run
-    runs-on: [ self-hosted, Linux, small, scheduler, ephemeral ]
+    runs-on: network-node-linux-small-scheduler
     steps:
       - name: Display Branch Information
         run: |

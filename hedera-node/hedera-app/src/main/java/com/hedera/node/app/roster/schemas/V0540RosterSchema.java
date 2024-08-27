@@ -61,12 +61,9 @@ public class V0540RosterSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (ctx.previousVersion() == null) {
-            log.info("Creating genesis roster and roster state");
-            // This migration code is really, for now, a default value provider.
-            // At genesis we put empty roster state into the state
-            // as serialization/deserialization fails on null.
-            final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
+        final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
+        if (rosterState.get() == null) {
+            log.info("Creating default roster state");
             rosterState.put(RosterState.DEFAULT);
         }
     }
