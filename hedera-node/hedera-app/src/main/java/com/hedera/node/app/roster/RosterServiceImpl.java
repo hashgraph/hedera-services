@@ -19,6 +19,7 @@ package com.hedera.node.app.roster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,13 +31,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class RosterServiceImpl implements Service {
 
-    /** The name of this service */
-    public static final String SCHEMA_NAME = "RosterServiceImpl";
-
     @NonNull
     @Override
     public String getServiceName() {
-        return SCHEMA_NAME;
+        return RosterStateId.SCHEMA_NAME;
     }
 
     @Override

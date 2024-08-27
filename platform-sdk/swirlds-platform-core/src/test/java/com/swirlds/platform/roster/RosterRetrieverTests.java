@@ -28,16 +28,21 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.platform.state.Address;
+import com.hedera.hapi.platform.state.AddressBook;
+import com.hedera.hapi.platform.state.ConsensusSnapshot;
+import com.hedera.hapi.platform.state.NodeId;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.crypto.internal.CryptoUtils;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -62,44 +67,63 @@ public class RosterRetrieverTests {
     private static final Roster ROSTER_666 = mock(Roster.class);
     private static final Roster ROSTER_777 = mock(Roster.class);
 
-    private static final byte[] CERTIFICATE_BYTES_1 = new byte[] {1, 2, 3};
-    private static final byte[] CERTIFICATE_BYTES_2 = new byte[] {4, 5, 6};
-    private static final byte[] CERTIFICATE_BYTES_3 = new byte[] {7, 8, 9};
+    private static final X509Certificate CERTIFICATE_1 = randomX509Certificate();
+    private static final X509Certificate CERTIFICATE_2 = randomX509Certificate();
+    private static final X509Certificate CERTIFICATE_3 = randomX509Certificate();
 
-    private static final X509Certificate CERTIFICATE_1 = mock(X509Certificate.class);
-    private static final X509Certificate CERTIFICATE_2 = mock(X509Certificate.class);
-    private static final X509Certificate CERTIFICATE_3 = mock(X509Certificate.class);
+    private static final AddressBook ADDRESS_BOOK = AddressBook.newBuilder()
+            .addresses(List.of(
+                    Address.newBuilder()
+                            .id(new NodeId(1L))
+                            .weight(1L)
+                            .signingCertificate(getCertBytes(CERTIFICATE_1))
+                            // The agreementCertificate is unused, but required to prevent deserialization failure in
+                            // States API.
+                            .agreementCertificate(getCertBytes(CERTIFICATE_1))
+                            .hostnameExternal("external1.com")
+                            .portExternal(111)
+                            .hostnameInternal("192.168.0.1")
+                            .portInternal(222)
+                            .build(),
+                    Address.newBuilder()
+                            .id(new NodeId(2L))
+                            .weight(111L)
+                            .signingCertificate(getCertBytes(CERTIFICATE_2))
+                            // The agreementCertificate is unused, but required to prevent deserialization failure in
+                            // States API.
+                            .agreementCertificate(getCertBytes(CERTIFICATE_2))
+                            .hostnameInternal("10.0.55.66")
+                            .portInternal(222)
+                            .build(),
+                    Address.newBuilder()
+                            .id(new NodeId(3L))
+                            .weight(3L)
+                            .signingCertificate(getCertBytes(CERTIFICATE_3))
+                            // The agreementCertificate is unused, but required to prevent deserialization failure in
+                            // States API.
+                            .agreementCertificate(getCertBytes(CERTIFICATE_3))
+                            .hostnameExternal("external3.com")
+                            .portExternal(111)
+                            .build()))
+            .build();
 
-    private static final AddressBook ADDRESS_BOOK = new AddressBook(List.of(
-            new Address()
-                    .copySetNodeId(new NodeId(1L))
-                    .copySetWeight(1L)
-                    .copySetSigCert(CERTIFICATE_1)
-                    .copySetHostnameExternal("external1.com")
-                    .copySetPortExternal(111)
-                    .copySetHostnameInternal("192.168.0.1")
-                    .copySetPortInternal(222),
-            new Address()
-                    .copySetNodeId(new NodeId(2L))
-                    .copySetWeight(111L)
-                    .copySetSigCert(CERTIFICATE_2)
-                    .copySetHostnameInternal("10.0.55.66")
-                    .copySetPortInternal(222),
-            new Address()
-                    .copySetNodeId(new NodeId(3L))
-                    .copySetWeight(3L)
-                    .copySetSigCert(CERTIFICATE_3)
-                    .copySetHostnameExternal("external3.com")
-                    .copySetPortExternal(111)));
-
-    @Mock(extraInterfaces = {MerkleRoot.class})
+    @Mock
     private State state;
+
+    @Mock
+    private ReadableStates platfromReadableStates;
+
+    @Mock
+    private ReadableSingletonState<PlatformState> readablePlatformState;
 
     @Mock
     private PlatformState platformState;
 
     @Mock
-    private ReadableStates readableStates;
+    private ConsensusSnapshot consensusSnapshot;
+
+    @Mock
+    private ReadableStates rosterReadableStates;
 
     @Mock
     private ReadableSingletonState<RosterState> readableRosterState;
@@ -110,23 +134,17 @@ public class RosterRetrieverTests {
     @Mock
     private ReadableKVState<ProtoBytes, Roster> rosterMap;
 
-    static {
-        try {
-            lenient().doReturn(CERTIFICATE_BYTES_1).when(CERTIFICATE_1).getTBSCertificate();
-            lenient().doReturn(CERTIFICATE_BYTES_2).when(CERTIFICATE_2).getTBSCertificate();
-            lenient().doReturn(CERTIFICATE_BYTES_3).when(CERTIFICATE_3).getTBSCertificate();
-        } catch (CertificateEncodingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeEach
     public void setup() {
         // Mock all the happy cases at once.  Use lenient() so that Mockito allows unused stubbing.
-        lenient().doReturn(platformState).when((MerkleRoot) state).getPlatformState();
-        lenient().doReturn(666L).when(platformState).getRound();
-        lenient().doReturn(readableStates).when(state).getReadableStates("RosterServiceImpl");
-        lenient().doReturn(readableRosterState).when(readableStates).getSingleton("ROSTER_STATE");
+        lenient().doReturn(platfromReadableStates).when(state).getReadableStates("PlatformStateService");
+        lenient().doReturn(readablePlatformState).when(platfromReadableStates).getSingleton("PLATFORM_STATE");
+        lenient().doReturn(platformState).when(readablePlatformState).get();
+        lenient().doReturn(ADDRESS_BOOK).when(platformState).addressBook();
+        lenient().doReturn(consensusSnapshot).when(platformState).consensusSnapshot();
+        lenient().doReturn(666L).when(consensusSnapshot).round();
+        lenient().doReturn(rosterReadableStates).when(state).getReadableStates("RosterServiceImpl");
+        lenient().doReturn(readableRosterState).when(rosterReadableStates).getSingleton("ROSTER_STATE");
         lenient().doReturn(rosterState).when(readableRosterState).get();
         lenient()
                 .doReturn(List.of(
@@ -144,7 +162,7 @@ public class RosterRetrieverTests {
                                 .build()))
                 .when(rosterState)
                 .roundRosterPairs();
-        lenient().doReturn(rosterMap).when(readableStates).get("ROSTER");
+        lenient().doReturn(rosterMap).when(rosterReadableStates).get("ROSTER");
         lenient()
                 .doReturn(ROSTER_555)
                 .when(rosterMap)
@@ -157,7 +175,6 @@ public class RosterRetrieverTests {
                 .doReturn(ROSTER_777)
                 .when(rosterMap)
                 .get(eq(ProtoBytes.newBuilder().value(HASH_777).build()));
-        lenient().doReturn(ADDRESS_BOOK).when(platformState).getAddressBook();
     }
 
     @Test
@@ -181,7 +198,7 @@ public class RosterRetrieverTests {
     @ParameterizedTest
     @MethodSource("provideArgumentsForGetActiveRosterHash")
     void testGetActiveRosterHash(final long round, final Bytes activeRosterHash) {
-        doReturn(round).when(platformState).getRound();
+        doReturn(round).when(consensusSnapshot).round();
         assertEquals(activeRosterHash, RosterRetriever.getActiveRosterHash(state));
     }
 
@@ -206,7 +223,7 @@ public class RosterRetrieverTests {
     @ParameterizedTest
     @MethodSource("provideArgumentsForRetrieveParametrized")
     void testRetrieveParametrized(final long round, final Roster roster) {
-        doReturn(round).when(platformState).getRound();
+        doReturn(round).when(consensusSnapshot).round();
         assertEquals(roster, RosterRetriever.retrieve(state));
     }
 
@@ -217,7 +234,7 @@ public class RosterRetrieverTests {
                         RosterEntry.newBuilder()
                                 .nodeId(1L)
                                 .weight(1L)
-                                .gossipCaCertificate(Bytes.wrap(CERTIFICATE_BYTES_1))
+                                .gossipCaCertificate(getCertBytes(CERTIFICATE_1))
                                 .gossipEndpoint(List.of(
                                         ServiceEndpoint.newBuilder()
                                                 .domainName("external1.com")
@@ -231,7 +248,7 @@ public class RosterRetrieverTests {
                         RosterEntry.newBuilder()
                                 .nodeId(2L)
                                 .weight(111L)
-                                .gossipCaCertificate(Bytes.wrap(CERTIFICATE_BYTES_2))
+                                .gossipCaCertificate(getCertBytes(CERTIFICATE_2))
                                 .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
                                         .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 55, 66}))
                                         .port(222)
@@ -240,7 +257,7 @@ public class RosterRetrieverTests {
                         RosterEntry.newBuilder()
                                 .nodeId(3L)
                                 .weight(3L)
-                                .gossipCaCertificate(Bytes.wrap(CERTIFICATE_BYTES_3))
+                                .gossipCaCertificate(getCertBytes(CERTIFICATE_3))
                                 .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
                                         .domainName("external3.com")
                                         .port(111)
@@ -249,14 +266,37 @@ public class RosterRetrieverTests {
                 .build();
 
         // First try a very old round for which there's not a roster
-        doReturn(554L).when(platformState).getRound();
+        doReturn(554L).when(consensusSnapshot).round();
         assertEquals(expected, RosterRetriever.retrieve(state));
 
         // Then try a newer round, but remove the roster from the RosterMap
-        doReturn(666L).when(platformState).getRound();
+        doReturn(666L).when(consensusSnapshot).round();
         doReturn(null)
                 .when(rosterMap)
                 .get(eq(ProtoBytes.newBuilder().value(HASH_666).build()));
         assertEquals(expected, RosterRetriever.retrieve(state));
+    }
+
+    private static X509Certificate randomX509Certificate() {
+        try {
+            final SecureRandom secureRandom = CryptoUtils.getDetRandom();
+
+            final KeyPairGenerator rsaKeyGen = KeyPairGenerator.getInstance("RSA");
+            rsaKeyGen.initialize(3072, secureRandom);
+            final KeyPair rsaKeyPair1 = rsaKeyGen.generateKeyPair();
+
+            final String name = "CN=Bob";
+            return CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Bytes getCertBytes(X509Certificate certificate) {
+        try {
+            return Bytes.wrap(certificate.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -24,7 +24,9 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
@@ -63,7 +65,7 @@ public final class RosterRetriever {
         final Bytes activeRosterHash = getActiveRosterHash(state);
         if (activeRosterHash != null) {
             final ReadableKVState<ProtoBytes, Roster> rosterMap =
-                    state.getReadableStates("RosterServiceImpl").get("ROSTER");
+                    state.getReadableStates(RosterStateId.SCHEMA_NAME).get(RosterStateId.ROSTER_KEY);
             final Roster roster = rosterMap.get(
                     ProtoBytes.newBuilder().value(activeRosterHash).build());
             if (roster != null) {
@@ -71,8 +73,9 @@ public final class RosterRetriever {
             }
         }
 
-        final MerkleRoot stateRoot = (MerkleRoot) state;
-        return buildRoster(stateRoot.getPlatformState().getAddressBook());
+        final ReadablePlatformStateStore readablePlatformStateStore =
+                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        return buildRoster(readablePlatformStateStore.getAddressBook());
     }
 
     /**
@@ -88,7 +91,7 @@ public final class RosterRetriever {
     public static Bytes getActiveRosterHash(@NonNull final State state) {
         final long round = getRound(state);
         final ReadableSingletonState<RosterState> rosterState =
-                state.getReadableStates("RosterServiceImpl").getSingleton("ROSTER_STATE");
+                state.getReadableStates(RosterStateId.SCHEMA_NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
         final List<RoundRosterPair> roundRosterPairs = rosterState.get().roundRosterPairs();
         for (int i = 0; i < roundRosterPairs.size(); i++) {
@@ -108,9 +111,9 @@ public final class RosterRetriever {
      * @return the round of the state
      */
     public static long getRound(@NonNull final State state) {
-        // TODO: update to States API after https://github.com/hashgraph/hedera-services/pull/14551 :
-        final MerkleRoot stateRoot = (MerkleRoot) state;
-        return stateRoot.getPlatformState().getRound();
+        final ReadablePlatformStateStore readablePlatformStateStore =
+                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        return readablePlatformStateStore.getRound();
     }
 
     /**
@@ -130,7 +133,7 @@ public final class RosterRetriever {
                                         .nodeId(address.getNodeId().id())
                                         .weight(address.getWeight())
                                         .gossipCaCertificate(
-                                                Bytes.wrap(address.getSigCert().getTBSCertificate()))
+                                                Bytes.wrap(address.getSigCert().getEncoded()))
                                         .gossipEndpoint(List.of(
                                                         Pair.of(
                                                                 address.getHostnameExternal(),
