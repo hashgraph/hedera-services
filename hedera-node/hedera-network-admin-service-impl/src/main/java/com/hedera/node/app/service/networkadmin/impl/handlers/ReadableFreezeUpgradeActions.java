@@ -228,8 +228,10 @@ public class ReadableFreezeUpgradeActions {
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
         final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodes() : null;
+        final var nextNodeId = getNextNodeID(nodeStore);
         return runAsync(
-                () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, activeNodes),
+                () -> extractAndReplaceArtifacts(
+                        artifactsLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
                 executor);
     }
 
@@ -253,7 +255,8 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Timestamp now,
-            @Nullable List<ActiveNode> nodes) {
+            @Nullable List<ActiveNode> nodes,
+            long nextNodeId) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
             if (!FileUtils.isDirectory(artifactsDir)) {
@@ -263,7 +266,7 @@ public class ReadableFreezeUpgradeActions {
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null) {
-                generateConfigPem(artifactsLoc, nodes);
+                generateConfigPem(artifactsLoc, nodes, nextNodeId);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -276,7 +279,8 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
+    private void generateConfigPem(
+            @NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes, long nextNodeId) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
@@ -286,7 +290,6 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
-        final var nextNodeId = getNextNodeID(nodeStore);
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
