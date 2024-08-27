@@ -34,12 +34,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -63,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -70,8 +76,10 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -939,6 +947,110 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     .pendingAirdrops(includingFungiblePendingAirdrop(
                                             moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract)))),
                     getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("two tokens, one associated should transfer and go to pending")
+        final Stream<DynamicTest> multipleTokensOneAssociated() {
+            var mutableContract = "PayReceivable";
+            var secondToken = "secondFT";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenCreate(secondToken).treasury(OWNER),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    moving(1, secondToken).between(OWNER, mutableContract))
+                            .via("airdropToContractTxn")
+                            .payingWith(OWNER),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, secondToken).between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(secondToken, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("with custom fee to collector")
+        final Stream<DynamicTest> customFeeToCollector() {
+            var collectorContract = "PayReceivable";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(collectorContract, 0),
+                    newKeyNamed(supplyKey),
+                    createNftWithRoyaltyWithFallbackFee(nftWithCustomFee, OWNER, collectorContract, supplyKey, false),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAirdrop(TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                    .between(OWNER, collectorContract))
+                            .payingWith(OWNER),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, nftWithCustomFee).between(OWNER, collectorContract)))),
+                    getAccountBalance(collectorContract).hasTokenBalance(nftWithCustomFee, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("with custom fee to different collector when exempt")
+        final Stream<DynamicTest> customFeeToDifferentCollectorWhenExempt() {
+            var collectorContract = "PayReceivable";
+            var nftCollector = "nftCollector";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(collectorContract, 0),
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(nftCollector),
+                    tokenCreate("ftCustom").withCustom(fixedHbarFee(1, collectorContract)),
+                    createNftWithRoyaltyWithFallbackFee(nftWithCustomFee, OWNER, nftCollector, supplyKey, true),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAirdrop(TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                    .between(OWNER, collectorContract))
+                            .payingWith(OWNER),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, nftWithCustomFee).between(OWNER, collectorContract)))),
+                    getAccountBalance(collectorContract).hasTokenBalance(nftWithCustomFee, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("with custom fee to treasury")
+        final Stream<DynamicTest> customFeeToTreasury() {
+            var treasuryContract = "PayReceivable";
+            var nftCollector = "nftCollector";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(treasuryContract, 0),
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(nftCollector),
+                    createNftWithRoyaltyWithFallbackFee(
+                            nftWithCustomFee, treasuryContract, nftCollector, supplyKey, false),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAirdrop(TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                    .between(OWNER, treasuryContract))
+                            .payingWith(OWNER),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, nftWithCustomFee).between(OWNER, treasuryContract)))),
+                    getAccountBalance(treasuryContract).hasTokenBalance(nftWithCustomFee, 0)));
+        }
+
+        private HapiTokenCreate createNftWithRoyaltyWithFallbackFee(
+                String tokenName, String treasury, String collector, String supplyKey, boolean allCollectorsExempt) {
+            return tokenCreate(tokenName)
+                    .treasury(treasury)
+                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                    .maxSupply(10L)
+                    .initialSupply(0)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .supplyKey(supplyKey)
+                    .withCustom(royaltyFeeWithFallback(
+                            1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), collector, allCollectorsExempt));
         }
     }
 }
