@@ -16,6 +16,7 @@
 
 package com.swirlds.state;
 
+import com.swirlds.common.FastCopyable;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -28,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface State {
+public interface State extends FastCopyable {
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
@@ -59,6 +60,11 @@ public interface State {
      * @throws UnsupportedOperationException if the state does not support listeners.
      */
     default void registerCommitListener(@NonNull final StateChangeListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default State copy() {
         throw new UnsupportedOperationException();
     }
 }
