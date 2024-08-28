@@ -210,7 +210,7 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeNetworkFee(CREATOR_ACCOUNT_ID, FEES.networkFee());
         verify(recordBuilder).status(INVALID_PAYER_SIGNATURE);
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -516,7 +516,7 @@ class DispatchProcessorTest {
         verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -533,7 +533,7 @@ class DispatchProcessorTest {
 
         verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -595,9 +595,22 @@ class DispatchProcessorTest {
                 .willReturn(UNNECESSARY);
     }
 
+    private enum IsRootStack {
+        YES,
+        NO
+    }
+
     private void assertFinished() {
+        assertFinished(IsRootStack.YES);
+    }
+
+    private void assertFinished(@NonNull final IsRootStack isRootStack) {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        verify(stack).commitFullStack();
+        if (isRootStack == IsRootStack.YES) {
+            verify(stack).commitTransaction(any());
+        } else {
+            verify(stack).commitFullStack();
+        }
     }
 
     private void verifyTrackedFeePayments() {
