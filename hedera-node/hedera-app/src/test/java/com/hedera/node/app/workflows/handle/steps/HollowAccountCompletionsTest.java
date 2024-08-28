@@ -231,7 +231,8 @@ public class HollowAccountCompletionsTest {
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,
-                ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                null);
 
         when(userTxn.readableStoreFactory().getStore(ReadableAccountStore.class))
                 .thenReturn(accountStore);
@@ -262,7 +263,8 @@ public class HollowAccountCompletionsTest {
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,
-                ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                null);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);

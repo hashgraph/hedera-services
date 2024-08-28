@@ -113,15 +113,20 @@ class DispatchUsageManagerTest {
                     .build())
             .build();
     private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, ETH_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION);
+            Transaction.DEFAULT, ETH_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
     private static final TransactionInfo CONTRACT_CALL_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
+            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
     private static final TransactionInfo CONTRACT_CREATE_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CREATE_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CREATE);
+            Transaction.DEFAULT, CONTRACT_CREATE_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CREATE, null);
     private static final TransactionInfo SUBMIT_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONSENSUS_SUBMIT_MESSAGE);
+            Transaction.DEFAULT,
+            NONDESCRIPT_TXN_BODY,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CONSENSUS_SUBMIT_MESSAGE,
+            null);
 
     @Mock
     private NetworkInfo networkInfo;

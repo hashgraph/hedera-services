@@ -24,7 +24,14 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEAD
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FeeData;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -134,7 +141,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         this.storeFactory = storeFactory;
         try {
             this.txInfo = new TransactionInfo(
-                    Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody));
+                    Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, functionOf(txBody), null);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException("Invalid transaction body " + txBody, e);
         }
@@ -172,7 +179,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
                         .build(),
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                functionality);
+                functionality,
+                null);
     }
 
     @Override
