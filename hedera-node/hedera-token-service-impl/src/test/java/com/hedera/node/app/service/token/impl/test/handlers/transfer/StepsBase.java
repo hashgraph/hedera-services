@@ -51,6 +51,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -58,6 +59,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
@@ -91,6 +93,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     @Mock
     protected ExpiryValidator expiryValidator;
+
+    @Mock
+    protected KeyVerifier keyVerifier;
 
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
@@ -256,27 +261,37 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAirdropTxn() {
-        givenAirdropTxn(false);
+        givenAirdropTxn(false, ownerId, AirDropTransferType.TOKEN_AND_NFT_AIRDROP);
     }
 
-    protected void givenAirdropTxn(boolean isReceiverAssociated) {
+    protected void givenAirdropTxn(boolean isReceiverAssociated, AccountID senderId, AirDropTransferType transferType) {
         var receiver = tokenReceiverNoAssociationId;
         if (isReceiverAssociated) {
             receiver = tokenReceiverId;
         }
-        airdropBody = TokenAirdropTransactionBody.newBuilder()
-                .tokenTransfers(
-                        TokenTransferList.newBuilder()
-                                .token(fungibleTokenId)
-                                .expectedDecimals(1000)
-                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(receiver, +1_000)))
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(nonFungibleTokenId)
-                                .expectedDecimals(1000)
-                                .nftTransfers(nftTransferWith(ownerId, receiver, 1))
-                                .build())
+        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+
+        TokenTransferList fundgibleTokenTransferList = TokenTransferList.newBuilder()
+                .token(fungibleTokenId)
+                .expectedDecimals(1000)
+                .transfers(List.of(aaWith(senderId, -1_000), aaWith(receiver, +1_000)))
                 .build();
+        TokenTransferList nonFungibleTokenTransferList = TokenTransferList.newBuilder()
+                .token(nonFungibleTokenId)
+                .expectedDecimals(1000)
+                .nftTransfers(nftTransferWith(senderId, receiver, 1))
+                .build();
+        final var tokenAirdropTransactionBody = TokenAirdropTransactionBody.newBuilder();
+        if (transferType == AirDropTransferType.TOKEN_AIRDROP
+                || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
+            tokenTransferLists.add(fundgibleTokenTransferList);
+        }
+        if (transferType == AirDropTransferType.NFT_AIRDROP
+                || transferType == AirDropTransferType.TOKEN_AND_NFT_AIRDROP) {
+            tokenTransferLists.add(nonFungibleTokenTransferList);
+        }
+        tokenAirdropTransactionBody.tokenTransfers(tokenTransferLists);
+        airdropBody = tokenAirdropTransactionBody.build();
         givenAirdropTxn(airdropBody, payerId);
     }
 
