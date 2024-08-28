@@ -16,11 +16,10 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
@@ -28,21 +27,38 @@ import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransaction
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
-public class UtilPrngTranslator implements BlockTransactionPartsTranslator {
+/**
+ * Defines a translator for a token update into a {@link SingleTransactionRecord}.
+ */
+public class TokenUpdateTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
-            if (parts.status() == SUCCESS && parts.transactionOutput() != null) {
-                final var output = parts.outputOrThrow();
-                if (output.hasUtilPrng()) {
-                    final var utilPrng = output.utilPrngOrThrow();
-                    switch (utilPrng.entropy().kind()) {
-                        case UNSET -> throw new IllegalStateException("Successful UtilPrng output missing entropy");
-                        case PRNG_BYTES -> recordBuilder.prngBytes(utilPrng.prngBytesOrThrow());
-                        case PRNG_NUMBER -> recordBuilder.prngNumber(utilPrng.prngNumberOrThrow());
+            if (parts.status() == SUCCESS) {
+                final var op = parts.body().tokenUpdateOrThrow();
+                final var targetId = op.tokenOrThrow();
+                final var iter = remainingStateChanges.listIterator();
+                while (iter.hasNext()) {
+                    final var stateChange = iter.next();
+                    if (stateChange.hasMapUpdate()
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasTokenIdKey()) {
+                        final var tokenId =
+                                stateChange.mapUpdateOrThrow().keyOrThrow().tokenIdKeyOrThrow();
+                        if (tokenId.equals(targetId)) {
+                            iter.remove();
+                            final var token = stateChange
+                                    .mapUpdateOrThrow()
+                                    .valueOrThrow()
+                                    .tokenValueOrThrow();
+                            final var treasuryId = token.treasuryAccountIdOrThrow();
+                            if (!baseTranslator.wasAlreadyAssociated(targetId, treasuryId)) {
+                                recordBuilder.automaticTokenAssociations(new TokenAssociation(targetId, treasuryId));
+                            }
+                            return;
+                        }
                     }
                 }
             }
