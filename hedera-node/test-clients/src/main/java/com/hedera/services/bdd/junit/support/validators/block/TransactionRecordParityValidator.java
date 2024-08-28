@@ -72,10 +72,10 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
     public static void main(String[] args) throws IOException {
         final var input =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
+                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
         final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
         final var loc =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/recordStreams/record0.0.3";
+                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/recordStreams/record0.0.3";
         final var records = RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(loc, "sidecar");
 
         final var validator = new TransactionRecordParityValidator();

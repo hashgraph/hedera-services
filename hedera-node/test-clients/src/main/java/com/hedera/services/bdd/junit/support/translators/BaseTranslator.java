@@ -28,9 +28,12 @@ import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -49,6 +52,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +78,9 @@ public class BaseTranslator {
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
+    private final Set<TokenAssociation> knownAssociations = new HashSet<>();
+    private final Set<TokenAssociation> pendingAssociations = new HashSet<>();
+    private final Set<TokenAssociation> pendingDissociations = new HashSet<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -119,6 +126,10 @@ public class BaseTranslator {
      * @param unit the unit to prepare for
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
+        knownAssociations.addAll(pendingAssociations);
+        knownAssociations.removeAll(pendingDissociations);
+        pendingAssociations.clear();
+        pendingDissociations.clear();
         numMints.clear();
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
@@ -139,6 +150,19 @@ public class BaseTranslator {
         });
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Determines if the given token was already associated with the given account before the ongoing
+     * transactional unit being translated into records.
+     * @param tokenId the token to query
+     * @param accountId the account to query
+     * @return true if the token was already associated with the account
+     */
+    public boolean wasAlreadyAssociated(@NonNull final TokenID tokenId, @NonNull final AccountID accountId) {
+        requireNonNull(tokenId);
+        requireNonNull(accountId);
+        return knownAssociations.contains(new TokenAssociation(tokenId, accountId));
     }
 
     /**
@@ -168,8 +192,8 @@ public class BaseTranslator {
      * @return the next created entity number
      */
     public long nextCreatedNum(@NonNull final EntityType type) {
-        final var createdNums = nextCreatedNums.get(type);
-        if (createdNums == null) {
+        final var createdNums = nextCreatedNums.getOrDefault(type, Collections.emptyList());
+        if (createdNums.isEmpty()) {
             log.error("No created numbers found for entity type {}", type);
             return -1L;
         }
@@ -270,6 +294,16 @@ public class BaseTranslator {
                     highestPutSerialNos
                             .computeIfAbsent(tokenId, ignore -> new LinkedList<>())
                             .add(nftId.serialNumber());
+                } else if (key.hasTokenRelationshipKey()) {
+                    pendingAssociations.add(key.tokenRelationshipKeyOrThrow());
+                    pendingDissociations.remove(key.tokenRelationshipKeyOrThrow());
+                }
+            } else if (stateChange.hasMapDelete()) {
+                final var mapDelete = stateChange.mapDeleteOrThrow();
+                final var key = mapDelete.keyOrThrow();
+                if (key.hasTokenRelationshipKey()) {
+                    pendingAssociations.remove(key.tokenRelationshipKeyOrThrow());
+                    pendingDissociations.add(key.tokenRelationshipKeyOrThrow());
                 }
             }
         });

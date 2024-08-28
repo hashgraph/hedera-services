@@ -145,13 +145,13 @@ public class StateChangesValidator implements BlockStreamValidator {
     public static void main(String[] args) {
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "a1d57e05d0607f76d13bc2ed31c40585adc294927e767df1f3443f065cc7a3348d3e0c4dd5581e6922c718e16b787231"),
+                        "537aaf4c3ede989bce7f87fee6de7494e006659570e301f97d21953a8c00305603a6ca50d6c8e6b0b925dc6625115807"),
                 Paths.get(
-                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log"),
+                        "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log"),
                 Paths.get(
-                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/config.txt"));
+                        "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/config.txt"));
         final var input =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
+                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
         final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
         validator.validateBlocks(blocks);
     }
