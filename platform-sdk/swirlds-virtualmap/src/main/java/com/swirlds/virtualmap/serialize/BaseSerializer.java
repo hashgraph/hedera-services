@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb.serialize;
+package com.swirlds.virtualmap.serialize;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 public interface BaseSerializer<T> {
@@ -95,6 +100,18 @@ public interface BaseSerializer<T> {
      */
     void serialize(@NonNull final T data, @NonNull final WritableSequentialData out);
 
+    default Bytes toBytes(@NonNull final T data) {
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
+            final WritableSequentialData out = new WritableStreamingData(bout);
+            serialize(data, out);
+            final byte[] bytes = bout.toByteArray();
+            assert bytes.length == getSerializedSize(data);
+            return Bytes.wrap(bytes);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /**
      * Deserialize a data item from a buffer where it was previously written using {@link
      * #serialize(Object, WritableSequentialData)} method.
@@ -103,4 +120,8 @@ public interface BaseSerializer<T> {
      * @return Deserialized data item
      */
     T deserialize(@NonNull final ReadableSequentialData in);
+
+    default T fromBytes(@NonNull final Bytes b) {
+        return deserialize(b.toReadableSequentialData());
+    }
 }

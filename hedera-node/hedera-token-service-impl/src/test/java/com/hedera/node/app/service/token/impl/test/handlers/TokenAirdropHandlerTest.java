@@ -44,17 +44,20 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -89,6 +92,9 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Mock
     private FeeCalculator feeCalculator;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -522,6 +528,36 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         assertEquals(30, fees.serviceFee());
     }
 
+    @Test
+    void updateUpdatesExistingAirdrop() {
+        final var airdropId = getFungibleAirdrop();
+        final var airdropValue = airdropWithValue(30);
+        final var accountAirdrop = accountAirdropWith(airdropValue);
+        writableAirdropState = emptyWritableAirdropStateBuilder()
+                .value(airdropId, accountAirdrop)
+                .build();
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
+        writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
+
+        final var newAirdropValue = airdropWithValue(20);
+        final var newAccountAirdrop = accountAirdrop
+                .copyBuilder()
+                .pendingAirdropValue(newAirdropValue)
+                .build();
+
+        Assertions.assertThat(writableAirdropState.contains(airdropId)).isTrue();
+
+        tokenAirdropHandler.update(airdropId, newAccountAirdrop, writableAirdropStore);
+
+        Assertions.assertThat(writableAirdropState.contains(airdropId)).isTrue();
+        final var tokenValue = Objects.requireNonNull(Objects.requireNonNull(writableAirdropState.get(airdropId))
+                        .pendingAirdropValue())
+                .amount();
+        Assertions.assertThat(tokenValue).isEqualTo(airdropValue.amount() + newAirdropValue.amount());
+    }
+
     private void setupAirdropMocks(TokenAirdropTransactionBody body, boolean enableAirdrop) {
         when(feeContext.body()).thenReturn(transactionBody);
         when(transactionBody.tokenAirdropOrThrow()).thenReturn(body);
@@ -543,5 +579,22 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         }
 
         return result;
+    }
+
+    private PendingAirdropId getFungibleAirdrop() {
+        return PendingAirdropId.newBuilder()
+                .fungibleTokenType(
+                        TokenID.newBuilder().realmNum(1).shardNum(2).tokenNum(3).build())
+                .build();
+    }
+
+    private PendingAirdropValue airdropWithValue(long value) {
+        return PendingAirdropValue.newBuilder().amount(value).build();
+    }
+
+    private AccountPendingAirdrop accountAirdropWith(PendingAirdropValue pendingAirdropValue) {
+        return AccountPendingAirdrop.newBuilder()
+                .pendingAirdropValue(pendingAirdropValue)
+                .build();
     }
 }

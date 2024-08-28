@@ -46,12 +46,12 @@ import java.util.List;
  */
 /*@ThreadSafe*/
 public interface HederaRecordCache extends RecordCache {
-    /**
+    /*
      * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
      * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
      *
-     * @param nodeId The node ID of the node that submitted this transaction to consensus, as known in the address book
-     * @param payerAccountId The {@link AccountID} of the "payer" of the transaction
+     * @param nodeId             The node ID of the node that submitted this transaction to consensus, as known in the address book
+     * @param payerAccountId     The {@link AccountID} of the "payer" of the transaction
      * @param transactionRecords The list of all related transaction records. This may be a stream of 1, if the list
      *                           only contains the user transaction. Or it may be a list including preceding
      *                           transactions, user transactions, and child transactions. There is no requirement as to

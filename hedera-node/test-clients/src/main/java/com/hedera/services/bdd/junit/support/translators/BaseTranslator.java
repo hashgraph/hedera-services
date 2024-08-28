@@ -16,14 +16,24 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -36,29 +46,41 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implements shared translation logic for transaction records, in particular providing a
  * source of token types by {@link com.hedera.hapi.node.base.TokenID}.
  */
 public class BaseTranslator {
+    private static final Logger log = LogManager.getLogger(BaseTranslator.class);
+
+    private static final Set<String> AUTO_CREATION_MEMOS = Set.of(LAZY_MEMO, AUTO_MEMO);
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
     private long highestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
+    private Instant userTimestamp;
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
+    private final Set<TokenAssociation> knownAssociations = new HashSet<>();
+    private final Set<TokenAssociation> pendingAssociations = new HashSet<>();
+    private final Set<TokenAssociation> pendingDissociations = new HashSet<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -104,8 +126,13 @@ public class BaseTranslator {
      * @param unit the unit to prepare for
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
-        nextCreatedNums.clear();
+        knownAssociations.addAll(pendingAssociations);
+        knownAssociations.removeAll(pendingDissociations);
+        pendingAssociations.clear();
+        pendingDissociations.clear();
+        numMints.clear();
         highestPutSerialNos.clear();
+        nextCreatedNums.clear();
         scanUnit(unit);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
@@ -113,9 +140,29 @@ public class BaseTranslator {
             list.addAll(distinctNums);
             list.sort(Comparator.naturalOrder());
         });
-        highestPutSerialNos.values().forEach(list -> list.sort(Collections.reverseOrder()));
+        highestPutSerialNos.forEach((tokenId, serialNos) -> {
+            final Set<Long> distinctSerialNos = Set.copyOf(serialNos);
+            final var mintedHere = new ArrayList<>(distinctSerialNos);
+            mintedHere.sort(Collections.reverseOrder());
+            serialNos.clear();
+            serialNos.addAll(mintedHere.subList(0, numMints.getOrDefault(tokenId, 0)));
+            serialNos.sort(Comparator.naturalOrder());
+        });
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Determines if the given token was already associated with the given account before the ongoing
+     * transactional unit being translated into records.
+     * @param tokenId the token to query
+     * @param accountId the account to query
+     * @return true if the token was already associated with the account
+     */
+    public boolean wasAlreadyAssociated(@NonNull final TokenID tokenId, @NonNull final AccountID accountId) {
+        requireNonNull(tokenId);
+        requireNonNull(accountId);
+        return knownAssociations.contains(new TokenAssociation(tokenId, accountId));
     }
 
     /**
@@ -126,9 +173,17 @@ public class BaseTranslator {
      */
     public List<Long> nextNMints(@NonNull final TokenID tokenId, final int n) {
         final var serialNos = highestPutSerialNos.get(tokenId);
+        if (serialNos == null) {
+            log.error("No serial numbers found for token {}", tokenId);
+            return emptyList();
+        }
+        if (n > serialNos.size()) {
+            log.error("Only {} serial numbers found for token {}, not the requested {}", serialNos.size(), tokenId, n);
+            return emptyList();
+        }
         final var mints = new ArrayList<>(serialNos.subList(0, n));
         serialNos.removeAll(mints);
-        return mints.reversed();
+        return mints;
     }
 
     /**
@@ -137,6 +192,11 @@ public class BaseTranslator {
      * @return the next created entity number
      */
     public long nextCreatedNum(@NonNull final EntityType type) {
+        final var createdNums = nextCreatedNums.getOrDefault(type, Collections.emptyList());
+        if (createdNums.isEmpty()) {
+            log.error("No created numbers found for entity type {}", type);
+            return -1L;
+        }
         return nextCreatedNums.get(type).removeFirst();
     }
 
@@ -160,7 +220,15 @@ public class BaseTranslator {
                 .paidStakingRewards(parts.paidStakingRewards());
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
-        receiptBuilder.exchangeRate(activeRates);
+        final boolean followsUserRecord = asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
+        if (followsUserRecord) {
+            recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
+        }
+        if (!followsUserRecord || AUTO_CREATION_MEMOS.contains(parts.memo())) {
+            // Only preceding and user transactions get exchange rates in their receipts; note that
+            // auto-account creations are always preceding dispatches and so get exchange rates
+            receiptBuilder.exchangeRate(activeRates);
+        }
         final AtomicReference<TokenType> tokenType = new AtomicReference<>();
         final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
         spec.accept(receiptBuilder, recordBuilder, sidecarRecords, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
@@ -226,6 +294,29 @@ public class BaseTranslator {
                     highestPutSerialNos
                             .computeIfAbsent(tokenId, ignore -> new LinkedList<>())
                             .add(nftId.serialNumber());
+                } else if (key.hasTokenRelationshipKey()) {
+                    pendingAssociations.add(key.tokenRelationshipKeyOrThrow());
+                    pendingDissociations.remove(key.tokenRelationshipKeyOrThrow());
+                }
+            } else if (stateChange.hasMapDelete()) {
+                final var mapDelete = stateChange.mapDeleteOrThrow();
+                final var key = mapDelete.keyOrThrow();
+                if (key.hasTokenRelationshipKey()) {
+                    pendingAssociations.remove(key.tokenRelationshipKeyOrThrow());
+                    pendingDissociations.add(key.tokenRelationshipKeyOrThrow());
+                }
+            }
+        });
+        unit.blockTransactionParts().forEach(parts -> {
+            if (parts.transactionIdOrThrow().nonce() == 0) {
+                userTimestamp = asInstant(parts.consensusTimestamp());
+            }
+            if (parts.status() == SUCCESS && parts.functionality() == TOKEN_MINT) {
+                final var op = parts.body().tokenMintOrThrow();
+                final var numMetadata = op.metadata().size();
+                if (numMetadata > 0) {
+                    final var tokenId = op.tokenOrThrow();
+                    numMints.merge(tokenId, numMetadata, Integer::sum);
                 }
             }
         });
