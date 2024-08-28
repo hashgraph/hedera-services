@@ -32,10 +32,12 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -182,7 +184,17 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return attempt.isSelector(decoderMap.keySet().toArray(Function[]::new));
+        final var metaConfigEnabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
+        final var metaSelectors = Set.of(
+                CREATE_FUNGIBLE_TOKEN_WITH_METADATA,
+                CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA,
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES);
+        return decoderMap.keySet().stream()
+                .anyMatch(selector -> metaSelectors.contains(selector)
+                        ? attempt.isSelectorIfConfigEnabled(selector, metaConfigEnabled)
+                        : attempt.isSelector(selector));
     }
 
     @Override
