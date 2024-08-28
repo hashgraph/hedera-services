@@ -51,7 +51,7 @@ jobs:
             major="${BASH_REMATCH[1]}"
             minor="${BASH_REMATCH[2]}"
 
-            if [[ "${major}" -eq 0 && "${minor}" -lt 52 ]]; then
+            if [[ "${major}" -eq 0 && "${minor}" -lt 53 ]]; then
               continue
             fi
 
