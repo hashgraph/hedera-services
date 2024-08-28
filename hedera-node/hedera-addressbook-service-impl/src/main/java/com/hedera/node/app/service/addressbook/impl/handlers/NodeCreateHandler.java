@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnable;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -95,9 +96,7 @@ public class NodeCreateHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
         final var op = handleContext.body().nodeCreate();
-
-        final var configuration = handleContext.configuration();
-        final var nodeConfig = configuration.getConfigData(NodesConfig.class);
+        final var nodeConfig = handleContext.configuration().getConfigData(NodesConfig.class);
         final var storeFactory = handleContext.storeFactory();
         final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
         final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
@@ -130,6 +129,7 @@ public class NodeCreateHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        checkDABEnable(feeContext);
         final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         calculator.resetUsage();
         // The price of node create should be increased based on number of signatures.

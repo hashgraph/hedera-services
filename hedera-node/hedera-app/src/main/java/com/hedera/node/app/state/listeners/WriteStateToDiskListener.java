@@ -25,7 +25,6 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgr
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
@@ -80,11 +79,9 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
                 final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
                 final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-                final var networkAdminConfig =
-                        configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
 
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
-                        networkAdminConfig,
+                        configProvider,
                         readableFreezeStore,
                         executor,
                         readableUpgradeFileStore,
