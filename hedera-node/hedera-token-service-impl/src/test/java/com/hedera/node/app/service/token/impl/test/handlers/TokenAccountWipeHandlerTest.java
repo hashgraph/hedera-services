@@ -82,6 +82,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -113,6 +114,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .getOrCreateConfig();
         recordBuilder = new TokenAccountWipeStreamBuilder() {
             private long newTotalSupply;
+
+            @Override
+            public StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction) {
+                return this;
+            }
 
             @Override
             public int getNumAutoAssociations() {
@@ -161,6 +167,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             @Override
             public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+                return this;
+            }
+
+            @Override
+            public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
                 return this;
             }
 

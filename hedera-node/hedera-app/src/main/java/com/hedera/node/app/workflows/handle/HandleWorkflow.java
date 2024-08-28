@@ -33,10 +33,12 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -47,7 +49,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -74,9 +75,9 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -268,9 +269,9 @@ public class HandleWorkflow {
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.startUserTransaction(consensusNow, state);
         }
-        final var recordStream = execute(userTxn);
+        final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
-            blockRecordManager.endUserTransaction(recordStream, state);
+            blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
         }
         if (blockStreamConfig.streamBlocks()) {
             // FUTURE: Writes block items using BlockStreamManager
@@ -294,7 +295,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -327,9 +328,10 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
-            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems);
-            return streamItems.stream();
+            final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
@@ -342,8 +344,19 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
+        // The stack for the user txn should never be committed
+        final List<BlockItem> blockItems = new LinkedList<>();
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            blockItems.addAll(failInvalidBuilder.build());
+        }
+
         final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                 .status(FAIL_INVALID)
@@ -353,7 +366,7 @@ public class HandleWorkflow {
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
-        return Stream.of(failInvalidRecord);
+        return new HandleOutput(blockItems, List.of(failInvalidRecord));
     }
 
     /**
@@ -426,6 +439,7 @@ public class HandleWorkflow {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return builder.transaction(txnInfo.transaction())
+                .serializedTransaction(txnInfo.serializedTransaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())
                 .exchangeRate(exchangeRateSet)

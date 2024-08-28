@@ -29,7 +29,9 @@ import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottlin
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -165,7 +167,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
 
     @Mock
     private AppKeyVerifier verifier;
@@ -263,12 +265,18 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private RecordStreamBuilder childRecordBuilder = new RecordStreamBuilder();
+    private final RecordStreamBuilder childRecordBuilder =
+            new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private final TransactionBody txnBodyWithoutId = TransactionBody.newBuilder()
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.newBuilder().body(txBody).build(),
+            txBody,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER,
+            null);
 
     private static final TransactionBody MISSING_PAYER_ID =
             TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
@@ -740,7 +748,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
+                Transaction.newBuilder().body(txBody).build(),
+                txBody,
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                function,
+                null);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,

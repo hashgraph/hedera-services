@@ -45,6 +45,9 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONT
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -128,7 +131,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new RecordStreamBuilder();
+        recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
