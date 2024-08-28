@@ -193,6 +193,11 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
+    @Override
+    public boolean isClosed() {
+        return state == State.CLOSED;
+    }
+
     /**
      * Get the path for a block file with the block number.
      *
