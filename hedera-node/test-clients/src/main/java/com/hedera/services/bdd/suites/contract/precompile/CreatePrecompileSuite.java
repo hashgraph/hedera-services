@@ -1127,8 +1127,9 @@ public class CreatePrecompileSuite {
         return hapiTest(
                 createTokenV2
                         .call("createTokenWithMetadata")
-                        .sending(2 * ONE_HBAR)
-                        .andAssert(txn -> txn.logged()),
+                        .sending(2000 * ONE_HBAR)
+                        .gas(1_000_000L)
+                        .andAssert(txn -> txn.via("asd")),
                 getTxnRecord("asd").logged());
     }
 }

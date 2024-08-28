@@ -127,41 +127,5 @@
     ],
     "stateMutability": "nonpayable",
     "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "ed25519",
-        "type": "bytes"
-      }
-    ],
-    "name": "updateTokenKeys",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "metadata",
-        "type": "string"
-      }
-    ],
-    "name": "updateTokenMetadata",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   }
 ]

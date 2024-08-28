@@ -10,12 +10,12 @@ contract CreateTokenVTwo is HederaTokenService, KeyHelper {
     function createTokenWithMetadata() public payable returns (address createdAddress) {
         IHederaTokenService.HederaTokenV2 memory token;
         token.name = "testToken";
-        token.metadata = bytes("asdasdasdads");
-        token.symbol = "asd";
+        token.metadata = bytes("testmeta");
+        token.symbol = "test";
         token.treasury = address(this);
-        token.tokenKeys = super.getDefaultKeys();
+        token.tokenKeys = new IHederaTokenService.TokenKey[](0);
 
-        (int256 responseCode, address tokenAddress) = HederaTokenService.createFungibleToken(token, 100, 4);
+        (int responseCode, address tokenAddress) = HederaTokenService.createFungibleToken(token, 100, 4);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
