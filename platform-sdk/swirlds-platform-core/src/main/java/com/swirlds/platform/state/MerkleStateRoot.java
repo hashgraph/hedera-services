@@ -364,6 +364,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         listeners.add(listener);
     }
 
+    @Override
+    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.remove(listener);
+    }
     /**
      * {@inheritDoc}
      */

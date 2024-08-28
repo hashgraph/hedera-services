@@ -149,6 +149,12 @@ public class FakeState implements State {
         listeners.add(listener);
     }
 
+    @Override
+    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.remove(listener);
+    }
+
     /**
      * Commits all pending changes made to the states.
      */

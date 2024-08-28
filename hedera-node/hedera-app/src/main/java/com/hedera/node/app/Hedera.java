@@ -74,6 +74,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.Utils;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -115,6 +116,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -317,10 +319,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
+            final var blockStreamsEnabled =
+                    bootstrapConfig.getConfigData(BlockStreamConfig.class).streamBlocks();
+            final Supplier<MerkleStateRoot> stateRootSupplier = blockStreamsEnabled
+                    ? () -> withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory))
+                    : () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
             // And the factory for the MerkleStateRoot class id must be our constructor
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    MerkleStateRoot.class,
-                    () -> withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory))));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
