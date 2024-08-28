@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
@@ -61,6 +62,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Provider;
@@ -166,6 +168,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder metrics(Metrics metrics);
+
+        @BindsInstance
+        Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
 
         HederaInjectionComponent build();
     }

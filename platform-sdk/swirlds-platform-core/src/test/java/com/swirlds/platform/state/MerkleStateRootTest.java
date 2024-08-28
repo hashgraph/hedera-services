@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
@@ -98,8 +99,8 @@ class MerkleStateRootTest extends MerkleTestBase {
 
     private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
-        public void initPlatformState(@NonNull final State state) {
-            FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+            return FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         }
 
         @Override

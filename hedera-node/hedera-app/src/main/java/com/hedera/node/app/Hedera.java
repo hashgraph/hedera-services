@@ -32,6 +32,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.util.HapiUtils;
@@ -107,6 +108,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
@@ -369,10 +371,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     /**
      * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
      * @param state the root state to be initialized
+     * @return the state changes after initialization
      */
-    public void initPlatformState(@NonNull final State state) {
+    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         requireNonNull(state);
-        serviceMigrator.doMigrations(
+        return serviceMigrator.doMigrations(
                 state,
                 servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
                 serviceMigrator.creationVersionOf(state),
@@ -454,8 +457,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * @param state current state
      * @param deserializedVersion version deserialized
      * @param trigger trigger that is calling migration
+     * @return the state changes caused by the migration
      */
-    private void onMigrate(
+    private List<StateChanges.Builder> onMigrate(
             @NonNull final State state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
@@ -471,21 +475,30 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 () -> trigger);
         final var selfNodeInfo = extractSelfNodeInfo(platform, version);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
+        final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
+        if (isNotEmbedded()) {
+            if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
+                throw new IllegalStateException("State must be a MerkleStateRoot");
+            }
+            migrationStateChanges.addAll(merkleStateRoot.platformStateInitChangesOrThrow());
+        }
+
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
-        serviceMigrator.doMigrations(
+        migrationStateChanges.addAll(serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
                 previousVersion,
                 currentVersion,
                 configProvider.getConfiguration(),
                 networkInfo,
-                metrics);
+                metrics));
         if (isUpgrade && !trigger.equals(RECONNECT)) {
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");
+        return migrationStateChanges;
     }
 
     /*==================================================================================================================
@@ -707,9 +720,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
-        onMigrate(state, deserializedVersion, trigger, metrics);
+        final var migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics);
         // With the States API grounded in the working state, we can create the object graph from it
-        initializeDagger(state, trigger);
+        initializeDagger(state, trigger, migrationStateChanges);
         // Log the active configuration
         logConfiguration();
     }
@@ -720,7 +733,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final State state, @NonNull final InitTrigger trigger) {
+    private void initializeDagger(
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         final var notifications = platform.getNotificationEngine();
         // The Dagger component should be constructed every time we reach this point, even if
         // it exists (this avoids any problems with mutable singleton state by reconstructing
@@ -748,6 +764,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .servicesRegistry(servicesRegistry)
                 .instantSource(instantSource)
                 .metrics(metrics)
+                .migrationStateChanges(migrationStateChanges)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
