@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.AC
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
@@ -425,7 +425,7 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull Path streamsLoc(@NonNull final NodeSelector selector) {
         requireNonNull(selector);
-        return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(STREAMS_DIR);
+        return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(RECORD_STREAMS_DIR);
     }
 
     /**

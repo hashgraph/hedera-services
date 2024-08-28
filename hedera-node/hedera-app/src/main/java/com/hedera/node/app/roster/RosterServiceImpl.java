@@ -31,12 +31,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class RosterServiceImpl implements Service {
 
     /** The name of this service */
-    public static final String SCHEMA_NAME = "RosterServiceImpl";
+    public static final String NAME = "RosterService";
 
     @NonNull
     @Override
     public String getServiceName() {
-        return SCHEMA_NAME;
+        return NAME;
     }
 
     @Override

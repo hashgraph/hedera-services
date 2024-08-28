@@ -30,9 +30,11 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
@@ -129,6 +131,8 @@ public final class PlatformBuilder {
      */
     private AddressBook bootstrapAddressBook;
 
+    private Roster roster;
+
     /**
      * This node's cryptographic keys.
      */
@@ -137,7 +141,7 @@ public final class PlatformBuilder {
     /**
      * The path to the configuration file (i.e. the file with the address book).
      */
-    private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
+    private final Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
 
     /**
      * The wiring model to use for this platform.
@@ -346,7 +350,7 @@ public final class PlatformBuilder {
      *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
      * </ul>
      *
-     * @return
+     * @return this
      */
     @NonNull
     public PlatformBuilder withConsensusSnapshotOverrideCallback(
@@ -384,6 +388,20 @@ public final class PlatformBuilder {
     public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
         this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the roster to use for bootstrapping the system. If not provided then the roster is created from the
+     * bootstrap address book.
+     *
+     * @param roster the roster to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRoster(@NonNull final Roster roster) {
+        throwIfAlreadyUsed();
+        this.roster = Objects.requireNonNull(roster);
         return this;
     }
 
@@ -556,6 +574,10 @@ public final class PlatformBuilder {
                 initialState.get().getState().getPlatformState().getAddressBook();
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+
+        if (roster == null) {
+            roster = createRoster(boostrapAddressBook);
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

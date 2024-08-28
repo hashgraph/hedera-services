@@ -164,6 +164,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+// @Tag(ADHOC)
+@Tag("ONEOFF")
 public class ContractCallSuite {
 
     public static final String TOKEN = "yahcliToken";
