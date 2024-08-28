@@ -109,7 +109,8 @@ class MemoryIndexDiskKeyValueStoreTest {
             final long lastLeafPath,
             final int valueAddition)
             throws IOException {
-        store.startWriting(0, lastLeafPath);
+        store.updateValidKeyRange(0, lastLeafPath);
+        store.startWriting();
         writeDataBatch(testType, store, start, count, valueAddition);
         store.endWriting();
     }

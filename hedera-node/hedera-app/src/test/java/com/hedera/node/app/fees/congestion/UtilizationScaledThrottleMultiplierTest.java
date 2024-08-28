@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -42,6 +44,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -56,6 +59,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
@@ -307,6 +311,30 @@ class UtilizationScaledThrottleMultiplierTest {
                                 Map.of(
                                         TokenID.newBuilder().tokenNum(1L), Token.DEFAULT,
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
+
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
+
+        assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
+    }
+
+    @Test
+    void testCurrentMultiplierPendingAirdrops() {
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(FeesConfig.class)).willReturn(feesConfig);
+        given(feesConfig.percentUtilizationScaleFactors()).willReturn(entityScaleFactors);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxAllowedPendingAirdrops()).willReturn(100L);
+
+        when(txnInfo.functionality()).thenReturn(TOKEN_AIRDROP);
+        when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
+
+        state = new FakeState()
+                .addService(
+                        TokenService.NAME,
+                        Map.of(
+                                V0530TokenSchema.AIRDROPS_KEY,
+                                Map.of(PendingAirdropId.DEFAULT, AccountPendingAirdrop.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);

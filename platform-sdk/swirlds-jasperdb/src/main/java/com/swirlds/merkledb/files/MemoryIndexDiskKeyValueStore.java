@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,15 +64,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     private final String storeName;
 
-    /** The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
-     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
-     */
-    private final AtomicLong minValidKey;
-    /** The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
-     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
-     */
-    private final AtomicLong maxValidKey;
-
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
@@ -102,23 +92,27 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create file collection
         fileCollection = new DataFileCollection<>(
                 config, storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
-        // no limits for the keys on init
-        minValidKey = new AtomicLong(0);
-        maxValidKey = new AtomicLong(Long.MAX_VALUE);
     }
 
     /**
-     * Start a writing session ready for calls to put()
+     * Updates valid key range for this store. This method need to be called before we start putting
+     * values into the index, otherwise we could put a value by index that is not yet valid.
+     *
+     * @param min min valid key, inclusive
+     * @param max max valid key, inclusive
+     */
+    public void updateValidKeyRange(final long min, final long max) {
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        index.updateValidRange(min, max);
+    }
+
+    /**
+     * Start a writing session ready for calls to put(). Make sure to update the valid key range
+     * using {@link #updateValidKeyRange(long, long)} before this method is called.
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting(final long minimumValidKey, final long maxValidIndex) throws IOException {
-        this.minValidKey.set(minimumValidKey);
-        this.maxValidKey.set(maxValidIndex);
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        // We need to do this before we start putting values into the index, otherwise we could put a value by
-        // index that is not yet valid.
-        index.updateValidRange(minimumValidKey, maxValidIndex);
+    public void startWriting() throws IOException {
         fileCollection.startWriting();
     }
 
@@ -144,9 +138,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     @Nullable
     public DataFileReader<D> endWriting() throws IOException {
-        final long currentMinValidKey = minValidKey.get();
-        final long currentMaxValidKey = maxValidKey.get();
-        final DataFileReader<D> dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
+        final long currentMinValidKey = index.getMinValidIndex();
+        final long currentMaxValidKey = index.getMaxValidIndex();
+        final DataFileReader<D> dataFileReader =
+                fileCollection.endWriting(index.getMinValidIndex(), index.getMaxValidIndex());
         dataFileReader.setFileCompleted();
         logger.info(
                 MERKLE_DB.getMarker(),

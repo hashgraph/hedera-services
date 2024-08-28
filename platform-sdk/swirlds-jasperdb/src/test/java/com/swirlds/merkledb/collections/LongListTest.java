@@ -56,6 +56,7 @@ class LongListTest {
         final LongConsumer secondConsumer = mock(LongConsumer.class);
 
         final LongListHeap list = new LongListHeap(32, 32, 0);
+        list.updateValidRange(0, 3);
         for (int i = 1; i <= 3; i++) {
             list.put(i, i);
         }
@@ -89,6 +90,7 @@ class LongListTest {
     @ParameterizedTest
     @MethodSource("provideLongLists")
     void test4089(final AbstractLongList<?> list) {
+        list.updateValidRange(0, list.maxLongs - 1);
         // Issue #4089: ArrayIndexOutOfBoundsException from VirtualMap.put()
         final long maxLongs = list.maxLongs;
         final int defaultValue = -1;

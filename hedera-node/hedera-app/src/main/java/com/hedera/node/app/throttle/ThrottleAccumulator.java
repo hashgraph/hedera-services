@@ -46,7 +46,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
@@ -146,14 +145,15 @@ public class ThrottleAccumulator {
     }
 
     /**
-     * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
+     * Tries to claim throttle capacity for the given transaction and returns whether the transaction
+     * should be throttled if there is no capacity.
      *
      * @param txnInfo the transaction to update the throttle requirements for
      * @param now the instant of time the transaction throttling should be checked for
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
-    public boolean shouldThrottle(
+    public boolean checkAndEnforceThrottle(
             @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final State state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
@@ -174,7 +174,7 @@ public class ThrottleAccumulator {
      * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
-    public boolean shouldThrottle(
+    public boolean checkAndEnforceThrottle(
             @NonNull final HederaFunctionality queryFunction,
             @NonNull final Instant now,
             @NonNull final Query query,
@@ -314,16 +314,6 @@ public class ThrottleAccumulator {
         lastTxnWasGasThrottled = false;
         activeThrottles.forEach(DeterministicThrottle::resetUsage);
         gasThrottle.resetUsage();
-    }
-
-    /**
-     * Resets the usage for all snapshots.
-     */
-    public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
-        requireNonNull(snapshots);
-        for (int i = 0, n = activeThrottles.size(); i < n; i++) {
-            activeThrottles.get(i).resetUsageTo(snapshots.get(i));
-        }
     }
 
     /**

@@ -16,11 +16,10 @@
 
 package com.swirlds.logging.api.internal.level;
 
-import static com.swirlds.logging.utils.ConfigUtils.configValueOrElse;
-
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
+import com.swirlds.logging.utils.ConfigUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -97,9 +96,9 @@ public class HandlerLoggingLevelConfig {
             @NonNull final Configuration configuration, @Nullable final String handlerName) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
-        final ConfigLevel defaultLevel =
-                configValueOrElse(configuration, PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
-        final Boolean inheritLevels = configValueOrElse(
+        final ConfigLevel defaultLevel = ConfigUtils.configValueOrElse(
+                configuration, PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
+        final Boolean inheritLevels = ConfigUtils.configValueOrElse(
                 configuration,
                 PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(handlerName),
                 Boolean.class,
@@ -108,8 +107,8 @@ public class HandlerLoggingLevelConfig {
         final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(handlerName);
         final ConfigLevel defaultHandlerLevel;
         if (handlerName != null) {
-            defaultHandlerLevel =
-                    configValueOrElse(configuration, propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
+            defaultHandlerLevel = ConfigUtils.configValueOrElse(
+                    configuration, propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
         } else {
             defaultHandlerLevel = ConfigLevel.UNDEFINED;
         }

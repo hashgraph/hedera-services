@@ -59,7 +59,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);

@@ -364,26 +364,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
-     * Returns all following child records in the stack for use in end-of-EVM-transaction throttling.
-     * <p>
-     * To be removed on completion of HIP-993 and adoption of per-dispatch throttling.
-     *
-     * @return the list of child records
-     */
-    @Deprecated
-    public List<StreamBuilder> getChildBuilders() {
-        final var childRecords = new ArrayList<StreamBuilder>();
-        for (final var savepoint : stack) {
-            for (final var builder : savepoint.followingBuilders()) {
-                if (builder.category() == CHILD) {
-                    childRecords.add(builder);
-                }
-            }
-        }
-        return childRecords;
-    }
-
-    /**
      * Returns the top savepoint without removing it from the stack. Used only by the {@link WritableStatesStack},
      * not part of the public API.
      *

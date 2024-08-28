@@ -165,6 +165,43 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     }
 
     @Test
+    void callsKey2xIfAdminKeyRequired() throws PreCheckException {
+        when(payerAccount.keyOrThrow()).thenReturn(AN_ED25519_KEY);
+        when(accountStore.getContractById(targetContract)).thenReturn(payerAccount);
+
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(
+                        ContractUpdateTransactionBody.newBuilder()
+                                .contractID(targetContract)
+                                .memo("new memo") // invalid account
+                        )
+                .transactionID(transactionID)
+                .build();
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
+
+        verify(payerAccount, times(2)).key();
+    }
+
+    @Test
+    void callsKey1xIfAdminKeyNotRequired() throws PreCheckException {
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(
+                        ContractUpdateTransactionBody.newBuilder()
+                                .contractID(targetContract)
+                                .expirationTime(Timestamp.newBuilder().seconds(1L)) // invalid account
+                        )
+                .transactionID(transactionID)
+                .build();
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
+
+        verify(payerAccount, times(1)).key();
+    }
+
+    @Test
     void handleWithNullContextFails() {
         final HandleContext context = null;
         assertThrows(NullPointerException.class, () -> subject.handle(context));
@@ -322,6 +359,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -347,6 +385,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -372,6 +411,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -401,6 +441,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -431,6 +472,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.configuration()).thenReturn(configuration);
 
         when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(contract.key()).thenReturn(Key.newBuilder().build());
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);

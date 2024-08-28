@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.SwirldState;
 import java.time.Instant;
 
@@ -29,7 +28,6 @@ import java.time.Instant;
 public class NewSignedStateNotification extends AbstractNotification {
 
     private final SwirldState swirldState;
-    private final PlatformState platformState;
     private final long round;
     private final Instant consensusTimestamp;
 
@@ -37,18 +35,13 @@ public class NewSignedStateNotification extends AbstractNotification {
      * Create a notification for a newly signed state.
      *
      * @param swirldState        the swirld state from the round that is now fully signed
-     * @param platformState      the platform state from the round that is now fully signed
      * @param round              the round that is now fully signed
      * @param consensusTimestamp the consensus timestamp of the round that is now fully signed
      */
     public NewSignedStateNotification(
-            final SwirldState swirldState,
-            final PlatformState platformState,
-            final long round,
-            final Instant consensusTimestamp) {
+            final SwirldState swirldState, final long round, final Instant consensusTimestamp) {
 
         this.swirldState = swirldState;
-        this.platformState = platformState;
         this.round = round;
         this.consensusTimestamp = consensusTimestamp;
     }
@@ -60,13 +53,6 @@ public class NewSignedStateNotification extends AbstractNotification {
     @SuppressWarnings("unchecked")
     public <T extends SwirldState> T getSwirldState() {
         return (T) swirldState;
-    }
-
-    /**
-     * Get the platform state from the round that is now fully signed.
-     */
-    public PlatformState getPlatformState() {
-        return platformState;
     }
 
     /**

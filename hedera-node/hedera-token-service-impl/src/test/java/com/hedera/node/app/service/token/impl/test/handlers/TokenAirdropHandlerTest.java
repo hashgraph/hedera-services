@@ -18,9 +18,13 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.NFT_AIRDROP;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AIRDROP;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AND_NFT_AIRDROP;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -43,7 +48,6 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
@@ -51,6 +55,7 @@ import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
@@ -84,9 +89,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Mock
     private FeeCalculator feeCalculator;
-
-    @Mock
-    private ReadableTokenRelationStore readableTokenRelationStore;
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -324,7 +326,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
@@ -338,6 +340,9 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        var sigVerificationMock = mock(SignatureVerification.class);
+        given(keyVerifier.verificationFor(any())).willReturn(sigVerificationMock);
+        given(handleContext.keyVerifier()).willReturn(keyVerifier);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
         given(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         given(feeCalculator.calculate()).willReturn(new Fees(10, 10, 10));
@@ -383,7 +388,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn(txn, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
@@ -401,7 +406,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
     @Test
@@ -430,7 +435,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         // set up transaction and context
-        givenAirdropTxn(true);
+        givenAirdropTxn(true, ownerId, TOKEN_AND_NFT_AIRDROP);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
@@ -444,6 +449,40 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         var relationToNFT = Objects.requireNonNull(writableTokenRelStore.get(tokenReceiverId, nonFungibleTokenId));
         assertThat(relationToNFT.balance()).isEqualTo(1);
         assertThat(relationToFungible.balance()).isEqualTo(1000L);
+    }
+
+    @Test
+    void handleAirdropNotAssociatedToAccountTransfers() {
+        // setup all states
+        handlerTestBaseInternalSetUp(true);
+        givenStoresAndConfig(handleContext);
+
+        // mock record builder
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        var nftWithNoCustomFees = nonFungibleToken
+                .copyBuilder()
+                .customFees(Collections.emptyList())
+                .build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        writableTokenStore.put(nftWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        // set up transaction and context
+        givenAirdropTxn(false, zeroAccountId, TOKEN_AIRDROP);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+
+        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+
+        givenAirdropTxn(false, zeroAccountId, NFT_AIRDROP);
+        Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
     @Test

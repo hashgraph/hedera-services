@@ -78,7 +78,7 @@ class AppThrottleAdviserTest {
 
     @BeforeEach
     void setup() {
-        subject = new AppThrottleAdviser(networkUtilizationManager, CONSENSUS_NOW, stack);
+        subject = new AppThrottleAdviser(networkUtilizationManager, CONSENSUS_NOW);
     }
 
     @Test

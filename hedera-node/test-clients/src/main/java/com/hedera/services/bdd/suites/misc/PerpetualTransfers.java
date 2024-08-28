@@ -43,9 +43,9 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(NOT_REPEATABLE)
 public class PerpetualTransfers {
-    private AtomicLong duration = new AtomicLong(1);
+    private AtomicLong duration = new AtomicLong(30);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
+    private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
     @HapiTest
     final Stream<DynamicTest> canTransferBackAndForthForever() {
@@ -59,6 +59,7 @@ public class PerpetualTransfers {
 
     private Function<HapiSpec, OpProvider> transfersFactory() {
         AtomicBoolean fromAtoB = new AtomicBoolean(true);
+        AtomicInteger transfersSoFar = new AtomicInteger(0);
         return spec -> new OpProvider() {
             @Override
             public List<SpecOperation> suggestedInitializers() {
@@ -71,7 +72,10 @@ public class PerpetualTransfers {
                 var to = fromAtoB.get() ? "B" : "A";
                 fromAtoB.set(!fromAtoB.get());
 
-                var op = cryptoTransfer(tinyBarsFromTo(from, to, 1)).noLogging().deferStatusResolution();
+                var op = cryptoTransfer(tinyBarsFromTo(from, to, 1))
+                        .noLogging()
+                        .memo("transfer #" + transfersSoFar.getAndIncrement())
+                        .deferStatusResolution();
 
                 return Optional.of(op);
             }

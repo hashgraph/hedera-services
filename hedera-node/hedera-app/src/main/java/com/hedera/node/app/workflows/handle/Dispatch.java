@@ -32,7 +32,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
@@ -192,17 +191,19 @@ public interface Dispatch {
     FinalizeContext finalizeContext();
 
     /**
-     * The platform state for the dispatch.
-     *
-     * @return the platform state
-     */
-    PlatformState platformState();
-
-    /**
      * The result of applying the {@link PreHandleWorkflow} to the dispatch;
      * will be a synthetic result for a child dispatch.
      *
      * @return the pre-handle result
      */
     PreHandleResult preHandleResult();
+
+    /**
+     * The throttling strategy for the dispatch. If the dispatched transaction should be throttled
+     * at consensus also. All the transactions including user and child transactions are checked for
+     * capacity and throttled at consensus. The only exception is when top level contract create creates an
+     * account by dispatching a crypto create transaction
+     * @return the throttling strategy
+     */
+    HandleContext.ConsensusThrottling throttleStrategy();
 }

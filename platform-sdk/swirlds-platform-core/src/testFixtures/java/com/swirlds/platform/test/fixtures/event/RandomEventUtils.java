@@ -22,7 +22,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -108,7 +108,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashUnsignedEvent(unsignedEvent);
+            new PbjStreamHasher().hashUnsignedEvent(unsignedEvent);
         }
         return unsignedEvent;
     }

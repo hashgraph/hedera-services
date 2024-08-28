@@ -39,7 +39,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -87,7 +86,7 @@ public class MapValueFCQTests {
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);
         when(platform.getAddressBook()).thenReturn(addressBook);
-        state.init(platform, new PlatformState(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
+        state.init(platform, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
 

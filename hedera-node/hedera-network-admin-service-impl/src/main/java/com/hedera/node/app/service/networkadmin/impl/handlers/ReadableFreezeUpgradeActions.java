@@ -35,7 +35,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -162,8 +162,8 @@ public class ReadableFreezeUpgradeActions {
         writeMarker(file, now);
     }
 
-    public void catchUpOnMissedSideEffects(final PlatformState platformState) {
-        catchUpOnMissedFreezeScheduling(platformState);
+    public void catchUpOnMissedSideEffects(@NonNull final ReadablePlatformStateStore platformStateStore) {
+        catchUpOnMissedFreezeScheduling(platformStateStore);
         catchUpOnMissedUpgradePrep();
     }
 
@@ -201,13 +201,13 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether a freeze is scheduled.
-     * @param platformState the platform state
+     * @param platformStateStore the platform state
      * @return true if a freeze is scheduled, false otherwise
      */
-    public boolean isFreezeScheduled(final PlatformState platformState) {
-        requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
-        final var freezeTime = platformState.getFreezeTime();
-        return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
+    public boolean isFreezeScheduled(@NonNull final ReadablePlatformStateStore platformStateStore) {
+        requireNonNull(platformStateStore, "Cannot check freeze schedule without access to the platform state");
+        final var freezeTime = platformStateStore.getFreezeTime();
+        return freezeTime != null && !freezeTime.equals(platformStateStore.getLastFrozenTime());
     }
 
     /* -------- Internal Methods */
@@ -375,7 +375,7 @@ public class ReadableFreezeUpgradeActions {
                 + (encoded.getByte(3) & 0xFF);
     }
 
-    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
+    private void catchUpOnMissedFreezeScheduling(@NonNull final ReadablePlatformStateStore platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled(platformState) && isUpgradePrepared) {
             final var freezeTime = requireNonNull(platformState.getFreezeTime());
