@@ -18,8 +18,8 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.MAP_DELETE;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.MAP_UPDATE;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountID;
