@@ -359,13 +359,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 "Send one FT from EOA with only One FT in balance twice to Account without free Auto-Associations")
                         .given(
                                 cryptoCreate(sender).maxAutomaticTokenAssociations(-1),
-                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
-                                        .payingWith(OWNER)
-                                        .via("credit sender"),
-                                getTxnRecord("credit sender")
-                                        .hasPriority(recordWith()
-                                                .tokenTransfers(includingFungibleMovement(moving(1, FUNGIBLE_TOKEN)
-                                                        .distributing(OWNER, sender)))))
+                                cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
+                                        .payingWith(OWNER))
                         .when(
                                 tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
                                                 .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
