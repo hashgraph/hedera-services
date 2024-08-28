@@ -141,6 +141,12 @@ class HandleWorkflowTest {
     @Mock
     private BoundaryStateChangeListener boundaryStateChangeListener;
 
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
+
     private HandleWorkflow subject;
 
     @BeforeEach

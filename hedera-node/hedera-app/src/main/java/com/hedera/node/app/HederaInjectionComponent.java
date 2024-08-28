@@ -177,13 +177,13 @@ public interface HederaInjectionComponent {
         Builder metrics(Metrics metrics);
 
         @BindsInstance
-        Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
-
-        @BindsInstance
         Builder boundaryStateChangeListener(BoundaryStateChangeListener boundaryStateChangeListener);
 
         @BindsInstance
         Builder kvStateChangeListener(KVStateChangeListener kvStateChangeListener);
+
+        @BindsInstance
+        Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
 
         HederaInjectionComponent build();
     }
