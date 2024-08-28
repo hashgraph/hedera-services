@@ -82,11 +82,10 @@ public class ClassicCreatesCall extends AbstractCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final Address spender,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AccountID spender) {
         super(systemContractGasCalculator, enhancement, false);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        this.spenderId = spender;
         this.syntheticCreate = syntheticCreate;
     }
 

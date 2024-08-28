@@ -204,8 +204,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),
-                attempt.senderAddress(),
-                attempt.addressIdConverter());
+                attempt.senderId());
     }
 
     private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
