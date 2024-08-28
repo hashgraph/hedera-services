@@ -940,5 +940,133 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                             moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract)))),
                     getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
         }
+
+        @HapiTest
+        @DisplayName("FT with free associations")
+        final Stream<DynamicTest> ftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 1),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with free associations")
+        final Stream<DynamicTest> nftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 1),
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 4).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("FT with zero free associations")
+        final Stream<DynamicTest> ftWithZeroFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with zero free associations")
+        final Stream<DynamicTest> nftWithZeroFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 5).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT with no free associations")
+        final Stream<DynamicTest> ftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    // Create a contract with a free associations
+                    deployMutableContract(mutableContract, 1),
+                    // Take the free association and verify that the user received them
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN2).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN2, 1),
+                    // Try airdropping the two tokens again and verify that when there are not more free associations
+                    // we create an airdrop instead of crypto transfer
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with no free associations")
+        final Stream<DynamicTest> nftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    // Create a contract with a free associations
+                    deployMutableContract(mutableContract, 1),
+                    // Take the free association and verify that the user received them
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                    // Try airdropping the two tokens again and verify that when there are not more free associations
+                    // we create an airdrop instead of crypto transfer
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 6).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with free associations")
+        final Stream<DynamicTest> ftAndNftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 2),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 7).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with no free associations")
+        final Stream<DynamicTest> ftAndNftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 8).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with free associations")
+        final Stream<DynamicTest> ftAndNftWithFreeAssociationsForMultipleContracts() {
+            var mutableContract = "PayReceivable";
+            var mutableContract2 = "PayReceivable2";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 2),
+                    deployMutableContract(mutableContract2, 2),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 9).between(OWNER, mutableContract),
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract2),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 10).between(OWNER, mutableContract2))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1),
+                    getAccountBalance(mutableContract2).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract2).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
     }
 }

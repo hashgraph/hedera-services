@@ -63,6 +63,7 @@ public class TokenAirdropBase {
     protected static final String ASSOCIATED_RECEIVER = "associatedReceiver";
     // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
+    protected static final String FUNGIBLE_TOKEN2 = "fungibleToken2";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     protected static final String NFT_FOR_CONTRACT_TESTS = "nonFungibleTokens";
     // tokens with custom fees
@@ -106,6 +107,10 @@ public class TokenAirdropBase {
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(1000L),
+                tokenCreate(FUNGIBLE_TOKEN2)
+                        .treasury(OWNER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L),
                 tokenCreate("dummy").treasury(OWNER).tokenType(FUNGIBLE_COMMON).initialSupply(100L),
                 newKeyNamed(nftSupplyKey),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -132,7 +137,12 @@ public class TokenAirdropBase {
                         .supplyKey(nftSupplyKey),
                 mintToken(
                         NFT_FOR_CONTRACT_TESTS,
-                        IntStream.range(1, 10)
+                        IntStream.range(0, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
+                mintToken(
+                        NFT_FOR_CONTRACT_TESTS,
+                        IntStream.range(10, 20)
                                 .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
                                 .toList()),
                 // all kind of receivers
