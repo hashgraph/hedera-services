@@ -1924,10 +1924,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("empty transfer list should fail")
         final Stream<DynamicTest> emptyTransferListFails() {
-            return hapiTest(tokenAirdrop()
-                    .payingWith(OWNER)
-                    .hasPrecheckFrom(EMPTY_TOKEN_TRANSFER_BODY)
-                    .via("airdropToContract"));
+            return hapiTest(tokenAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_TOKEN_TRANSFER_BODY));
         }
     }
 }

@@ -548,6 +548,14 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("empty cancel should fail")
+    final Stream<DynamicTest> emptyCancelFails() {
+        return hapiTest(
+                cryptoCreate(OWNER),
+                tokenCancelAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_PENDING_AIRDROP_ID_LIST));
+    }
+
+    @HapiTest
     @DisplayName("when treasury is changed")
     final Stream<DynamicTest> treasuryIsChanged() {
         final var account = "account";

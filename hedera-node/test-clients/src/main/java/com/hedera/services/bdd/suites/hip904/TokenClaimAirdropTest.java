@@ -1184,6 +1184,14 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .hasKnownStatus(INVALID_SIGNATURE)));
     }
 
+    @HapiTest
+    @DisplayName("empty claim should fail")
+    final Stream<DynamicTest> emptyClaimFails() {
+        return hapiTest(
+                cryptoCreate(OWNER),
+                tokenClaimAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_PENDING_AIRDROP_ID_LIST));
+    }
+
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {
         return tokenCreate(tokenName)
                 .treasury(treasury)
