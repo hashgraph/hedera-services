@@ -47,6 +47,7 @@ class UpdateDecoderTest {
 
     private final UpdateDecoder subject = new UpdateDecoder();
     private final String newName = "NEW NAME";
+    private final String metadata = "LionTigerBear";
     private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private final Tuple expiry = Tuple.of(EXPIRY_TIMESTAMP, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
@@ -62,6 +63,21 @@ class UpdateDecoderTest {
             new Tuple[] {},
             // Expiry
             expiry);
+
+    private final Tuple hederaTokenWithMetadata = Tuple.of(
+            newName,
+            "symbol",
+            OWNER_HEADLONG_ADDRESS,
+            "memo",
+            true,
+            1000L,
+            false,
+            // TokenKey
+            new Tuple[] {},
+            // Expiry
+            expiry,
+            // Metadata,
+            metadata.getBytes());
 
     @BeforeEach
     void setUp() {
@@ -100,6 +116,18 @@ class UpdateDecoderTest {
         final var body = subject.decodeTokenUpdateV3(attempt);
         final var tokenUpdate = body.tokenUpdateOrThrow();
         assertEquals(tokenUpdate.name(), newName);
+    }
+
+    @Test
+    void updateWithMetadataWorks() {
+        final var encoded =
+                Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA.encodeCallWithArgs(
+                        FUNGIBLE_TOKEN_HEADLONG_ADDRESS, hederaTokenWithMetadata));
+        given(attempt.input()).willReturn(encoded);
+
+        final var body = subject.decodeTokenUpdateWithMetadata(attempt);
+        final var tokenUpdate = body.tokenUpdateOrThrow();
+        assertEquals(tokenUpdate.metadata().asUtf8String(), metadata);
     }
 
     @Test

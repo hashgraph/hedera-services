@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -63,11 +64,12 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
+        final boolean metadataSupport =
+                attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
+
         return attempt.isSelector(
-                TOKEN_UPDATE_INFO_FUNCTION_V1,
-                TOKEN_UPDATE_INFO_FUNCTION_V2,
-                TOKEN_UPDATE_INFO_FUNCTION_V3,
-                TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA);
+                        TOKEN_UPDATE_INFO_FUNCTION_V1, TOKEN_UPDATE_INFO_FUNCTION_V2, TOKEN_UPDATE_INFO_FUNCTION_V3)
+                || (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA) && metadataSupport);
     }
 
     @Override

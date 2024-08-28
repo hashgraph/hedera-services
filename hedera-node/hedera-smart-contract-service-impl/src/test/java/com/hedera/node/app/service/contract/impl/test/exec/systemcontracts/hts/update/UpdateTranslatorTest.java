@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPLICITLY_IMMUTABLE_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
@@ -196,6 +197,18 @@ class UpdateTranslatorTest extends CallTestBase {
     void matchesUpdateV3Test() {
         attempt = prepareHtsAttemptWithSelector(
                 TOKEN_UPDATE_INFO_FUNCTION_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesUpdateMetadataTest() {
+        attempt = prepareHtsAttemptWithSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA,
                 subject,
                 enhancement,
                 addressIdConverter,

@@ -81,6 +81,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
+        @ConfigProperty(value = "systemContract.metadataKeyAndFieldSupport.enabled") @NetworkProperty
+                boolean metadataKeyAndFieldEnabled,
         @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty

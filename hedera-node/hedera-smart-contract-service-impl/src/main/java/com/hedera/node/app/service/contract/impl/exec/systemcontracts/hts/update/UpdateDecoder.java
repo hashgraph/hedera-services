@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -106,7 +107,7 @@ public class UpdateDecoder {
     public @Nullable TransactionBody decodeTokenUpdateV1(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V1.decodeCall(
                 attempt.input().toArrayUnsafe());
-        return decodeTokenUpdate(call, attempt.addressIdConverter());
+        return decodeTokenUpdate(call, attempt.addressIdConverter(), false);
     }
 
     /**
@@ -118,7 +119,7 @@ public class UpdateDecoder {
     public @Nullable TransactionBody decodeTokenUpdateV2(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
                 attempt.input().toArrayUnsafe());
-        return decodeTokenUpdate(call, attempt.addressIdConverter());
+        return decodeTokenUpdate(call, attempt.addressIdConverter(), false);
     }
 
     /**
@@ -130,7 +131,7 @@ public class UpdateDecoder {
     public @Nullable TransactionBody decodeTokenUpdateWithMetadata(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA.decodeCall(
                 attempt.input().toArrayUnsafe());
-        return decodeTokenUpdate(call, attempt.addressIdConverter());
+        return decodeTokenUpdate(call, attempt.addressIdConverter(), true);
     }
 
     /**
@@ -142,7 +143,7 @@ public class UpdateDecoder {
     public @Nullable TransactionBody decodeTokenUpdateV3(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
                 attempt.input().toArrayUnsafe());
-        return decodeTokenUpdate(call, attempt.addressIdConverter());
+        return decodeTokenUpdate(call, attempt.addressIdConverter(), false);
     }
 
     /**
@@ -170,7 +171,9 @@ public class UpdateDecoder {
     }
 
     private @Nullable TransactionBody decodeTokenUpdate(
-            @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final Tuple call,
+            @NonNull final AddressIdConverter addressIdConverter,
+            final boolean supportsMetadata) {
         final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
 
@@ -209,12 +212,12 @@ public class UpdateDecoder {
                 && tokenExpiry.autoRenewPeriod().seconds() != 0) {
             txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
         }
-        if (tokenMetadata != null) {
+        if (tokenMetadata != null && supportsMetadata) {
             txnBodyBuilder.metadata(tokenMetadata);
         }
 
         try {
-            return bodyWith(tokenKeys, txnBodyBuilder);
+            return bodyWith(tokenKeys, txnBodyBuilder, supportsMetadata);
         } catch (IllegalArgumentException ignore) {
             return null;
         }
@@ -222,6 +225,8 @@ public class UpdateDecoder {
 
     @Nullable
     public TransactionBody decodeTokenUpdateKeys(@NonNull final HtsCallAttempt attempt) {
+        final boolean metadataSupport =
+                attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
         final var call = UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.decodeCall(
                 attempt.input().toArrayUnsafe());
 
@@ -233,14 +238,16 @@ public class UpdateDecoder {
         txnBodyBuilder.token(tokenId);
 
         try {
-            return bodyWith(tokenKeys, txnBodyBuilder);
+            return bodyWith(tokenKeys, txnBodyBuilder, metadataSupport);
         } catch (IllegalArgumentException ignore) {
             return null;
         }
     }
 
     private TransactionBody bodyWith(
-            final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
+            final List<TokenKeyWrapper> tokenKeys,
+            final TokenUpdateTransactionBody.Builder builder,
+            final boolean supportMetadata) {
         tokenKeys.forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
             if (key == Key.DEFAULT) {
@@ -266,6 +273,9 @@ public class UpdateDecoder {
             }
             if (tokenKeyWrapper.isUsedForPauseKey()) {
                 builder.pauseKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForMetadataKey() && supportMetadata) {
+                builder.metadataKey(key);
             }
         });
         return TransactionBody.newBuilder().tokenUpdate(builder).build();
