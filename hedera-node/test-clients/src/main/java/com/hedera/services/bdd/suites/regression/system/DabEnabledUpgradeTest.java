@@ -147,7 +147,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
         @HapiTest
         @Order(0)
-        @DisplayName("exports an address book without node1 and pays its staker no rewards")
+        @DisplayName("exports an address book without node1 and pays its stake no rewards")
         final Stream<DynamicTest> removedNodeTest() {
             return hapiTest(
                     prepareFakeUpgrade(),
@@ -172,6 +172,31 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
     @Nested
     @Order(2)
+    @DisplayName("after removing last node 3")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class AfterRemovingNode3 {
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.doAdhoc(nodeDelete("3"));
+        }
+
+        @HapiTest
+        @Order(0)
+        @DisplayName("exports an address book without node 3 and pays its stake no rewards")
+        final Stream<DynamicTest> removedNodeTest() {
+            return hapiTest(
+                    prepareFakeUpgrade(),
+                    validateUpgradeAddressBooks(
+                            addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
+                    waitUntilStartOfNextStakingPeriod(1),
+                    touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
+                    touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
+        }
+    }
+
+    @Nested
+    @Order(3)
     @DisplayName("after adding node4")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AfterAddingNode4 {

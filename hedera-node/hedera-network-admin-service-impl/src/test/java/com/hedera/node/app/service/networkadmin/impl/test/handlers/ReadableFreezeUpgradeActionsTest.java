@@ -228,6 +228,21 @@ class ReadableFreezeUpgradeActionsTest {
     }
 
     @Test
+    void preparesForUpgradeWithDAB2() throws IOException, CertificateException {
+        setupNoiseFiles();
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
+        setupNodes2();
+
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
+        subject.extractSoftwareUpgrade(realArchive).join();
+
+        assertDABFilesCreated2(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
+    }
+
+    @Test
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
 
@@ -501,6 +516,131 @@ class ReadableFreezeUpgradeActionsTest {
             assertArrayEquals(certificate.getEncoded(), pemFile1Bytes);
             assertArrayEquals(certificate.getEncoded(), pemFile2Bytes);
             assertArrayEquals(certificate.getEncoded(), pemFile4Bytes);
+        }
+    }
+
+    private void setupNodes2() throws CertificateException, IOException {
+        final var pemFileName = "s-public-node1.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        certificate = readCertificatePemFile(pemFilePath);
+
+        final var node1 = new Node(
+                0,
+                asAccount(3),
+                "node2",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
+                        V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc1CertificateHash"),
+                2,
+                false,
+                A_COMPLEX_KEY);
+        final var node2 = new Node(
+                1,
+                asAccount(4),
+                "node3",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc2CertificateHash"),
+                4,
+                false,
+                A_COMPLEX_KEY);
+        final var node3 = new Node(
+                2,
+                asAccount(6),
+                "node4",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc3CertificateHash"),
+                1,
+                false,
+                A_COMPLEX_KEY);
+        final var node4 = new Node(
+                3,
+                asAccount(8),
+                "node5",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.4", 1445),
+                        V053AddressBookSchema.endpointFor("test.domain.com", 50225),
+                        V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc5CertificateHash"),
+                8,
+                true,
+                A_COMPLEX_KEY);
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
+                .value(new EntityNumber(3), node4)
+                .value(new EntityNumber(1), node2)
+                .value(new EntityNumber(2), node3)
+                .value(new EntityNumber(0), node1)
+                .build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+        subject = new FreezeUpgradeActions(
+                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+        var stakingNodeInfo1 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo2 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo3 = mock(StakingNodeInfo.class);
+        given(stakingNodeInfo1.weight()).willReturn(5);
+        given(stakingNodeInfo2.weight()).willReturn(10);
+        given(stakingNodeInfo3.weight()).willReturn(20);
+        given(stakingInfoStore.get(0)).willReturn(stakingNodeInfo1);
+        given(stakingInfoStore.get(1)).willReturn(stakingNodeInfo2);
+        given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo3);
+    }
+
+    private void assertDABFilesCreated2(final String file, final Path baseDir)
+            throws IOException, CertificateException {
+        final Path filePath = baseDir.resolve(file);
+        final Path configFilePath = baseDir.resolve("config.txt");
+        assertTrue(configFilePath.toFile().exists());
+        final var configFile = Files.readString(configFilePath);
+
+        final Path pemFilePath1 = baseDir.resolve("s-public-node1.pem");
+        assertTrue(pemFilePath1.toFile().exists());
+        final Path pemFilePath2 = baseDir.resolve("s-public-node2.pem");
+        assertTrue(pemFilePath2.toFile().exists());
+        final Path pemFilePath3 = baseDir.resolve("s-public-node3.pem");
+        assertTrue(pemFilePath3.toFile().exists());
+        final Path pemFilePath4 = baseDir.resolve("s-public-node4.pem");
+        assertFalse(pemFilePath4.toFile().exists());
+        final var pemFile1 = readCertificatePemFile(pemFilePath1);
+        final var pemFile2 = readCertificatePemFile(pemFilePath2);
+        final var pemFile3 = readCertificatePemFile(pemFilePath3);
+
+        final String configContents = new StringBuilder()
+                .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 0.0.6\n")
+                .append("nextNodeId, 4")
+                .toString();
+        final byte[] pemFile1Bytes = pemFile1.getEncoded();
+        final byte[] pemFile2Bytes = pemFile2.getEncoded();
+        final byte[] pemFile3Bytes = pemFile3.getEncoded();
+
+        if (file.equals(EXEC_IMMEDIATE_MARKER)) {
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("About to unzip ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished unzipping ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished generating config.txt and pem files into " + baseDir)));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
+            assertThat(configFile).isEqualTo(configContents);
+            assertArrayEquals(certificate.getEncoded(), pemFile1Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile2Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile3Bytes);
         }
     }
 }
