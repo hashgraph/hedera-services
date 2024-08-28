@@ -489,9 +489,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 case BLOCKS -> requireNonNull(blockItems).addAll(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
-                    records.add(pairedBuilder.recordBuilder().build());
+                    records.add(pairedBuilder.recordStreamBuilder().build());
                     requireNonNull(blockItems)
-                            .addAll(pairedBuilder.ioBlockItemsBuilder().build());
+                            .addAll(pairedBuilder.blockStreamBuilder().build());
                 }
             }
         }

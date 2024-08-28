@@ -110,13 +110,13 @@ public class PairedStreamBuilder
                 NodeCreateStreamBuilder,
                 TokenAirdropStreamBuilder {
     private final BlockStreamBuilder blockStreamBuilder;
-    private final RecordStreamBuilder recordBuilder;
+    private final RecordStreamBuilder recordStreamBuilder;
 
     public PairedStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
-        recordBuilder = new RecordStreamBuilder(reversingBehavior, customizer, category);
+        recordStreamBuilder = new RecordStreamBuilder(reversingBehavior, customizer, category);
         blockStreamBuilder = new BlockStreamBuilder(reversingBehavior, customizer, category);
     }
 
@@ -126,24 +126,24 @@ public class PairedStreamBuilder
         return this;
     }
 
-    public BlockStreamBuilder ioBlockItemsBuilder() {
+    public BlockStreamBuilder blockStreamBuilder() {
         return blockStreamBuilder;
     }
 
-    public RecordStreamBuilder recordBuilder() {
-        return recordBuilder;
+    public RecordStreamBuilder recordStreamBuilder() {
+        return recordStreamBuilder;
     }
 
     @Override
     public PairedStreamBuilder transaction(@NonNull Transaction transaction) {
-        recordBuilder.transaction(transaction);
+        recordStreamBuilder.transaction(transaction);
         blockStreamBuilder.transaction(transaction);
         return this;
     }
 
     @Override
     public PairedStreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
-        recordBuilder.serializedTransaction(serializedTransaction);
+        recordStreamBuilder.serializedTransaction(serializedTransaction);
         blockStreamBuilder.serializedTransaction(serializedTransaction);
         return this;
     }
@@ -155,112 +155,112 @@ public class PairedStreamBuilder
 
     @Override
     public Transaction transaction() {
-        return recordBuilder.transaction();
+        return recordStreamBuilder.transaction();
     }
 
     @Override
     public TokenAirdropStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
-        recordBuilder.addPendingAirdrop(pendingAirdropRecord);
+        recordStreamBuilder.addPendingAirdrop(pendingAirdropRecord);
         blockStreamBuilder.addPendingAirdrop(pendingAirdropRecord);
         return this;
     }
 
     @Override
     public Set<AccountID> explicitRewardSituationIds() {
-        return recordBuilder.explicitRewardSituationIds();
+        return recordStreamBuilder.explicitRewardSituationIds();
     }
 
     @Override
     public List<AccountAmount> getPaidStakingRewards() {
-        return recordBuilder.getPaidStakingRewards();
+        return recordStreamBuilder.getPaidStakingRewards();
     }
 
     @Override
     public boolean hasContractResult() {
-        return recordBuilder.hasContractResult();
+        return recordStreamBuilder.hasContractResult();
     }
 
     @Override
     public long getGasUsedForContractTxn() {
-        return recordBuilder.getGasUsedForContractTxn();
+        return recordStreamBuilder.getGasUsedForContractTxn();
     }
 
     @NonNull
     @Override
     public ResponseCodeEnum status() {
-        return recordBuilder.status();
+        return recordStreamBuilder.status();
     }
 
     @NonNull
     @Override
     public TransactionBody transactionBody() {
-        return recordBuilder.transactionBody();
+        return recordStreamBuilder.transactionBody();
     }
 
     @Override
     public long transactionFee() {
-        return recordBuilder.transactionFee();
+        return recordStreamBuilder.transactionFee();
     }
 
     @Override
     public HandleContext.TransactionCategory category() {
-        return recordBuilder.category();
+        return recordStreamBuilder.category();
     }
 
     @Override
     public ReversingBehavior reversingBehavior() {
-        return recordBuilder.reversingBehavior();
+        return recordStreamBuilder.reversingBehavior();
     }
 
     @Override
     public void nullOutSideEffectFields() {
-        recordBuilder.nullOutSideEffectFields();
+        recordStreamBuilder.nullOutSideEffectFields();
         blockStreamBuilder.nullOutSideEffectFields();
     }
 
     @Override
     public StreamBuilder syncBodyIdFromRecordId() {
-        recordBuilder.syncBodyIdFromRecordId();
+        recordStreamBuilder.syncBodyIdFromRecordId();
         blockStreamBuilder.syncBodyIdFromRecordId();
         return this;
     }
 
     @Override
     public StreamBuilder consensusTimestamp(@NonNull final Instant now) {
-        recordBuilder.consensusTimestamp(now);
+        recordStreamBuilder.consensusTimestamp(now);
         blockStreamBuilder.consensusTimestamp(now);
         return this;
     }
 
     @Override
     public TransactionID transactionID() {
-        return recordBuilder.transactionID();
+        return recordStreamBuilder.transactionID();
     }
 
     @Override
     public StreamBuilder transactionID(@NonNull final TransactionID transactionID) {
-        recordBuilder.transactionID(transactionID);
+        recordStreamBuilder.transactionID(transactionID);
         blockStreamBuilder.transactionID(transactionID);
         return this;
     }
 
     @Override
     public StreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
-        recordBuilder.parentConsensus(parentConsensus);
+        recordStreamBuilder.parentConsensus(parentConsensus);
         blockStreamBuilder.parentConsensus(parentConsensus);
         return this;
     }
 
     @Override
     public StreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
-        recordBuilder.transactionBytes(transactionBytes);
+        recordStreamBuilder.transactionBytes(transactionBytes);
         blockStreamBuilder.transactionBytes(transactionBytes);
         return this;
     }
 
     @Override
     public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
-        recordBuilder.exchangeRate(exchangeRate);
+        recordStreamBuilder.exchangeRate(exchangeRate);
         blockStreamBuilder.exchangeRate(exchangeRate);
         return this;
     }
@@ -273,7 +273,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public NodeCreateStreamBuilder nodeID(long nodeID) {
-        recordBuilder.nodeID(nodeID);
+        recordStreamBuilder.nodeID(nodeID);
         blockStreamBuilder.nodeID(nodeID);
         return this;
     }
@@ -281,7 +281,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ConsensusCreateTopicStreamBuilder topicID(@NonNull TopicID topicID) {
-        recordBuilder.topicID(topicID);
+        recordStreamBuilder.topicID(topicID);
         blockStreamBuilder.topicID(topicID);
         return this;
     }
@@ -289,7 +289,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ConsensusSubmitMessageStreamBuilder topicSequenceNumber(long topicSequenceNumber) {
-        recordBuilder.topicSequenceNumber(topicSequenceNumber);
+        recordStreamBuilder.topicSequenceNumber(topicSequenceNumber);
         blockStreamBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
     }
@@ -297,7 +297,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ConsensusSubmitMessageStreamBuilder topicRunningHash(@NonNull Bytes topicRunningHash) {
-        recordBuilder.topicRunningHash(topicRunningHash);
+        recordStreamBuilder.topicRunningHash(topicRunningHash);
         blockStreamBuilder.topicRunningHash(topicRunningHash);
         return this;
     }
@@ -305,7 +305,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ConsensusSubmitMessageStreamBuilder topicRunningHashVersion(long topicRunningHashVersion) {
-        recordBuilder.topicRunningHashVersion(topicRunningHashVersion);
+        recordStreamBuilder.topicRunningHashVersion(topicRunningHashVersion);
         blockStreamBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
     }
@@ -313,23 +313,23 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public List<AssessedCustomFee> getAssessedCustomFees() {
-        return recordBuilder.getAssessedCustomFees();
+        return recordStreamBuilder.getAssessedCustomFees();
     }
 
     @Override
     public ContractFunctionResult contractFunctionResult() {
-        return recordBuilder.contractFunctionResult();
+        return recordStreamBuilder.contractFunctionResult();
     }
 
     @Override
     public List<Long> serialNumbers() {
-        return recordBuilder.serialNumbers();
+        return recordStreamBuilder.serialNumbers();
     }
 
     @NonNull
     @Override
     public PairedStreamBuilder status(@NonNull ResponseCodeEnum status) {
-        recordBuilder.status(status);
+        recordStreamBuilder.status(status);
         blockStreamBuilder.status(status);
         return this;
     }
@@ -337,7 +337,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder contractID(@Nullable ContractID contractId) {
-        recordBuilder.contractID(contractId);
+        recordStreamBuilder.contractID(contractId);
         blockStreamBuilder.contractID(contractId);
         return this;
     }
@@ -345,7 +345,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder contractCreateResult(@Nullable ContractFunctionResult result) {
-        recordBuilder.contractCreateResult(result);
+        recordStreamBuilder.contractCreateResult(result);
         blockStreamBuilder.contractCreateResult(result);
         return this;
     }
@@ -353,14 +353,14 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public EthereumTransactionStreamBuilder ethereumHash(@NonNull Bytes ethereumHash) {
-        recordBuilder.ethereumHash(ethereumHash);
+        recordStreamBuilder.ethereumHash(ethereumHash);
         blockStreamBuilder.ethereumHash(ethereumHash);
         return this;
     }
 
     @Override
     public void trackExplicitRewardSituation(@NonNull AccountID accountId) {
-        recordBuilder.trackExplicitRewardSituation(accountId);
+        recordStreamBuilder.trackExplicitRewardSituation(accountId);
         blockStreamBuilder.trackExplicitRewardSituation(accountId);
     }
 
@@ -368,7 +368,7 @@ public class PairedStreamBuilder
     @Override
     public ContractOperationStreamBuilder addContractActions(
             @NonNull ContractActions contractActions, boolean isMigration) {
-        recordBuilder.addContractActions(contractActions, isMigration);
+        recordStreamBuilder.addContractActions(contractActions, isMigration);
         blockStreamBuilder.addContractActions(contractActions, isMigration);
         return this;
     }
@@ -377,7 +377,7 @@ public class PairedStreamBuilder
     @Override
     public ContractOperationStreamBuilder addContractBytecode(
             @NonNull ContractBytecode contractBytecode, boolean isMigration) {
-        recordBuilder.addContractBytecode(contractBytecode, isMigration);
+        recordStreamBuilder.addContractBytecode(contractBytecode, isMigration);
         blockStreamBuilder.addContractBytecode(contractBytecode, isMigration);
         return this;
     }
@@ -386,7 +386,7 @@ public class PairedStreamBuilder
     @Override
     public ContractOperationStreamBuilder addContractStateChanges(
             @NonNull ContractStateChanges contractStateChanges, boolean isMigration) {
-        recordBuilder.addContractStateChanges(contractStateChanges, isMigration);
+        recordStreamBuilder.addContractStateChanges(contractStateChanges, isMigration);
         blockStreamBuilder.addContractStateChanges(contractStateChanges, isMigration);
         return this;
     }
@@ -394,7 +394,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public CreateFileStreamBuilder fileID(@NonNull FileID fileID) {
-        recordBuilder.fileID(fileID);
+        recordStreamBuilder.fileID(fileID);
         blockStreamBuilder.fileID(fileID);
         return this;
     }
@@ -402,7 +402,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ScheduleStreamBuilder scheduleRef(ScheduleID scheduleRef) {
-        recordBuilder.scheduleRef(scheduleRef);
+        recordStreamBuilder.scheduleRef(scheduleRef);
         blockStreamBuilder.scheduleRef(scheduleRef);
         return this;
     }
@@ -410,7 +410,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ScheduleStreamBuilder scheduleID(ScheduleID scheduleID) {
-        recordBuilder.scheduleID(scheduleID);
+        recordStreamBuilder.scheduleID(scheduleID);
         blockStreamBuilder.scheduleID(scheduleID);
         return this;
     }
@@ -418,25 +418,25 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public ScheduleStreamBuilder scheduledTransactionID(TransactionID scheduledTransactionID) {
-        recordBuilder.scheduledTransactionID(scheduledTransactionID);
+        recordStreamBuilder.scheduledTransactionID(scheduledTransactionID);
         blockStreamBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
     }
 
     @Override
     public TransferList transferList() {
-        return recordBuilder.transferList();
+        return recordStreamBuilder.transferList();
     }
 
     @Override
     public List<TokenTransferList> tokenTransferLists() {
-        return recordBuilder.tokenTransferLists();
+        return recordStreamBuilder.tokenTransferLists();
     }
 
     @NonNull
     @Override
     public PairedStreamBuilder accountID(@NonNull AccountID accountID) {
-        recordBuilder.accountID(accountID);
+        recordStreamBuilder.accountID(accountID);
         blockStreamBuilder.accountID(accountID);
         return this;
     }
@@ -444,7 +444,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public CryptoCreateStreamBuilder evmAddress(@NonNull Bytes evmAddress) {
-        recordBuilder.evmAddress(evmAddress);
+        recordStreamBuilder.evmAddress(evmAddress);
         blockStreamBuilder.evmAddress(evmAddress);
         return this;
     }
@@ -452,7 +452,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder transactionFee(@NonNull long transactionFee) {
-        recordBuilder.transactionFee(transactionFee);
+        recordStreamBuilder.transactionFee(transactionFee);
         blockStreamBuilder.transactionFee(transactionFee);
         return this;
     }
@@ -460,7 +460,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder memo(@NonNull String memo) {
-        recordBuilder.memo(memo);
+        recordStreamBuilder.memo(memo);
         blockStreamBuilder.memo(memo);
         return this;
     }
@@ -468,7 +468,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public CryptoTransferStreamBuilder transferList(@NonNull TransferList hbarTransfers) {
-        recordBuilder.transferList(hbarTransfers);
+        recordStreamBuilder.transferList(hbarTransfers);
         blockStreamBuilder.transferList(hbarTransfers);
         return this;
     }
@@ -476,7 +476,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public CryptoTransferStreamBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
-        recordBuilder.tokenTransferLists(tokenTransferLists);
+        recordStreamBuilder.tokenTransferLists(tokenTransferLists);
         blockStreamBuilder.tokenTransferLists(tokenTransferLists);
         return this;
     }
@@ -484,21 +484,21 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public CryptoTransferStreamBuilder assessedCustomFees(@NonNull List<AssessedCustomFee> assessedCustomFees) {
-        recordBuilder.assessedCustomFees(assessedCustomFees);
+        recordStreamBuilder.assessedCustomFees(assessedCustomFees);
         blockStreamBuilder.assessedCustomFees(assessedCustomFees);
         return this;
     }
 
     @Override
     public CryptoTransferStreamBuilder paidStakingRewards(@NonNull List<AccountAmount> paidStakingRewards) {
-        recordBuilder.paidStakingRewards(paidStakingRewards);
+        recordStreamBuilder.paidStakingRewards(paidStakingRewards);
         blockStreamBuilder.paidStakingRewards(paidStakingRewards);
         return this;
     }
 
     @Override
     public PairedStreamBuilder addAutomaticTokenAssociation(@NonNull TokenAssociation tokenAssociation) {
-        recordBuilder.addAutomaticTokenAssociation(tokenAssociation);
+        recordStreamBuilder.addAutomaticTokenAssociation(tokenAssociation);
         blockStreamBuilder.addAutomaticTokenAssociation(tokenAssociation);
         return this;
     }
@@ -506,7 +506,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder contractCallResult(@Nullable ContractFunctionResult result) {
-        recordBuilder.contractCallResult(result);
+        recordStreamBuilder.contractCallResult(result);
         blockStreamBuilder.contractCallResult(result);
         return this;
     }
@@ -514,39 +514,39 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public TokenCreateStreamBuilder tokenID(@NonNull TokenID tokenID) {
-        recordBuilder.tokenID(tokenID);
+        recordStreamBuilder.tokenID(tokenID);
         blockStreamBuilder.tokenID(tokenID);
         return this;
     }
 
     @Override
     public TokenID tokenID() {
-        return recordBuilder.tokenID();
+        return recordStreamBuilder.tokenID();
     }
 
     @NonNull
     @Override
     public PairedStreamBuilder serialNumbers(@NonNull List<Long> serialNumbers) {
-        recordBuilder.serialNumbers(serialNumbers);
+        recordStreamBuilder.serialNumbers(serialNumbers);
         blockStreamBuilder.serialNumbers(serialNumbers);
         return this;
     }
 
     @Override
     public PairedStreamBuilder newTotalSupply(long newTotalSupply) {
-        recordBuilder.newTotalSupply(newTotalSupply);
+        recordStreamBuilder.newTotalSupply(newTotalSupply);
         blockStreamBuilder.newTotalSupply(newTotalSupply);
         return this;
     }
 
     @Override
     public long getNewTotalSupply() {
-        return recordBuilder.getNewTotalSupply();
+        return recordStreamBuilder.getNewTotalSupply();
     }
 
     @Override
     public TokenBaseStreamBuilder tokenType(@NonNull TokenType tokenType) {
-        recordBuilder.tokenType(tokenType);
+        recordStreamBuilder.tokenType(tokenType);
         blockStreamBuilder.tokenType(tokenType);
         return this;
     }
@@ -554,7 +554,7 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PrngStreamBuilder entropyNumber(int num) {
-        recordBuilder.entropyNumber(num);
+        recordStreamBuilder.entropyNumber(num);
         blockStreamBuilder.entropyNumber(num);
         return this;
     }
@@ -562,26 +562,26 @@ public class PairedStreamBuilder
     @NonNull
     @Override
     public PairedStreamBuilder entropyBytes(@NonNull Bytes prngBytes) {
-        recordBuilder.entropyBytes(prngBytes);
+        recordStreamBuilder.entropyBytes(prngBytes);
         blockStreamBuilder.entropyBytes(prngBytes);
         return this;
     }
 
     @Override
     public int getNumberOfDeletedAccounts() {
-        return recordBuilder.getNumberOfDeletedAccounts();
+        return recordStreamBuilder.getNumberOfDeletedAccounts();
     }
 
     @Nullable
     @Override
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull AccountID deletedAccountID) {
-        return recordBuilder.getDeletedAccountBeneficiaryFor(deletedAccountID);
+        return recordStreamBuilder.getDeletedAccountBeneficiaryFor(deletedAccountID);
     }
 
     @Override
     public void addBeneficiaryForDeletedAccount(
             @NonNull AccountID deletedAccountID, @NonNull AccountID beneficiaryForDeletedAccount) {
-        recordBuilder.addBeneficiaryForDeletedAccount(deletedAccountID, beneficiaryForDeletedAccount);
+        recordStreamBuilder.addBeneficiaryForDeletedAccount(deletedAccountID, beneficiaryForDeletedAccount);
         blockStreamBuilder.addBeneficiaryForDeletedAccount(deletedAccountID, beneficiaryForDeletedAccount);
     }
 }

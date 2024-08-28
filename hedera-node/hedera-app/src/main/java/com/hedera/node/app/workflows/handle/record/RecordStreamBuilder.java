@@ -147,9 +147,6 @@ public class RecordStreamBuilder
     // base transaction data
     private Transaction transaction;
 
-    @Nullable
-    private Bytes serializedTransaction;
-
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -362,7 +359,6 @@ public class RecordStreamBuilder
 
     @Override
     public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
-        this.serializedTransaction = serializedTransaction;
         return this;
     }
 
