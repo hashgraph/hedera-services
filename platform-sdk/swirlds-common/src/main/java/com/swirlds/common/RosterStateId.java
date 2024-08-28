@@ -23,7 +23,7 @@ public final class RosterStateId {
     private RosterStateId() {}
 
     /** The name of a service that owns Roster entities in state. */
-    public static final String SCHEMA_NAME = "RosterServiceImpl";
+    public static final String NAME = "RosterService";
     /** The name of the RosterMap. */
     public static final String ROSTER_KEY = "ROSTER";
     /** The name of the RosterState. */

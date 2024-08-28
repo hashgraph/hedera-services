@@ -34,7 +34,7 @@ public class RosterServiceImpl implements Service {
     @NonNull
     @Override
     public String getServiceName() {
-        return RosterStateId.SCHEMA_NAME;
+        return RosterStateId.NAME;
     }
 
     @Override

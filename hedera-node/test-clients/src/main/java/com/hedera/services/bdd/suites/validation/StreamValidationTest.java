@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag("STREAM_VALIDATION")
-@Order(Integer.MAX_VALUE - 1)
+@Order(Integer.MAX_VALUE)
 public class StreamValidationTest {
     @LeakyHapiTest
     final Stream<DynamicTest> streamsAreValid() {

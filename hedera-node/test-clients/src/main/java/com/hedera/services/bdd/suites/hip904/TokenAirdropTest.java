@@ -92,22 +92,29 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
+import com.hedera.services.bdd.junit.EmbeddedReason;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.EmbeddedVerbs;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
@@ -658,6 +665,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
     // custom fees
     @Nested
     @DisplayName("with custom fees for")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AirdropTokensWithCustomFees {
         private static final long HBAR_FEE = 1000L;
         private static final long HTS_FEE = 100L;
@@ -669,6 +677,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
+        @Order(1)
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
             final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
@@ -719,6 +728,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("NFT with 2 layers fixed Hts fee")
+        @Order(2)
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
@@ -756,6 +766,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee and net of transfers true")
+        @Order(3)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersTre() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
@@ -778,6 +789,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false")
+        @Order(4)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalse() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
@@ -798,6 +810,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false, in pending state")
+        @Order(5)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseInPendingState() {
             var sender = "sender";
             return defaultHapiSpec("the value should be reduced")
@@ -823,6 +836,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("FT with fractional fee with netOfTransfers=false and dissociated collector")
+        @Order(6)
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
             var sender = "sender";
             return defaultHapiSpec("should have 2 pending airdrops and the value should be reduced")
@@ -850,6 +864,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
 
         @HapiTest
         @DisplayName("NFT with royalty fee")
+        @Order(7)
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
             return defaultHapiSpec("should fail - TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY")
                     .given()
@@ -1797,6 +1812,49 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .payingWith(OWNER)
                     .hasKnownStatus(INVALID_ACCOUNT_ID));
         }
+    }
+
+    @EmbeddedHapiTest(EmbeddedReason.NEEDS_STATE_ACCESS)
+    @DisplayName("verify that two fungible tokens airdrops combined into one pending airdrop")
+    final Stream<DynamicTest> twoFungibleTokenCombinedIntoOneAirdrop() {
+        final String ALICE = "alice";
+        final String BOB = "bob";
+        final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_A)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(100L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_A).between(ALICE, BOB)).signedByPayerAnd(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_A).between(ALICE, BOB)).signedByPayerAnd(ALICE),
+                EmbeddedVerbs.viewAccountPendingAirdrop(
+                        FUNGIBLE_TOKEN_A,
+                        ALICE,
+                        BOB,
+                        pendingAirdrop -> Assertions.assertEquals(
+                                2, pendingAirdrop.pendingAirdropValueOrThrow().amount())));
+    }
+
+    @HapiTest
+    @DisplayName("max supply hit - max long value")
+    final Stream<DynamicTest> fungibleTokenMaxSupplyHit() {
+        final String ALICE = "alice";
+        final String BOB = "bob";
+        final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_A)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE),
+                tokenAirdrop(moving(Long.MAX_VALUE, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                        .signedByPayerAnd(ALICE),
+                tokenAirdrop(moving(Long.MAX_VALUE, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                        .signedByPayerAnd(ALICE)
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
     }
 
     @Nested

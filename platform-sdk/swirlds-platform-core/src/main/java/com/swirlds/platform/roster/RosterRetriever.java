@@ -65,7 +65,7 @@ public final class RosterRetriever {
         final Bytes activeRosterHash = getActiveRosterHash(state);
         if (activeRosterHash != null) {
             final ReadableKVState<ProtoBytes, Roster> rosterMap =
-                    state.getReadableStates(RosterStateId.SCHEMA_NAME).get(RosterStateId.ROSTER_KEY);
+                    state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY);
             final Roster roster = rosterMap.get(
                     ProtoBytes.newBuilder().value(activeRosterHash).build());
             if (roster != null) {
@@ -91,7 +91,7 @@ public final class RosterRetriever {
     public static Bytes getActiveRosterHash(@NonNull final State state) {
         final long round = getRound(state);
         final ReadableSingletonState<RosterState> rosterState =
-                state.getReadableStates(RosterStateId.SCHEMA_NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
+                state.getReadableStates(RosterStateId.NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
         final List<RoundRosterPair> roundRosterPairs = rosterState.get().roundRosterPairs();
         for (int i = 0; i < roundRosterPairs.size(); i++) {

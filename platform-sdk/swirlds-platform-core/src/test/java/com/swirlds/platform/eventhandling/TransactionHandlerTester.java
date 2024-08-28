@@ -42,6 +42,7 @@ import java.util.List;
  */
 public class TransactionHandlerTester {
     private final PlatformState platformState;
+    private final SwirldStateManager swirldStateManager;
     private final DefaultTransactionHandler defaultTransactionHandler;
     private final List<PlatformStatusAction> submittedActions = new ArrayList<>();
     private final List<Round> handledRounds = new ArrayList<>();
@@ -69,7 +70,7 @@ public class TransactionHandlerTester {
                 .when(swirldState)
                 .handleConsensusRound(any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
-        final SwirldStateManager swirldStateManager = new SwirldStateManager(
+        swirldStateManager = new SwirldStateManager(
                 platformContext, addressBook, NodeId.FIRST_NODE_ID, statusActionSubmitter, new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
@@ -102,5 +103,12 @@ public class TransactionHandlerTester {
      */
     public List<Round> getHandledRounds() {
         return handledRounds;
+    }
+
+    /**
+     * @return the {@link SwirldStateManager} used by this tester
+     */
+    public SwirldStateManager getSwirldStateManager() {
+        return swirldStateManager;
     }
 }
