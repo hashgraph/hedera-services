@@ -16,7 +16,6 @@
 
 plugins {
     id("com.hedera.gradle.evm")
-    id("com.hedera.gradle.evm-publish")
 }
 
 description = "Hedera EVM - Implementation"
