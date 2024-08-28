@@ -1834,7 +1834,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .given()
                     .when()
                     .then(
-                            tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 6L)
+                            tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 10L)
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
@@ -1990,7 +1990,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     // Create a contract with a free associations
                     deployMutableContract(mutableContract, 1),
                     // Take the free association and verify that the user received them
-                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7).between(OWNER, mutableContract))
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 11).between(OWNER, mutableContract))
                             .payingWith(OWNER),
                     getAccountBalance(mutableContract).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                     // Try airdropping the two tokens again and verify that when there are not more free associations
