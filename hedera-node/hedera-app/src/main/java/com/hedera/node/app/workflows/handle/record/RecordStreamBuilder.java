@@ -359,7 +359,6 @@ public class RecordStreamBuilder
 
     @Override
     public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
-        // No-op, the record stream does not need the serialized transaction
         return this;
     }
 
