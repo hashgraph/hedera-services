@@ -330,9 +330,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             // And the factory for the MerkleStateRoot class id must be our constructor
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    MerkleStateRoot.class,
-                    () -> withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory))));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
