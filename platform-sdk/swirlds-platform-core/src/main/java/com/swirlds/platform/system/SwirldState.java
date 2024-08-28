@@ -80,6 +80,14 @@ public interface SwirldState extends MerkleNode {
     void handleConsensusRound(final Round round, final PlatformStateAccessor platformState);
 
     /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     * @param round the round whose platform state changes are completed
+     */
+    default void sealConsensusRound(@NonNull final Round round) {
+        // No-op, only implemented by applications that externalize state changes
+    }
+
+    /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
      * should have the same Address entries as the configuration AddressBook, but with the weight values updated.
      * <p>
