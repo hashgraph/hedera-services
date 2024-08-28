@@ -93,7 +93,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     @Mock
     private FeeCalculator feeCalculator;
 
-
     @Mock
     private StoreMetricsService storeMetricsService;
 
