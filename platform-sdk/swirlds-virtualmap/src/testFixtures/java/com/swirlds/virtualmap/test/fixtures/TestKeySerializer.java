@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.virtualmerkle.map.account;
+package com.swirlds.virtualmap.test.fixtures;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
@@ -22,25 +22,18 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * This is the key serializer for the {@link AccountVirtualMapKey}.
- */
-public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirtualMapKey> {
+public class TestKeySerializer implements KeySerializer<TestKey> {
 
-    private static final long CLASS_ID = 0x93efc6111338834eL;
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-    }
+    public static final TestKeySerializer INSTANCE = new TestKeySerializer();
 
     @Override
     public long getClassId() {
-        return CLASS_ID;
+        return 0x592a33a2329ec4b9L;
     }
 
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return 1;
     }
 
     @Override
@@ -50,23 +43,32 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
 
     @Override
     public int getSerializedSize() {
-        return AccountVirtualMapKey.getSizeInBytes();
+        return VARIABLE_DATA_SIZE;
     }
 
     @Override
-    public void serialize(@NonNull final AccountVirtualMapKey key, @NonNull final WritableSequentialData out) {
-        key.serialize(out);
+    public int getSerializedSize(@NonNull TestKey data) {
+        return Long.BYTES;
     }
 
     @Override
-    public AccountVirtualMapKey deserialize(@NonNull ReadableSequentialData in) {
-        final AccountVirtualMapKey key = new AccountVirtualMapKey();
-        key.deserialize(in);
-        return key;
+    public int getTypicalSerializedSize() {
+        return Long.BYTES;
     }
 
     @Override
-    public boolean equals(@NonNull BufferedData buffer, @NonNull AccountVirtualMapKey keyToCompare) {
-        return keyToCompare.equals(buffer);
+    public void serialize(@NonNull final TestKey data, @NonNull final WritableSequentialData out) {
+        out.writeLong(data.getKey());
+    }
+
+    @Override
+    public TestKey deserialize(@NonNull final ReadableSequentialData in) {
+        final long key = in.readLong();
+        return new TestKey(key);
+    }
+
+    @Override
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final TestKey keyToCompare) {
+        return buffer.readLong() == keyToCompare.getKey();
     }
 }
