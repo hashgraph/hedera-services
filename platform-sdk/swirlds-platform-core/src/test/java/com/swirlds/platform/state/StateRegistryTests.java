@@ -63,7 +63,6 @@ class StateRegistryTests {
     static void setUp() throws ConstructableRegistryException {
         registry = ConstructableRegistry.getInstance();
         version = SemanticVersion.newBuilder().major(nextInt(1, 100)).build();
-        registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
         registry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
         registerMerkleStateRootClassIds();
     }
