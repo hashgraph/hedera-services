@@ -66,7 +66,7 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     }
 
     @Override
-    public void notify(final StateWriteToDiskCompleteNotification notification) {
+    public void notify(@NonNull final StateWriteToDiskCompleteNotification notification) {
         if (notification.isFreezeState()) {
             log.info(
                     "StateWriteToDiskCompleteNotification Received : Freeze State Finished. "
@@ -92,6 +92,8 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                         readableStakingInfoStore);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
+            } catch (Exception e) {
+                log.error("Error while responding to freeze state notification", e);
             }
         }
     }
