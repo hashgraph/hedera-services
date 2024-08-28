@@ -117,6 +117,25 @@ serializers are to be provided. The key serializer will be trivial, as keys are 
 serializer will be implemented using the codec provided by `QueueNode`, similar to how key/value
 states work.
 
+## Alternative rejected approaches
+
+### FCQueue on disk
+
+To overcome the major `FCQueue` limitation about all elements stored in memory, on-disk
+implementation could be provided. Queue elements could be stored in multiple files on disk.
+Once queue head is past the last element of a file, the file could be deleted.
+
+Pros:
+* Limited memory usage
+* Still fast hashing by maintaining the running hash
+* Fast snapshots similar to virtual maps, when data files are hard-linked to snapshot dirs
+
+Cons:
+* Incompatible with upcoming state changes, when all state data is moved to a single huge
+virtual map
+* During reconnects, the whole queue is still sent to the learner, or a separate reconnect
+implementation is provided for queues
+
 ## Data migration
 
 Current production states contain a few queue state nodes, all are tiny except transaction
@@ -140,13 +159,16 @@ state will be used to start a node with the latest version that includes queue s
 
 ## Performance impact
 
-**Queue operations (add, remove)**: both `FCQueue` and `VirtualMap` add and remove elements fast.
-No performance impact is expected.
+**Queue operations (add, remove)**: both `FCQueue` and `VirtualMap` add and remove elements fast,
+O(1) complexity. No performance impact is expected.
 
 **Hashing**: `FCQueue` has a very efficient hashing algorithm, it hashes only newly inserted
-elements and "unhashes" removed elements. It's done on a single thread, however. `VirtualMap`
-needs to rehash more entities because of its tree structure, but it's done in parallel on
-many threads. No significant performance impact is expected.
+elements and "unhashes" removed elements. Complexity is O(N), where N is the number of elements
+added to or removed from the queue in a single round. It's done on a single thread, though.
+`VirtualMap` needs to rehash more entities because of its tree structure, so it's complexity is
+O(N) * O(log2(M)), where M is the size of the queue, which is not expected to grow a lot in the
+future, so log2(M) is rather a constant multiplier. Besides that, virtual map hashing is done
+on multiple threads in parallel. Overall, no significant performance impact is expected.
 
 **Serialization (including snapshots)**: `VirtualMap` is much faster than `FCQueue`, since it
 only needs to serialize a small portion of its data (virtual node cache), while `FCQueue`
