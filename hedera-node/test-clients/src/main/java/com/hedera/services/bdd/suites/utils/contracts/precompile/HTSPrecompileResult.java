@@ -97,6 +97,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             + ")";
     public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
+    public static final String FUNGIBLE_TOKEN_INFO_V2 = "(" + TOKEN_INFO_V2 + ",int32" + ")";
     public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
 
@@ -107,6 +108,8 @@ public class HTSPrecompileResult implements ContractCallResult {
     public static final TupleType getTokenInfoV2 = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_V2 + ")");
     public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getFungibleTokenInfoV2 =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_V2 + ")");
     public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
     public static final TupleType tokenGetCustomFeesReplacedAddress = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
@@ -177,6 +180,7 @@ public class HTSPrecompileResult implements ContractCallResult {
             case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
             case HAPI_GET_TOKEN_INFO_V2 -> getTokenInfoV2;
             case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
+            case HAPI_GET_FUNGIBLE_TOKEN_INFO_V2 -> getFungibleTokenInfoV2;
             case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
             case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
             case HAPI_GET_TOKEN_KEY -> getTokenKeyReplacedAddress;
@@ -351,6 +355,7 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                     case HAPI_GET_TOKEN_INFO_V2 -> getTupleForGetTokenInfoV2();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                    case HAPI_GET_FUNGIBLE_TOKEN_INFO_V2 -> getTupleForGetFungibleTokenInfoV2();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                     case HAPI_IS_KYC -> Tuple.of(status.getNumber(), isKyc);
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
@@ -377,6 +382,10 @@ public class HTSPrecompileResult implements ContractCallResult {
 
     private Tuple getTupleForGetFungibleTokenInfo() {
         return Tuple.of(status.getNumber(), Tuple.of(getTupleForTokenInfo(), decimals));
+    }
+
+    private Tuple getTupleForGetFungibleTokenInfoV2() {
+        return Tuple.of(status.getNumber(), Tuple.of(getTupleForTokenInfoV2(), decimals));
     }
 
     private Tuple getTupleForGetNonFungibleTokenInfo() {

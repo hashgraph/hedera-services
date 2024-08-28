@@ -339,8 +339,11 @@ public class TokenInfoHTSSuite {
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(FEE_SCHEDULE_KEY),
                         newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(TokenKeyType.METADATA_KEY.name()),
                         uploadInitCode(TOKEN_INFO_CONTRACT),
                         contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        uploadInitCode("TokenInfo"),
+                        contractCreate("TokenInfo").gas(1_000_000L),
                         tokenCreate(FUNGIBLE_TOKEN_NAME)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(MEMO)
@@ -369,6 +372,37 @@ public class TokenInfoHTSSuite {
                                         MINIMUM_TO_COLLECT,
                                         OptionalLong.of(MAXIMUM_TO_COLLECT),
                                         TOKEN_TREASURY))
+                                .via(CREATE_TXN),
+                        tokenCreate("tokenWithMetadata")
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(MEMO)
+                                .name(FUNGIBLE_TOKEN_NAME)
+                                .symbol(FUNGIBLE_SYMBOL)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(MAX_SUPPLY)
+                                .initialSupply(500)
+                                .decimals(decimals)
+                                .adminKey(ADMIN_KEY)
+                                .freezeKey(FREEZE_KEY)
+                                .kycKey(KYC_KEY)
+                                .supplyKey(SUPPLY_KEY)
+                                .wipeKey(WIPE_KEY)
+                                .feeScheduleKey(FEE_SCHEDULE_KEY)
+                                .pauseKey(PAUSE_KEY)
+                                .metadataKey(TokenKeyType.METADATA_KEY.name())
+                                .metaData("metadata")
+                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Also include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
+                                .withCustom(fractionalFee(
+                                        NUMERATOR,
+                                        DENOMINATOR,
+                                        MINIMUM_TO_COLLECT,
+                                        OptionalLong.of(MAXIMUM_TO_COLLECT),
+                                        TOKEN_TREASURY))
                                 .via(CREATE_TXN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -383,7 +417,14 @@ public class TokenInfoHTSSuite {
                                 TOKEN_INFO_CONTRACT,
                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN_NAME)))))))
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN_NAME)))),
+                        contractCall(
+                                        "TokenInfo",
+                                        "getInformationForFungibleTokenV2",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID("tokenWithMetadata"))))
+                                .via("FUNGIBLE_TOKEN_INFO_TXN_V2")
+                                .gas(1_000_000L))))
                 .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
@@ -407,6 +448,26 @@ public class TokenInfoHTSSuite {
                                                             .withStatus(SUCCESS)
                                                             .withDecimals(decimals)
                                                             .withTokenInfo(getTokenInfoStructForFungibleToken(
+                                                                    spec,
+                                                                    FUNGIBLE_TOKEN_NAME,
+                                                                    FUNGIBLE_SYMBOL,
+                                                                    MEMO,
+                                                                    spec.registry()
+                                                                            .getAccountID(TOKEN_TREASURY),
+                                                                    getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY),
+                                                                    expirySecond,
+                                                                    targetLedgerId.get()))))),
+                            childRecordsCheck(
+                                    "FUNGIBLE_TOKEN_INFO_TXN_V2",
+                                    SUCCESS,
+                                    recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith()
+                                                    .contractCallResult(htsPrecompileResult()
+                                                            .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO_V2)
+                                                            .withStatus(SUCCESS)
+                                                            .withDecimals(decimals)
+                                                            .withTokenInfo(getTokenInfoStructForFungibleTokenV2(
                                                                     spec,
                                                                     FUNGIBLE_TOKEN_NAME,
                                                                     FUNGIBLE_SYMBOL,
