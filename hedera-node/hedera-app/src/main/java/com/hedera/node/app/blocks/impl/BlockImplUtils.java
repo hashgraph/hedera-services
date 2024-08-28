@@ -191,6 +191,14 @@ public class BlockImplUtils {
         }
     }
 
+    /**
+     * Appends the given hash to the given hashes. If the number of hashes exceeds the given maximum, the oldest hash
+     * is removed.
+     * @param hash the hash to append
+     * @param hashes the hashes
+     * @param maxHashes the maximum number of hashes
+     * @return the new hashes
+     */
     public static Bytes appendHash(@NonNull final Bytes hash, @NonNull final Bytes hashes, final int maxHashes) {
         final var limit = HASH_SIZE * maxHashes;
         final byte[] bytes = hashes.toByteArray();
