@@ -51,6 +51,8 @@ import "state/contract/bytecode.proto";
 import "state/contract/storage_slot.proto";
 import "state/file/file.proto";
 import "state/recordcache/recordcache.proto";
+import "state/roster/roster.proto";
+import "state/roster/roster_state.proto";
 import "state/schedule/schedule.proto";
 import "state/throttles/throttle_usage_snapshots.proto";
 import "state/token/account.proto";
@@ -342,6 +344,16 @@ enum StateIdentifier {
     STATE_ID_PLATFORM_STATE = 26;
 
     /**
+     * A state identifier for the roster state singleton.
+     */
+    STATE_ID_ROSTER_STATE = 27;
+
+    /**
+     * A state identifier for the rosters key/value map.
+     */
+    STATE_ID_ROSTERS = 28;
+
+    /**
      * A state identifier for the round receipts queue.
      */
     STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;
@@ -545,6 +557,11 @@ message SingletonUpdateChange {
          * A change to the platform state singleton.
          */
         com.hedera.hapi.platform.state.PlatformState platform_state_value = 12;
+
+        /**
+         * A change to the roster state singleton.
+         */
+        com.hedera.hapi.node.state.roster.RosterState roster_state_value = 13;
     }
 }
 
@@ -774,6 +791,10 @@ message MapChangeValue {
          */
         proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
 
+        /**
+         * A roster value.
+         */
+        com.hedera.hapi.node.state.roster.Roster roster_value = 16;
     }
 }
 
@@ -797,7 +818,7 @@ message QueuePushChange {
         google.protobuf.StringValue proto_string_element = 2;
 
         /**
-         * All the transaction receipts for a round added to queue state.
+         * All transaction receipts for a round added to queue state.
          */
         proto.TransactionReceiptEntries transaction_receipt_entries_element = 3;
     }
