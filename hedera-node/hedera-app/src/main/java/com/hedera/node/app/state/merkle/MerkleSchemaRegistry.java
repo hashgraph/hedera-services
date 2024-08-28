@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationContextImpl;
+import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -171,15 +172,16 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state the state for this registry to use.
+     * @param state     the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      * previousVersion}.
      * @param config The system configuration to use at the time of migration
      * @param networkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
+     * @param migrationStateChanges Tracker for state changes during migration
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -191,13 +193,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
-            @NonNull final Map<String, Object> sharedValues) {
+            @NonNull final Map<String, Object> sharedValues,
+            @NonNull final MigrationStateChanges migrationStateChanges) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
+        requireNonNull(migrationStateChanges);
         if (isSoOrdered(currentVersion, previousVersion)) {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
@@ -248,6 +252,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             } else {
                 newStates = writableStates = stateRoot.getWritableStates(serviceName);
             }
+
             final var migrationContext = new MigrationContextImpl(
                     previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
@@ -259,6 +264,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // Now commit all the service-specific changes made during this service's update or migration
             if (writableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
                 mws.commit();
+                migrationStateChanges.trackCommit();
             }
             // And finally we can remove any states we need to remove
             schema.statesToRemove().forEach(stateKey -> stateRoot.removeServiceState(serviceName, stateKey));
@@ -293,6 +299,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec(),
                                         null));
+
                     } else if (def.queue()) {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
@@ -302,6 +309,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.queueNodeClassId(),
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec()));
+
                     } else if (!def.onDisk()) {
                         stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();

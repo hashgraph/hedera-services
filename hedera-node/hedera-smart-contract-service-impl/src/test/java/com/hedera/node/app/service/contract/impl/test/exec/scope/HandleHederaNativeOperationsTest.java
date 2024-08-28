@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -183,7 +184,11 @@ class HandleHederaNativeOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         when(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        any()))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -201,7 +206,11 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

@@ -22,7 +22,10 @@ pluginManagement {
     }
 }
 
-plugins { id("com.gradle.develocity") }
+plugins {
+    id("com.gradle.develocity")
+    id("org.gradlex.java-module-dependencies")
+}
 
 // Enable Gradle Build Scan
 develocity {

@@ -82,7 +82,12 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(syntheticPayerId);
         requireNonNull(recordBuilderClass);
         return context.dispatchChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
+                syntheticBody,
+                recordBuilderClass,
+                activeSignatureTestWith(strategy),
+                syntheticPayerId,
+                CHILD,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     @Override

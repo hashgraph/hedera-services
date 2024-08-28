@@ -35,7 +35,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -171,12 +170,7 @@ public class TipsetEventCreator implements EventCreator {
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
-        this.eventHasher = platformContext
-                        .getConfiguration()
-                        .getConfigData(EventConfig.class)
-                        .migrateEventHashing()
-                ? new PbjStreamHasher()
-                : new StatefulEventHasher();
+        this.eventHasher = new PbjStreamHasher();
     }
 
     /**

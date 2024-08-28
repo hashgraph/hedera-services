@@ -37,7 +37,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 @DebugIterationEndpoint
 public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
-    private static final long CLASS_ID = 0x3832CC837AB77BFL;
+    static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
 
     /**
@@ -95,6 +95,8 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     public void setValue(T value) {
         ValueLeaf<T> right = getRight();
         right.setValue(value);
+        right.invalidateHash();
+        invalidateHash();
         // Log to transaction state log, what was written
         logSingletonWrite(getLabel(), value);
     }

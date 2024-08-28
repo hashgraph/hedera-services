@@ -105,6 +105,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 () -> longList.putIfEqual(capacity, 1, -1),
                 "Capacity should not be a valid index");
 
+        longList.updateValidRange(0, getSampleSize());
         for (int i = 1; i < getSampleSize(); i++) {
             longList.put(i, i);
         }
@@ -155,6 +156,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @Test
     @Order(3)
     void testOffEndExpand() {
+        longList.updateValidRange(0, OUT_OF_SAMPLE_INDEX);
         longList.put(OUT_OF_SAMPLE_INDEX, OUT_OF_SAMPLE_INDEX);
         assertEquals(
                 OUT_OF_SAMPLE_INDEX,

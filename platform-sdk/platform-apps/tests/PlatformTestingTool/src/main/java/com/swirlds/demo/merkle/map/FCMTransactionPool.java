@@ -372,6 +372,7 @@ public class FCMTransactionPool implements FastCopyable {
 
         // move to next file payload type
         if (sequentialTestCount[this.sequentialTypeIndex] >= config.getSequentialAmount(sequentialTypeIndex)) {
+            logger.info(MARKER, "Generated enough FCM transaction for type {}", generateType);
             sequentialTypeIndex++;
         }
 

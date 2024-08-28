@@ -17,15 +17,22 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseConfigList;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
@@ -34,6 +41,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -41,20 +49,30 @@ import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -67,6 +85,10 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class SystemSetup {
     private static final Logger log = LogManager.getLogger(SystemSetup.class);
+
+    private static final EnumSet<ResponseCodeEnum> SUCCESSES =
+            EnumSet.of(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
@@ -106,13 +128,95 @@ public class SystemSetup {
 
     /**
      * Sets up post-upgrade state for the system.
+     *
      * @param dispatch the post-upgrade transaction dispatch
      */
     public void doPostUpgradeSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
+
+        // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
         final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
         fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
         dispatch.stack().commitFullStack();
+
+        // And then we update the system files for fees schedules, throttles, override properties, and override
+        // permissions from any upgrade files that are present in the configured directory
+        final var config = dispatch.config();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
+        final List<AutoSysFileUpdate> autoUpdates = List.of(
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.feeSchedules(), config),
+                        adminConfig.upgradeFeeSchedulesFile(),
+                        SystemSetup::parseFeeSchedules),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.throttleDefinitions(), config),
+                        adminConfig.upgradeThrottlesFile(),
+                        SystemSetup::parseThrottles),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.networkProperties(), config),
+                        adminConfig.upgradePropertyOverridesFile(),
+                        in -> parseConfig("override network properties", in)),
+                new AutoSysFileUpdate(
+                        createFileID(filesConfig.hapiPermissions(), config),
+                        adminConfig.upgradePermissionOverridesFile(),
+                        in -> parseConfig("override HAPI permissions", in)));
+        autoUpdates.forEach(update -> {
+            if (update.tryIfPresent(adminConfig.upgradeSysFilesLoc(), systemContext)) {
+                dispatch.stack().commitFullStack();
+            }
+        });
+    }
+
+    /**
+     * Encapsulates logic to attempt the automatic update of a system file by parsing the new contents of the
+     * corresponding file from the post-upgrade location.
+     *
+     * @param fileId the file ID of the system file
+     * @param upgradeFileName the name of the upgrade file
+     * @param upgradeFileParser the function to parse the upgrade file
+     */
+    private record AutoSysFileUpdate(
+            @NonNull FileID fileId,
+            @NonNull String upgradeFileName,
+            @NonNull Function<InputStream, Bytes> upgradeFileParser) {
+        /**
+         * Attempts to update the system file using the given system context if the corresponding upgrade file is
+         * present at the given location and can be parsed with this update's parser.
+         *
+         * @param postUpgradeLoc the location of the post-upgrade files
+         * @param systemContext the system context
+         * @return {@code true} if a synthetic update was dispatched, {@code false} otherwise
+         */
+        boolean tryIfPresent(@NonNull final String postUpgradeLoc, @NonNull final SystemContext systemContext) {
+            final var path = Paths.get(postUpgradeLoc, upgradeFileName);
+            if (!Files.exists(path)) {
+                log.info(
+                        "No post-upgrade file for {} found at {}, not updating",
+                        upgradeFileName,
+                        path.toAbsolutePath());
+                return false;
+            }
+            try (final var fin = Files.newInputStream(path)) {
+                final Bytes bytes;
+                try {
+                    bytes = upgradeFileParser.apply(fin);
+                } catch (Exception e) {
+                    log.error("Failed to parse upgrade file for {} at {}", upgradeFileName, path.toAbsolutePath(), e);
+                    return false;
+                }
+                log.info(
+                        "Dispatching synthetic update for {} at {} with {} bytes",
+                        upgradeFileName,
+                        path.toAbsolutePath(),
+                        bytes.length());
+                dispatchSynthFileUpdate(systemContext, fileId, bytes);
+                return true;
+            } catch (IOException e) {
+                log.error("Failed to read upgrade file for {} at {}", upgradeFileName, path.toAbsolutePath(), e);
+            }
+            return false;
+        }
     }
 
     private SystemContext systemContextFor(@NonNull final Dispatch dispatch) {
@@ -137,7 +241,7 @@ public class SystemSetup {
                 controlledNum.put(new EntityNumber(entityNum - 1));
                 final var recordBuilder = dispatch.handleContext()
                         .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
-                if (recordBuilder.status() != SUCCESS) {
+                if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error(
                             "Failed to dispatch system create transaction {} for entity {} - {}",
                             txBody,
@@ -152,7 +256,7 @@ public class SystemSetup {
                 requireNonNull(txBody);
                 final var recordBuilder = dispatch.handleContext()
                         .dispatchPrecedingTransaction(txBody, StreamBuilder.class, key -> true, systemAdminId);
-                if (recordBuilder.status() != SUCCESS) {
+                if (!SUCCESSES.contains(recordBuilder.status())) {
                     log.error("Failed to dispatch update transaction {} for - {}", txBody, recordBuilder.status());
                 }
             }
@@ -180,7 +284,7 @@ public class SystemSetup {
     /**
      * Called only once, before handling the first transaction in network history. Externalizes
      * side effects of genesis setup done in
-     * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}.
+     * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}.
      * <p>
      * Should be removed once
      *
@@ -313,5 +417,33 @@ public class SystemSetup {
                         .build())
                 .initialBalance(account.tinybarBalance())
                 .alias(account.alias());
+    }
+
+    private static Bytes parseFeeSchedules(@NonNull final InputStream in) {
+        try {
+            final var bytes = in.readAllBytes();
+            final var feeSchedules = V0490FileSchema.parseFeeSchedules(bytes);
+            return CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedules);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Bytes parseThrottles(@NonNull final InputStream in) {
+        try {
+            final var json = new String(in.readAllBytes());
+            return Bytes.wrap(V0490FileSchema.parseThrottleDefinitions(json));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Bytes parseConfig(@NonNull String purpose, @NonNull final InputStream in) {
+        try {
+            final var content = new String(in.readAllBytes());
+            return parseConfigList(purpose, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

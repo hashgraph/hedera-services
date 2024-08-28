@@ -33,10 +33,12 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -47,7 +49,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -65,7 +66,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -75,9 +75,9 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -167,11 +167,9 @@ public class HandleWorkflow {
      * Handles the next {@link Round}
      *
      * @param state the writable {@link State} that this round will work on
-     * @param platformState the {@link PlatformState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
-    public void handleRound(
-            @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
+    public void handleRound(@NonNull final State state, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
         logStartRound(round);
         cacheWarmer.warm(state, round);
@@ -181,7 +179,7 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
-            handleEvents(state, platformState, round);
+            handleEvents(state, round);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
@@ -189,7 +187,7 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+    private void handleEvents(@NonNull State state, @NonNull Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
@@ -222,7 +220,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        handlePlatformTransaction(state, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -252,14 +250,12 @@ public class HandleWorkflow {
      * {@link BlockRecordManager} to be externalized.
      *
      * @param state the writable {@link State} that this transaction will work on
-     * @param platformState the {@link PlatformState} that this transaction will work on
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn) {
@@ -267,15 +263,15 @@ public class HandleWorkflow {
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
-        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamRecords()) {
-            blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+            blockRecordManager.startUserTransaction(consensusNow, state);
         }
-        final var recordStream = execute(userTxn);
+        final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
-            blockRecordManager.endUserTransaction(recordStream, state);
+            blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
         }
         if (blockStreamConfig.streamBlocks()) {
             // FUTURE: Writes block items using BlockStreamManager
@@ -299,7 +295,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -332,9 +328,10 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
-            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems);
-            return streamItems.stream();
+            final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
@@ -347,8 +344,19 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
+        // The stack for the user txn should never be committed
+        final List<BlockItem> blockItems = new LinkedList<>();
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
+            final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            blockItems.addAll(failInvalidBuilder.build());
+        }
+
         final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                 .status(FAIL_INVALID)
@@ -358,7 +366,7 @@ public class HandleWorkflow {
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
-        return Stream.of(failInvalidRecord);
+        return new HandleOutput(blockItems, List.of(failInvalidRecord));
     }
 
     /**
@@ -431,6 +439,7 @@ public class HandleWorkflow {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return builder.transaction(txnInfo.transaction())
+                .serializedTransaction(txnInfo.serializedTransaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())
                 .exchangeRate(exchangeRateSet)
@@ -487,7 +496,6 @@ public class HandleWorkflow {
      * current state, platform context, creator, and consensus time.
      *
      * @param state the current state
-     * @param platformState the current platform state
      * @param event the current consensus event
      * @param creator the creator of the transaction
      * @param txn the consensus transaction
@@ -496,14 +504,12 @@ public class HandleWorkflow {
      */
     private UserTxn newUserTxn(
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final Instant consensusNow) {
         return UserTxn.from(
                 state,
-                platformState,
                 event,
                 creator,
                 txn,

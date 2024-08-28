@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -41,6 +42,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -65,7 +67,8 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -79,7 +82,6 @@ public record UserTxn(
         @NonNull HederaFunctionality functionality,
         @NonNull Instant consensusNow,
         @NonNull State state,
-        @NonNull PlatformState platformState,
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
         @NonNull TransactionInfo txnInfo,
@@ -94,7 +96,6 @@ public record UserTxn(
     public static UserTxn from(
             // @UserTxnScope
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creatorInfo,
             @NonNull final ConsensusTransaction platformTxn,
@@ -108,7 +109,7 @@ public record UserTxn(
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
             type = GENESIS_TRANSACTION;
-        } else if (isUpgradeBoundary(platformState, state)) {
+        } else if (isUpgradeBoundary(state)) {
             type = POST_UPGRADE_TRANSACTION;
         } else {
             type = ORDINARY_TRANSACTION;
@@ -132,7 +133,6 @@ public record UserTxn(
                 txnInfo.functionality(),
                 consensusNow,
                 state,
-                platformState,
                 event,
                 platformTxn,
                 txnInfo,
@@ -147,13 +147,16 @@ public record UserTxn(
 
     /**
      * Returns whether the given state indicates this transaction is the first after an upgrade.
-     * @param platformState the platform state
      * @param state the Hedera state
      * @return whether the given state indicates this transaction is the first after an upgrade
      */
-    private static boolean isUpgradeBoundary(@NonNull final PlatformState platformState, @NonNull final State state) {
-        if (platformState.getFreezeTime() == null
-                || !platformState.getFreezeTime().equals(platformState.getLastFrozenTime())) {
+    private static boolean isUpgradeBoundary(@NonNull final State state) {
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        if (platformState.freezeTime() == null
+                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
             return false;
         } else {
             // Check the state directly here instead of going through BlockManager to allow us
@@ -211,7 +214,7 @@ public record UserTxn(
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
+        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
@@ -226,7 +229,6 @@ public record UserTxn(
                 storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 keyVerifier,
-                platformState,
                 txnInfo.functionality(),
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
@@ -256,8 +258,8 @@ public record UserTxn(
                 stack,
                 USER,
                 tokenContextImpl,
-                platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     /**
