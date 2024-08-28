@@ -33,7 +33,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -43,6 +43,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -199,7 +200,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
@@ -376,10 +377,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         this.platform = (SwirldsPlatform) platform;
 
         if (trigger == InitTrigger.GENESIS) {

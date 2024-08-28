@@ -65,7 +65,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -167,11 +166,9 @@ public class HandleWorkflow {
      * Handles the next {@link Round}
      *
      * @param state the writable {@link State} that this round will work on
-     * @param platformState the {@link PlatformState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
-    public void handleRound(
-            @NonNull final State state, @NonNull final PlatformState platformState, @NonNull final Round round) {
+    public void handleRound(@NonNull final State state, @NonNull final Round round) {
         // We only close the round with the block record manager after user transactions
         logStartRound(round);
         cacheWarmer.warm(state, round);
@@ -181,7 +178,7 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
-            handleEvents(state, platformState, round);
+            handleEvents(state, round);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
@@ -189,7 +186,7 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(@NonNull State state, @NonNull PlatformState platformState, @NonNull Round round) {
+    private void handleEvents(@NonNull State state, @NonNull Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
@@ -222,7 +219,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        handlePlatformTransaction(state, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -252,14 +249,12 @@ public class HandleWorkflow {
      * {@link BlockRecordManager} to be externalized.
      *
      * @param state the writable {@link State} that this transaction will work on
-     * @param platformState the {@link PlatformState} that this transaction will work on
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn) {
@@ -267,11 +262,11 @@ public class HandleWorkflow {
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
-        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamRecords()) {
-            blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+            blockRecordManager.startUserTransaction(consensusNow, state);
         }
         final var recordStream = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
@@ -487,7 +482,6 @@ public class HandleWorkflow {
      * current state, platform context, creator, and consensus time.
      *
      * @param state the current state
-     * @param platformState the current platform state
      * @param event the current consensus event
      * @param creator the creator of the transaction
      * @param txn the consensus transaction
@@ -496,14 +490,12 @@ public class HandleWorkflow {
      */
     private UserTxn newUserTxn(
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final Instant consensusNow) {
         return UserTxn.from(
                 state,
-                platformState,
                 event,
                 creator,
                 txn,
