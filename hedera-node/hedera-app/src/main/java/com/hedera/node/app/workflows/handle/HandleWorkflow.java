@@ -34,11 +34,14 @@ import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -114,6 +117,9 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final KVStateChangeListener kvStateChangeListener;
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
+    private final List<StateChanges.Builder> migrationStateChanges;
 
     @Inject
     public HandleWorkflow(
@@ -138,7 +144,10 @@ public class HandleWorkflow {
             @NonNull final SystemSetup systemSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final KVStateChangeListener kvStateChangeListener,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -161,6 +170,9 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
+        this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
+        this.migrationStateChanges = requireNonNull(migrationStateChanges);
     }
 
     /**
@@ -487,7 +499,7 @@ public class HandleWorkflow {
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
-            userTxn.stack().commitFullStack();
+            userTxn.stack().commitSystemStateChanges();
         }
     }
 
@@ -517,6 +529,8 @@ public class HandleWorkflow {
                 blockRecordManager.consTimeOfLastHandledTxn(),
                 configProvider,
                 storeMetricsService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
                 preHandleWorkflow);
     }
 }
