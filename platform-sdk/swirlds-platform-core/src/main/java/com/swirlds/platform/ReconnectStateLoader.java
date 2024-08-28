@@ -106,7 +106,6 @@ public class ReconnectStateLoader {
                     .getSwirldState()
                     .init(
                             platform,
-                            signedState.getState().getPlatformState(),
                             InitTrigger.RECONNECT,
                             signedState.getState().getPlatformState().getCreationSoftwareVersion());
             if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
