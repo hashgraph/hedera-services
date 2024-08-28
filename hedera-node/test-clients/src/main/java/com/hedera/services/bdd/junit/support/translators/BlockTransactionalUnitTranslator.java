@@ -35,6 +35,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
@@ -55,6 +56,7 @@ import com.hedera.services.bdd.junit.support.translators.impl.FileCreateTranslat
 import com.hedera.services.bdd.junit.support.translators.impl.NodeCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.ScheduleCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.SubmitMessageTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.TokenBurnTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenMintTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenUpdateTranslator;
@@ -107,6 +109,7 @@ public class BlockTransactionalUnitTranslator {
                     put(TOKEN_ASSOCIATE_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_CREATE, new TokenCreateTranslator());
                     put(TOKEN_UPDATE, new TokenUpdateTranslator());
+                    put(TOKEN_BURN, new TokenBurnTranslator());
                     put(TOKEN_MINT, new TokenMintTranslator());
                     put(UTIL_PRNG, new UtilPrngTranslator());
                 }
