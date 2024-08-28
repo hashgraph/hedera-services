@@ -73,7 +73,7 @@ final class BlockStreamServiceTest {
             assertEquals(1, args.length);
             Schema schema = (Schema) args[0];
             assertThat(schema).isInstanceOf(V0540BlockStreamSchema.class);
-            Set<StateDefinition> states = schema.statesToCreate();
+            Set<StateDefinition> states = schema.statesToCreate(DEFAULT_CONFIG);
             assertEquals(1, states.size());
             assertTrue(states.contains(StateDefinition.singleton(BLOCK_STREAM_INFO_KEY, BlockStreamInfo.PROTOBUF)));
 
@@ -83,14 +83,18 @@ final class BlockStreamServiceTest {
 
             // FINISH:
             ArgumentCaptor<BlockStreamInfo> blockInfoCapture = ArgumentCaptor.forClass(BlockStreamInfo.class);
-            verify(blockStreamState).put(blockInfoCapture.capture());
 
             schema.migrate(migrationContext);
+
+            verify(blockStreamState).put(blockInfoCapture.capture());
             assertEquals(
                     new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture.getValue());
             return null;
         });
-        BlockStreamService blockStreamService = new BlockStreamService(DEFAULT_CONFIG);
+        final var testConfig = HederaTestConfigBuilder.create()
+                .withValue("blockStream.streamMode", "BOTH")
+                .getOrCreateConfig();
+        BlockStreamService blockStreamService = new BlockStreamService(testConfig);
         blockStreamService.registerSchemas(schemaRegistry);
     }
 }
