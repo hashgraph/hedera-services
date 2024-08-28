@@ -73,36 +73,6 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
-     * If there is existing airdrop with the same id we add the value to the existing drop.
-     *
-     * @param airdropId    - the airdropId to be persisted.
-     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
-     */
-    public void update(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
-        requireNonNull(airdropId);
-        requireNonNull(accountAirdrop);
-        if (!airdropState.contains(airdropId)) {
-            put(airdropId, accountAirdrop);
-            return;
-        }
-
-        if (airdropId.hasFungibleTokenType()) {
-            final var existingAirdrop = requireNonNull(airdropState.getForModify(airdropId));
-            final var existingValue = existingAirdrop.pendingAirdropValue();
-            final var newValue =
-                    requireNonNull(accountAirdrop.pendingAirdropValue()).amount()
-                            + requireNonNull(existingValue).amount();
-            final var newAccountAirdrop = existingAirdrop
-                    .copyBuilder()
-                    .pendingAirdropValue(
-                            existingValue.copyBuilder().amount(newValue).build())
-                    .build();
-            put(airdropId, newAccountAirdrop);
-        }
-    }
-
-    /**
      * Removes a {@link PendingAirdropId} from the state
      *
      * @param airdropId the {@code PendingAirdropId} to be removed
