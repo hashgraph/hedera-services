@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -100,6 +101,9 @@ class HandleWorkflowTest {
     private BlockRecordManager blockRecordManager;
 
     @Mock
+    private BlockStreamManager blockStreamManager;
+
+    @Mock
     private CacheWarmer cacheWarmer;
 
     @Mock
@@ -165,6 +169,7 @@ class HandleWorkflowTest {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
+                blockStreamManager,
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
