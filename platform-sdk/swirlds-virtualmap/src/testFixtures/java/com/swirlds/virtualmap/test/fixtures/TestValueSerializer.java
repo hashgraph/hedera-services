@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.reconnect;
+package com.swirlds.virtualmap.test.fixtures;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.charset.StandardCharsets;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
 
+    public static final TestValueSerializer INSTANCE = new TestValueSerializer();
+
     @Override
     public long getClassId() {
-        return 53543454;
+        return 0x51c8d5d21f7125e8L;
     }
 
     @Override
@@ -45,30 +47,30 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public int getTypicalSerializedSize() {
-        return 20; // guesstimation
-    }
-
-    @Override
     public int getSerializedSize(@NonNull final TestValue data) {
-        final String s = data.getValue();
-        return Integer.BYTES + s.length();
+        final String value = data.getValue();
+        return Integer.BYTES + value.getBytes(StandardCharsets.UTF_8).length;
     }
 
     @Override
-    public void serialize(final TestValue data, final WritableSequentialData out) {
-        final String s = data.getValue();
-        final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
-        out.writeInt(bytes.length);
-        out.writeBytes(bytes);
+    public int getTypicalSerializedSize() {
+        return 32;
     }
 
     @Override
-    public TestValue deserialize(final ReadableSequentialData in) {
+    public void serialize(@NonNull final TestValue data, @NonNull final WritableSequentialData out) {
+        final String value = data.getValue();
+        final byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+        out.writeInt(valueBytes.length);
+        out.writeBytes(valueBytes);
+    }
+
+    @Override
+    public TestValue deserialize(@NonNull ReadableSequentialData in) {
         final int length = in.readInt();
-        final byte[] bytes = new byte[length];
-        in.readBytes(bytes);
-        final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
-        return new TestValue(s);
+        final byte[] valueBytes = new byte[length];
+        in.readBytes(valueBytes);
+        final String value = new String(valueBytes, StandardCharsets.UTF_8);
+        return new TestValue(value);
     }
 }

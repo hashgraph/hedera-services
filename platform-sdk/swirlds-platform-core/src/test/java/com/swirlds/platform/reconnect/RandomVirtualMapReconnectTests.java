@@ -61,16 +61,13 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
     @Override
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
+    protected VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) 1, new TestKeySerializer(),
-                (short) 1, new TestValueSerializer());
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     public String randomWord(final Random random, final int maximumKeySize) {

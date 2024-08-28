@@ -19,7 +19,7 @@ package com.swirlds.demo.migration.virtual;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 
 /**
  * This is the key serializer for the {@link AccountVirtualMapKey}.
