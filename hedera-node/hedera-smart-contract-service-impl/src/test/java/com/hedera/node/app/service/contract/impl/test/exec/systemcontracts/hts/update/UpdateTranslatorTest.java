@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MUTABLE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -56,6 +57,8 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,6 +88,12 @@ class UpdateTranslatorTest extends CallTestBase {
 
     @Mock
     private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
+    @Mock
+    Configuration configuration;
 
     private UpdateTranslator subject;
 
@@ -207,13 +216,16 @@ class UpdateTranslatorTest extends CallTestBase {
 
     @Test
     void matchesUpdateMetadataTest() {
-        attempt = prepareHtsAttemptWithSelector(
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.metadataKeyAndFieldEnabled()).willReturn(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA,
                 subject,
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
-                gasCalculator);
+                gasCalculator,
+                configuration);
         assertTrue(subject.matches(attempt));
     }
 

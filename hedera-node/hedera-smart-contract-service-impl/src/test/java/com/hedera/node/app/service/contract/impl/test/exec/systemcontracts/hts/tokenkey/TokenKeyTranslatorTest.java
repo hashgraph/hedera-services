@@ -33,6 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +59,12 @@ class TokenKeyTranslatorTest {
 
     @Mock
     private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
+    @Mock
+    Configuration configuration;
 
     private TokenKeyTranslator subject;
 
@@ -86,7 +94,9 @@ class TokenKeyTranslatorTest {
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
-
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.metadataKeyAndFieldEnabled()).willReturn(true);
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(TokenKeyCall.class);
     }
