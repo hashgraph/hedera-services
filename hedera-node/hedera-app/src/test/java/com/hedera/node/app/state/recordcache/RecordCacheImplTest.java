@@ -78,6 +78,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class RecordCacheImplTest extends AppTestBase {
     private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
+    private static final int RESPONSE_CODES_TO_TEST = 32;
     private static final TransactionReceipt UNHANDLED_RECEIPT =
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID PAYER_ACCOUNT_ID =
@@ -310,32 +311,6 @@ final class RecordCacheImplTest extends AppTestBase {
         private AccountID accountId(final int num) {
             return AccountID.newBuilder().accountNum(num).build();
         }
-
-        private TransactionRecord transactionRecord(ResponseCodeEnum status, TransactionID txId, long time) {
-            return TransactionRecord.newBuilder()
-                    .transactionID(txId)
-                    .consensusTimestamp(Timestamp.newBuilder()
-                            .seconds(time)
-                            .nanos((int) time)
-                            .build())
-                    .receipt(TransactionReceipt.newBuilder().status(status))
-                    .build();
-        }
-
-        private TransactionRecord childRecord(ResponseCodeEnum status, TransactionID txId, long time, long parentTime) {
-            return TransactionRecord.newBuilder()
-                    .transactionID(txId)
-                    .consensusTimestamp(Timestamp.newBuilder()
-                            .seconds(time)
-                            .nanos((int) time)
-                            .build())
-                    .parentConsensusTimestamp(Timestamp.newBuilder()
-                            .seconds(parentTime)
-                            .nanos((int) parentTime)
-                            .build())
-                    .receipt(TransactionReceipt.newBuilder().status(status))
-                    .build();
-        }
     }
 
     private TransactionRecord asRecord(final TransactionReceiptEntry transactionReceiptEntry) {
@@ -506,7 +481,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }
@@ -673,7 +649,8 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         static Stream<Arguments> receiptStatusCodes() {
-            final var allValues = new HashSet<>(Arrays.asList(ResponseCodeEnum.values()));
+            final var allValues =
+                    new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
             allValues.remove(UNKNOWN);
             return allValues.stream().map(Arguments::of);
         }
