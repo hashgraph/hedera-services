@@ -58,6 +58,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.util;
     exports com.hedera.hapi.node.state.roster;
     exports com.hedera.hapi.block.stream.schema;
+    exports com.hedera.hapi.block.stream.output;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
