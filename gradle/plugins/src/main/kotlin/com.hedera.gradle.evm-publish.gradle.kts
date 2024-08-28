@@ -30,7 +30,6 @@ tasks.withType<PublishToMavenRepository>().configureEach {
 publishing {
     publications {
         named<MavenPublication>("maven") {
-            artifactId = "hedera-evm"
             pom.developers {
                 developer {
                     name = "Hedera Base Team"
