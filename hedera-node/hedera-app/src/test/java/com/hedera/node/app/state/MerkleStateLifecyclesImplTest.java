@@ -30,11 +30,9 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -42,11 +40,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.test.fixtures.MapReadableKVState;
-import com.swirlds.state.test.fixtures.MapReadableStates;
-import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +50,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StateLifecyclesImplTest extends MerkleTestBase {
+class MerkleStateLifecyclesImplTest extends MerkleTestBase {
     private static final int PRETEND_STAKING_INFO_CHILD_INDEX = 7;
 
     @Mock
@@ -76,24 +70,6 @@ class StateLifecyclesImplTest extends MerkleTestBase {
 
     @Mock
     private MerkleStateRoot merkleStateRoot;
-
-    @Mock
-    private PlatformState platformState;
-
-    @Mock
-    private MapWritableStates writableStates;
-
-    @Mock
-    private MapWritableKVState<EntityNumber, StakingNodeInfo> mockWritableKVState;
-
-    @Mock
-    private MapReadableStates readableStates;
-
-    @Mock
-    private MapReadableKVState<EntityNumber, StakingNodeInfo> mockReadableKVState;
-
-    @Mock
-    private Iterator<EntityNumber> mockIterator;
 
     @Mock
     private BiConsumer<
@@ -117,16 +93,23 @@ class StateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        subject.onHandleConsensusRound(round, platformState, merkleStateRoot);
+        subject.onHandleConsensusRound(round, merkleStateRoot);
 
-        verify(hedera).onHandleConsensusRound(round, platformState, merkleStateRoot);
+        verify(hedera).onHandleConsensusRound(round, merkleStateRoot);
+    }
+
+    @Test
+    void delegatesOnSealConsensusRound() {
+        subject.onSealConsensusRound(round, merkleStateRoot);
+
+        verify(hedera).onSealConsensusRound(round, merkleStateRoot);
     }
 
     @Test
     void delegatesOnStateInitialized() {
-        subject.onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
+        subject.onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
 
-        verify(hedera).onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
+        verify(hedera).onStateInitialized(merkleStateRoot, platform, InitTrigger.GENESIS, null);
     }
 
     @Test

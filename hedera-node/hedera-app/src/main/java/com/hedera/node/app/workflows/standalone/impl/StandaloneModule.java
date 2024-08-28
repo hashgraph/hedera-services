@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Binds;
 import dagger.Module;
@@ -52,7 +53,7 @@ public interface StandaloneModule {
 
     @Provides
     @Singleton
-    static PlatformState providePlatformState() {
+    static PlatformStateAccessor providePlatformState() {
         return new PlatformState();
     }
 

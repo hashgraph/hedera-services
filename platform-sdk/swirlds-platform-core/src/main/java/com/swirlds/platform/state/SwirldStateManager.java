@@ -118,7 +118,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformState)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateAccessor)}.
      *
      * @param round the round to handle
      */
@@ -127,6 +127,16 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
         uptimeTracker.handleRound(round, state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
+    }
+
+    /**
+     * Seals the platform's state changes for the given round.
+     * @param round the round to seal
+     */
+    public void sealConsensusRound(@NonNull final Round round) {
+        Objects.requireNonNull(round);
+        final MerkleRoot state = stateRef.get();
+        state.getSwirldState().sealConsensusRound(round);
     }
 
     /**
@@ -203,7 +213,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        final PlatformState platformState = getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState = getConsensusState().getPlatformState();
         return SwirldStateManagerUtils.isInFreezePeriod(
                 timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }

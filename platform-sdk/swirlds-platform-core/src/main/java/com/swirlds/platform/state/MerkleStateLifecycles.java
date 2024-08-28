@@ -35,6 +35,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface MerkleStateLifecycles {
     /**
+     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateAccessor} implementation
+     * is initialized.
+     *
+     * @param state the root of the state to be initialized
+     */
+    void initPlatformState(@NonNull State state);
+
+    /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.
      *
@@ -48,24 +56,27 @@ public interface MerkleStateLifecycles {
      * by the network.
      *
      * @param round the round that has just reached consensus
-     * @param platformState the working state of the platform
      * @param state the working state of the network
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
+    void onHandleConsensusRound(@NonNull Round round, @NonNull State state);
+
+    /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     * @param round the round whose platform state changes are completed
+     */
+    void onSealConsensusRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Called when the platform is initializing the network state.
      *
      * @param state the working state of the network to be initialized
      * @param platform the platform used by this node
-     * @param platformState the working state of the platform
      * @param trigger the reason for the initialization
      * @param previousVersion if non-null, the network version that was previously in use
      */
     void onStateInitialized(
             @NonNull State state,
             @NonNull Platform platform,
-            @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion);
 

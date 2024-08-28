@@ -184,7 +184,7 @@ class HandleWorkflowTest {
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
-        subject.handleRound(state, platformState, round);
+        subject.handleRound(state, round);
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();

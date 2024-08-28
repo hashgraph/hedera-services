@@ -48,4 +48,8 @@ public class TestTags {
      * ECDSA keys (whose signatures are inherently random).
      */
     public static final String NOT_REPEATABLE = "NOT_REPEATABLE";
+    /**
+     * Tags a test that can be run alone, without any other tests.
+     */
+    public static final String ADHOC = "ADHOC";
 }
