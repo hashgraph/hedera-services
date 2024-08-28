@@ -252,6 +252,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             } else {
                 newStates = writableStates = stateRoot.getWritableStates(serviceName);
             }
+
             final var migrationContext = new MigrationContextImpl(
                     previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
@@ -298,6 +299,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec(),
                                         null));
+
                     } else if (def.queue()) {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
@@ -307,6 +309,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.queueNodeClassId(),
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec()));
+
                     } else if (!def.onDisk()) {
                         stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();

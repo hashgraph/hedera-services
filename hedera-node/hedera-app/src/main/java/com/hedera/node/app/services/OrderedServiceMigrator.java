@@ -119,7 +119,6 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                     final var serviceName = service.getServiceName();
                     logger.info("Migrating Service {}", serviceName);
                     final var registry = (MerkleSchemaRegistry) registration.registry();
-
                     registry.migrate(
                             state,
                             previousVersion,

@@ -229,7 +229,7 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var feeAccumulator =
+        final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -253,11 +253,14 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                childFeeAccumulator);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (RecordStreamBuilder) builder);
+        final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+        if (congestionMultiplier > 1) {
+            builder.congestionMultiplier(congestionMultiplier);
+        }
         final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
         return new RecordDispatch(
                 builder,
@@ -445,7 +448,8 @@ public class ChildDispatchFactory {
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
-                functionOfTxn(txBody));
+                functionOfTxn(txBody),
+                null);
     }
 
     /**

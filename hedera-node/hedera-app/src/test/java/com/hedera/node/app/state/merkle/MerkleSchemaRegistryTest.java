@@ -171,7 +171,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             Mockito.verify(schema2, Mockito.times(1)).migrate(Mockito.any());
         }
 
-        /** Utility method that migrates from version 9 to 10 */
+        /**
+         * Utility method that migrates from version 9 to 10
+         */
         void migrateFromV9ToV10() {
             SemanticVersion latestVersion = version(10, 0, 0);
             schemaRegistry.migrate(
@@ -411,7 +413,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             assertThat(called.removeFirst()).isSameAs(versions[6]);
         }
 
-        /** In these tests, each migration will apply some kind of state change to the tree. */
+        /**
+         * In these tests, each migration will apply some kind of state change to the tree.
+         */
         @Nested
         @DisplayName("Migration State Impact Tests")
         class StateImpactTest {
