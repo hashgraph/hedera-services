@@ -69,12 +69,10 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
@@ -82,8 +80,6 @@ import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,19 +162,7 @@ class DispatchProcessorTest {
     private RecordStreamBuilder recordBuilder;
 
     @Mock
-    private PlatformState platformState;
-
-    @Mock
     private FeeAccumulator feeAccumulator;
-
-    @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
-    private ThrottleServiceManager throttleServiceManager;
-
-    @Mock
-    private HandleWorkflowMetrics handleWorkflowMetrics;
 
     private DispatchProcessor subject;
 

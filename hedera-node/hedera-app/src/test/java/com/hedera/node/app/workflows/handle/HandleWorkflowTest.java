@@ -43,7 +43,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -130,9 +129,6 @@ class HandleWorkflowTest {
 
     @Mock
     private State state;
-
-    @Mock
-    private PlatformState platformState;
 
     @Mock
     private Round round;
