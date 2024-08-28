@@ -45,8 +45,7 @@ tasks.named("closeSonatypeStagingRepository") {
 
 tasks.named("releaseMavenCentral") {
     group = "release"
-    dependsOn(tasks.named("closeStagingRepository"))
-    // dependsOn(tasks.closeAndReleaseStagingRepository)
+    //dependsOn(tasks.closeAndReleaseStagingRepository)
 }
 
 tasks.register("releaseMavenCentralSnapshot") {
