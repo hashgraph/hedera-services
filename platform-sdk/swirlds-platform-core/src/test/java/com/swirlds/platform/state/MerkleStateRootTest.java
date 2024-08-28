@@ -975,8 +975,8 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Migrate from the previous version")
-        void migrate() {
+        @DisplayName("Migrate from the previous version (the platform state is the zeroth child)")
+        void migrate_platform_state_zeroth_child() {
             com.swirlds.platform.state.PlatformState platformState = (com.swirlds.platform.state.PlatformState)
                     randomPlatformState(new com.swirlds.platform.state.PlatformState());
             stateRoot.setChild(0, platformState);
@@ -1010,6 +1010,56 @@ class MerkleStateRootTest extends MerkleTestBase {
             // MerkleStateRoot registers the platform state as a singleton upon the first request to it
             assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
             assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
+        }
+
+        @Test
+        @DisplayName("Migrate from the previous version (platform state is the last child)")
+        void migrate_platform_state_last_child() {
+            com.swirlds.platform.state.PlatformState platformState = (com.swirlds.platform.state.PlatformState)
+                    randomPlatformState(new com.swirlds.platform.state.PlatformState());
+
+            var node1 = mock(MerkleNode.class);
+            var node1Copy = mock(MerkleNode.class);
+            when(node1.copy()).thenReturn(node1Copy);
+            stateRoot.setChild(0, node1);
+
+            var node2 = mock(MerkleNode.class);
+            var node2Copy = mock(MerkleNode.class);
+            when(node2.copy()).thenReturn(node2Copy);
+            stateRoot.setChild(1, node2);
+
+            stateRoot.setChild(2, platformState);
+            assertNull(stateRoot.getPreV054PlatformState());
+
+            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION - 1));
+
+            // Platform state is not a part of the tree temporarily
+            assertEquals(2, stateRoot.getNumberOfChildren());
+            verify(node1).release();
+            verify(node2).release();
+
+            assertEquals(node1Copy, stateRoot.getChild(0));
+            assertEquals(node2Copy, stateRoot.getChild(1));
+
+            // Platform state is temporarily stored in a separate field
+            assertEquals(platformState, stateRoot.getPreV054PlatformState());
+
+            assertFalse(stateRoot.isImmutable());
+
+            // MerkleStateRoot registers the platform state as a singleton upon the first request to it
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
+        }
+
+        @Test
+        @DisplayName("Migrate fails if the platform state is absent")
+        void migrate_platform_absent() {
+            var node1 = mock(MerkleNode.class);
+            stateRoot.setChild(0, node1);
+            var node2 = mock(MerkleNode.class);
+            stateRoot.setChild(1, node2);
+
+            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
         }
     }
 }
