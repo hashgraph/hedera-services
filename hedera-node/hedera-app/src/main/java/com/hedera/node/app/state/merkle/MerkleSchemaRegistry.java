@@ -171,15 +171,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * to perform any necessary logic on restart. Most services have nothing to do, but some may need
      * to read files from disk, and could potentially change their state as a result.
      *
-     * @param state the state for this registry to use.
+     * @param state     the state for this registry to use.
      * @param previousVersion The version of state loaded from disk. Possibly null.
-     * @param currentVersion The current version. Never null. Must be newer than {@code
-     * previousVersion}.
-     * @param config The system configuration to use at the time of migration
-     * @param networkInfo The network information to use at the time of migration
-     * @param sharedValues A map of shared values for cross-service migration patterns
+     * @param currentVersion  The current version. Never null. Must be newer than {@code
+     *                        previousVersion}.
+     * @param config          The system configuration to use at the time of migration
+     * @param networkInfo     The network information to use at the time of migration
+     * @param sharedValues    A map of shared values for cross-service migration patterns
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     * {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
+     *                                  {@code previousVersion} or if the {@code state} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})

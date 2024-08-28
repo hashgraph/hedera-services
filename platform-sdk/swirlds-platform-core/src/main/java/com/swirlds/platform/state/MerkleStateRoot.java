@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
+import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -24,6 +26,7 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -34,6 +37,9 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -73,6 +79,7 @@ import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,6 +90,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,8 +117,6 @@ import org.apache.logging.log4j.Logger;
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, State, MerkleRoot {
 
-    // PlatformState is a special case, and it always has 0 index
-    static final int PLATFORM_STATE_INDEX = 0;
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -118,12 +124,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
 
-    //    private static final long CLASS_ID = 0x2de3ead3caf06392L;
-    // Uncomment the following class ID to run a mono -> modular state migration
-    // NOTE: also change class ID of ServicesState
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
-    private static final int VERSION_1 = 30;
-    private static final int CURRENT_VERSION = VERSION_1;
+    // Migrates from `PlatformState` to State API singleton
+    public static final int CURRENT_VERSION = 31;
 
     // This is a temporary fix to deal with the inefficient implementation of findNodeIndex(). It caches looked up
     // indices globally, assuming these indices do not change that often. We need to re-think index lookup,
@@ -134,6 +137,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * The callbacks for Hedera lifecycle events.
      */
     private final MerkleStateLifecycles lifecycles;
+
+    private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -167,28 +172,35 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final RuntimeObjectRecord registryRecord;
 
     /**
+     * If set, the platform state from a deserialized state created prior to version 0.54, and used to initialize
+     * the platform state as a State API singleton after migration.
+     *
+     * @deprecated since 0.54.0; this field should be removed in a future release
+     */
+    @Nullable
+    @Deprecated(forRemoval = true)
+    private PlatformState preV054PlatformState;
+
+    /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
-     * @param lifecycles The lifecycle callbacks. Cannot be null.
+     * @param lifecycles            The lifecycle callbacks. Cannot be null.
+     * @param versionFactory a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
      */
-    public MerkleStateRoot(@NonNull final MerkleStateLifecycles lifecycles) {
+    public MerkleStateRoot(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.lifecycles = requireNonNull(lifecycles);
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
+        this.versionFactory = requireNonNull(versionFactory);
     }
 
     /**
-     * This constructor ONLY exists for the benefit of the ConstructableRegistry. It is not actually
-     * used except by the registry to create an instance of this class for the purpose of getting
-     * the class ID. It should never be used for any other purpose. And one day we won't need it
-     * anymore and can remove it.
-     *
-     * @deprecated This constructor is only for use by the ConstructableRegistry.
+     * Returns the platform state found at child index 0 of a pre-0.54 state, or null if not found.
+     * @return the pre-0.54 platform state, or null if not found
      */
-    @Deprecated(forRemoval = true)
-    public MerkleStateRoot() {
-        // ConstructableRegistry requires a "working" no-arg constructor
-        this.lifecycles = null;
-        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
+    public @Nullable PlatformState getPreV054PlatformState() {
+        return preV054PlatformState;
     }
 
     /**
@@ -199,10 +211,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion deserializedVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion deserializedVersion) {
         metrics = platform.getContext().getMetrics();
 
         // If we are initialized for event stream recovery, we have to register an
@@ -217,7 +228,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // to a model where SwirldState/SwirldState2 are simply data objects, without this lifecycle.
         // Instead, this method will be a callback the app registers with the platform. So for now,
         // we simply call the callback handler, which is implemented by the app.
-        lifecycles.onStateInitialized(this, platform, platformState, trigger, deserializedVersion);
+        lifecycles.onStateInitialized(this, platform, trigger, deserializedVersion);
     }
 
     /**
@@ -232,16 +243,18 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
-     * Private constructor for fast-copy.
+     * Protected constructor for fast-copy.
      *
      * @param from The other state to fast-copy from. Cannot be null.
      */
-    private MerkleStateRoot(@NonNull final MerkleStateRoot from) {
+    protected MerkleStateRoot(@NonNull final MerkleStateRoot from) {
         // Copy the Merkle route from the source instance
         super(from);
 
         this.lifecycles = from.lifecycles;
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
+        this.versionFactory = from.versionFactory;
+        this.preV054PlatformState = from.preV054PlatformState;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -348,9 +361,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
         throwIfImmutable();
-        lifecycles.onHandleConsensusRound(round, platformState, this);
+        lifecycles.onHandleConsensusRound(round, this);
+    }
+
+    @Override
+    public void sealConsensusRound(@NonNull final Round round) {
+        requireNonNull(round);
+        throwIfImmutable();
+        lifecycles.onSealConsensusRound(round, this);
     }
 
     /**
@@ -365,7 +385,24 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public MerkleNode migrate(final int ignored) {
+    public MerkleNode migrate(final int version) {
+        if (version < CURRENT_VERSION) {
+            final var zerothChild = getChild(0);
+            if (!(zerothChild instanceof PlatformState platformState)) {
+                throw new IllegalStateException("Expected a PlatformState as the first child");
+            }
+            preV054PlatformState = platformState;
+            logger.info(STARTUP.getMarker(), "Found pre-0.54 PlatformState, will migrate to State API singleton");
+            INDEX_LOOKUP.clear();
+            final List<MerkleNode> newChildren = new ArrayList<>();
+            for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
+                final var child = getChild(i);
+                if (child != null) {
+                    newChildren.add(child.copy());
+                }
+            }
+            addDeserializedChildren(newChildren, CURRENT_VERSION);
+        }
         // Always return this node, we never want to replace MerkleStateRoot node in the tree
         return this;
     }
@@ -382,7 +419,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * it doesn't have a label, or if the label isn't right.
      */
     public void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
+            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<? extends MerkleNode> nodeSupplier) {
         putServiceStateIfAbsent(md, nodeSupplier, n -> {});
     }
 
@@ -898,11 +935,22 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         }
     }
 
+    /**
+     * Returns a factory constructing instances of {@link SoftwareVersion} based on provided {@link SemanticVersion}.
+     */
+    @NonNull
+    public Function<SemanticVersion, SoftwareVersion> getVersionFactory() {
+        return versionFactory;
+    }
+
     @NonNull
     private static String extractStateKey(@NonNull final StateMetadata<?, ?> md) {
         return md.stateDefinition().stateKey();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public SwirldState getSwirldState() {
@@ -914,32 +962,18 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformState getPlatformState() {
-        return getChild(PLATFORM_STATE_INDEX);
+    public PlatformStateAccessor getPlatformState() {
+        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
     }
 
     /**
-     * Set the platform state. This method shifts existing children to the right to insert
-     * {@link PlatformState} instance at the {@code PLATFORM_STATE_INDEX} index.
-     * If the platform state is already present, it doesn't do the shifting.
+     * Updates the platform state with the values from the provided instance of {@link PlatformStateAccessor}
+     *
+     * @param accessor a source of values
      */
     @Override
-    public void setPlatformState(@NonNull final PlatformState platformState) {
-        if (getChild(PLATFORM_STATE_INDEX) instanceof PlatformState) {
-            setChild(PLATFORM_STATE_INDEX, platformState);
-            return;
-        }
-
-        INDEX_LOOKUP.clear();
-        // Shift all existing children to the right
-        if (getNumberOfChildren() != 0) {
-            for (int i = getNumberOfChildren(); i > 0; i--) {
-                MerkleNode child = getChild(i - 1);
-                setChild(i, child.copy());
-                setChild(i - 1, null);
-            }
-        }
-        setChild(PLATFORM_STATE_INDEX, platformState);
+    public void updatePlatformState(@NonNull final PlatformStateAccessor accessor) {
+        writablePlatformStateStore().setAllFrom(accessor);
     }
 
     /**
@@ -949,5 +983,25 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public String getInfoString(final int hashDepth) {
         return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+    }
+
+    private ReadablePlatformStateStore readablePlatformStateStore() {
+        return new ReadablePlatformStateStore(getReadableStates(PlatformStateService.NAME), versionFactory);
+    }
+
+    private WritablePlatformStateStore writablePlatformStateStore() {
+        if (!services.containsKey(PlatformStateService.NAME)) {
+            lifecycles.initPlatformState(this);
+        }
+        final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
+        if (preV054PlatformState != null) {
+            store.setAllFrom(preV054PlatformState);
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Migrated PlatformState {} to State API singleton",
+                    toPbjPlatformState(preV054PlatformState));
+            preV054PlatformState = null;
+        }
+        return store;
     }
 }

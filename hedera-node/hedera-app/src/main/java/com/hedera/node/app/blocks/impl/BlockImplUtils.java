@@ -56,7 +56,9 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRA
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_159;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_FILE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_FILE_HASH;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
@@ -73,17 +75,6 @@ public class BlockImplUtils {
      */
     private BlockImplUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
-        try {
-            final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-            digest.update(leftHash);
-            digest.update(rightHash);
-            return digest.digest();
-        } catch (final NoSuchAlgorithmException fatal) {
-            throw new IllegalStateException(fatal);
-        }
     }
 
     /**
@@ -193,11 +184,37 @@ public class BlockImplUtils {
                     };
                     default -> UNKNOWN_STATE_ID;
                 };
-
         if (stateId == UNKNOWN_STATE_ID) {
             throw new IllegalArgumentException("Unknown state '" + serviceName + "." + stateKey + "'");
         } else {
             return stateId;
+        }
+    }
+
+    public static Bytes appendHash(@NonNull final Bytes hash, @NonNull final Bytes hashes, final int maxHashes) {
+        final var limit = HASH_SIZE * maxHashes;
+        final byte[] bytes = hashes.toByteArray();
+        final byte[] newBytes;
+        if (bytes.length < limit) {
+            newBytes = new byte[bytes.length + HASH_SIZE];
+            System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
+            hash.getBytes(0, newBytes, newBytes.length - HASH_SIZE, HASH_SIZE);
+        } else {
+            newBytes = bytes;
+            System.arraycopy(newBytes, HASH_SIZE, newBytes, 0, newBytes.length - HASH_SIZE);
+            hash.getBytes(0, newBytes, newBytes.length - HASH_SIZE, HASH_SIZE);
+        }
+        return Bytes.wrap(newBytes);
+    }
+
+    public static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
+        try {
+            final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+            digest.update(leftHash);
+            digest.update(rightHash);
+            return digest.digest();
+        } catch (final NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(fatal);
         }
     }
 }

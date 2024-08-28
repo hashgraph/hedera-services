@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -168,10 +169,11 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
+            SemanticVersion latestVersion = version(10, 0, 0);
             schemaRegistry.migrate(
-                    new MerkleStateRoot(lifecycles),
+                    new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version)),
                     version(9, 0, 0),
-                    version(10, 0, 0),
+                    latestVersion,
                     config,
                     networkInfo,
                     mock(Metrics.class),
@@ -188,13 +190,13 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleStateRoot(lifecycles);
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
             for (int i = 1; i < versions.length; i++) {
                 versions[i] = version(0, i, 0);
             }
+            merkleTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
         }
 
         @Test
