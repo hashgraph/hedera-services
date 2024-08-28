@@ -99,13 +99,7 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private static final History EMPTY_HISTORY = new History();
 
-    /**
-     * Gives access to the current working state.
-     */
-    private final WorkingStateAccessor workingStateAccessor;
-    /**
-     * Used for looking up the max valid duration window for a transaction. This must be looked up dynamically.
-     */
+    /** Used for looking up the max valid duration window for a transaction. This must be looked up dynamically. */
     private final ConfigProvider configProvider;
     /**
      * Every record added to the cache has a unique transaction ID. Each of these must be recorded in the dedupe cache
@@ -144,9 +138,9 @@ public class RecordCacheImpl implements HederaRecordCache {
      * state.
      *
      * @param deduplicationCache A cache containing known {@link TransactionID}s, used for deduplication
+     * @param configProvider     Used for looking up the max valid duration window for a transaction dynamically
      * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
      * records must be saved in state or read from state.
-     * @param configProvider Used for looking up the max valid duration window for a transaction dynamically
      */
     @Inject
     public RecordCacheImpl(
@@ -154,12 +148,26 @@ public class RecordCacheImpl implements HederaRecordCache {
             @NonNull final WorkingStateAccessor workingStateAccessor,
             @NonNull final ConfigProvider configProvider) {
         this.deduplicationCache = requireNonNull(deduplicationCache);
-        this.workingStateAccessor = requireNonNull(workingStateAccessor);
         this.configProvider = requireNonNull(configProvider);
         this.histories = new ConcurrentHashMap<>();
 
-        // Rebuild the in-memory data structures based on the current working state at the moment of startup
-        final var queue = getReadableQueue();
+        rebuild(workingStateAccessor);
+    }
+
+    /**
+     * Rebuild the internal data structures based on the current working state. Called during startup and during
+     * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
+     * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
+     */
+    public void rebuild(@NonNull final WorkingStateAccessor workingStateAccessor) {
+        requireNonNull(workingStateAccessor);
+        histories.clear();
+        payerToTransactionIndex.clear();
+        // FUTURE: It doesn't hurt to clear the dedupe cache here, but is also probably not the best place to do it. The
+        // system should clear the dedupe cache directly and not indirectly through this call.
+        deduplicationCache.clear();
+
+        final var queue = getReadableQueue(workingStateAccessor);
         final var itr = queue.iterator();
         while (itr.hasNext()) {
             final var roundReceipts = itr.next();
@@ -386,7 +394,8 @@ public class RecordCacheImpl implements HederaRecordCache {
     /**
      * Utility method that get the readable queue from the working state
      */
-    private ReadableQueueState<TransactionReceiptEntries> getReadableQueue() {
+    private ReadableQueueState<TransactionReceiptEntries> getReadableQueue(
+            final WorkingStateAccessor workingStateAccessor) {
         final var states = requireNonNull(workingStateAccessor.getState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECEIPT_QUEUE);
     }

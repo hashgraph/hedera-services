@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Not exposed outside `hedera-app`.
  */
 public class RosterServiceImpl implements Service {
-
     @NonNull
     @Override
     public String getServiceName() {

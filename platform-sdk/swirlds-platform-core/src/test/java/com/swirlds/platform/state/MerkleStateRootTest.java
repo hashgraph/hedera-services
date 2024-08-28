@@ -920,7 +920,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test access to the platform state")
         void testAccessToPlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
                     .getReadableStates(PlatformStateService.NAME)
@@ -936,12 +936,12 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test update of the platform state")
         void testUpdatePlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState();
+            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
                     writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            PlatformStateAccessor newPlatformState = randomPlatformState();
+            PlatformStateAccessor newPlatformState = randomPlatformState(stateRoot.getPlatformState());
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();
 
@@ -977,8 +977,8 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Migrate from the previous version")
         void migrate() {
-            com.swirlds.platform.state.PlatformState platformState =
-                    (com.swirlds.platform.state.PlatformState) randomPlatformState();
+            com.swirlds.platform.state.PlatformState platformState = (com.swirlds.platform.state.PlatformState)
+                    randomPlatformState(new com.swirlds.platform.state.PlatformState());
             stateRoot.setChild(0, platformState);
             assertNull(stateRoot.getPreV054PlatformState());
 

@@ -162,7 +162,7 @@ public class RosterRetrieverTests {
                                 .build()))
                 .when(rosterState)
                 .roundRosterPairs();
-        lenient().doReturn(rosterMap).when(rosterReadableStates).get("ROSTER");
+        lenient().doReturn(rosterMap).when(rosterReadableStates).get("ROSTERS");
         lenient()
                 .doReturn(ROSTER_555)
                 .when(rosterMap)

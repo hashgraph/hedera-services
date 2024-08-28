@@ -25,7 +25,7 @@ public final class RosterStateId {
     /** The name of a service that owns Roster entities in state. */
     public static final String NAME = "RosterService";
     /** The name of the RosterMap. */
-    public static final String ROSTER_KEY = "ROSTER";
+    public static final String ROSTER_KEY = "ROSTERS";
     /** The name of the RosterState. */
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
 }
