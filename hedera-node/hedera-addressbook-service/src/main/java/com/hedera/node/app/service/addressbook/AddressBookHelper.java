@@ -52,11 +52,14 @@ public class AddressBookHelper {
      */
     public static long getNextNodeID(@NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(nodeStore);
-        final long maxNodeId = StreamSupport.stream(
-                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
-                .mapToLong(EntityNumber::number)
-                .max()
-                .orElse(-1L);
+        long maxNodeId = -1L;
+        if (nodeStore.keys() != null) {
+            maxNodeId = StreamSupport.stream(
+                            Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                    .mapToLong(EntityNumber::number)
+                    .max()
+                    .orElse(-1L);
+        }
         return maxNodeId + 1;
     }
 
