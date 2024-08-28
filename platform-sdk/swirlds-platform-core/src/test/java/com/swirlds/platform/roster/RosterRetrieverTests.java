@@ -143,7 +143,7 @@ public class RosterRetrieverTests {
         lenient().doReturn(ADDRESS_BOOK).when(platformState).addressBook();
         lenient().doReturn(consensusSnapshot).when(platformState).consensusSnapshot();
         lenient().doReturn(666L).when(consensusSnapshot).round();
-        lenient().doReturn(rosterReadableStates).when(state).getReadableStates("RosterServiceImpl");
+        lenient().doReturn(rosterReadableStates).when(state).getReadableStates("RosterService");
         lenient().doReturn(readableRosterState).when(rosterReadableStates).getSingleton("ROSTER_STATE");
         lenient().doReturn(rosterState).when(readableRosterState).get();
         lenient()
