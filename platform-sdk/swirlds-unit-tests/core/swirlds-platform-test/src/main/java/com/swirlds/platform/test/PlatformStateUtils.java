@@ -22,7 +22,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -39,16 +38,14 @@ public final class PlatformStateUtils {
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformStateAccessor randomPlatformState() {
-        return randomPlatformState(new Random());
+    public static PlatformStateAccessor randomPlatformState(PlatformStateAccessor platformState) {
+        return randomPlatformState(new Random(), platformState);
     }
 
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformStateAccessor randomPlatformState(final Random random) {
-        final PlatformStateAccessor platformState = new PlatformState();
-
+    public static PlatformStateAccessor randomPlatformState(final Random random, PlatformStateAccessor platformState) {
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
                 .withSize(4)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)

@@ -45,7 +45,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -492,7 +492,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final AccountID deletedId,
             @NonNull final AccountID obtainerId,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final DeleteCapableTransactionRecordBuilder recordBuilder,
+            @NonNull final DeleteCapableTransactionStreamBuilder recordBuilder,
             @NonNull final FreeAliasOnDeletion freeAliasOnDeletion) {
         // validate the semantics involving dynamic properties and state.
         // Gets delete and transfer accounts from state

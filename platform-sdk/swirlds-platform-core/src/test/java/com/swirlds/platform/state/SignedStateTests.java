@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
@@ -46,8 +45,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
-
-    private SemanticVersion version = SemanticVersion.newBuilder().major(1).build();
 
     /**
      * Generate a signed state.
@@ -210,7 +207,7 @@ class SignedStateTests {
     void alternateConstructorReservationsTest() {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
-        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
