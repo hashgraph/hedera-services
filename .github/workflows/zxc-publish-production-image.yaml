@@ -79,7 +79,7 @@ permissions:
 jobs:
   publish-image:
     name: ${{ inputs.custom-job-name || 'Publish Production Image (GCP)' }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     outputs:
       docker-registry: ${{ steps.set-registry.outputs.docker-registry }}
       docker-image: ${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node:${{ inputs.version }}
@@ -201,9 +201,11 @@ jobs:
       - name: Setup Docker Buildx Support
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
         with:
-          version: v0.15.1
+          version: v0.16.2
           driver-opts: network=host
-          buildkitd-config: /etc/docker/buildkitd.toml
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}

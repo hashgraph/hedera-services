@@ -16,15 +16,18 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -61,15 +64,17 @@ public class TokenAirdropBase {
     // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    protected static final String NFT_FOR_CONTRACT_TESTS = "nonFungibleTokens";
     // tokens with custom fees
     protected static final String FT_WITH_HBAR_FIXED_FEE = "fungibleTokenWithHbarCustomFee";
     protected static final String FT_WITH_HTS_FIXED_FEE = "fungibleTokenWithHtsCustomFee";
     protected static final String FT_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalFee";
+    protected static final String FT_WITH_FRACTIONAL_FEE_2 = "fungibleTokenWithFractionalFee2";
+    protected static final String FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS = "ftWithFractionalFeeNetOfTransfers";
     protected static final String NFT_WITH_HTS_FIXED_FEE = "NftWithHtsFixedFee";
     protected static final String NFT_WITH_ROYALTY_FEE = "NftWithRoyaltyFee";
     protected static final String DENOM_TOKEN = "denomToken";
     protected static final String HTS_COLLECTOR = "htsCollector";
-    protected static final String HTS_COLLECTOR2 = "htsCollector2";
     protected static final String HBAR_COLLECTOR = "hbarCollector";
     protected static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
     protected static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
@@ -119,7 +124,17 @@ public class TokenAirdropBase {
                         IntStream.range(10, 20)
                                 .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
                                 .toList()),
-
+                tokenCreate(NFT_FOR_CONTRACT_TESTS)
+                        .treasury(OWNER)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .name(NON_FUNGIBLE_TOKEN)
+                        .supplyKey(nftSupplyKey),
+                mintToken(
+                        NFT_FOR_CONTRACT_TESTS,
+                        IntStream.range(1, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
                 // all kind of receivers
                 cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
                 cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0),
@@ -145,8 +160,7 @@ public class TokenAirdropBase {
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .initialSupply(tokenTotal)
                         .withCustom(fixedHbarFee(hbarFee, HBAR_COLLECTOR)),
-                cryptoCreate(HTS_COLLECTOR),
-                cryptoCreate(HTS_COLLECTOR2),
+                cryptoCreate(HTS_COLLECTOR).balance(ONE_HUNDRED_HBARS),
                 tokenCreate(DENOM_TOKEN)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .initialSupply(tokenTotal),
@@ -156,7 +170,7 @@ public class TokenAirdropBase {
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .initialSupply(tokenTotal)
                         .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN, HTS_COLLECTOR)),
-                tokenAssociate(HTS_COLLECTOR2, FT_WITH_HTS_FIXED_FEE),
+                tokenAssociate(HTS_COLLECTOR, FT_WITH_HTS_FIXED_FEE),
                 newKeyNamed(nftWithCustomFeeSupplyKey),
                 tokenCreate(NFT_WITH_HTS_FIXED_FEE)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
@@ -164,13 +178,26 @@ public class TokenAirdropBase {
                         .supplyKey(nftWithCustomFeeSupplyKey)
                         .supplyType(TokenSupplyType.INFINITE)
                         .initialSupply(0)
-                        .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FIXED_FEE, HTS_COLLECTOR2)),
+                        .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FIXED_FEE, HTS_COLLECTOR)),
                 mintToken(NFT_WITH_HTS_FIXED_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
                 tokenCreate(FT_WITH_FRACTIONAL_FEE)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
                         .tokenType(FUNGIBLE_COMMON)
-                        .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                        .initialSupply(Long.MAX_VALUE),
+                        .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), HTS_COLLECTOR))
+                        .initialSupply(Long.MAX_VALUE)
+                        .payingWith(HTS_COLLECTOR),
+                tokenCreate(FT_WITH_FRACTIONAL_FEE_2)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), HTS_COLLECTOR))
+                        .initialSupply(Long.MAX_VALUE)
+                        .payingWith(HTS_COLLECTOR),
+                tokenCreate(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .withCustom(fractionalFeeNetOfTransfers(1, 10L, 1L, OptionalLong.of(100), HTS_COLLECTOR))
+                        .initialSupply(Long.MAX_VALUE)
+                        .payingWith(HTS_COLLECTOR),
                 tokenCreate(NFT_WITH_ROYALTY_FEE)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -188,13 +215,17 @@ public class TokenAirdropBase {
 
     protected static SpecOperation[] setUpEntitiesPreHIP904() {
         final var validAlias = "validAlias";
+        final var aliasTwo = "alias2.0";
         final var sponsor = "sponsor";
         final var t = new ArrayList<SpecOperation>(List.of(
                 // create hollow account with 0 auto associations
                 cryptoCreate(sponsor).balance(ONE_HUNDRED_HBARS),
-                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE)));
+                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE),
+                newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE)));
         t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
+        t.addAll(Arrays.stream(createHollowAccountFrom(aliasTwo)).toList());
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
+        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, aliasTwo)));
         return t.toArray(new SpecOperation[0]);
     }
 
@@ -210,5 +241,17 @@ public class TokenAirdropBase {
      */
     protected HapiTokenCreate createTokenWithName(String tokenName) {
         return tokenCreate(tokenName).tokenType(TokenType.FUNGIBLE_COMMON).treasury(OWNER);
+    }
+
+    protected SpecOperation[] deployMutableContract(String name, int maxAutoAssociations) {
+        var t = List.of(
+                newKeyNamed(name),
+                uploadInitCode(name),
+                contractCreate(name)
+                        .maxAutomaticTokenAssociations(maxAutoAssociations)
+                        .adminKey(name)
+                        .gas(500_000L));
+
+        return t.toArray(new SpecOperation[0]);
     }
 }

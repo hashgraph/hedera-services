@@ -22,6 +22,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -125,7 +126,7 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
             throws IOException;
 
     /**
-     * Load the record for a leaf node by key
+     * Load the record for a leaf node by key.
      *
      * @param key
      * 		the key for a leaf
@@ -133,10 +134,12 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * @throws IOException
      * 		If there was a problem reading the leaf record
      */
+    @Nullable
     VirtualLeafRecord<K, V> loadLeafRecord(final K key) throws IOException;
 
     /**
-     * Load the record for a leaf node by path
+     * Load the record for a leaf node by path. If the path is outside the current data source's
+     * leaf path range, this method returns {@code null}.
      *
      * @param path
      * 		the path for a leaf
@@ -144,10 +147,12 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * @throws IOException
      * 		If there was a problem reading the leaf record
      */
+    @Nullable
     VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException;
 
     /**
-     * Find the path of the given key
+     * Find the path of the given key.
+     *
      * @param key
      * 		the key for a path
      * @return the path or INVALID_PATH if not stored
@@ -157,7 +162,8 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     long findKey(final K key) throws IOException;
 
     /**
-     * Load a virtual node hash by path.
+     * Load a virtual node hash by path. If the path is outside [0, last leaf path] range, this
+     * method returns {@code null}.
      *
      * @param path virtual node path
      * @return The node's record if one was stored for the given path; {@code null} if not stored or
@@ -165,6 +171,7 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * @throws IOException
      * 		If there was a problem loading the leaf's hash from data source
      */
+    @Nullable
     Hash loadHash(final long path) throws IOException;
 
     /**

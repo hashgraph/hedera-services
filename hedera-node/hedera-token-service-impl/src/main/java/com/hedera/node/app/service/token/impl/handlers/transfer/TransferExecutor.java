@@ -120,18 +120,28 @@ public class TransferExecutor extends BaseTokenHandler {
     }
 
     /**
+     * <p>
      * Charges only the custom fees if any. Used when custom fees should be prepaid in
      * {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+     * </p>
+     *
      *
      * @param txn             transaction body
      * @param transferContext transfer context
+     * @return transfer transaction body after custom fees assessment
+     * <p>
+     * Note : In case of fractional fee with {@code netOfTransfers = false}, the original transfer
+     * body is updated. A new account-amount is added to represent fractional part of the original
+     * value that need to be transferred to the fee collector.
+     * </p>
      */
-    protected void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
+    protected CryptoTransferTransactionBody chargeCustomFeeForAirdrops(
+            TransactionBody txn, TransferContextImpl transferContext) {
         final var customFeeStep = new CustomFeeAssessmentStep(txn.cryptoTransferOrThrow());
         var transferBodies = customFeeStep.assessCustomFees(transferContext);
         var topLevelPayer = transferContext.getHandleContext().payer();
         // we skip the origin (first) txn body,
-        // so we can adjust changes, that are related only to the custom fees
+        // so we can adjust balance changes, that are related ONLY to the custom fees
         for (int i = 1, n = transferBodies.size(); i < n; i++) {
             // adjust balances
             var adjustHbarChangesStep = new AdjustHbarChangesStep(transferBodies.get(i), topLevelPayer);
@@ -140,6 +150,7 @@ public class TransferExecutor extends BaseTokenHandler {
                     new AdjustFungibleTokenChangesStep(transferBodies.get(i).tokenTransfers(), topLevelPayer);
             adjustFungibleChangesStep.doIn(transferContext);
         }
+        return transferBodies.getFirst();
     }
 
     /**

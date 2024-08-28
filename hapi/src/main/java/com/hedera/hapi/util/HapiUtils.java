@@ -118,10 +118,7 @@ public class HapiUtils {
 
     /** Converts the given {@link Instant} into a {@link Timestamp}. */
     public static Timestamp asTimestamp(@NonNull final Instant instant) {
-        return Timestamp.newBuilder()
-                .seconds(instant.getEpochSecond())
-                .nanos(instant.getNano())
-                .build();
+        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 
     /** Converts the given {@link Timestamp} into an {@link Instant}. */

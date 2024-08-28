@@ -25,7 +25,17 @@ import com.swirlds.config.api.ConfigProperty;
  *
  * @param upgradeArtifactsPath path to the location where upgrade files are stored once uncompressed, and upgrade
  *                             marker files are written
+ * @param upgradeSysFilesLoc path to the location where post-upgrade system files are located
+ * @param upgradeFeeSchedulesFile name of the file containing the post-upgrade fee schedules
+ * @param upgradeThrottlesFile name of the file containing the post-upgrade throttles
+ * @param upgradePropertyOverridesFile name of the file containing the post-upgrade override properties
+ * @param upgradePermissionOverridesFile name of the file containing the post-upgrade override permissions
  */
 @ConfigData("networkAdmin")
 public record NetworkAdminConfig(
-        @ConfigProperty(defaultValue = "data/upgrade/current") @NodeProperty String upgradeArtifactsPath) {}
+        @ConfigProperty(defaultValue = "data/upgrade/current") @NodeProperty String upgradeArtifactsPath,
+        @ConfigProperty(defaultValue = "data/config") String upgradeSysFilesLoc,
+        @ConfigProperty(defaultValue = "feeSchedules.json") String upgradeFeeSchedulesFile,
+        @ConfigProperty(defaultValue = "throttles.json") String upgradeThrottlesFile,
+        @ConfigProperty(defaultValue = "application-override.properties") String upgradePropertyOverridesFile,
+        @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile) {}

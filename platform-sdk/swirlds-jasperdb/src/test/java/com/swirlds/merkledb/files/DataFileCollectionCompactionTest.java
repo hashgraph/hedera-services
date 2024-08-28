@@ -451,6 +451,7 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
         Files.createDirectories(testDir);
         final LongListOffHeap index = new LongListOffHeap();
+        index.updateValidRange(0, numFiles * numValues);
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         final DataFileCompactor<long[]> compactor =
@@ -576,6 +577,7 @@ class DataFileCollectionCompactionTest {
                 new DataFileCompactor<>(config, storeName, store, index, null, null, null, null);
 
         final int numFiles = 2;
+        index.updateValidRange(0, numFiles * MAXKEYS);
         for (long i = 0; i < numFiles; i++) {
             store.startWriting();
             for (int j = 0; j < MAXKEYS; ++j) {
