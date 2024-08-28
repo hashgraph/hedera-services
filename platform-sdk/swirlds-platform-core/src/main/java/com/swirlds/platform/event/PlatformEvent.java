@@ -21,7 +21,10 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLog
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
@@ -30,7 +33,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.EventCoreUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -41,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -63,9 +69,12 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         public static final int BIRTH_ROUND = 3;
     }
 
-    private UnsignedEvent unsignedEvent;
-    /** creator's signature for this event */
-    private Bytes signature;
+    /** The gossip event */
+    private GossipEvent gossipEvent;
+    /** List of wrapped transaction */
+    private List<TransactionWrapper> transactions;
+    /** Self descriptor */
+    private EventDescriptorWrapper descriptor;
 
     private Instant timeReceived;
 
@@ -114,7 +123,8 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
-        this(unsignedEvent, Bytes.wrap(signature));
+        this(new GossipEvent(
+                unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions()));
     }
 
     /**
@@ -122,15 +132,23 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final Bytes signature) {
-        this.unsignedEvent = unsignedEvent;
-        this.signature = signature;
+        this(new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions()));
+    }
+
+    /**
+     * @param gossipEvent the gossip event
+     */
+    public PlatformEvent(final GossipEvent gossipEvent) {
+        this.gossipEvent = gossipEvent;
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
-        if (unsignedEvent.getHash() != null) {
-            setHash(unsignedEvent.getHash());
+        if (gossipEvent.eventCore() != null) {
+            this.birthRound = gossipEvent.eventCore().birthRound();
         }
-        this.birthRound = unsignedEvent.getBirthRound();
+        transactions = gossipEvent.eventTransaction().stream()
+                .map(TransactionWrapper::new)
+                .toList();
     }
 
     /**
@@ -140,7 +158,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        return new PlatformEvent(unsignedEvent, signature);
+        return new PlatformEvent(gossipEvent);
     }
 
     /**
@@ -174,30 +192,53 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out);
-        unsignedEvent.serializeLegacyHashBytes(out);
+
+        EventSerializationUtils.serializeLegacyHashBytes(
+                out,
+                new BasicSoftwareVersion(getSoftwareVersion().major()),
+                getEventCore(),
+                getSelfParent(),
+                getOtherParents(),
+                gossipEvent.eventTransaction());
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        unsignedEvent.serialize(out);
-        out.writeInt((int) signature.length());
-        signature.writeTo(out);
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+
+        EventSerializationUtils.serializeEvent(
+                out,
+                new BasicSoftwareVersion(getSoftwareVersion().major()),
+                getEventCore(),
+                getSelfParent(),
+                getOtherParents(),
+                gossipEvent.eventTransaction());
+        out.writeInt((int) gossipEvent.signature().length());
+        gossipEvent.signature().writeTo(out);
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        unsignedEvent = UnsignedEvent.deserialize(in);
-        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
-        this.signature = Bytes.wrap(signature);
-        timeReceived = Instant.now();
-        this.birthRound = unsignedEvent.getBirthRound();
+        final UnsignedEvent unsignedEvent = UnsignedEvent.deserialize(in);
+        final Bytes signature = Bytes.wrap(in.readByteArray(SignatureType.RSA.signatureLength()));
+
+        this.gossipEvent =
+                new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions());
+        this.timeReceived = Instant.now();
+        this.senderId = null;
+        this.consensusData = NO_CONSENSUS;
+        if (gossipEvent.eventCore() != null) {
+            this.birthRound = gossipEvent.eventCore().birthRound();
+        }
+        transactions = gossipEvent.eventTransaction().stream()
+                .map(TransactionWrapper::new)
+                .toList();
     }
 
     /**
      * Get the hashed data for the event.
      */
-    public UnsignedEvent getUnsignedEvent() {
-        return unsignedEvent;
+    public GossipEvent getGossipEvent() {
+        return gossipEvent;
     }
 
     /**
@@ -206,7 +247,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     @Override
     @NonNull
     public Bytes getSignature() {
-        return signature;
+        return gossipEvent.signature();
     }
 
     /**
@@ -215,23 +256,39 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the descriptor for the event
      */
     public EventDescriptorWrapper getDescriptor() {
-        return unsignedEvent.getDescriptor();
+        if (descriptor == null) {
+            if (getHash() == null) {
+                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
+            }
+
+            descriptor = new EventDescriptorWrapper(new EventDescriptor(
+                    getHash().getBytes(), getEventCore().creatorNodeId(), getBirthRound(), getGeneration()));
+        }
+
+        return descriptor;
     }
 
     @Override
     public Iterator<Transaction> transactionIterator() {
-        return new TypedIterator<>(unsignedEvent.getTransactions().iterator());
+        return new TypedIterator<>(transactions.iterator());
     }
 
     @Override
     public Instant getTimeCreated() {
-        return unsignedEvent.getTimeCreated();
+        if (gossipEvent.eventCore() != null && gossipEvent.eventCore().timeCreated() != null) {
+            return CommonUtils.pbjTimestampToInstant(gossipEvent.eventCore().timeCreated());
+        }
+
+        return null;
     }
 
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        return unsignedEvent.getSoftwareVersion().getPbjSemanticVersion();
+        if (getEventCore().version() != null) {
+            return getEventCore().version();
+        }
+        throw new IllegalStateException("Software version not set");
     }
 
     /**
@@ -240,13 +297,13 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     @NonNull
     @Override
     public EventCore getEventCore() {
-        return unsignedEvent.getEventCore();
+        return gossipEvent.eventCoreOrThrow();
     }
 
     @NonNull
     @Override
     public NodeId getCreatorId() {
-        return unsignedEvent.getCreatorId();
+        return new NodeId(getEventCore().creatorNodeId());
     }
 
     /**
@@ -255,7 +312,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the generation of the event
      */
     public long getGeneration() {
-        return unsignedEvent.getGeneration();
+        return EventCoreUtils.getGeneration(getEventCore());
     }
 
     /**
@@ -271,7 +328,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return the number of transactions this event contains
      */
     public int getTransactionCount() {
-        return unsignedEvent.getTransactions().size();
+        return transactions.size();
     }
 
     /**
@@ -329,7 +386,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
 
     @Override
     public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
-        return new TypedIterator<>(unsignedEvent.getTransactions().iterator());
+        return new TypedIterator<>(transactions.iterator());
     }
 
     /**
@@ -364,11 +421,14 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
-        final List<TransactionWrapper> transactions = unsignedEvent.getTransactions();
 
         for (int i = 0; i < transactions.size(); i++) {
             transactions.get(i).setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
         }
+    }
+
+    public List<TransactionWrapper> getTransactions() {
+        return transactions;
     }
 
     /**
@@ -417,7 +477,10 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     @Nullable
     public EventDescriptorWrapper getSelfParent() {
-        return unsignedEvent.getSelfParent();
+        if (!getEventCore().parents().isEmpty()) {
+            return new EventDescriptorWrapper(getEventCore().parents().getFirst());
+        }
+        return null;
     }
 
     /**
@@ -427,24 +490,35 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     @NonNull
     public List<EventDescriptorWrapper> getOtherParents() {
-        return unsignedEvent.getOtherParents();
+        if (getEventCore().parents().size() > 1) {
+            return getEventCore().parents().subList(1, getEventCore().parents().size()).stream()
+                    .map(EventDescriptorWrapper::new)
+                    .toList();
+        }
+        return Collections.emptyList();
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
     @NonNull
     public List<EventDescriptorWrapper> getAllParents() {
-        return unsignedEvent.getAllParents();
+        if (gossipEvent.eventCore() == null) {
+            return Collections.emptyList();
+        }
+
+        return getEventCore().parents().stream()
+                .map(EventDescriptorWrapper::new)
+                .toList();
     }
 
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(unsignedEvent.getDescriptor());
+        stringBuilder.append(getDescriptor());
         stringBuilder.append("\n");
         stringBuilder.append("    sp: ");
 
-        final EventDescriptorWrapper selfParent = unsignedEvent.getSelfParent();
+        final EventDescriptorWrapper selfParent = getSelfParent();
         if (selfParent != null) {
             stringBuilder.append(selfParent);
         } else {
@@ -453,14 +527,14 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         stringBuilder.append("\n");
 
         int otherParentCount = 0;
-        for (final EventDescriptorWrapper otherParent : unsignedEvent.getOtherParents()) {
+        for (final EventDescriptorWrapper otherParent : getOtherParents()) {
             stringBuilder.append("    op");
             stringBuilder.append(otherParentCount);
             stringBuilder.append(": ");
             stringBuilder.append(otherParent);
 
             otherParentCount++;
-            if (otherParentCount != unsignedEvent.getOtherParents().size()) {
+            if (otherParentCount != getOtherParents().size()) {
                 stringBuilder.append("\n");
             }
         }
@@ -485,8 +559,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         }
 
         final PlatformEvent that = (PlatformEvent) o;
-        return Objects.equals(getUnsignedEvent(), that.getUnsignedEvent())
-                && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(getEventCore(), that.getEventCore()) && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
@@ -497,7 +570,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return true if the gossiped data of this event is equal to the gossiped data of the other event
      */
     public boolean equalsGossipedData(@NonNull final PlatformEvent that) {
-        return Objects.equals(getUnsignedEvent(), that.getUnsignedEvent())
+        return Objects.equals(getEventCore(), that.getEventCore())
                 && Objects.equals(getSignature(), that.getSignature());
     }
 
@@ -509,7 +582,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     @Override
     public void setHash(final Hash hash) {
         super.setHash(hash);
-        unsignedEvent.setHash(hash);
     }
 
     /**
@@ -520,8 +592,8 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> unsignedEvent.getGeneration();
-            case BIRTH_ROUND_THRESHOLD -> unsignedEvent.getBirthRound();
+            case GENERATION_THRESHOLD -> getGeneration();
+            case BIRTH_ROUND_THRESHOLD -> getBirthRound();
         };
     }
 }

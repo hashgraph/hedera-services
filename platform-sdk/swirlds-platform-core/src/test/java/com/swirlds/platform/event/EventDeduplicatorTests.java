@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -195,12 +196,14 @@ class EventDeduplicatorTests {
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
-                final PlatformEvent duplicateEvent = new PlatformEvent(
-                        submittedEvents
-                                .get(random.nextInt(submittedEvents.size()))
-                                .getUnsignedEvent(),
-                        randomSignatureBytes(random) // randomize the signature
-                        );
+                final GossipEvent gossipEvent = submittedEvents
+                        .get(random.nextInt(submittedEvents.size()))
+                        .getGossipEvent();
+                final PlatformEvent duplicateEvent = new PlatformEvent(new GossipEvent.Builder()
+                        .eventCore(gossipEvent.eventCore())
+                        .signature(randomSignatureBytes(random)) // randomize the signature
+                        .eventTransaction(gossipEvent.eventTransaction())
+                        .build());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient) {

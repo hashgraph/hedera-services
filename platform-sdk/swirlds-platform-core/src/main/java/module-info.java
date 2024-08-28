@@ -136,6 +136,7 @@ module com.swirlds.platform.core {
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
+    requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;

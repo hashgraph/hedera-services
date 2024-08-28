@@ -23,8 +23,10 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -42,8 +44,10 @@ public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        hashUnsignedEvent(event.getUnsignedEvent());
-        event.setHash(event.getUnsignedEvent().getHash());
+
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        event.setHash(hash);
+
         return event;
     }
 
@@ -53,8 +57,14 @@ public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        EventCore.PROTOBUF.toBytes(event.getEventCore()).writeTo(eventDigest);
-        event.getTransactions().forEach(transactionWrapper -> {
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        event.setHash(hash);
+    }
+
+    @NonNull
+    public Hash hashEvent(@NonNull final EventCore eventCore, @NonNull final List<TransactionWrapper> transactions) {
+        EventCore.PROTOBUF.toBytes(eventCore).writeTo(eventDigest);
+        transactions.forEach(transactionWrapper -> {
             EventTransaction.PROTOBUF
                     .toBytes(transactionWrapper.getTransaction())
                     .writeTo(transactionDigest);
@@ -62,6 +72,7 @@ public class PbjBytesHasher implements EventHasher, UnsignedEventHasher {
             transactionWrapper.setHash(Bytes.wrap(transactionHash));
             eventDigest.update(transactionHash);
         });
-        event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
+
+        return new Hash(eventDigest.digest(), DigestType.SHA_384);
     }
 }
