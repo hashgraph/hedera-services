@@ -58,7 +58,7 @@ class PbjConverterTest {
 
     public static final NodeId NODE_ID_1 = new NodeId(1);
     public static final NodeId NODE_ID_2 = new NodeId(2);
-    private final Random random = new Random();
+    private static final Random random = new Random();
 
     @Test
     void testToPbjPlatformState() {
@@ -86,7 +86,7 @@ class PbjConverterTest {
         assertAddressBook(platformState.getAddressBook(), pbjPlatformState.addressBook());
     }
 
-    private PlatformStateAccessor randomPlatformState() {
+    static PlatformStateAccessor randomPlatformState() {
         final PlatformStateValueAccumulator platformState = new PlatformStateValueAccumulator();
         platformState.setCreationSoftwareVersion(randomSoftwareVersion());
         platformState.setRoundsNonAncient(nextInt());
@@ -555,7 +555,7 @@ class PbjConverterTest {
         }
     }
 
-    private ConsensusSnapshot randomSnapshot() {
+    private static ConsensusSnapshot randomSnapshot() {
         return new ConsensusSnapshot(
                 nextInt(),
                 asList(randomHash(), randomHash()),
@@ -564,7 +564,7 @@ class PbjConverterTest {
                 randomInstant(random));
     }
 
-    private AddressBook randomAddressBook() {
+    static AddressBook randomAddressBook() {
         final AddressBook addresses = new AddressBook();
         addresses.setRound(nextInt());
         addresses.add(randomAddress(NODE_ID_1));
@@ -573,7 +573,7 @@ class PbjConverterTest {
         return addresses;
     }
 
-    private Address randomAddress(NodeId nodeId) {
+    private static Address randomAddress(NodeId nodeId) {
         return new Address(
                 nodeId,
                 randomString(random, 10),
@@ -603,7 +603,7 @@ class PbjConverterTest {
                 randomString(random, 10));
     }
 
-    private Bytes randomEncodedCertificate() {
+    private static Bytes randomEncodedCertificate() {
         try {
             return Bytes.wrap(randomX509Certificate().getCertificate().getEncoded());
         } catch (CertificateEncodingException e) {
@@ -611,11 +611,11 @@ class PbjConverterTest {
         }
     }
 
-    private SoftwareVersion randomSoftwareVersion() {
+    private static SoftwareVersion randomSoftwareVersion() {
         return new BasicSoftwareVersion(nextInt(1, 100));
     }
 
-    private SerializableX509Certificate randomX509Certificate() {
+    private static SerializableX509Certificate randomX509Certificate() {
         try {
             final SecureRandom secureRandom = CryptoUtils.getDetRandom();
 
