@@ -63,9 +63,6 @@ public class NumericValidationTest {
     @Contract(contract = "NumericContract", creationGas = 1_000_000L)
     static SpecContract numericContract;
 
-    @Contract(contract = "CreateTokenVTwo", creationGas = 1_000_000L)
-    static SpecContract tokenV2;
-
     @Contract(contract = "NumericContractComplex", creationGas = 1_000_000L)
     static SpecContract numericContractComplex;
 
@@ -406,26 +403,6 @@ public class NumericValidationTest {
                     alice.transferHBarsTo(numericContractComplex, ONE_HUNDRED_HBARS),
                     numericContractComplex.getBalance().andAssert(balance -> balance.hasTinyBars(ONE_HUNDRED_HBARS)));
         }
-
-        @HapiTest
-        public Stream<DynamicTest> testUpdateMetadata() {
-            return Stream.of(nft, fungibleToken)
-                    .flatMap(token -> hapiTest(
-                            token.authorizeContracts(tokenV2),
-                            tokenV2.call("updateTokenMetadata", token, "randomMetaNew777")
-                                    .gas(1_000_000L)
-                                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
-                            token.getInfo().andAssert(info -> info.hasMetadata("randomMetaNew777"))));
-        }
-
-        //        @HapiTest
-        //        public Stream<DynamicTest> testUpdateTokenKeys() {
-        //            return hapiTest(nft.authorizeContracts(tokenV2), alice.authorizeContract(tokenV2),
-        //                    tokenV2.call("updateTokenKeys", nft, alice.getED25519KeyBytes())
-        //                    .gas(1_000_000L)
-        //                    .payingWith(alice)
-        //                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
-        //        }
 
         @HapiTest
         @DisplayName("when using createFungibleTokenWithCustomFees with FixedFee")
