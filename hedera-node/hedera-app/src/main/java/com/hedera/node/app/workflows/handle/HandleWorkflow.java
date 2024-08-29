@@ -329,6 +329,7 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
+        final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -342,7 +343,6 @@ public class HandleWorkflow {
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
-                final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
                 if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
@@ -361,7 +361,12 @@ public class HandleWorkflow {
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
             // Note that we don't yet support producing ONLY blocks, because we haven't integrated
             // translators from block items to records for answering queries
-            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
+            if (blockStreamConfig.streamRecords()) {
+                recordCache.add(
+                        userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
+            } else {
+                throw new IllegalStateException("Records must be produced directly without block item translators");
+            }
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
