@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
@@ -55,13 +56,13 @@ public class V0540RosterSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(ROSTER_STATES_KEY, RosterState.PROTOBUF),
-                StateDefinition.onDisk(ROSTER_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
+                StateDefinition.singleton(RosterStateId.ROSTER_STATES_KEY, RosterState.PROTOBUF),
+                StateDefinition.onDisk(RosterStateId.ROSTER_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
+        final var rosterState = ctx.newStates().getSingleton(RosterStateId.ROSTER_STATES_KEY);
         if (rosterState.get() == null) {
             log.info("Creating default roster state");
             rosterState.put(RosterState.DEFAULT);

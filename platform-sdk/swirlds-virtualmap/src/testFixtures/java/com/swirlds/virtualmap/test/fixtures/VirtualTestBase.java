@@ -131,6 +131,7 @@ public class VirtualTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
         registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
         registry.registerConstructables("com.swirlds.virtualmap");
+        registry.registerConstructables("com.swirlds.virtualmap.test.fixtures");
         registry.registerConstructables("com.swirlds.common.crypto");
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
     }

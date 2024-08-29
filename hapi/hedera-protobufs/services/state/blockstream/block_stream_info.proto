@@ -37,11 +37,12 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A message stored in state to maintain block stream parameters. Nodes use this
- * information for three purposes. First, to maintain hash chain continuity at
- * restart and reconnect boundaries. Second, to store historical hashes for
- * implementation of the EVM `BLOCKHASH` and `PREVRANDAO` opcodes. Third, to track
- * the amount of consensus time that has passed between blocks.
+ * A message stored in state to maintain block stream parameters.<br/>
+ * Nodes use this information for three purposes.
+ * 1. To maintain hash chain continuity at restart and reconnect boundaries.
+ * 1. To store historical hashes for implementation of the EVM `BLOCKHASH`
+ *    and `PREVRANDAO` opcodes.
+ * 1. To track the amount of consensus time that has passed between blocks.
  *
  * This value MUST be updated for every block.<br/>
  * This value MUST be transmitted in the "state changes" section of
@@ -52,13 +53,14 @@ option java_multiple_files = true;
 message BlockStreamInfo {
     /**
      * A block number.<br/>
-     * The number of the block this message describes.
+     * This is the current block number.
      */
     uint64 block_number = 1;
 
     /**
-     * The first consensus time in this block.<br/>
-     * This is used to determine if this block was the first across an
+     * A consensus time for the current block.<br/>
+     * This is the _first_ consensus time in the current block, and
+     * is used to determine if this block was the first across an
      * important boundary in consensus time, such as UTC midnight.
      * This may also be used to purge entities expiring between the last
      * block time and this time.
@@ -68,17 +70,19 @@ message BlockStreamInfo {
     /**
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
-     * is used as a seed value for a pseudo-random number generator and to
-     * implement the EVM `PREVRANDAO` opcode.
+     * is used as a seed value for a pseudo-random number generator.<br/>
+     * This is also requiried to implement the EVM `PREVRANDAO` opcode.
      */
     bytes trailing_output_hashes = 3;
 
     /**
-     * A concatenation of up to 256 trailing block hashes.<br/>
+     * A concatenation of hash values.<br/>
+     * This field combines up to 256 trailing block hashes.
+     * <p>
      * If this message is for block number N, then the earliest available
-     * hash will be for block number N-256, and the latest available hash
-     * will be for block N-1. This is required to implement the EVM
-     * `BLOCKHASH` opcode.
+     * hash SHALL be for block number N-256.<br/>
+     * The latest available hash SHALL be for block N-1.<br/>
+     * This is REQUIRED to implement the EVM `BLOCKHASH` opcode.
      */
     bytes trailing_block_hashes = 4;
 }

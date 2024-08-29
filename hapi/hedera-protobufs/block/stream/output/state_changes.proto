@@ -792,7 +792,7 @@ message MapChangeValue {
         proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
 
         /**
-         * A pending roster value.
+         * A roster value.
          */
         com.hedera.hapi.node.state.roster.Roster roster_value = 16;
     }
@@ -818,7 +818,7 @@ message QueuePushChange {
         google.protobuf.StringValue proto_string_element = 2;
 
         /**
-         * All the transaction receipts for a round added to queue state.
+         * All transaction receipts for a round added to queue state.
          */
         proto.TransactionReceiptEntries transaction_receipt_entries_element = 3;
     }

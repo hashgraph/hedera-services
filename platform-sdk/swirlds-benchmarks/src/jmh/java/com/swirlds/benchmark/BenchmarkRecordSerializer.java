@@ -18,7 +18,7 @@ package com.swirlds.benchmark;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.BaseSerializer;
+import com.swirlds.virtualmap.serialize.BaseSerializer;
 
 public class BenchmarkRecordSerializer implements BaseSerializer<BenchmarkRecord> {
 
