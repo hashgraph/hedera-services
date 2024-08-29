@@ -1995,7 +1995,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("with custom fee to collector")
+        @DisplayName("with custom royalty fee with fallback to collector succeeds when exempt")
         final Stream<DynamicTest> customFeeToCollector() {
             var collectorContract = "PayReceivable";
             var nftWithCustomFee = "nfTokenWithCustomFee";
@@ -2017,7 +2017,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("with custom fee to different collector when exempt")
+        @DisplayName("with multiple custom royalty fee with fallback succeeds when exempt")
         final Stream<DynamicTest> customFeeToDifferentCollectorWhenExempt() {
             var collectorContract = "PayReceivable";
             var nftCollector = "nftCollector";
