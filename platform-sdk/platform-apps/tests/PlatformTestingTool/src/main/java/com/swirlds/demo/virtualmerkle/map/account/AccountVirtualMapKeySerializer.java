@@ -19,7 +19,7 @@ package com.swirlds.demo.virtualmerkle.map.account;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

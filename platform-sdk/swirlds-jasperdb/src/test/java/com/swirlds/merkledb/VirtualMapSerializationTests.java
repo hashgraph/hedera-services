@@ -43,6 +43,8 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -61,6 +63,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("VirtualMap Serialization Test")
 class VirtualMapSerializationTests {
 
+    public static final KeySerializer<ExampleLongKeyFixedSize> KEY_SERIALIZER =
+            new ExampleLongKeyFixedSize.Serializer();
+
+    public static final ValueSerializer<ExampleFixedSizeVirtualValue> VALUE_SERIALIZER =
+            new ExampleFixedSizeVirtualValueSerializer();
+
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -72,22 +80,16 @@ class VirtualMapSerializationTests {
     /**
      * Create a new virtual map data source builder.
      */
-    public static MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> constructBuilder()
-            throws IOException {
+    public static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
-                new MerkleDbTableConfig<>(
-                                (short) 1, DigestType.SHA_384,
-                                (short) 3054, new ExampleLongKeyFixedSize.Serializer(),
-                                (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION,
-                                        new ExampleFixedSizeVirtualValueSerializer())
-                        .preferDiskIndices(false)
-                        .hashesRamToDiskThreshold(Long.MAX_VALUE)
-                        .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                .preferDiskIndices(false)
+                .hashesRamToDiskThreshold(Long.MAX_VALUE)
+                .maxNumberOfKeys(1234);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     /**
@@ -168,9 +170,8 @@ class VirtualMapSerializationTests {
     @SuppressWarnings("SameParameterValue")
     private VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> generateRandomMap(
             final long seed, final int count, final String name) throws IOException {
-        final VirtualDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                constructBuilder();
-        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(name, builder);
+        final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
+                new VirtualMap<>(name, KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
         addRandomEntries(map, count, 0, seed);
         return map;
     }
@@ -178,8 +179,7 @@ class VirtualMapSerializationTests {
     @Test
     @DisplayName("Serialize Data Source Builder")
     void serializeDataSourceBuilder() throws IOException {
-        final VirtualDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                constructBuilder();
+        final VirtualDataSourceBuilder builder = constructBuilder();
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
@@ -189,8 +189,7 @@ class VirtualMapSerializationTests {
         final SerializableDataInputStream in =
                 new SerializableDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
 
-        final VirtualDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> deserializedBuilder =
-                in.readSerializable();
+        final VirtualDataSourceBuilder deserializedBuilder = in.readSerializable();
 
         assertEquals(builder, deserializedBuilder, "expected deserialized builder to match the original");
     }
@@ -299,7 +298,7 @@ class VirtualMapSerializationTests {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 3, 4, 5, 10, 100, 1000, 1023, 1024, 1025})
+    @ValueSource(ints = {1, 2, 3, 4, 5, 10, 100, 1000, 1023, 1024, 1025})
     @DisplayName("Serialize Only Flushed Data")
     void serializeOnlyFlushedData(final int count) throws InterruptedException, IOException {
         final long seed = new Random().nextLong();

@@ -17,64 +17,28 @@
 package com.swirlds.merkledb.files;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 @Disabled
 class DataFileWriterTest {
 
-    private DataFileWriter<Object> dataFileWriter;
-
-    @Mock
-    private BaseSerializer<Object> dataItemSerializer;
-
-    private final CountDownLatch serializeLatch = new CountDownLatch(1);
-    private final AtomicInteger callCount = new AtomicInteger(0);
+    private DataFileWriter dataFileWriter;
 
     @BeforeEach
     public void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
-        when(dataItemSerializer.getSerializedSize()).thenReturn(1);
-        when(dataItemSerializer.getCurrentDataVersion()).thenReturn(1L);
-        /*
-        when(dataItemSerializer.copyItem(anyLong(), anyInt(), any(), any()))
-                .thenAnswer((Answer<Integer>) invocation -> {
-                    int i = callCount.incrementAndGet();
-                    if (i == 1) {
-                        // on the first call it throws an exception to get to `moveMmapBuffer` method in the catch block
-                        throw new BufferOverflowException();
-                    } else {
-                        try {
-                            // here it waits to be interrupted
-                            serializeLatch.await();
-                        } catch (InterruptedException e) {
-                            // interrupted exception is expected
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-
-                    return 1;
-                });
-        */
-
         Path dataFileWriterPath = Files.createTempDirectory("dataFileWriter");
-        dataFileWriter = new DataFileWriter<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
+        dataFileWriter = new DataFileWriter("test", dataFileWriterPath, 1, Instant.now(), 1);
     }
 
     /**
@@ -90,7 +54,7 @@ class DataFileWriterTest {
                 BufferedData allocate = BufferedData.allocate(10);
                 allocate.writeBytes("test".getBytes());
                 allocate.flip();
-                dataFileWriter.writeCopiedDataItem(allocate);
+                dataFileWriter.storeDataItem(allocate);
             } catch (IOException e) {
                 throw new RuntimeException();
             }
