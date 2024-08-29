@@ -4,6 +4,7 @@ module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures.workflows;
     exports com.hedera.node.app.spi.fixtures.util;
 
+    requires transitive com.hedera.node.app.service.token; // TMP until FakePreHandleContext can be removed
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
@@ -17,6 +18,5 @@ module com.hedera.node.app.spi.test.fixtures {
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.common;
     requires org.apache.logging.log4j.core;
-    requires static com.hedera.node.app.service.token; // TMP until FakePreHandleContext can be removed
     requires static com.github.spotbugs.annotations;
 }
