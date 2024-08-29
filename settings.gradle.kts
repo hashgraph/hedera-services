@@ -35,6 +35,7 @@ javaModules {
     directory("platform-sdk") {
         group = "com.swirlds"
         module("swirlds-jasperdb") { artifact = "swirlds-merkledb" }
+        module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
