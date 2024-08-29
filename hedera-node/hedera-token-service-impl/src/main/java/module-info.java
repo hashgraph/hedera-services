@@ -9,11 +9,13 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.swirlds.base;
+    requires com.swirlds.common;
     requires com.google.common;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
