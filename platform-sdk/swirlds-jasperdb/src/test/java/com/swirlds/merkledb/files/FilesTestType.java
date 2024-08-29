@@ -17,14 +17,14 @@
 package com.swirlds.merkledb.files;
 
 import com.swirlds.merkledb.MerkleDbDataSource;
-import com.swirlds.merkledb.serialize.BaseSerializer;
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyVariableSize;
 import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.serialize.BaseSerializer;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 
 /**
  * Supports parameterized testing of {@link MerkleDbDataSource} with both fixed- and variable-size
@@ -45,7 +45,7 @@ public enum FilesTestType {
     /** used by files package level tests */
     public final BaseSerializer<long[]> dataItemSerializer;
 
-    public final KeySerializer<? extends VirtualKey> keySerializer;
+    public final KeySerializer keySerializer;
 
     FilesTestType(final BaseSerializer<long[]> dataItemSerializer, KeySerializer<? extends VirtualKey> keySerializer) {
         this.dataItemSerializer = dataItemSerializer;

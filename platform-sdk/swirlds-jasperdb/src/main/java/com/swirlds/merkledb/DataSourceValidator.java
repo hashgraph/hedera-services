@@ -19,7 +19,10 @@ package com.swirlds.merkledb;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,8 +35,14 @@ public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
 
     private static final String WHITESPACE = " ".repeat(20);
 
+    /** Virtual key serializer */
+    private final KeySerializer<K> keySerializer;
+
+    /** Virtual value serializer */
+    private final ValueSerializer<V> valueSerializer;
+
     /** The data source we are validating */
-    private final MerkleDbDataSource<K, V> dataSource;
+    private final MerkleDbDataSource dataSource;
 
     /** Current progress percentage we are tracking in the range of 0 to 20 */
     private int progressPercentage = 0;
@@ -44,7 +53,12 @@ public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
      * @param dataSource
      * 		The data source to validate
      */
-    public DataSourceValidator(MerkleDbDataSource<K, V> dataSource) {
+    public DataSourceValidator(
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final MerkleDbDataSource dataSource) {
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
         this.dataSource = dataSource;
     }
 
@@ -80,11 +94,12 @@ public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
             List<K> keys = new ArrayList<>(leafCount);
             progressPercentage = 0;
             for (long path = firstLeafPath; path <= lastLeafPath; path++) {
-                VirtualLeafRecord<K, V> leaf = dataSource.loadLeafRecord(path);
-                assertTrue(leaf != null, "leaf record for path [" + path + "] was null");
+                VirtualLeafBytes leafBytes = dataSource.loadLeafRecord(path);
+                assertTrue(leafBytes != null, "leaf record for path [" + path + "] was null");
                 assertTrue(
-                        leaf.getPath() == path,
-                        "leaf record for path [" + path + "] had a bad path [" + leaf.getPath() + "]");
+                        leafBytes.path() == path,
+                        "leaf record for path [" + path + "] had a bad path [" + leafBytes.path() + "]");
+                VirtualLeafRecord<K, V> leaf = leafBytes.toRecord(keySerializer, valueSerializer);
                 assertTrue(leaf.getKey() != null, "leaf record's key for path [" + path + "] was null");
                 keys.add(leaf.getKey());
                 printProgress(path - firstLeafPath, leafCount);
@@ -93,8 +108,10 @@ public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
             System.out.printf("Validating %,d leaf record by key...%n", leafCount);
             progressPercentage = 0;
             for (int i = 0; i < keys.size(); i++) {
-                VirtualLeafRecord<K, V> leaf = dataSource.loadLeafRecord(keys.get(i));
-                assertTrue(leaf != null, "leaf record for key [" + keys.get(i) + "] was null");
+                VirtualLeafBytes leafBytes = dataSource.loadLeafRecord(
+                        keySerializer.toBytes(keys.get(i)), keys.get(i).hashCode());
+                assertTrue(leafBytes != null, "leaf record for key [" + keys.get(i) + "] was null");
+                VirtualLeafRecord<K, V> leaf = leafBytes.toRecord(keySerializer, valueSerializer);
                 assertTrue(leaf.getKey() != null, "leaf record's key for key [" + keys.get(i) + "] was null");
                 assertTrue(
                         leaf.getKey().equals(keys.get(i)),

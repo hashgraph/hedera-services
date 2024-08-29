@@ -34,7 +34,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -42,7 +41,6 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -60,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -80,11 +79,9 @@ import org.apache.logging.log4j.Logger;
  * use cases where the key is always a path and there is a valid range of path keys for internal and
  * leaf nodes. It allows very easy and efficient deleting without the need to maintain a list of
  * deleted keys.
- *
- * @param <D> type for data items
  */
 @SuppressWarnings({"unused", "unchecked"})
-public class DataFileCollection<D> implements Snapshotable {
+public class DataFileCollection implements Snapshotable {
 
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
@@ -127,8 +124,6 @@ public class DataFileCollection<D> implements Snapshotable {
      * legacyStoreName *
      */
     private final String legacyStoreName;
-    /** Serializer responsible for serializing/deserializing data items into and out of files */
-    private final BaseSerializer<D> dataItemSerializer;
     /** True if this DataFileCollection was loaded from an existing set of files */
     private final boolean loadedFromExistingFiles;
     /** The index to use for the next file we create */
@@ -152,20 +147,20 @@ public class DataFileCollection<D> implements Snapshotable {
      * compaction file is flushed to disk, and compaction is put on hold using {@link
      * DataFileCompactor#pauseCompaction()} and then resumed after snapshot is complete.
      */
-    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
+    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader>> dataFiles = new AtomicReference<>();
 
     /**
      * The current open file writer, if we are in the middle of writing a new file during flush, or
      * null if not writing.
      */
-    private final AtomicReference<DataFileWriter<D>> currentDataFileWriter = new AtomicReference<>();
+    private final AtomicReference<DataFileWriter> currentDataFileWriter = new AtomicReference<>();
     /**
      * Data file reader for the file, which is being written with the writer above, or null if not
      * writing. The reader is created right after writing to the file is started.
      */
-    private final AtomicReference<DataFileReader<D>> currentDataFileReader = new AtomicReference<>();
+    private final AtomicReference<DataFileReader> currentDataFileReader = new AtomicReference<>();
     /** Constructor for creating ImmutableIndexedObjectLists */
-    private final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
+    private final Function<List<DataFileReader>, ImmutableIndexedObjectList<DataFileReader>>
             indexedObjectListConstructor;
     /**
      * Set if all indexes of new files currently being written. This is only maintained if logging
@@ -181,8 +176,6 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
      * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
      *     not needed. Using this is expensive as it requires all files to be read and parsed.
      * @throws IOException If there was a problem creating new data set or opening existing one
@@ -191,17 +184,15 @@ public class DataFileCollection<D> implements Snapshotable {
             final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
-            final BaseSerializer<D> dataItemSerializer,
-            final LoadedDataCallback<D> loadedDataCallback)
+            final LoadedDataCallback loadedDataCallback)
             throws IOException {
         this(
                 config,
                 storeDir,
                 storeName,
                 null,
-                dataItemSerializer,
                 loadedDataCallback,
-                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader>(DataFileReader[]::new, l));
     }
 
     /**
@@ -216,8 +207,6 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
      *     are processed by this file collection at startup same way as files prefixed with
      *     storeName
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
      * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
      *     not needed. Using this is expensive as it requires all files to be read and parsed.
      * @throws IOException If there was a problem creating new data set or opening existing one
@@ -227,17 +216,15 @@ public class DataFileCollection<D> implements Snapshotable {
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final BaseSerializer<D> dataItemSerializer,
-            final LoadedDataCallback<D> loadedDataCallback)
+            final LoadedDataCallback loadedDataCallback)
             throws IOException {
         this(
                 dbConfig,
                 storeDir,
                 storeName,
                 legacyStoreName,
-                dataItemSerializer,
                 loadedDataCallback,
-                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader>(DataFileReader[]::new, l));
     }
 
     /**
@@ -253,8 +240,6 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
      *     are processed by this file collection at startup same way as files prefixed with
      *     storeName
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
      * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
      *     not needed. Using this is expensive as it requires all files to be read and parsed.
      * @param indexedObjectListConstructor Constructor for creating ImmutableIndexedObjectList
@@ -266,16 +251,14 @@ public class DataFileCollection<D> implements Snapshotable {
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final BaseSerializer<D> dataItemSerializer,
-            final LoadedDataCallback<D> loadedDataCallback,
-            final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
+            final LoadedDataCallback loadedDataCallback,
+            final Function<List<DataFileReader>, ImmutableIndexedObjectList<DataFileReader>>
                     indexedObjectListConstructor)
             throws IOException {
         this.dbConfig = dbConfig;
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.legacyStoreName = legacyStoreName;
-        this.dataItemSerializer = dataItemSerializer;
         this.indexedObjectListConstructor = indexedObjectListConstructor;
 
         // check if exists, if so open existing files
@@ -319,12 +302,12 @@ public class DataFileCollection<D> implements Snapshotable {
      * Get a list of all files in this collection that have been fully finished writing, are read
      * only and ready to be compacted.
      */
-    public List<DataFileReader<D>> getAllCompletedFiles() {
-        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = dataFiles.get();
+    public List<DataFileReader> getAllCompletedFiles() {
+        final ImmutableIndexedObjectList<DataFileReader> activeIndexedFiles = dataFiles.get();
         if (activeIndexedFiles == null) {
             return Collections.emptyList();
         }
-        Stream<DataFileReader<D>> filesStream = activeIndexedFiles.stream();
+        Stream<DataFileReader> filesStream = activeIndexedFiles.stream();
         filesStream = filesStream.filter(DataFileReader::isFileCompleted);
         return filesStream.toList();
     }
@@ -335,7 +318,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @return statistics for sizes of all fully written files, in bytes
      */
     public LongSummaryStatistics getAllCompletedFilesSizeStatistics() {
-        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = dataFiles.get();
+        final ImmutableIndexedObjectList<DataFileReader> activeIndexedFiles = dataFiles.get();
         return activeIndexedFiles == null
                 ? new LongSummaryStatistics()
                 : activeIndexedFiles.stream()
@@ -347,16 +330,16 @@ public class DataFileCollection<D> implements Snapshotable {
     /** Close all the data files */
     public void close() throws IOException {
         // finish writing if we still are
-        final DataFileWriter<D> currentDataFileForWriting = currentDataFileWriter.getAndSet(null);
+        final DataFileWriter currentDataFileForWriting = currentDataFileWriter.getAndSet(null);
         if (currentDataFileForWriting != null) {
             currentDataFileForWriting.finishWriting();
         }
         // calling startSnapshot causes the metadata file to be written
         saveMetadata(storeDir);
         // close all files
-        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = dataFiles.getAndSet(null);
+        final ImmutableIndexedObjectList<DataFileReader> fileList = dataFiles.getAndSet(null);
         if (fileList != null) {
-            for (final DataFileReader<D> file : (Iterable<DataFileReader<D>>) fileList.stream()::iterator) {
+            for (final DataFileReader file : (Iterable<DataFileReader>) fileList.stream()::iterator) {
                 file.close();
             }
         }
@@ -368,14 +351,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
-        final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
+        final DataFileWriter activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL);
+        final DataFileWriter writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
-        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
+        final DataFileReader reader = addNewDataFileReader(writer.getPath(), metadata);
         currentDataFileReader.set(reader);
     }
 
@@ -387,13 +370,31 @@ public class DataFileCollection<D> implements Snapshotable {
      *     within the file.
      * @throws IOException If there was a problem writing this data item to the file.
      */
-    public long storeDataItem(final D dataItem) throws IOException {
-        final DataFileWriter<D> currentDataFileForWriting = currentDataFileWriter.get();
+    public long storeDataItem(final BufferedData dataItem) throws IOException {
+        final DataFileWriter currentDataFileForWriting = currentDataFileWriter.get();
         if (currentDataFileForWriting == null) {
             throw new IOException("Tried to put data " + dataItem + " when we never started writing.");
         }
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3926 */
         return currentDataFileForWriting.storeDataItem(dataItem);
+    }
+
+    /**
+     * Store a data item into the current file opened with startWriting().
+     *
+     * @param dataItemWriter The data item to write into file
+     * @param dataItemSize the data item size, in bytes
+     * @return the location where data item was stored. This contains both the file and the location
+     *     within the file.
+     * @throws IOException If there was a problem writing this data item to the file.
+     */
+    public long storeDataItem(final Consumer<BufferedData> dataItemWriter, final int dataItemSize) throws IOException {
+        final DataFileWriter currentDataFileForWriting = currentDataFileWriter.get();
+        if (currentDataFileForWriting == null) {
+            throw new IOException("Tried to put data " + dataItemWriter + " when we never started writing.");
+        }
+        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3926 */
+        return currentDataFileForWriting.storeDataItem(dataItemWriter, dataItemSize);
     }
 
     /**
@@ -407,15 +408,15 @@ public class DataFileCollection<D> implements Snapshotable {
      *     cleaning out old data
      * @throws IOException If there was a problem closing the data file
      */
-    public DataFileReader<D> endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
+    public DataFileReader endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         validKeyRange = new KeyRange(minimumValidKey, maximumValidKey);
-        final DataFileWriter<D> dataWriter = currentDataFileWriter.getAndSet(null);
+        final DataFileWriter dataWriter = currentDataFileWriter.getAndSet(null);
         if (dataWriter == null) {
             throw new IOException("Tried to end writing when we never started writing.");
         }
         // finish writing the file and write its footer
         dataWriter.finishWriting();
-        final DataFileReader<D> dataReader = currentDataFileReader.getAndSet(null);
+        final DataFileReader dataReader = currentDataFileReader.getAndSet(null);
         if (logger.isTraceEnabled()) {
             final DataFileMetadata metadata = dataReader.getMetadata();
             setOfNewFileIndexes.remove(metadata.getIndex());
@@ -428,9 +429,9 @@ public class DataFileCollection<D> implements Snapshotable {
      * the specified index exists in this file collection, and that the file is open. Note,
      * however, there is unavoidable race here, when the file reader is open while this method
      * is running, but closed immediately after the method is complete. This is why calls to
-     * this method are wrapped into a retry loop in {@link #retryReadUsingIndex}.
+     * this method are wrapped into a retry loop in {@link #readDataItemUsingIndex}.
      */
-    private DataFileReader<D> readerForDataLocation(final long dataLocation) throws IOException {
+    private DataFileReader readerForDataLocation(final long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) {
             return null;
@@ -438,8 +439,8 @@ public class DataFileCollection<D> implements Snapshotable {
         // split up location
         final int fileIndex = fileIndexFromDataLocation(dataLocation);
         // check if file for fileIndex exists
-        DataFileReader<D> file;
-        final ImmutableIndexedObjectList<DataFileReader<D>> currentIndexedFileList = dataFiles.get();
+        DataFileReader file;
+        final ImmutableIndexedObjectList<DataFileReader> currentIndexedFileList = dataFiles.get();
         if (fileIndex < 0 || currentIndexedFileList == null || (file = currentIndexedFileList.get(fileIndex)) == null) {
             throw new IOException("Got a data location from index for a file that doesn't exist. "
                     + "dataLocation="
@@ -479,37 +480,27 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws ClosedChannelException In the very rare case merging closed the file between us
      *     checking if file is open and reading
      */
-    protected BufferedData readDataItemBytes(final long dataLocation) throws IOException {
-        final DataFileReader<D> file = readerForDataLocation(dataLocation);
-        return (file != null) ? file.readDataItemBytes(dataLocation) : null;
+    protected BufferedData readDataItem(final long dataLocation) throws IOException {
+        final DataFileReader file = readerForDataLocation(dataLocation);
+        return (file != null) ? file.readDataItem(dataLocation) : null;
     }
 
     /**
-     * Read data item at a given location (file index + offset). If the file is not found or already
-     * closed, this method returns {@code null}. This may happen, if the index, where the data
-     * location originated from, has just been updated in a parallel compaction thread.
+     * Read a data item from any file that has finished being written. Uses a LongList that maps
+     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
+     * allows us to cover the cracks where threads can slip though.
      *
-     * <p>The data item is deserialized according to its version from the data file.
+     * <p>This depends on the fact that LongList has a nominal value of
+     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
      *
-     * @param dataLocation Data item location, which combines file index and offset
-     * @return Deserialized data item if the data location was found in files
-     * @throws IOException If an I/O error occurred
+     * @param index key-&gt;dataLocation index
+     * @param keyIntoIndex The key to lookup in index
+     * @return Data item if the data location was found in files. If contained in the index but not in files
+     *     after a number of retries then an exception is thrown. A null is returned if not found in index
+     *
+     * @throws IOException If there was a problem reading the data item.
      */
-    protected D readDataItem(final long dataLocation) throws IOException {
-        final DataFileReader<D> file = readerForDataLocation(dataLocation);
-        if (file == null) {
-            return null;
-        }
-        final BufferedData dataItemBytes = file.readDataItemBytes(dataLocation);
-        if (dataItemBytes == null) {
-            return null;
-        }
-        return dataItemSerializer.deserialize(dataItemBytes);
-    }
-
-    private <T> T retryReadUsingIndex(
-            final LongList index, final long keyIntoIndex, final CheckedFunction<Long, T, IOException> reader)
-            throws IOException {
+    public BufferedData readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
         // Try reading up to 5 times, 99.999% should work first try but there is a small chance the
         // file was closed by
         // merging when we are half way though reading, and we will see  file.isOpen() = false or a
@@ -525,7 +516,7 @@ public class DataFileCollection<D> implements Snapshotable {
             }
             // read data
             try {
-                final T readData = reader.apply(dataLocation);
+                final BufferedData readData = readDataItem(dataLocation);
                 // check we actually read data, this could be null if the file was closed half way
                 // though us reading
                 if (readData != null) {
@@ -575,50 +566,12 @@ public class DataFileCollection<D> implements Snapshotable {
         throw new IOException("Read failed after 5 retries");
     }
 
-    /**
-     * Read a data item bytes from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
-     *
-     * <p>This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
-     *
-     * @param index key-&gt;dataLocation index
-     * @param keyIntoIndex The key to lookup in index
-     * @return Data item bytes if the data location was found in files. If contained in the index but not in
-     *     files after a number of retries then an exception is thrown. A null is returned if not found in index
-     *
-     * @throws IOException If there was a problem reading the data item.
-     */
-    public BufferedData readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
-        return retryReadUsingIndex(index, keyIntoIndex, this::readDataItemBytes);
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
-     *
-     * <p>This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
-     *
-     * @param index key-&gt;dataLocation index
-     * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files. If contained in the index but not in files
-     *     after a number of retries then an exception is thrown. A null is returned if not found in index
-     *
-     * @throws IOException If there was a problem reading the data item.
-     */
-    public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
-        return retryReadUsingIndex(index, keyIntoIndex, this::readDataItem);
-    }
-
     /** {@inheritDoc} */
     @Override
     public void snapshot(final Path snapshotDirectory) throws IOException {
         saveMetadata(snapshotDirectory);
-        final List<DataFileReader<D>> snapshotIndexedFiles = getAllCompletedFiles();
-        for (final DataFileReader<D> fileReader : snapshotIndexedFiles) {
+        final List<DataFileReader> snapshotIndexedFiles = getAllCompletedFiles();
+        for (final DataFileReader fileReader : snapshotIndexedFiles) {
             final Path existingFile = fileReader.getPath();
             Files.createLink(snapshotDirectory.resolve(existingFile.getFileName()), existingFile);
         }
@@ -643,13 +596,11 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Simple callback class during reading an existing set of files during startup, so that indexes
      * can be built.
-     *
-     * @param <D> data item type
      */
     @FunctionalInterface
-    public interface LoadedDataCallback<D> {
+    public interface LoadedDataCallback {
         /** Add an index entry for the given data location and value */
-        void newIndexEntry(long dataLocation, @NonNull D dataValue);
+        void newIndexEntry(long dataLocation, @NonNull BufferedData dataValue);
     }
 
     // =================================================================================================================
@@ -661,8 +612,8 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param index data file index
      * @return the data file if one exists at that index
      */
-    DataFileReader<D> getDataFile(final int index) {
-        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = dataFiles.get();
+    DataFileReader getDataFile(final int index) {
+        final ImmutableIndexedObjectList<DataFileReader> fileList = dataFiles.get();
         return fileList == null ? null : fileList.get(index);
     }
 
@@ -673,9 +624,8 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param metadata The metadata for the file at filePath, to save reading from file
      * @return The newly added DataFileReader.
      */
-    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata) throws IOException {
-        final DataFileReader<D> newDataFileReader =
-                new DataFileReader<>(dbConfig, filePath, dataItemSerializer, metadata);
+    DataFileReader addNewDataFileReader(final Path filePath, final DataFileMetadata metadata) throws IOException {
+        final DataFileReader newDataFileReader = new DataFileReader(dbConfig, filePath, metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -697,12 +647,12 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     void deleteFiles(@NonNull final Collection<?> filesToDelete) throws IOException {
         // necessary workaround to remove compiler requirement for certain generic type which not required for deletion
-        Collection<DataFileReader<D>> files = (Collection<DataFileReader<D>>) new HashSet<>(filesToDelete);
+        Collection<DataFileReader> files = (Collection<DataFileReader>) new HashSet<>(filesToDelete);
         // remove files from index
         dataFiles.getAndUpdate(
                 currentFileList -> (currentFileList == null) ? null : currentFileList.withDeletedObjects(files));
         // now close and delete all the files
-        for (final DataFileReader<D> fileReader : files) {
+        for (final DataFileReader fileReader : files) {
             fileReader.close();
             Files.delete(fileReader.getPath());
         }
@@ -715,13 +665,12 @@ public class DataFileCollection<D> implements Snapshotable {
      *     case of merge.
      * @return the newly created data file
      */
-    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel) throws IOException {
+    DataFileWriter newDataFile(final Instant creationTime, int compactionLevel) throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return new DataFileWriter<>(
-                storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
+        return new DataFileWriter(storeName, storeDir, newFileIndex, creationTime, compactionLevel);
     }
 
     /**
@@ -751,7 +700,7 @@ public class DataFileCollection<D> implements Snapshotable {
         }
     }
 
-    private boolean tryLoadFromExistingStore(final LoadedDataCallback<D> loadedDataCallback) throws IOException {
+    private boolean tryLoadFromExistingStore(final LoadedDataCallback loadedDataCallback) throws IOException {
         if (!Files.isDirectory(storeDir)) {
             throw new IOException("Tried to initialize DataFileCollection with a storage "
                     + "directory that is not a directory. ["
@@ -763,17 +712,17 @@ public class DataFileCollection<D> implements Snapshotable {
                     .filter(path ->
                             isFullyWrittenDataFile(storeName, path) || isFullyWrittenDataFile(legacyStoreName, path))
                     .toArray(Path[]::new);
-            final DataFileReader<D>[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
+            final DataFileReader[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
                     assert fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION);
-                    dataFileReaders[i] = new DataFileReader<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer);
+                    dataFileReaders[i] = new DataFileReader(dbConfig, fullWrittenFilePaths[i]);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);
             } catch (final IOException e) {
                 // clean up any successfully created readers
-                for (final DataFileReader<D> dataFileReader : dataFileReaders) {
+                for (final DataFileReader dataFileReader : dataFileReaders) {
                     if (dataFileReader != null) {
                         dataFileReader.close();
                     }
@@ -826,8 +775,7 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     private void loadFromExistingFiles(
-            final DataFileReader<D>[] dataFileReaders, final LoadedDataCallback<D> loadedDataCallback)
-            throws IOException {
+            final DataFileReader[] dataFileReaders, final LoadedDataCallback loadedDataCallback) throws IOException {
         logger.info(
                 MERKLE_DB.getMarker(),
                 "Loading existing set of [{}] data files for DataFileCollection [{}]",
@@ -847,8 +795,8 @@ public class DataFileCollection<D> implements Snapshotable {
         // now call indexEntryCallback
         if (loadedDataCallback != null) {
             // now iterate over every file and every key
-            for (final DataFileReader<D> reader : dataFileReaders) {
-                try (final DataFileIterator<D> iterator = reader.createIterator()) {
+            for (final DataFileReader reader : dataFileReaders) {
+                try (final DataFileIterator iterator = reader.createIterator()) {
                     while (iterator.next()) {
                         loadedDataCallback.newIndexEntry(
                                 iterator.getDataItemDataLocation(), iterator.getDataItemData());
@@ -857,16 +805,16 @@ public class DataFileCollection<D> implements Snapshotable {
             }
         }
         // Mark all files we loaded as being available for compactions
-        for (final DataFileReader<D> dataFileReader : dataFileReaders) {
+        for (final DataFileReader dataFileReader : dataFileReaders) {
             dataFileReader.setFileCompleted();
         }
         logger.info(
                 MERKLE_DB.getMarker(), "Finished loading existing data files for DataFileCollection [{}]", storeName);
     }
 
-    private int getMaxFileReaderIndex(final DataFileReader<D>[] dataFileReaders) {
+    private int getMaxFileReaderIndex(final DataFileReader[] dataFileReaders) {
         int maxIndex = -1;
-        for (final DataFileReader<D> reader : dataFileReaders) {
+        for (final DataFileReader reader : dataFileReaders) {
             maxIndex = Math.max(maxIndex, reader.getIndex());
         }
         return maxIndex;

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
@@ -106,7 +107,10 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         var convertedOp = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(op.tokenTransfers())
                 .build();
-        preHandle(context, convertedOp);
+        // Any receiver that has `receiverSigRequired` will be ignored during airdrops.
+        // The airdrop will result in pending state or crypto transfer transaction depending on association and
+        // signature.
+        preHandleWithOptionalReceiverSignature(context, convertedOp);
     }
 
     @Override
@@ -439,7 +443,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             @NonNull final WritableAirdropStore pendingStore) {
         if (pendingStore.contains(pendingId)) {
             // No need to update pointers to update the amount of fungible value
-            pendingStore.update(pendingId, createFirstAccountPendingAirdrop(pendingValue));
+            update(pendingId, createFirstAccountPendingAirdrop(pendingValue), pendingStore);
         } else {
             final AccountPendingAirdrop newHeadAirdrop;
             if (senderAccount.hasHeadPendingAirdropId()) {
@@ -566,5 +570,40 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                         createFungibleTokenPendingAirdropId(tokenId, senderId, accountAmount.accountIDOrThrow()))
                 .filter(pendingStore::exists)
                 .count());
+    }
+
+    /**
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
+     * If there is existing airdrop with the same id we add the value to the existing drop.
+     *
+     * @param airdropId    - the airdropId to be persisted.
+     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
+     */
+    public void update(
+            @NonNull final PendingAirdropId airdropId,
+            @NonNull final AccountPendingAirdrop accountAirdrop,
+            @NonNull final WritableAirdropStore airdropState) {
+        requireNonNull(airdropId);
+        requireNonNull(accountAirdrop);
+        requireNonNull(airdropState);
+
+        if (airdropId.hasFungibleTokenType()) {
+            final var existingAirdrop = requireNonNull(airdropState.getForModify(airdropId));
+            final var existingValue = existingAirdrop.pendingAirdropValue();
+            long newValue;
+            try {
+                newValue = Math.addExact(
+                        requireNonNull(accountAirdrop.pendingAirdropValue()).amount(),
+                        requireNonNull(existingValue).amount());
+            } catch (ArithmeticException e) {
+                throw new HandleException(INSUFFICIENT_TOKEN_BALANCE);
+            }
+            final var newAccountAirdrop = existingAirdrop
+                    .copyBuilder()
+                    .pendingAirdropValue(
+                            existingValue.copyBuilder().amount(newValue).build())
+                    .build();
+            airdropState.put(airdropId, newAccountAirdrop);
+        }
     }
 }

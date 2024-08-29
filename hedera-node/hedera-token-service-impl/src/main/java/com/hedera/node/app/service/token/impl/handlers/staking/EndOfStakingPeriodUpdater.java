@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,8 +41,10 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -74,6 +77,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     *
      * @param accountNumbers the account numbers
      * @param stakeRewardsHelper the staking rewards helper
      */
@@ -90,8 +94,12 @@ public class EndOfStakingPeriodUpdater {
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
      * @param context the context of the transaction used to end the staking period
+     * @param exchangeRates the active exchange rate set
      */
-    public void updateNodes(@NonNull final TokenContext context) {
+    public @Nullable StreamBuilder updateNodes(
+            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+        requireNonNull(context);
+        requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
@@ -99,7 +107,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         if (!stakingConfig.isEnabled()) {
             log.info("Staking not enabled, nothing to do");
-            return;
+            return null;
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
@@ -256,10 +264,10 @@ public class EndOfStakingPeriodUpdater {
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
-        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class);
-        nodeStakeUpdateBuilder
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record")
+                .exchangeRate(exchangeRates)
                 .status(SUCCESS);
     }
 
@@ -347,6 +355,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     *
      * @param consensusTime the consensus time
      * @return the timestamp that is just before midnight of the day of the given consensus time
      */
@@ -512,6 +521,8 @@ public class EndOfStakingPeriodUpdater {
                 .maxStakeRewarded(maxStakeRewarded)
                 .build();
 
-        return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
+        return TransactionBody.newBuilder()
+                .memo("End of staking period calculation record")
+                .nodeStakeUpdate(txnBody);
     }
 }

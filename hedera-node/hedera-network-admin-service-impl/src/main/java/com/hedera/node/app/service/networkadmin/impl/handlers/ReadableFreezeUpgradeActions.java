@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
@@ -35,7 +36,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -162,8 +163,8 @@ public class ReadableFreezeUpgradeActions {
         writeMarker(file, now);
     }
 
-    public void catchUpOnMissedSideEffects(final PlatformState platformState) {
-        catchUpOnMissedFreezeScheduling(platformState);
+    public void catchUpOnMissedSideEffects(@NonNull final ReadablePlatformStateStore platformStateStore) {
+        catchUpOnMissedFreezeScheduling(platformStateStore);
         catchUpOnMissedUpgradePrep();
     }
 
@@ -201,13 +202,13 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether a freeze is scheduled.
-     * @param platformState the platform state
+     * @param platformStateStore the platform state
      * @return true if a freeze is scheduled, false otherwise
      */
-    public boolean isFreezeScheduled(final PlatformState platformState) {
-        requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
-        final var freezeTime = platformState.getFreezeTime();
-        return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
+    public boolean isFreezeScheduled(@NonNull final ReadablePlatformStateStore platformStateStore) {
+        requireNonNull(platformStateStore, "Cannot check freeze schedule without access to the platform state");
+        final var freezeTime = platformStateStore.getFreezeTime();
+        return freezeTime != null && !freezeTime.equals(platformStateStore.getLastFrozenTime());
     }
 
     /* -------- Internal Methods */
@@ -227,8 +228,10 @@ public class ReadableFreezeUpgradeActions {
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
         final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodes() : null;
+        final var nextNodeId = getNextNodeID(nodeStore);
         return runAsync(
-                () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, activeNodes),
+                () -> extractAndReplaceArtifacts(
+                        artifactsLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
                 executor);
     }
 
@@ -252,7 +255,8 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Timestamp now,
-            @Nullable List<ActiveNode> nodes) {
+            @Nullable List<ActiveNode> nodes,
+            long nextNodeId) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
             if (!FileUtils.isDirectory(artifactsDir)) {
@@ -262,7 +266,7 @@ public class ReadableFreezeUpgradeActions {
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null) {
-                generateConfigPem(artifactsLoc, nodes);
+                generateConfigPem(artifactsLoc, nodes, nextNodeId);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -275,14 +279,8 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private long getNextNodeID(@NonNull List<ActiveNode> nodes) {
-        requireNonNull(nodes);
-        final long maxNodeId =
-                nodes.stream().mapToLong(a -> a.node.nodeId()).max().orElse(-1L);
-        return maxNodeId + 1;
-    }
-
-    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
+    private void generateConfigPem(
+            @NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes, long nextNodeId) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
@@ -292,7 +290,6 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
-        final var nextNodeId = getNextNodeID(activeNodes);
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
@@ -375,7 +372,7 @@ public class ReadableFreezeUpgradeActions {
                 + (encoded.getByte(3) & 0xFF);
     }
 
-    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
+    private void catchUpOnMissedFreezeScheduling(@NonNull final ReadablePlatformStateStore platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled(platformState) && isUpgradePrepared) {
             final var freezeTime = requireNonNull(platformState.getFreezeTime());
