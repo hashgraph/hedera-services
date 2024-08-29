@@ -84,6 +84,12 @@ message BlockStreamInfo {
      * hash SHALL be for block number N-256.<br/>
      * The latest available hash SHALL be for block N-1.<br/>
      * This is REQUIRED to implement the EVM `BLOCKHASH` opcode.
+     * <p>
+     * <h5>Field Length</h5>
+     * Each hash value SHALL be the trailing 265 bits of a SHA2-384 hash.<br/>
+     * The length of this field SHALL be an integer multiple of 32 bytes.<br/>
+     * This field SHALL be at least 32 bytes.<br/>
+     * The maximum length of this field SHALL be 8192 bytes.
      */
     bytes trailing_block_hashes = 4;
 }
