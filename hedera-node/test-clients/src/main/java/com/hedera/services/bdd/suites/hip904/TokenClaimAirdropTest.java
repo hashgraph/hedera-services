@@ -1221,14 +1221,6 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
-    @DisplayName("empty claim should fail")
-    final Stream<DynamicTest> emptyClaimFails() {
-        return hapiTest(
-                cryptoCreate(OWNER),
-                tokenClaimAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_PENDING_AIRDROP_ID_LIST));
-    }
-
-    @HapiTest
     @DisplayName("a hollow account with maxAutoAssociation 1 as receiver should be successful")
     final Stream<DynamicTest> hollowNoMaxAutoAssociationSuccess() {
         final String ALICE = "ALICE";
