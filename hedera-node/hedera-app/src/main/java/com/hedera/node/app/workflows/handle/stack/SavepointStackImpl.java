@@ -145,6 +145,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param maxBuildersAfterUser the maximum number of following builders to create
      * @param roundStateChangeListener the listener for the round state changes
      * @param kvStateChangeListener the listener for the key-value state changes
+     * @param streamMode the stream mode
      */
     private SavepointStackImpl(
             @NonNull final State state,

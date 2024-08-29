@@ -1,8 +1,9 @@
 # Metric labels
 
-| Metadata  |                                                 Entities                                                 |
-|-----------|----------------------------------------------------------------------------------------------------------|
-| Designers | [@hendrikebbers](https://github.com/hendrikebbers), [@mxtartaglia-sl](https://github.com/mxtartaglia-sl) |
+| Metadata           | Entities                                   | 
+ |--------------------|--------------------------------------------|
+ | Designers          | [@hendrikebbers](https://github.com/hendrikebbers), [@mxtartaglia-sl](https://github.com/mxtartaglia-sl) |
+
 
 ## Summary
 
@@ -51,17 +52,17 @@ Labels are used by monitoring systems like Grafana to create more dynamic dashbo
 In addition to having a unique name, a metric can also have labels. Labels allow for differentiation within a metric.
 For example, a metric measuring incoming connections can distinguish between GET and POST requests using labels.
 
-Consider the following example with the metric `api_http_requests_total`, which counts the total number of HTTP requests a server receives.
+Consider the following example with the metric `api_http_requests_total`, which counts the total number of HTTP requests a server receives. 
 
-To distinguish between different types of requests, such as GET and POST requests, one could define two different metrics and aggregate them at query time. Alternatively, one could define possible labels for a single metric when creating it and assign specific values to these labels based on the nature of the HTTP request at measurement time.
+To distinguish between different types of requests, such as GET and POST requests, one could define two different metrics and aggregate them at query time. Alternatively, one could define possible labels for a single metric when creating it and assign specific values to these labels based on the nature of the HTTP request at measurement time. 
 
 Then, using the Prometheus query language:
 * Sum up the values of all metrics with that name (as always):
-`sum(api_http_requests_total) `
+`sum(api_http_requests_total) ` 
 
 * Or,  get the sums of the values measured with the corresponding label information.
-  `sum(api_http_requests_total{method="GET"})`
-  `sum(api_http_requests_total{method="POST"})`
+`sum(api_http_requests_total{method="GET"})`
+`sum(api_http_requests_total{method="POST"})`
 
 See https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors for more information.
 
@@ -85,27 +86,27 @@ A label is a key-value pair that can be defined as a `record`:
 
 ```java
 record Label(@NonNull String key, @NonNull String value) {}
-```
+``` 
 
 The `Metric` interface will be extended by several methods that allow to define label values to a metric:
 
 ```java
 interface Metric {
-
+    
     //...
-
+    
     @NonNull
     Metric withLabel(@NonNull String key, @NonNull String value);
-
+    
     @NonNull
     Metric withLabel(@NonNull Label label);
-
+    
     @NonNull
     Metric withLabels(@NonNull Label... labels);
-
+    
     @NonNull
     Set<Label> getLabels();
-
+    
     @NonNull
     Set<String> getLabelKeys();
 }
@@ -114,9 +115,9 @@ interface Metric {
 By doing so the api can be used like this:
 
 ```java
-metric.withLabel("label1", "123")
-    .withLabel("label2", "456")
-    .inc();
+    metric.withLabel("label1", "123")
+        .withLabel("label2", "456")
+        .inc(); 
 ```
 
 The shown code would throw an exception if the metric does not support the labels `label1` and `label2`.
@@ -126,43 +127,43 @@ Based on that the MetricConfig class will be extended as shown:
 
 ```java
 abstract class MetricConfig {
-
+    
     //...
-
+    
     /**
     * Returns a config with the given label keys next to the already defined labels.
     */
     @NonNull
     MetricConfig withLabels(@NonNull String... labelKeys) {...}
-
+    
     /**
     * Returns a config with the given label keys next to the already defined labels.
     */
     @NonNull
     MetricConfig withLabels(@NonNull Set<String> labelKeys) {...}
-
+    
     /**
     * Returns a config with the given predefined label next to the already defined labels.
     */
     @NonNull
     MetricConfig withPredefinedLabel(@NonNull String key, @NonNull String value) {...}
-
+    
     /**
     * Returns a config with the given predefined label next to the already defined labels.
     */
     @NonNull
     MetricConfig withPredefinedLabel(@NonNull Label label) {...}
-
+    
     /**
     * Returns a set of all supported label keys.
     */
-    @NonNull
+    @NonNull 
     Set<String> getLabelKeys();
-
+    
     /**
     * Returns a set of all predefined labels.
     */
-    @NonNull
+    @NonNull 
     Set<Label> getPredefinedLabels();
 }
 ```
@@ -172,10 +173,10 @@ Next on that we need to modify the `Metrics` interface to support labels:
 ```java
 
 interface Metrics {
-
+    
     // old methods that will be removed:
     // Object getValue(@NonNull String category, @NonNull String name);
-
+    
     @Nullable
     Object getValue(@NonNull String category, @NonNull String name, @NonNull Set<Label> labels);
 }
@@ -190,9 +191,9 @@ The methods to remove metrics will have an extended JavaDoc and will be defined 
 
 ```java
 interface Metrics {
-
+    
     //...
-
+    
     /**
     * Removes all metrics with the given category and name. Labels will be ignored.
     */
@@ -200,9 +201,9 @@ interface Metrics {
 }
 ```
 
-> [!NOTE]
-> Since most of the filter methods that the `Metrics` interface defines today are not used we will not introduce any additional filter methods in this proposal.
-> If we see that additional methods are needed we can add them later.
+> [!NOTE]  
+Since most of the filter methods that the `Metrics` interface defines today are not used we will not introduce any additional filter methods in this proposal.
+If we see that additional methods are needed we can add them later.
 
 We will have labels that are global for a `Metrics` instance.
 The best example is the `nodeId` label.
@@ -215,12 +216,12 @@ The `MetricsFactory` interface will be defined like this:
 
 ```java
 interface MetricsFactory {
-
+    
     @NonNull
     default Metrics create() {
         return create(Set.of());
     }
-
+    
     @NonNull
     Metrics create(@NonNull Set<Label> defaultLabels);
 }
@@ -282,17 +283,17 @@ Since the CSV exporter is only used by the platform module we can continue with 
 
 Let's assume we would have the following metrics:
 
-|    Type     |     Name      |     Category     |      labels       | Value |
-|-------------|---------------|------------------|-------------------|-------|
-| Counter     | myCounter1    | private_category | nodeId=1          | 1     |
-| Counter     | myCounter2    | private_category | nodeId=1          | 1     |
-| Counter     | myCounter3    | private_category | nodeId=1          | 1     |
-| Counter     | myCounter4    | private_category | nodeId=1, foo=bar | 1     |
-| DoubleGauge | myDoubleGauge | public_category  | nodeId=1          | 1     |
-| DoubleGauge | myDoubleGauge | private_category | nodeId=1, foo=bar | 1     |
+| Type           | Name   | Category   | labels | Value |
+ |---------------|--------|------------|-------|-------|
+ | Counter          | myCounter1 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter2 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter3 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter4 | private_category | nodeId=1, foo=bar | 1 |
+ | DoubleGauge | myDoubleGauge | public_category | nodeId=1 | 1 |
+ | DoubleGauge | myDoubleGauge | private_category | nodeId=1, foo=bar | 1 |
+        
 
 Today a CSV file is created like this:
-
 ```
 filename:,/var/folders/d8/16q746f12zq6tb1ngwngp8gh0000gn/T/junit15732516610471683378/MainNetStats42.csv,
 myCounter1:,myCounter1,

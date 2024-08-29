@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateUtilsTest extends MerkleTestBase {
+
     @Test
     @DisplayName("Validating a null service name throws an NPE")
     void nullServiceNameThrows() {

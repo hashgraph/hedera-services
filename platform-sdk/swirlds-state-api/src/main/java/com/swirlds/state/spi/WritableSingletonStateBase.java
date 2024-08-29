@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -55,7 +56,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
             @NonNull final Supplier<T> backingStoreAccessor,
             @NonNull final Consumer<T> backingStoreMutator) {
         super(stateKey, backingStoreAccessor);
-        this.backingStoreMutator = requireNonNull(backingStoreMutator);
+        this.backingStoreMutator = Objects.requireNonNull(backingStoreMutator);
     }
 
     /**

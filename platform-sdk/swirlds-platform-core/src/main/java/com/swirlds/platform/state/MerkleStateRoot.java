@@ -166,6 +166,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Listeners to be notified of state changes on {@link MerkleWritableStates#commit()} calls for any service.
      */
     private final List<StateChangeListener> listeners = new ArrayList<>();
+
     /**
      * Once set, the possibly empty list of builders for state changes that occurred when initializing
      * the platform state.

@@ -29,9 +29,7 @@ import java.util.*;
  * @param <V> The value type
  */
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
-    /**
-     * A map of all modified values buffered in this mutable state
-     */
+    /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new LinkedHashMap<>();
     /**
      * A list of listeners to be notified of changes to the state.
@@ -90,9 +88,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         modifications.clear();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     @Nullable
     public final V get(@NonNull K key) {
@@ -105,22 +101,18 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public V getOriginalValue(@NonNull K key) {
         return super.get(key);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     @Nullable
     public final V getForModify(@NonNull final K key) {
-        requireNonNull(key);
+        Objects.requireNonNull(key);
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
         if (modifications.containsKey(key)) {
@@ -141,22 +133,18 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         return val;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
-        requireNonNull(key);
-        requireNonNull(value);
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(value);
         modifications.put(key, value);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public final void remove(@NonNull final K key) {
-        requireNonNull(key);
+        Objects.requireNonNull(key);
         modifications.put(key, null);
     }
 
@@ -194,9 +182,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         return new KVStateKeyIterator<>(backendItr, removedKeys, maybeAddedKeys);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public final Set<K> modifiedKeys() {
@@ -215,7 +201,6 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * <li>if the key is not in backing store and is being tried to be removed in modifications,
      * then it is not counted as the key does not exist in state.</li>
      * </ol>
-     *
      * @return The size of the state.
      */
     public long size() {
@@ -262,7 +247,6 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
 
     /**
      * Returns the size of the underlying data source. This can be a merkle map or a virtual map.
-     *
      * @return size of the underlying data source.
      */
     protected abstract long sizeOfDataSource();

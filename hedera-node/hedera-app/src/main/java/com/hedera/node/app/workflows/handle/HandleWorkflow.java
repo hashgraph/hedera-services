@@ -99,9 +99,6 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
-    // Temporary flag to control stream mode during transition to block streams
-    public static StreamMode STREAM_MODE = RECORDS;
-
     private final NetworkInfo networkInfo;
     private final NodeStakeUpdates nodeStakeUpdates;
     private final Authorizer authorizer;
@@ -183,11 +180,6 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
-        // Temporary flag to control stream mode during transition to block streams
-        STREAM_MODE = configProvider
-                .getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .streamMode();
     }
 
     /**
@@ -391,7 +383,8 @@ public class HandleWorkflow {
         userTxn.stack().rollbackFullStack();
         // The stack for the user txn should never be committed
         final List<BlockItem> blockItems = new LinkedList<>();
-        if (HandleWorkflow.STREAM_MODE != RECORDS) {
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (blockStreamConfig.streamBlocks()) {
             final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)

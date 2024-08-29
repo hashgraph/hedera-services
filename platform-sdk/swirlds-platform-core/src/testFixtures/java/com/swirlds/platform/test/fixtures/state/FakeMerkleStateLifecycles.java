@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
-import static java.util.Collections.emptyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -46,6 +45,7 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -116,7 +116,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         given(mockMigrationContext.newStates()).willReturn(writableStates);
         schema.migrate(mockMigrationContext);
         ((CommittableWritableStates) writableStates).commit();
-        return emptyList();
+        return Collections.emptyList();
     }
 
     @Override
