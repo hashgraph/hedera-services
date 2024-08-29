@@ -30,6 +30,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param upgradeThrottlesFile name of the file containing the post-upgrade throttles
  * @param upgradePropertyOverridesFile name of the file containing the post-upgrade override properties
  * @param upgradePermissionOverridesFile name of the file containing the post-upgrade override permissions
+ * @param keysPath path to the generated public key *.pem files during freeze prepare upgrade
  */
 @ConfigData("networkAdmin")
 public record NetworkAdminConfig(
@@ -38,4 +39,5 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "feeSchedules.json") String upgradeFeeSchedulesFile,
         @ConfigProperty(defaultValue = "throttles.json") String upgradeThrottlesFile,
         @ConfigProperty(defaultValue = "application-override.properties") String upgradePropertyOverridesFile,
-        @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile) {}
+        @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile,
+        @ConfigProperty(defaultValue = "data/upgrade/current/data/keys") @NodeProperty String keysPath) {}

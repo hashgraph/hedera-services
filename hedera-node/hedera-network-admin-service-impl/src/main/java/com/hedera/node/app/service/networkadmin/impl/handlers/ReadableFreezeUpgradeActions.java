@@ -226,7 +226,9 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(marker);
 
         final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
+        final Path keysLoc = getAbsolutePath(adminServiceConfig.keysPath());
         requireNonNull(artifactsLoc);
+        requireNonNull(keysLoc);
         final long size = archiveData.length();
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -235,7 +237,7 @@ public class ReadableFreezeUpgradeActions {
         final var nextNodeId = getNextNodeID(nodeStore);
         return runAsync(
                 () -> extractAndReplaceArtifacts(
-                        artifactsLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
+                        artifactsLoc, keysLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
                 executor);
     }
 
@@ -254,6 +256,7 @@ public class ReadableFreezeUpgradeActions {
 
     private void extractAndReplaceArtifacts(
             @NonNull final Path artifactsLoc,
+            @NonNull final Path keysLoc,
             @NonNull final Bytes archiveData,
             final long size,
             @NonNull final String desc,
@@ -263,14 +266,19 @@ public class ReadableFreezeUpgradeActions {
             long nextNodeId) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
+            final var keysDir = keysLoc.toFile();
             if (!FileUtils.isDirectory(artifactsDir)) {
                 FileUtils.forceMkdir(artifactsDir);
             }
+            if (!FileUtils.isDirectory(keysDir)) {
+                FileUtils.forceMkdir(keysDir);
+            }
             FileUtils.cleanDirectory(artifactsDir);
+            FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null && nodesConfig.enableDAB()) {
-                generateConfigPem(artifactsLoc, nodes, nextNodeId);
+                generateConfigPem(artifactsLoc, keysLoc, nodes, nextNodeId);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -284,8 +292,12 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void generateConfigPem(
-            @NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes, long nextNodeId) {
+            @NonNull final Path artifactsLoc,
+            @NonNull final Path keysLoc,
+            @NonNull final List<ActiveNode> activeNodes,
+            long nextNodeId) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
+        requireNonNull(keysLoc, "Cannot generate pem files without a valid keys location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
 
@@ -296,7 +308,7 @@ public class ReadableFreezeUpgradeActions {
 
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
-            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, keysLoc));
             bw.write("nextNodeId, " + nextNodeId);
             bw.flush();
         } catch (final IOException e) {
@@ -305,17 +317,17 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void writeConfigLineAndPem(
-            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
+            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path keysLoc) {
         requireNonNull(activeNode);
         requireNonNull(bw);
-        requireNonNull(pathToWrite);
+        requireNonNull(keysLoc);
 
         var line = new StringBuilder();
         int weight = 0;
         final var node = activeNode.node();
         final var name = "node" + (node.nodeId() + 1);
         final var alias = nameToAlias(name);
-        final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
+        final var pemFile = keysLoc.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
 
