@@ -54,7 +54,75 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testDifferentScenarios() {
-        testWriteItemLatency(40000, 5000); // 50k/s, 5 seconds delay threshold
+        //testWriteItemLatency(50000, 5000); // 50k/s, 5 seconds delay threshold
+        testWriteItemLatencyWithIncreasingLoad(10000, 10000); // 10k/s + 5k/s/10s, 10 seconds delay threshold
+    }
+
+    public void testWriteItemLatencyWithIncreasingLoad(int initialRequestsPerSecond, long delayThreshold) {
+        GrpcBlockItemWriter writer = new GrpcBlockItemWriter();
+        writer.openBlock(1);
+
+        AtomicInteger requestCounter = new AtomicInteger(0);
+
+        // Record the start time
+        long startTime = System.currentTimeMillis();
+
+        // Create a new thread for printing the number of writeItem calls every second
+        Thread printThread = new Thread(() -> {
+            int previousCount = 0;
+            while (true) {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                    int currentCount = requestCounter.get();
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    System.out.println("Time: " + elapsedTime + "ms requests/sec: " + (currentCount - previousCount) + " latency: " + stub.getLatency() + "ms");
+                    previousCount = currentCount;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        // Start the print thread
+        printThread.start();
+
+        int currentRequestsPerSecond = initialRequestsPerSecond;
+        while (true) {
+            double delayBetweenRequests = 1000.0 / currentRequestsPerSecond; // in milliseconds
+            double accumulatedDelay = 0.0;
+
+            for (int i = 0; i < currentRequestsPerSecond; i++) {
+                // Write the BlockItem
+                writer.writeItem(blockItemBytes);
+                requestCounter.incrementAndGet();
+
+                accumulatedDelay += delayBetweenRequests;
+                if (accumulatedDelay >= 1.0) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep((long) accumulatedDelay);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    accumulatedDelay -= (long) accumulatedDelay; // subtract the whole part
+                }
+
+                // Check the latency in BlockNodeGrpcStub
+                long latency = stub.getLatency();
+                if (latency > delayThreshold) {
+                    // Calculate the elapsed time
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    System.out.println("Time taken to exceed " + delayThreshold + " milliseconds latency: " + elapsedTime + " milliseconds");
+                    writer.closeBlock();
+                    return;
+                }
+            }
+
+            // Increase the requests per second every 10 seconds
+            if ((System.currentTimeMillis() - startTime) / 1000 % 10 == 0) {
+                currentRequestsPerSecond += 5000;
+                System.out.println("Increased requests per second to: " + currentRequestsPerSecond);
+            }
+        }
     }
 
     public void testWriteItemLatency(int requestsPerSecond, long delayThreshold) {
