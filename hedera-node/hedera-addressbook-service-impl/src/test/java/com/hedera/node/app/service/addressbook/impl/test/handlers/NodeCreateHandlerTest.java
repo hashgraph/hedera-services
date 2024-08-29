@@ -601,6 +601,11 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
         given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
 
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.enableDAB", true)
+                .getOrCreateConfig();
+        given(feeCtx.configuration()).willReturn(config);
+
         given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
         given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
 

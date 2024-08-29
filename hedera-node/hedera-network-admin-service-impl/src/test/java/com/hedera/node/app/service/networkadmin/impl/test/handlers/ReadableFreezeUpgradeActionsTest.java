@@ -55,7 +55,9 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.ReadableStates;
@@ -128,9 +130,6 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     private WritableFreezeStore writableFreezeStore;
 
-    @Mock
-    private NetworkAdminConfig adminServiceConfig;
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -146,6 +145,15 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     protected ReadableStates readableStates;
 
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private NetworkAdminConfig adminServiceConfig;
+
+    @Mock
+    private NodesConfig nodesConfig;
+
     private ReadableNodeStore nodeStore;
 
     private Executor freezeExecutor;
@@ -154,6 +162,9 @@ class ReadableFreezeUpgradeActionsTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
+        given(configuration.getConfigData(NodesConfig.class)).willReturn(nodesConfig);
+
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
@@ -165,7 +176,7 @@ class ReadableFreezeUpgradeActionsTest {
         freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -204,6 +215,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
@@ -219,6 +231,7 @@ class ReadableFreezeUpgradeActionsTest {
         setupNodes();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
@@ -447,7 +460,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);
