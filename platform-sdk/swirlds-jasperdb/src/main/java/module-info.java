@@ -25,7 +25,6 @@ open module com.swirlds.merkledb {
     exports com.swirlds.merkledb.config;
     exports com.swirlds.merkledb.files;
     exports com.swirlds.merkledb.files.hashmap;
-    exports com.swirlds.merkledb.serialize;
     exports com.swirlds.merkledb.utilities;
 
     requires transitive com.swirlds.common;

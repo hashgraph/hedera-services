@@ -44,6 +44,8 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -90,27 +92,24 @@ class OnDiskTest extends MerkleTestBase {
             }
         };
 
-        final var tableConfig = new MerkleDbTableConfig<>(
-                (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
-                new OnDiskKeySerializer<>(
-                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        AccountID.PROTOBUF),
-                (short) 1,
-                new OnDiskValueSerializer<>(
-                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        Account.PROTOBUF));
+        final KeySerializer<OnDiskKey<AccountID>> keySerializer = new OnDiskKeySerializer<>(
+                onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF);
+        final ValueSerializer<OnDiskValue<Account>> valueSerializer = new OnDiskValueSerializer<>(
+                onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                Account.PROTOBUF);
+        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        final var builder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
+        virtualMap = new VirtualMap<>(
+                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), keySerializer, valueSerializer, builder);
 
         Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);

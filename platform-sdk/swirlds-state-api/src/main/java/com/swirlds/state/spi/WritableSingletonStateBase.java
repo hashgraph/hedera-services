@@ -31,9 +31,13 @@ import java.util.function.Supplier;
  * @param <T> The type
  */
 public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T> implements WritableSingletonState<T> {
+    /**
+     * A sentinel value to represent null in the backing store.
+     */
+    private static final Object NULL_VALUE = new Object();
+
     private final Consumer<T> backingStoreMutator;
-    private boolean modified;
-    private T value;
+    private Object value;
     /**
      * Listeners to be notified when the singleton changes.
      */
@@ -71,23 +75,24 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     public T get() {
         // Possible pattern: "put" and then "get". In this case, "read" should be false!! Otherwise,
         // we invalidate tx when we don't need to
-        if (modified) {
-            return value;
+        final var currentValue = currentValue();
+        if (currentValue != null) {
+            // C.f. https://github.com/hashgraph/hedera-services/issues/14582; in principle we should
+            // also return null here if value is NULL_VALUE, but in production with the SingletonNode
+            // backing store, null values are never actually set so this doesn't matter
+            return currentValue;
         }
-
-        value = super.get();
-        return value;
+        return super.get();
     }
 
     @Override
     public void put(T value) {
-        this.modified = true;
-        this.value = value;
+        this.value = value == null ? NULL_VALUE : value;
     }
 
     @Override
     public boolean isModified() {
-        return modified;
+        return value != null;
     }
 
     /**
@@ -96,11 +101,19 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
      * it. Don't cast and commit unless you own the instance!
      */
     public void commit() {
-        if (modified) {
-            backingStoreMutator.accept(value);
-            listeners.forEach(l -> l.singletonUpdateChange(value));
+        if (value != null) {
+            final var currentValue = currentValue();
+            backingStoreMutator.accept(currentValue);
+            if (currentValue != null) {
+                listeners.forEach(l -> l.singletonUpdateChange(currentValue));
+            }
         }
         reset();
+    }
+
+    @SuppressWarnings("unchecked")
+    private T currentValue() {
+        return value == NULL_VALUE ? null : (T) value;
     }
 
     /**
@@ -110,7 +123,6 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
      */
     @Override
     public void reset() {
-        this.modified = false;
         this.value = null;
         super.reset();
     }

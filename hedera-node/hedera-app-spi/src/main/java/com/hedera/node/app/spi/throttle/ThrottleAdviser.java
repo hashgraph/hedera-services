@@ -31,12 +31,4 @@ public interface ThrottleAdviser {
      * at the instant for which throttling should be calculated
      */
     boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
-
-    /**
-     * For each following child transaction consumes the capacity
-     * required for that child transaction in the consensus throttle buckets.
-     *
-     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
-     */
-    boolean hasThrottleCapacityForChildTransactions();
 }

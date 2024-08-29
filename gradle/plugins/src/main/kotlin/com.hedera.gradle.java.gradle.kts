@@ -38,7 +38,7 @@ version =
     providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get().trim()
 
 val javaVersionMajor = JavaVersion.VERSION_21
-val javaVersionPatch = "0.1"
+val javaVersionPatch = "0.4"
 
 val currentJavaVersionMajor = JavaVersion.current()
 val currentJavaVersion = providers.systemProperty("java.version").get()
@@ -195,7 +195,7 @@ tasks.withType<Javadoc>().configureEach {
         )
         options.windowTitle = "Hedera Consensus Node"
         options.memberLevel = JavadocMemberLevel.PACKAGE
-        addStringOption("Xdoclint:all,-missing,-reference")
+        addStringOption("Xdoclint:all,-missing", "-Xwerror")
     }
 }
 

@@ -26,7 +26,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -59,32 +60,27 @@ public class PlatformStateUpdates {
      * @param state the current state
      * @param txBody the transaction body
      */
-    public void handleTxBody(
-            @NonNull final State state,
-            @NonNull final PlatformState platformState,
-            @NonNull final TransactionBody txBody) {
+    public void handleTxBody(@NonNull final State state, @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
 
         if (txBody.hasFreeze()) {
             final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
+            final var writableStore =
+                    new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
                 logger.info("Transaction freeze of type {} detected", freezeType);
                 // copy freeze state to platform state
                 final ReadableStates states = state.getReadableStates(FreezeService.NAME);
-                final ReadableSingletonState<Timestamp> freezeTime = states.getSingleton(FREEZE_TIME_KEY);
-                requireNonNull(freezeTime.get());
-                final Instant freezeTimeInstant = Instant.ofEpochSecond(
-                        freezeTime.get().seconds(), freezeTime.get().nanos());
+                final ReadableSingletonState<Timestamp> freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
+                final var freezeTime = requireNonNull(freezeTimeState.get());
+                final Instant freezeTimeInstant = Instant.ofEpochSecond(freezeTime.seconds(), freezeTime.nanos());
                 logger.info("Freeze time will be {}", freezeTimeInstant);
-                platformState.setFreezeTime(freezeTimeInstant);
+                writableStore.setFreezeTime(freezeTimeInstant);
             } else if (freezeType == FREEZE_ABORT) {
                 logger.info("Aborting freeze");
-                // copy freeze state (which is null) to platform state
-                // we just set platform state to null
-                platformState.setFreezeTime(null);
+                writableStore.setFreezeTime(null);
             }
-            // else for other freeze types, do nothing
         }
     }
 }

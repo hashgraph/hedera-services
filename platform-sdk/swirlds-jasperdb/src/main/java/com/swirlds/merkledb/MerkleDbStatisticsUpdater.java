@@ -60,19 +60,19 @@ public class MerkleDbStatisticsUpdater {
     }
 
     /** Updates statistics with leaf keys store file size. */
-    void setFlushLeafKeysStoreFileSize(final DataFileReader<?> newLeafKeysFile) {
+    void setFlushLeafKeysStoreFileSize(final DataFileReader newLeafKeysFile) {
         statistics.setFlushLeafKeysStoreFileSizeMb(
                 newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
     }
 
     /** Updates statistics with leaf store file size. */
-    void setFlushLeavesStoreFileSize(final DataFileReader<?> newLeafKeysFile) {
+    void setFlushLeavesStoreFileSize(final DataFileReader newLeafKeysFile) {
         statistics.setFlushLeavesStoreFileSizeMb(
                 newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
     }
 
     /** Updates statistics with hashes store file size. */
-    void setFlushHashesStoreFileSize(final DataFileReader<?> newHashesFile) {
+    void setFlushHashesStoreFileSize(final DataFileReader newHashesFile) {
         statistics.setFlushHashesStoreFileSizeMb(
                 newHashesFile == null ? 0 : newHashesFile.getSize() * BYTES_TO_MEBIBYTES);
     }
@@ -83,7 +83,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return hashes store file size, Mb
      */
-    int updateHashesStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
+    int updateHashesStoreFileStats(final MerkleDbDataSource dataSource) {
         if (dataSource.getHashStoreDisk() != null) {
             final LongSummaryStatistics internalHashesFileSizeStats =
                     dataSource.getHashStoreDisk().getFilesSizeStatistics();
@@ -100,7 +100,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return leaves store file size, Mb
      */
-    private int updateLeavesStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
+    private int updateLeavesStoreFileStats(final MerkleDbDataSource dataSource) {
         final LongSummaryStatistics leafDataFileSizeStats =
                 dataSource.getPathToKeyValue().getFilesSizeStatistics();
         statistics.setLeavesStoreFileCount((int) leafDataFileSizeStats.getCount());
@@ -115,7 +115,7 @@ public class MerkleDbStatisticsUpdater {
      *
      * @return leaf keys store file size, Mb
      */
-    private int updateLeafKeysStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
+    private int updateLeafKeysStoreFileStats(final MerkleDbDataSource dataSource) {
         if (dataSource.getKeyToPath() != null) {
             final LongSummaryStatistics leafKeyFileSizeStats =
                     dataSource.getKeyToPath().getFilesSizeStatistics();
@@ -128,7 +128,7 @@ public class MerkleDbStatisticsUpdater {
     }
 
     /** Calculate updates statistics for all the storages and then updates total usage */
-    void updateStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
+    void updateStoreFileStats(final MerkleDbDataSource dataSource) {
         statistics.setTotalFileSizeMb(updateHashesStoreFileStats(dataSource)
                 + updateLeavesStoreFileStats(dataSource)
                 + updateLeafKeysStoreFileStats(dataSource));
@@ -137,7 +137,7 @@ public class MerkleDbStatisticsUpdater {
     /**
      * Updates statistics with off-heap memory consumption.
      */
-    void updateOffHeapStats(final MerkleDbDataSource<?, ?> dataSource) {
+    void updateOffHeapStats(final MerkleDbDataSource dataSource) {
         int totalOffHeapMemoryConsumption = updateOffHeapStat(
                         dataSource.getPathToDiskLocationInternalNodes(), statistics::setOffHeapHashesIndexMb)
                 + updateOffHeapStat(dataSource.getPathToDiskLocationLeafNodes(), statistics::setOffHeapLeavesIndexMb);

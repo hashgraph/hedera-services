@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -326,6 +327,16 @@ public class CommonPbjConverters {
         try {
             final var bytes = asBytes(ScheduleInfo.PROTOBUF, pbjValue);
             return com.hederahashgraph.api.proto.java.ScheduleInfo.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.Transaction fromPbj(@NonNull Transaction pbjValue) {
+        requireNonNull(pbjValue);
+        try {
+            final var bytes = asBytes(Transaction.PROTOBUF, pbjValue);
+            return com.hederahashgraph.api.proto.java.Transaction.parseFrom(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

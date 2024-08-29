@@ -25,13 +25,12 @@ import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,11 +42,9 @@ import org.apache.logging.log4j.Logger;
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
  * easy deletion during merging by accepting any key/value with a key outside this range is not
  * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
- *
- * @param <D> type for data items
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, FileStatisticAware {
+public class MemoryIndexDiskKeyValueStore implements AutoCloseable, Snapshotable, FileStatisticAware {
 
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
@@ -57,7 +54,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     private final LongList index;
     /** On disk set of DataFiles that contain our key/value pairs */
-    final DataFileCollection<D> fileCollection;
+    final DataFileCollection fileCollection;
 
     /**
      * The name for the data store, this allows more than one data store in a single directory.
@@ -65,22 +62,12 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     private final String storeName;
 
-    /** The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
-     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
-     */
-    private final AtomicLong minValidKey;
-    /** The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
-     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
-     */
-    private final AtomicLong maxValidKey;
-
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
      * @param storeDir The directory to store data files in
      * @param storeName The name for the data store, this allows more than one data store in a single directory.
      * @param legacyStoreName Base name for the data store. If not null, the store will process files with this prefix at startup. New files in the store will be prefixed with {@code storeName}
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param loadedDataCallback call back for handing loaded data from existing files on startup. Can be null if not needed.
      * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
      * key ranges do not overlap. For example with internal node and leaf paths in a virtual map tree. It also lets the caller decide the LongList implementation to use. This does mean the caller is responsible for snapshot of the index.
@@ -91,8 +78,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final BaseSerializer<D> dataItemSerializer,
-            final LoadedDataCallback<D> loadedDataCallback,
+            final LoadedDataCallback loadedDataCallback,
             final LongList keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
@@ -100,25 +86,28 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
-        fileCollection = new DataFileCollection<>(
-                config, storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
-        // no limits for the keys on init
-        minValidKey = new AtomicLong(0);
-        maxValidKey = new AtomicLong(Long.MAX_VALUE);
+        fileCollection = new DataFileCollection(config, storeDir, storeName, legacyStoreName, loadedDataCallback);
     }
 
     /**
-     * Start a writing session ready for calls to put()
+     * Updates valid key range for this store. This method need to be called before we start putting
+     * values into the index, otherwise we could put a value by index that is not yet valid.
+     *
+     * @param min min valid key, inclusive
+     * @param max max valid key, inclusive
+     */
+    public void updateValidKeyRange(final long min, final long max) {
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        index.updateValidRange(min, max);
+    }
+
+    /**
+     * Start a writing session ready for calls to put(). Make sure to update the valid key range
+     * using {@link #updateValidKeyRange(long, long)} before this method is called.
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting(final long minimumValidKey, final long maxValidIndex) throws IOException {
-        this.minValidKey.set(minimumValidKey);
-        this.maxValidKey.set(maxValidIndex);
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        // We need to do this before we start putting values into the index, otherwise we could put a value by
-        // index that is not yet valid.
-        index.updateValidRange(minimumValidKey, maxValidIndex);
+    public void startWriting() throws IOException {
         fileCollection.startWriting();
     }
 
@@ -126,12 +115,13 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * Put a value into this store, you must be in a writing session started with startWriting()
      *
      * @param key The key to store value for
-     * @param dataItem Buffer containing the data's value, it should have its position and limit set
-     *     correctly
+     * @param dataItemWriter a function to write data item bytes
+     * @param dataItemSize the data item size, in bytes
      * @throws IOException If there was a problem write key/value to the store
      */
-    public void put(final long key, final D dataItem) throws IOException {
-        final long dataLocation = fileCollection.storeDataItem(dataItem);
+    public void put(final long key, final Consumer<BufferedData> dataItemWriter, final int dataItemSize)
+            throws IOException {
+        final long dataLocation = fileCollection.storeDataItem(dataItemWriter, dataItemSize);
         // store data location in index
         index.put(key, dataLocation);
     }
@@ -143,10 +133,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @throws IOException If there was a problem closing the writing session
      */
     @Nullable
-    public DataFileReader<D> endWriting() throws IOException {
-        final long currentMinValidKey = minValidKey.get();
-        final long currentMaxValidKey = maxValidKey.get();
-        final DataFileReader<D> dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
+    public DataFileReader endWriting() throws IOException {
+        final long currentMinValidKey = index.getMinValidIndex();
+        final long currentMaxValidKey = index.getMaxValidIndex();
+        final DataFileReader dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
         dataFileReader.setFileCompleted();
         logger.info(
                 MERKLE_DB.getMarker(),
@@ -181,31 +171,12 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @return Array of serialization version for data if the value was read or null if not found
      * @throws IOException If there was a problem reading the value from file
      */
-    public D get(final long key) throws IOException {
+    public BufferedData get(final long key) throws IOException {
         if (!checkKeyInRange(key)) {
             return null;
         }
         // read from files via index lookup
         return fileCollection.readDataItemUsingIndex(index, key);
-    }
-
-    /**
-     * Get raw value bytes by reading it from disk.
-     *
-     * <p>NOTE: this method may not be used for data types, which can be of multiple different
-     * versions. This is because there is no way for a caller to know the version of the returned
-     * bytes.
-     *
-     * @param key The key to find and read value for
-     * @return Array of serialization version for data if the value was read or null if not found
-     * @throws IOException If there was a problem reading the value from file
-     */
-    public BufferedData getBytes(final long key) throws IOException {
-        if (!checkKeyInRange(key)) {
-            return null;
-        }
-        // read from files via index lookup
-        return fileCollection.readDataItemBytesUsingIndex(index, key);
     }
 
     /**
@@ -231,7 +202,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         return fileCollection.getAllCompletedFilesSizeStatistics();
     }
 
-    public DataFileCollection<D> getFileCollection() {
+    public DataFileCollection getFileCollection() {
         return fileCollection;
     }
 }

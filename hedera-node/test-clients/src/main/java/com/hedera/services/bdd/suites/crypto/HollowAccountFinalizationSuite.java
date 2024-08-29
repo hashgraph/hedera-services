@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -100,6 +101,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
+@Tag(ADHOC)
 public class HollowAccountFinalizationSuite {
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
     private static final String PAY_RECEIVABLE = "PayReceivable";
@@ -256,6 +258,27 @@ public class HollowAccountFinalizationSuite {
                             getCompletedHollowAccountInfo,
                             hapiGetTxnRecord);
                 }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> hollowAccountCompletionWithHollowPayer() {
+        return defaultHapiSpec("hollowAccountCompletionWithHollowPayer")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        cryptoCreate("test"))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().maxAutoAssociations(-1).hasEmptyKey()),
+                        cryptoTransfer(moving(1, VANILLA_TOKEN).between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                .signedBy(SECP_256K1_SOURCE_KEY, TOKEN_TREASURY)
+                                .payingWith(SECP_256K1_SOURCE_KEY)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY)),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().hasNonEmptyKey()));
     }
 
     @HapiTest

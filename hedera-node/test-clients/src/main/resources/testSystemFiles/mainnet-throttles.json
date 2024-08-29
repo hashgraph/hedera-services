@@ -9,6 +9,9 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 10500000,
           "operations": [
+            "NodeCreate",
+            "NodeDelete",
+            "NodeUpdate",
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
@@ -96,7 +99,8 @@
             "TokenUpdateNfts",
             "TokenReject",
             "TokenAirdrop",
-            "TokenClaimAirdrop"
+            "TokenClaimAirdrop",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -138,7 +142,7 @@
     },
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 15000,
+      "burstPeriodMs": 1000,
       "name": "CreationLimits",
       "throttleGroups": [
         {
@@ -161,7 +165,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]

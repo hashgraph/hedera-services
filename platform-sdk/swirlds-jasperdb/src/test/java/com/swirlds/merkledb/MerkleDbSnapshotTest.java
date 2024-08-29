@@ -40,8 +40,6 @@ import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -50,6 +48,8 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,6 +75,11 @@ class MerkleDbSnapshotTest {
     private static final int ROUND_CHANGES = 1000;
 
     private static final Random RANDOM = new Random(123);
+
+    private static final KeySerializer<ExampleLongKeyFixedSize> keySerializer =
+            new ExampleLongKeyFixedSize.Serializer();
+    private static final ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer =
+            new ExampleFixedSizeVirtualValueSerializer();
 
     @TempDir
     private Path tempDirectory;
@@ -104,14 +109,8 @@ class MerkleDbSnapshotTest {
                 "Expected no open dbs. Actual number of open dbs: " + MerkleDbDataSource.getCountOfOpenDatabases());
     }
 
-    private static MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> fixedConfig() {
-        final KeySerializer<ExampleLongKeyFixedSize> keySerializer = new ExampleLongKeyFixedSize.Serializer();
-        final ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer =
-                new ExampleFixedSizeVirtualValueSerializer();
-        return new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) keySerializer.getCurrentDataVersion(), keySerializer,
-                (short) valueSerializer.getCurrentDataVersion(), valueSerializer);
+    private static MerkleDbTableConfig fixedConfig() {
+        return new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
     }
 
     private void verify(final MerkleInternal stateRoot) {
@@ -131,12 +130,11 @@ class MerkleDbSnapshotTest {
     @Test
     void snapshotMultipleTablesTestSync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = fixedConfig();
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
-                    new VirtualMap<>("vm" + i, dsBuilder);
+                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder);
             registerMetrics(vm);
             initialRoot.setChild(i, vm);
         }
@@ -187,12 +185,11 @@ class MerkleDbSnapshotTest {
     @Test
     void snapshotMultipleTablesTestAsync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = fixedConfig();
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
-                    new VirtualMap<>("vm" + i, dsBuilder);
+                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder);
             initialRoot.setChild(i, vm);
         }
 
@@ -268,14 +265,11 @@ class MerkleDbSnapshotTest {
      */
     @Test
     void testSnapshotAfterReconnect() throws Exception {
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
-        final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> original =
-                dsBuilder.build("vm", false);
+        final MerkleDbTableConfig tableConfig = fixedConfig();
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final VirtualDataSource original = dsBuilder.build("vm", false);
         // Simulate reconnect as a learner
-        final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy =
-                dsBuilder.copy(original, true);
+        final VirtualDataSource copy = dsBuilder.copy(original, true);
 
         try {
             final Path snapshotDir = testFileSystemManager.resolve(Path.of("snapshot"));

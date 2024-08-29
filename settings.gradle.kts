@@ -35,6 +35,7 @@ javaModules {
     directory("platform-sdk") {
         group = "com.swirlds"
         module("swirlds-jasperdb") { artifact = "swirlds-merkledb" }
+        module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
@@ -101,6 +102,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.9")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
     }
 }

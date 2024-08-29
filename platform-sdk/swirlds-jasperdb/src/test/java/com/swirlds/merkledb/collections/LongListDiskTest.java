@@ -302,6 +302,7 @@ class LongListDiskTest {
         longListDisk.updateValidRange(0, HALF_SAMPLE_SIZE);
 
         // using the freed up chunks
+        longListDisk.updateValidRange(0, SAMPLE_SIZE - 1);
         for (int i = HALF_SAMPLE_SIZE; i < SAMPLE_SIZE; i++) {
             longListDisk.put(i, i + 100);
         }
@@ -347,6 +348,7 @@ class LongListDiskTest {
     }
 
     private static <T extends LongList> T populateList(T longList) {
+        longList.updateValidRange(0, SAMPLE_SIZE - 1);
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             longList.put(i, i + 100);
         }

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 import com.google.common.base.MoreObjects;
@@ -34,7 +35,6 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -86,7 +86,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
             final FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> usageEstimate(_txn, svo, info);
             return spec.fees().forActivityBasedOp(TokenFeeScheduleUpdate, metricsCalc, txn, numPayerKeys);
         } catch (final Throwable ignore) {
-            return HapiSuite.ONE_HBAR;
+            return ONE_HBAR;
         }
     }
 
@@ -146,7 +146,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     static TokenInfo lookupInfo(
             final HapiSpec spec, final String token, final Logger scopedLog, final boolean loggingOff)
             throws Throwable {
-        final HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
+        final HapiGetTokenInfo subOp = getTokenInfo(token).nodePayment(ONE_HBAR).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
             if (!loggingOff) {

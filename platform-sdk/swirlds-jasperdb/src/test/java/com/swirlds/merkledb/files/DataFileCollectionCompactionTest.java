@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,34 +69,55 @@ class DataFileCollectionCompactionTest {
     private static final long CUTTLEFISH = 2003;
     private static final long FOX = 1006;
 
+    private static long storeDataItem(final DataFileCollection coll, long[] values) throws IOException {
+        return coll.storeDataItem(
+                o -> {
+                    for (final long value : values) {
+                        o.writeLong(value);
+                    }
+                },
+                values.length * Long.BYTES);
+    }
+
+    private static long[] readDataItem(final DataFileCollection coll, final long location) throws IOException {
+        final BufferedData data = coll.readDataItem(location);
+        if (data == null) {
+            return null;
+        }
+        final long[] items = new long[Math.toIntExact(data.remaining() / Long.BYTES)];
+        for (int i = 0; i < items.length; i++) {
+            items[i] = data.readLong();
+        }
+        return items;
+    }
+
     @Test
     void testMerge() throws Exception {
         final Map<Long, Long> index = new HashMap<>();
-        final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "mergeTest";
-        final var coll = new DataFileCollection<>(config, tempFileDir.resolve(storeName), storeName, serializer, null);
+        final var coll = new DataFileCollection(config, tempFileDir.resolve(storeName), storeName, null);
 
         coll.startWriting();
-        index.put(1L, coll.storeDataItem(new long[] {1, APPLE}));
-        index.put(2L, coll.storeDataItem(new long[] {2, BANANA}));
+        index.put(1L, storeDataItem(coll, new long[] {1, APPLE}));
+        index.put(2L, storeDataItem(coll, new long[] {2, BANANA}));
         coll.endWriting(1, 2).setFileCompleted();
 
         coll.startWriting();
-        index.put(3L, coll.storeDataItem(new long[] {3, APPLE}));
-        index.put(4L, coll.storeDataItem(new long[] {4, CHERRY}));
+        index.put(3L, storeDataItem(coll, new long[] {3, APPLE}));
+        index.put(4L, storeDataItem(coll, new long[] {4, CHERRY}));
         coll.endWriting(2, 4).setFileCompleted();
 
         coll.startWriting();
-        index.put(4L, coll.storeDataItem(new long[] {4, CUTTLEFISH}));
-        index.put(5L, coll.storeDataItem(new long[] {5, BANANA}));
-        index.put(6L, coll.storeDataItem(new long[] {6, DATE}));
+        index.put(4L, storeDataItem(coll, new long[] {4, CUTTLEFISH}));
+        index.put(5L, storeDataItem(coll, new long[] {5, BANANA}));
+        index.put(6L, storeDataItem(coll, new long[] {6, DATE}));
         coll.endWriting(3, 6).setFileCompleted();
 
         coll.startWriting();
-        index.put(7L, coll.storeDataItem(new long[] {7, APPLE}));
-        index.put(8L, coll.storeDataItem(new long[] {8, EGGPLANT}));
-        index.put(9L, coll.storeDataItem(new long[] {9, CUTTLEFISH}));
-        index.put(10L, coll.storeDataItem(new long[] {10, FIG}));
+        index.put(7L, storeDataItem(coll, new long[] {7, APPLE}));
+        index.put(8L, storeDataItem(coll, new long[] {8, EGGPLANT}));
+        index.put(9L, storeDataItem(coll, new long[] {9, CUTTLEFISH}));
+        index.put(10L, storeDataItem(coll, new long[] {10, FIG}));
         coll.endWriting(5, 10).setFileCompleted();
 
         final CASableLongIndex indexUpdater = new CASableLongIndex() {
@@ -133,19 +154,20 @@ class DataFileCollectionCompactionTest {
             Long location = index.get((long) i);
             assertNotNull(location, "failed on " + i);
 
-            long[] data = coll.readDataItem(location);
+            long[] data = readDataItem(coll, location);
+            assertNotNull(data);
             final var key = data[0];
             final var value = data[1];
             assertTrue(key > prevKey, "failed on " + i + " key=" + key + ", prev=" + prevKey + ", value=" + value);
             prevKey = key;
         }
 
-        assertEquals(BANANA, coll.readDataItem(index.get(5L))[1], "Not a BANANA");
-        assertEquals(DATE, coll.readDataItem(index.get(6L))[1], "Not a DATE");
-        assertEquals(APPLE, coll.readDataItem(index.get(7L))[1], "Not a APPLE");
-        assertEquals(EGGPLANT, coll.readDataItem(index.get(8L))[1], "Not a EGGPLANT");
-        assertEquals(CUTTLEFISH, coll.readDataItem(index.get(9L))[1], "Not a CUTTLEFISH");
-        assertEquals(FIG, coll.readDataItem(index.get(10L))[1], "Not a FIG");
+        assertEquals(BANANA, readDataItem(coll, index.get(5L))[1], "Not a BANANA");
+        assertEquals(DATE, readDataItem(coll, index.get(6L))[1], "Not a DATE");
+        assertEquals(APPLE, readDataItem(coll, index.get(7L))[1], "Not a APPLE");
+        assertEquals(EGGPLANT, readDataItem(coll, index.get(8L))[1], "Not a EGGPLANT");
+        assertEquals(CUTTLEFISH, readDataItem(coll, index.get(9L))[1], "Not a CUTTLEFISH");
+        assertEquals(FIG, readDataItem(coll, index.get(10L))[1], "Not a FIG");
 
         assertEquals(1, coll.getAllCompletedFiles().size(), "Too many files left over");
 
@@ -153,7 +175,7 @@ class DataFileCollectionCompactionTest {
         final var itr = dataFileReader.createIterator();
         prevKey = -1;
         while (itr.next()) {
-            final long key = itr.getDataItemData()[0];
+            final long key = itr.getDataItemData().readLong();
             assertTrue(key > prevKey, "Keys must be sorted in ascending order");
             assertTrue(key >= 5, "We should not update below firstLeafPath");
             prevKey = key;
@@ -167,14 +189,13 @@ class DataFileCollectionCompactionTest {
         final long[] index = new long[MAXKEYS];
         String storeName = "testDoubleMerge";
         final Path testDir = tempFileDir.resolve(storeName);
-        final DataFileCollection<long[]> store =
-                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
             store.startWriting();
             for (int j = 0; j < MAXKEYS; ++j) {
-                index[j] = store.storeDataItem(new long[] {j, i * j});
+                index[j] = storeDataItem(store, new long[] {j, i * j});
             }
             store.endWriting(0, index.length).setFileCompleted();
         }
@@ -185,7 +206,7 @@ class DataFileCollectionCompactionTest {
         // Do merge in a separate thread but pause before files are deleted
         new Thread(() -> {
                     final AtomicInteger updateCount = new AtomicInteger(0);
-                    final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
+                    final List<DataFileReader> filesToMerge = getFilesToMerge(store);
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
                         public long get(long key) {
                             return index[(int) key];
@@ -213,8 +234,8 @@ class DataFileCollectionCompactionTest {
                         }
                     };
 
-                    final DataFileCompactor<long[]> compactor =
-                            new DataFileCompactor<>(config, storeName, store, indexUpdater, null, null, null, null) {
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(config, storeName, store, indexUpdater, null, null, null, null) {
                                 @Override
                                 int getMinNumberOfFilesToCompact() {
                                     return 2;
@@ -239,16 +260,15 @@ class DataFileCollectionCompactionTest {
 
         // Create a new data collection from the snapshot
         final String[] index2 = new String[MAXKEYS];
-        final DataFileCollection<long[]> store2 = new DataFileCollection<>(
+        final DataFileCollection store2 = new DataFileCollection(
                 config,
                 snapshot,
                 storeName,
-                new ExampleFixedSizeDataSerializer(),
-                (dataLocation, dataValue) ->
-                        index2[(int) dataValue[0]] = DataFileCommon.dataLocationToString(dataLocation));
+                (dataLocation, data) ->
+                        index2[(int) data.readLong()] = DataFileCommon.dataLocationToString(dataLocation));
 
         // Merge all files with redundant records
-        final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store2);
+        final List<DataFileReader> filesToMerge = getFilesToMerge(store2);
         try {
             final CASableLongIndex indexUpdater = new CASableLongIndex() {
                 public long get(long key) {
@@ -292,8 +312,7 @@ class DataFileCollectionCompactionTest {
         String storeName = "testMergeAndFlush";
         final Path testDir = tempFileDir.resolve(storeName);
 
-        final DataFileCollection<long[]> store =
-                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
 
         try {
             for (long i = 0; i < 2 * NUM_UPDATES; i++) {
@@ -302,16 +321,16 @@ class DataFileCollectionCompactionTest {
                 for (int j = 0; j < MAXKEYS; ++j) {
                     // Update half the keys
                     if ((j + i) % 2 == 0) continue;
-                    long[] dataItem = store.readDataItem(index.get(j));
+                    long[] dataItem = readDataItem(store, index.get(j));
                     if (dataItem == null) {
                         dataItem = new long[] {j, 0};
                     }
                     dataItem[1] += j;
-                    index.set(j, store.storeDataItem(dataItem));
+                    index.set(j, storeDataItem(store, dataItem));
                 }
 
                 // Intervene with merging earlier copies to disrupt file index order
-                final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
+                final List<DataFileReader> filesToMerge = getFilesToMerge(store);
                 final CASableLongIndex indexUpdater = new CASableLongIndex() {
                     public long get(long key) {
                         return index.get((int) key);
@@ -330,8 +349,8 @@ class DataFileCollectionCompactionTest {
                 };
 
                 if (filesToMerge.size() > 1) {
-                    final DataFileCompactor<long[]> compactor =
-                            new DataFileCompactor<>(config, storeName, store, indexUpdater, null, null, null, null);
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(config, storeName, store, indexUpdater, null, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -346,7 +365,7 @@ class DataFileCollectionCompactionTest {
 
             // Validate the result
             for (int j = 0; j < MAXKEYS; ++j) {
-                final long[] dataItem = store.readDataItem(index.get(j));
+                final long[] dataItem = readDataItem(store, index.get(j));
                 assertEquals(j, dataItem[0]);
                 assertEquals(NUM_UPDATES * j, dataItem[1]);
             }
@@ -364,13 +383,12 @@ class DataFileCollectionCompactionTest {
         String storeName = "testRestore";
         final Path testDir = tempFileDir.resolve(storeName);
 
-        final DataFileCollection<long[]> store =
-                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
         try {
             // Initial values
             store.startWriting();
             for (int j = 0; j < MAX_KEYS; ++j) {
-                index.set(j, store.storeDataItem(new long[] {j, j}));
+                index.set(j, storeDataItem(store, new long[] {j, j}));
             }
             store.endWriting(0, index.length()).setFileCompleted();
 
@@ -378,13 +396,14 @@ class DataFileCollectionCompactionTest {
             for (long i = 1; i < NUM_UPDATES; i++) {
                 store.startWriting();
                 for (int j = 0; j < MAX_KEYS; ++j) {
-                    long[] dataItem = store.readDataItem(index.get(j));
+                    long[] dataItem = readDataItem(store, index.get(j));
+                    assertNotNull(dataItem);
                     dataItem[1] += j;
-                    index.set(j, store.storeDataItem(dataItem));
+                    index.set(j, storeDataItem(store, dataItem));
                 }
 
                 // Intervene with merging earlier copies to disrupt file index order
-                final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
+                final List<DataFileReader> filesToMerge = getFilesToMerge(store);
                 final CASableLongIndex indexUpdater = new CASableLongIndex() {
                     public long get(long key) {
                         return index.get((int) key);
@@ -403,8 +422,8 @@ class DataFileCollectionCompactionTest {
                 };
 
                 if (filesToMerge.size() > 1) {
-                    final DataFileCompactor<long[]> compactor =
-                            new DataFileCompactor<>(config, storeName, store, indexUpdater, null, null, null, null);
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(config, storeName, store, indexUpdater, null, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -419,17 +438,17 @@ class DataFileCollectionCompactionTest {
 
             // Restore from all files
             final AtomicLongArray reindex = new AtomicLongArray(MAX_KEYS);
-            final DataFileCollection<long[]> restore = new DataFileCollection<>(
+            final DataFileCollection restore = new DataFileCollection(
                     config,
                     testDir,
                     storeName,
-                    new ExampleFixedSizeDataSerializer(),
-                    (dataLocation, dataValue) -> reindex.set((int) dataValue[0], dataLocation));
+                    (dataLocation, data) -> reindex.set((int) data.readLong(), dataLocation));
 
             // Validate the result
             try {
                 for (int j = 0; j < MAX_KEYS; ++j) {
-                    final long[] dataItem = restore.readDataItem(reindex.get(j));
+                    final long[] dataItem = readDataItem(store, reindex.get(j));
+                    assertNotNull(dataItem);
                     assertEquals(j, dataItem[0]);
                     assertEquals(NUM_UPDATES * j, dataItem[1]);
                 }
@@ -451,15 +470,15 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
         Files.createDirectories(testDir);
         final LongListOffHeap index = new LongListOffHeap();
-        final DataFileCollection<long[]> store =
-                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(config, storeName, store, index, null, null, null, null);
+        index.updateValidRange(0, numFiles * numValues);
+        final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(config, storeName, store, index, null, null, null, null);
         // Create a few files initially
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
             for (int j = 0; j < numValues; j++) {
-                final long dataLocation = store.storeDataItem(new long[] {i * numValues + j, i * numValues + j});
+                final long dataLocation = storeDataItem(store, new long[] {i * numValues + j, i * numValues + j});
                 index.put(i * numValues + j, dataLocation);
             }
             store.endWriting(0, index.size()).setFileCompleted();
@@ -477,7 +496,7 @@ class DataFileCollectionCompactionTest {
         final ExecutorService exec = Executors.newSingleThreadExecutor();
         final Future<?> f = exec.submit(() -> {
             try {
-                final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
+                final List<DataFileReader> filesToMerge = getFilesToMerge(store);
                 // Data file collection may create a new file before the compaction starts
                 assertTrue(filesToMerge.size() == numFiles || filesToMerge.size() == numFiles + 1);
                 compactor.compactFiles(index, filesToMerge, 1);
@@ -511,7 +530,7 @@ class DataFileCollectionCompactionTest {
         store.startWriting();
         for (int i = 0; i < numFiles; i++) {
             for (int j = 0; j < numValues; j++) {
-                final long dataLocation = store.storeDataItem(new long[] {i * numValues + j, i * numValues + j + 1});
+                final long dataLocation = storeDataItem(store, new long[] {i * numValues + j, i * numValues + j + 1});
                 index.put(i * numValues + j, dataLocation);
             }
         }
@@ -545,14 +564,14 @@ class DataFileCollectionCompactionTest {
 
         // Restore
         final LongListOffHeap index2 = new LongListOffHeap(snapshotDir.resolve("index.ll"));
-        final DataFileCollection<long[]> store2 =
-                new DataFileCollection<>(config, snapshotDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection store2 = new DataFileCollection(config, snapshotDir, storeName, null);
         // Check index size
         assertEquals(numFiles * numValues, index2.size());
         // Check the values
         for (int i = 0; i < index2.size(); i++) {
             final long dataLocation = index2.get(i);
-            final long[] value = store2.readDataItem(dataLocation);
+            final long[] value = readDataItem(store2, dataLocation);
+            assertNotNull(value);
             assertEquals(i, value[0]);
             assertEquals(i + 1, value[1]);
         }
@@ -570,16 +589,16 @@ class DataFileCollectionCompactionTest {
         final LongList index = new LongListOffHeap();
         String storeName = "testInconsistentIndex";
         final Path testDir = tempFileDir.resolve(storeName);
-        final DataFileCollection<long[]> store =
-                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(config, storeName, store, index, null, null, null, null);
+        final DataFileCollection store = new DataFileCollection(config, testDir, storeName, null);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(config, storeName, store, index, null, null, null, null);
 
         final int numFiles = 2;
+        index.updateValidRange(0, numFiles * MAXKEYS);
         for (long i = 0; i < numFiles; i++) {
             store.startWriting();
             for (int j = 0; j < MAXKEYS; ++j) {
-                index.put(j, store.storeDataItem(new long[] {j, i * j}));
+                index.put(j, storeDataItem(store, new long[] {j, i * j}));
             }
             store.endWriting(0, index.size()).setFileCompleted();
         }
@@ -588,7 +607,7 @@ class DataFileCollectionCompactionTest {
         final Path savedIndex = testDir.resolve("index.ll");
 
         final AtomicInteger updateCount = new AtomicInteger(0);
-        final List<DataFileReader<long[]>> filesToMerge = getFilesToMerge(store);
+        final List<DataFileReader> filesToMerge = getFilesToMerge(store);
         final CASableLongIndex indexUpdater = new CASableLongIndex() {
             public long get(long key) {
                 return index.get(key);
@@ -626,11 +645,10 @@ class DataFileCollectionCompactionTest {
 
         // Create a new data collection from the snapshot
         LongList index2 = new LongListOffHeap(savedIndex);
-        final DataFileCollection<long[]> store2 =
-                new DataFileCollection<>(config, snapshot, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection store2 = new DataFileCollection(config, snapshot, storeName, null);
 
         // Merge all files with redundant records
-        final List<DataFileReader<long[]>> filesToMerge2 = getFilesToMerge(store2);
+        final List<DataFileReader> filesToMerge2 = getFilesToMerge(store2);
         final CASableLongIndex indexUpdater2 = new CASableLongIndex() {
             public long get(long key) {
                 return index2.get(key);
@@ -657,7 +675,7 @@ class DataFileCollectionCompactionTest {
         }
     }
 
-    private static List<DataFileReader<long[]>> getFilesToMerge(DataFileCollection<long[]> store) {
+    private static List<DataFileReader> getFilesToMerge(DataFileCollection store) {
         return store.getAllCompletedFiles();
     }
 }

@@ -53,7 +53,7 @@ public abstract class AbstractLongList<C> implements LongList {
     public static final String MAX_CHUNKS_EXCEEDED_MSG = "The maximum number of memory chunks should not exceed %s. "
             + "Either increase numLongsPerChunk or decrease maxLongs";
     public static final String CHUNK_SIZE_EXCEEDED_MSG = "Cannot store %d per chunk (max is %d)";
-    public static final String MIN_VALID_INDEX_NON_NEGATIVE_MSG = "Min valid index %d must be non-negative";
+    public static final String INVALID_RANGE_MSG = "Invalid range %d - %d";
     public static final String MAX_VALID_INDEX_LIMIT = "Max valid index %d must be less than max capacity %d";
 
     static {
@@ -126,8 +126,11 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long maxLongs;
 
-    /** Min valid index of the list. All the indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
-    protected final AtomicLong minValidIndex = new AtomicLong(0);
+    /** Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    protected final AtomicLong minValidIndex = new AtomicLong(-1);
+
+    /** Max valid index of the list. All indices to the right of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    protected final AtomicLong maxValidIndex = new AtomicLong(-1);
 
     /** Atomic reference array of our memory chunks */
     protected final AtomicReferenceArray<C> chunkList;
@@ -222,8 +225,10 @@ public abstract class AbstractLongList<C> implements LongList {
                     // "inflating" the size by number of indices that are to the left of the min valid index
                     size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
                 } else {
+                    minValidIndex.set(0);
                     size.set((fileChannel.size() - FILE_HEADER_SIZE_V1) / Long.BYTES);
                 }
+                maxValidIndex.set(size.get() - 1);
                 chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
                 readBodyFromFileChannelOnInit(file.getName(), fileChannel);
             }
@@ -302,6 +307,8 @@ public abstract class AbstractLongList<C> implements LongList {
     private void putImpl(final long index, final long value) {
         assert index >= minValidIndex.get()
                 : String.format("Index %d is less than min valid index %d", index, minValidIndex.get());
+        assert index <= maxValidIndex.get()
+                : String.format("Index %d is greater than max valid index %d", index, maxValidIndex.get());
         final C chunk = createOrGetChunk(index);
         final int subIndex = toIntExact(index % numLongsPerChunk);
         putToChunk(chunk, subIndex, value);
@@ -434,6 +441,7 @@ public abstract class AbstractLongList<C> implements LongList {
         headerBuffer.putInt(getNumLongsPerChunk());
         headerBuffer.putLong(maxLongs);
         headerBuffer.putLong(minValidIndex.get());
+        // maxValidIndex is not written. On loading, it will be set automatically based on the size
         headerBuffer.flip();
         // always write at start of file
         MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0);
@@ -460,21 +468,30 @@ public abstract class AbstractLongList<C> implements LongList {
     /** {@inheritDoc} */
     @Override
     public final void updateValidRange(final long newMinValidIndex, final long newMaxValidIndex) {
-        if (newMinValidIndex < 0) {
-            throw new IndexOutOfBoundsException(MIN_VALID_INDEX_NON_NEGATIVE_MSG.formatted(newMinValidIndex));
+        if ((newMinValidIndex < -1) || (newMinValidIndex > newMaxValidIndex)) {
+            throw new IndexOutOfBoundsException(INVALID_RANGE_MSG.formatted(newMinValidIndex, newMaxValidIndex));
         }
-
         if (newMaxValidIndex > maxLongs - 1) {
             throw new IndexOutOfBoundsException(MAX_VALID_INDEX_LIMIT.formatted(newMaxValidIndex, maxLongs));
         }
 
         minValidIndex.set(newMinValidIndex);
-        long oldMaxValidIndex = size.getAndUpdate(v -> min(newMaxValidIndex + 1, v)) - 1;
+        final long oldMaxValidIndex = maxValidIndex.getAndSet(newMaxValidIndex);
+        size.updateAndGet(v -> min(v, newMaxValidIndex + 1));
 
         shrinkLeftSideIfNeeded(newMinValidIndex);
         shrinkRightSideIfNeeded(oldMaxValidIndex, newMaxValidIndex);
         // everything to the right of the newMaxValidIndex is going to be discarded, adjust the size accordingly
+    }
 
+    @Override
+    public long getMinValidIndex() {
+        return minValidIndex.get();
+    }
+
+    @Override
+    public long getMaxValidIndex() {
+        return maxValidIndex.get();
     }
 
     /**
@@ -627,8 +644,12 @@ public abstract class AbstractLongList<C> implements LongList {
     /** {@inheritDoc} */
     @Override
     public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
-        final long max = size();
-        for (long i = minValidIndex.get(); i < max; i++) {
+        final long max = maxValidIndex.get();
+        if (max < 0) {
+            // Empty list, nothing to do
+            return;
+        }
+        for (long i = minValidIndex.get(); i <= max; i++) {
             final long value = get(i);
             if (value != IMPERMISSIBLE_VALUE) {
                 action.handle(i, value);

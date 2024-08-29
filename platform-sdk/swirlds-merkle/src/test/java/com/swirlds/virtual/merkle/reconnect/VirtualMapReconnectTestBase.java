@@ -45,11 +45,12 @@ import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -101,20 +102,17 @@ public class VirtualMapReconnectTestBase {
 
     private static TestFileSystemManager testFileSystemManager;
 
-    VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
+    VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = testFileSystemManager.resolveNewTemp("merkledb");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) 1, new TestKeySerializer(),
-                (short) 1, new TestValueSerializer());
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         tableConfig.hashesRamToDiskThreshold(0);
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
-    BrokenBuilder createBrokenBuilder(final VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
+    BrokenBuilder createBrokenBuilder(final VirtualDataSourceBuilder delegate) {
         return new BrokenBuilder(delegate);
     }
 
@@ -131,11 +129,13 @@ public class VirtualMapReconnectTestBase {
 
     @BeforeEach
     void setupEach() throws Exception {
-        final VirtualDataSourceBuilder<TestKey, TestValue> dataSourceBuilder = createBuilder();
+        final KeySerializer<TestKey> keySerializer = new TestKeySerializer();
+        final ValueSerializer<TestValue> valueSerializer = new TestValueSerializer();
+        final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = createBrokenBuilder(dataSourceBuilder);
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", keySerializer, valueSerializer, teacherBuilder);
+        learnerMap = new VirtualMap<>("Learner", keySerializer, valueSerializer, learnerBuilder);
     }
 
     @BeforeAll
@@ -149,7 +149,6 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(Lesson.class, Lesson::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
