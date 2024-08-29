@@ -336,67 +336,56 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         validateChargedUsd("second airdrop", 0.1, 1));
             }
 
-            @Nested
+            @HapiTest
             @DisplayName("with multiple tokens")
-            class AirdropMultipleTokens {
-                // TODO transfer 10 tokens once MAX_CHILD_RECORDS is increased
-                @HapiTest
-                final Stream<DynamicTest> tokenAirdropMultipleTokens() {
-                    return defaultHapiSpec("airdrop multiple tokens should pass")
-                            .given(
-                                    createTokenWithName("FT1"),
-                                    createTokenWithName("FT2"),
-                                    //                                    createTokenWithName("FT3"),
-                                    //                                    createTokenWithName("FT4"),
-                                    //                                    createTokenWithName("FT5"),
-                                    //                                    createTokenWithName("FT6"),
-                                    //                                    createTokenWithName("FT7"),
-                                    //                                    createTokenWithName("FT8"),
-                                    //                                    createTokenWithName("FT9"),
-                                    createTokenWithName("FT10"))
-                            .when(tokenAirdrop(
-                                            defaultMovementOfToken("FT1"),
-                                            defaultMovementOfToken("FT2"),
-                                            //                                            defaultMovementOfToken("FT3"),
-                                            //                                            defaultMovementOfToken("FT4"),
-                                            //                                            defaultMovementOfToken("FT5"),
-                                            //                                            defaultMovementOfToken("FT6"),
-                                            //                                            defaultMovementOfToken("FT7"),
-                                            //                                            defaultMovementOfToken("FT8"),
-                                            //                                            defaultMovementOfToken("FT9"),
-                                            defaultMovementOfToken("FT10"))
-                                    .payingWith(OWNER)
-                                    .via("fungible airdrop"))
-                            .then(
-                                    // assert balances
-                                    getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                            .hasTokenBalance("FT1", 10),
-                                    getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                            .hasTokenBalance("FT2", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT3", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT4", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT5", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT6", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT7", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT8", 10),
-                                    //
-                                    // getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    //                                            .hasTokenBalance("FT9", 10),
-                                    getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                            .hasTokenBalance("FT10", 10));
-                }
+            final Stream<DynamicTest> tokenAirdropMultipleTokens() {
+                return defaultHapiSpec("airdrop multiple tokens should pass")
+                        .given(
+                                createTokenWithName("FT1"),
+                                createTokenWithName("FT2"),
+                                createTokenWithName("FT3"),
+                                createTokenWithName("FT4"),
+                                createTokenWithName("FT5"),
+                                createTokenWithName("FT6"),
+                                createTokenWithName("FT7"),
+                                createTokenWithName("FT8"),
+                                createTokenWithName("FT9"),
+                                createTokenWithName("FT10"))
+                        .when(tokenAirdrop(
+                                        defaultMovementOfToken("FT1"),
+                                        defaultMovementOfToken("FT2"),
+                                        defaultMovementOfToken("FT3"),
+                                        defaultMovementOfToken("FT4"),
+                                        defaultMovementOfToken("FT5"),
+                                        defaultMovementOfToken("FT6"),
+                                        defaultMovementOfToken("FT7"),
+                                        defaultMovementOfToken("FT8"),
+                                        defaultMovementOfToken("FT9"),
+                                        defaultMovementOfToken("FT10"))
+                                .payingWith(OWNER)
+                                .via("fungible airdrop"))
+                        .then(
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT1", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT2", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT3", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT4", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT5", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT6", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT7", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT8", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT9", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT10", 10));
             }
         }
 
