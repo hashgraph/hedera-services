@@ -720,7 +720,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return defaultHapiSpec(" sender should prepay hbar custom fee")
                     .given()
                     .when(tokenAirdrop(moving(1, TREASURY_AS_SENDER_TOKEN)
-                            .between(TREASURY_AS_SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .between(TREASURY_AS_SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                             .payingWith(TREASURY_AS_SENDER)
                             .signedBy(TREASURY_AS_SENDER)
                             .via("transferTx"))
