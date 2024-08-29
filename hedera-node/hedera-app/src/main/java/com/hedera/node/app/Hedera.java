@@ -402,6 +402,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         requireNonNull(state);
+        logger.info("Initializing Hedera platform state");
         return serviceMigrator.doMigrations(
                 state,
                 servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
