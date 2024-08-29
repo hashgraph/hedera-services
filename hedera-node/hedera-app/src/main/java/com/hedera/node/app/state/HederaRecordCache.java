@@ -46,7 +46,7 @@ import java.util.List;
  */
 /*@ThreadSafe*/
 public interface HederaRecordCache extends RecordCache {
-    /*
+    /**
      * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
      * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
      *
