@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
@@ -87,6 +86,6 @@ public class V0540BlockStreamSchemaTest {
         verify(mockBlockStreamInfo).put(captor.capture());
 
         BlockStreamInfo blockInfoCapture = captor.getValue();
-        assertEquals(new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture);
+        assertEquals(BlockStreamInfo.DEFAULT, blockInfoCapture);
     }
 }

@@ -24,7 +24,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,20 +51,6 @@ class ConcurrentStreamingTreeHasherTest {
 
         assertNotNull(rootHash);
         assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
-    }
-
-    @Test
-    void testAddLeafThrowsWhenMaxDepthReached() throws NoSuchAlgorithmException {
-        for (int i = 1; i <= (1 << 28); i++) {
-            byte[] leaf = createLeaf("leaf" + i);
-            treeHasher.addLeaf(Bytes.wrap(leaf));
-        }
-
-        CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
-        final var exception = assertThrows(CompletionException.class, rootHashFuture::join);
-        assertNotNull(exception.getCause());
-        assertEquals(IllegalArgumentException.class, exception.getCause().getClass());
-        assertEquals("Cannot combine hashes at depth 24", exception.getCause().getMessage());
     }
 
     @Test

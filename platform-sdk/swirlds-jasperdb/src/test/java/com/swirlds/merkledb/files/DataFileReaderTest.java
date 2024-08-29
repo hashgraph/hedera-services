@@ -21,7 +21,6 @@ import static org.mockito.MockitoAnnotations.openMocks;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import java.io.File;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
@@ -43,8 +42,7 @@ class DataFileReaderTest {
     void setUp() throws IOException {
         openMocks(this);
         file = File.createTempFile("file-reader", "test");
-        dataFileReader =
-                new DataFileReader(dbConfig, file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
+        dataFileReader = new DataFileReader(dbConfig, file.toPath(), dataFileMetadata);
     }
 
     /**

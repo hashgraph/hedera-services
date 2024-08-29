@@ -491,7 +491,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 throttleStrategy);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
-            stack.commitFullStack();
+            stack.commitTransaction(childDispatch.recordBuilder());
         }
         // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
         final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();

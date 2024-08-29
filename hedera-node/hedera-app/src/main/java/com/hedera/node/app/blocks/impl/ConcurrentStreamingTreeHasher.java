@@ -74,14 +74,11 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         this.executorService = requireNonNull(executorService);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addLeaf(@NonNull final Bytes leaf) {
         requireNonNull(leaf);
         if (rootHashRequested) {
-            throw new IllegalStateException("Root hash already requested");
+            throw new IllegalStateException("Cannot add leaves after requesting the root hash");
         }
         numLeaves++;
         pendingLeaves.add(leaf);
@@ -90,9 +87,6 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;

@@ -532,8 +532,7 @@ class VirtualMapTests extends VirtualTestBase {
     @DisplayName("Database is closed after all copies are released")
     void databaseClosedAfterAllCopiesAreReleased() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> copy0 = createMap();
-        final InMemoryDataSource<TestKey, TestValue> ds =
-                (InMemoryDataSource<TestKey, TestValue>) copy0.getDataSource();
+        final InMemoryDataSource ds = (InMemoryDataSource) copy0.getDataSource();
         final VirtualMap<TestKey, TestValue> copy1 = copy0.copy();
         final VirtualMap<TestKey, TestValue> copy2 = copy1.copy();
         final VirtualMap<TestKey, TestValue> copy3 = copy2.copy();
@@ -558,8 +557,7 @@ class VirtualMapTests extends VirtualTestBase {
     @DisplayName("Database is closed if prematurely terminated")
     void databaseClosedWhenExpresslyTerminated() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> copy0 = createMap();
-        final InMemoryDataSource<TestKey, TestValue> ds =
-                (InMemoryDataSource<TestKey, TestValue>) copy0.getDataSource();
+        final InMemoryDataSource ds = (InMemoryDataSource) copy0.getDataSource();
         final VirtualMap<TestKey, TestValue> copy1 = copy0.copy();
         final VirtualMap<TestKey, TestValue> copy2 = copy1.copy();
         final VirtualMap<TestKey, TestValue> copy3 = copy2.copy();
