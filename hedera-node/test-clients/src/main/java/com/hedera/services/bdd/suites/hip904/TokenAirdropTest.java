@@ -562,7 +562,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return defaultHapiSpec("should go in pending state")
                     .given(newKeyNamed(validAliasWithNoFreeSlots))
                     .when(
-                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAliasWithNoFreeSlots))
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L)
+                                            .between(OWNER, validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
                                     .signedBy(OWNER, validAliasWithNoFreeSlots),
                             withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasWithNoFreeSlots)),
@@ -575,8 +576,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     .via("aliasAirdrop"),
                             getTxnRecord("aliasAirdrop")
                                     .hasPriority(recordWith()
-                                            .pendingAirdrops(
-                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAliasWithNoFreeSlots)))),
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moveFungibleTokensTo(validAliasWithNoFreeSlots)))),
                             getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                             getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
