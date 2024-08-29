@@ -29,19 +29,19 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ST
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
 import static com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema.TXN_RECORD_QUEUE;
-import static com.hedera.node.app.statedumpers.accounts.AccountDumpUtils.dumpModAccounts;
-import static com.hedera.node.app.statedumpers.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
-import static com.hedera.node.app.statedumpers.contracts.ContractBytecodesDumpUtils.dumpModContractBytecodes;
-import static com.hedera.node.app.statedumpers.files.FilesDumpUtils.dumpModFiles;
-import static com.hedera.node.app.statedumpers.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
-import static com.hedera.node.app.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpModScheduledTransactions;
-import static com.hedera.node.app.statedumpers.singleton.BlockInfoDumpUtils.dumpModBlockInfo;
-import static com.hedera.node.app.statedumpers.singleton.CongestionDumpUtils.dumpModCongestion;
-import static com.hedera.node.app.statedumpers.singleton.PayerRecordsDumpUtils.dumpModTxnRecordQueue;
-import static com.hedera.node.app.statedumpers.singleton.StakingInfoDumpUtils.dumpModStakingInfo;
-import static com.hedera.node.app.statedumpers.singleton.StakingRewardsDumpUtils.dumpModStakingRewards;
-import static com.hedera.node.app.statedumpers.tokentypes.TokenTypesDumpUtils.dumpModTokenType;
-import static com.hedera.node.app.statedumpers.topics.TopicDumpUtils.dumpModTopics;
+import static com.hedera.node.app.statedumpers.AccountDumpUtils.dumpModAccounts;
+import static com.hedera.node.app.statedumpers.TokenAssociationsDumpUtils.dumpModTokenRelations;
+import static com.hedera.node.app.statedumpers.ContractBytecodesDumpUtils.dumpModContractBytecodes;
+import static com.hedera.node.app.statedumpers.FilesDumpUtils.dumpModFiles;
+import static com.hedera.node.app.statedumpers.UniqueTokenDumpUtils.dumpModUniqueTokens;
+import static com.hedera.node.app.statedumpers.ScheduledTransactionsDumpUtils.dumpModScheduledTransactions;
+import static com.hedera.node.app.statedumpers.BlockInfoDumpUtils.dumpModBlockInfo;
+import static com.hedera.node.app.statedumpers.CongestionDumpUtils.dumpModCongestion;
+import static com.hedera.node.app.statedumpers.PayerRecordsDumpUtils.dumpModTxnRecordQueue;
+import static com.hedera.node.app.statedumpers.StakingInfoDumpUtils.dumpModStakingInfo;
+import static com.hedera.node.app.statedumpers.StakingRewardsDumpUtils.dumpModStakingRewards;
+import static com.hedera.node.app.statedumpers.TokenTypesDumpUtils.dumpModTokenType;
+import static com.hedera.node.app.statedumpers.TopicDumpUtils.dumpModTopics;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static java.util.Objects.requireNonNull;
@@ -134,30 +134,31 @@ public class StateDumper {
                 Optional.ofNullable(blockInfo.consTimeOfLastHandledTxn())
                         .map(then -> Instant.ofEpochSecond(then.seconds(), then.nanos()))
                         .orElse(null));
+        final var jsonWriter = new JsonWriter();
 
         if (childrenToDump.contains(MerkleStateChild.NFTS)) {
             final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniqueTokens =
                     requireNonNull(merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, NFTS_KEY)));
-            dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint);
+            dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.TOKEN_RELS)) {
             final VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> tokenRelations =
                     requireNonNull(merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, TOKEN_RELS_KEY)));
-            dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
+            dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.FILES)) {
             final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                     requireNonNull(merkleState.getChild(
                             merkleState.findNodeIndex(FileService.NAME, V0490FileSchema.BLOBS_KEY)));
-            dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+            dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.ACCOUNTS)) {
             final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
                     requireNonNull(merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
-            dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
+            dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.BYTECODE)) {
@@ -172,13 +173,13 @@ public class StateDumper {
                     accounts,
                     (StateMetadata<AccountID, Account>)
                             merkleState.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
-                    checkpoint);
+                    checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.TOPICS)) {
             final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(merkleState.getChild(
                     merkleState.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
-            dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint);
+            dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.SCHEDULED_TRANSACTIONS)) {
@@ -194,13 +195,14 @@ public class StateDumper {
                     Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
                     scheduledTransactionsByKey,
                     scheduledTransactionsByEquality,
-                    scheduledTransactionsByExpiry);
+                    scheduledTransactionsByExpiry,
+                    jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.TOKENS)) {
             final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokenTypes =
                     requireNonNull(merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, TOKENS_KEY)));
-            dumpModTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), tokenTypes, checkpoint);
+            dumpModTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), tokenTypes, checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.BLOCK_METADATA)) {
@@ -215,25 +217,25 @@ public class StateDumper {
                     runningHashesSingleton.getValue(),
                     blocksStateSingleton.getValue(),
                     entityIdSingleton.getValue(),
-                    checkpoint);
+                    checkpoint, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.STAKING_INFOS)) {
             final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfoMap = requireNonNull(
                     merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY)));
-            dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap);
+            dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.STAKING_NETWORK_METADATA)) {
             final SingletonNode<NetworkStakingRewards> stakingRewards = requireNonNull(
                     merkleState.getChild(merkleState.findNodeIndex(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY)));
-            dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue());
+            dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue(), jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.TRANSACTION_RECORD_QUEUE)) {
             final QueueNode<TransactionRecordEntry> queue = requireNonNull(
                     merkleState.getChild(merkleState.findNodeIndex(RecordCacheService.NAME, TXN_RECORD_QUEUE)));
-            dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue);
+            dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue, jsonWriter);
         }
 
         if (childrenToDump.contains(MerkleStateChild.THROTTLE_METADATA)) {
@@ -246,7 +248,7 @@ public class StateDumper {
             dumpModCongestion(
                     Paths.get(dumpLoc, SEMANTIC_CONGESTION),
                     congestionLevelStartsSingletonNode.getValue(),
-                    throttleUsageSnapshotsSingletonNode.getValue());
+                    throttleUsageSnapshotsSingletonNode.getValue(), jsonWriter);
         }
     }
 
