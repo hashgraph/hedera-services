@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.addressbook;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.config.data.NodesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -115,5 +119,14 @@ public class AddressBookHelper {
         return Path.of(
                 Objects.requireNonNull(AddressBookHelper.class.getClassLoader().getResource(resourceFileName))
                         .getPath());
+    }
+
+    /**
+     * check DAB enable flag
+     * @param feeContext, the Fee context
+     */
+    public static void checkDABEnabled(@NonNull final FeeContext feeContext) {
+        final var nodeConfig = requireNonNull(feeContext.configuration()).getConfigData(NodesConfig.class);
+        validateTrue(nodeConfig.enableDAB(), NOT_SUPPORTED);
     }
 }
