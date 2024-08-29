@@ -10,19 +10,22 @@
 
 # Hedera Services
 
-Implementation of the Platform and the [services offered](https://github.com/hashgraph/hedera-protobufs) by
-nodes in the [Hedera public network](https://hedera.com).
+Implementation of the Platform and the
+[services offered](https://github.com/hashgraph/hedera-protobufs) by nodes in the
+[Hedera public network](https://hedera.com).
 
 ## Overview of child modules
-* _platform-sdk/_ - the basic Platform – [documentation](platform-sdk/docs/platformWiki.md)
-* _hedera-node/_ - implementation of Hedera services on the Platform – [documentation](hedera-node/docs/)
 
+- _platform-sdk/_ - the basic Platform – [documentation](platform-sdk/docs/platformWiki.md)
+- _hedera-node/_ - implementation of Hedera services on the Platform –
+  [documentation](hedera-node/docs/)
 
 ## Getting Started
 
 Refer to the [Quickstart Guide](docs/README.md) for how to work with this project.
 
 ## Solidity
+
 Hedera Contracts support `pragma solidity <=0.8.9`.
 
 ## Support
@@ -32,12 +35,15 @@ If you have a question on how to use the product, please see our
 
 ## Contributing
 
-Contributions are welcome. Please see the [contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you can get involved.
+Contributions are welcome. Please see the
+[contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you
+can get involved.
 
 ## Code of Conduct
 
-This project is governed by the [Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md). By participating, you are
-expected to uphold this code of conduct.
+This project is governed by the
+[Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code of conduct.
 
 ## License
 

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip869;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -27,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,8 +37,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,38 +54,49 @@ import org.junit.jupiter.api.DynamicTest;
  */
 @HapiTestLifecycle
 public class UpdateAccountEnabledTest {
+    private static List<X509Certificate> gossipCertificates;
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of("nodes.updateAccountIdAllowed", "true"));
+        gossipCertificates = generateX509Certificates(1);
     }
 
     @HapiTest
-    final Stream<DynamicTest> updateEmptyAccountIdFail() {
+    final Stream<DynamicTest> updateEmptyAccountIdFail() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").accountId("").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
 
     @HapiTest
-    final Stream<DynamicTest> updateAliasAccountIdFail() {
+    final Stream<DynamicTest> updateAliasAccountIdFail() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").aliasAccountId("alias").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
 
-    @EmbeddedHapiTest(MUST_SKIP_INGEST)
-    final Stream<DynamicTest> validateFees() {
+    @LeakyEmbeddedHapiTest(
+            reason = MUST_SKIP_INGEST,
+            requirement = {THROTTLE_OVERRIDES},
+            throttles = "testSystemFiles/mainnet-throttles.json")
+    final Stream<DynamicTest> validateFees() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
                 newKeyNamed("testKey"),
                 newKeyNamed("randomAccount"),
                 cryptoCreate("payer").balance(10_000_000_000L),
                 nodeCreate("node100")
-                        .adminKeyName("testKey")
+                        .adminKey("testKey")
                         .description(description)
-                        .fee(ONE_HBAR),
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 // Submit to a different node so ingest check is skipped
                 nodeUpdate("node100")
                         .setNode("0.0.5")
@@ -112,10 +129,12 @@ public class UpdateAccountEnabledTest {
     }
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> updateAccountIdWork() {
+    final Stream<DynamicTest> updateAccountIdWork() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode").adminKey("adminKey").accountId("0.0.1000"),
                 viewNode(
                         "testNode",

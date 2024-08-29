@@ -24,10 +24,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -43,19 +42,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RecordFinalizer {
-    private final ParentRecordFinalizer parentRecordFinalizer;
-    private final ChildRecordFinalizer childRecordFinalizer;
+    private final FinalizeRecordHandler recordFinalizer;
 
     /**
      * Creates a record finalizer with the given dependencies.
-     * @param parentRecordFinalizer the parent record finalizer
-     * @param childRecordFinalizer the child record finalizer
+     *
+     * @param recordFinalizer       the parent record finalizer
      */
     @Inject
-    public RecordFinalizer(
-            final ParentRecordFinalizer parentRecordFinalizer, final ChildRecordFinalizer childRecordFinalizer) {
-        this.parentRecordFinalizer = parentRecordFinalizer;
-        this.childRecordFinalizer = childRecordFinalizer;
+    public RecordFinalizer(final FinalizeRecordHandler recordFinalizer) {
+        this.recordFinalizer = recordFinalizer;
     }
 
     /**
@@ -66,13 +62,13 @@ public class RecordFinalizer {
      */
     public void finalizeRecord(final Dispatch dispatch) {
         switch (dispatch.txnCategory()) {
-            case USER, SCHEDULED -> parentRecordFinalizer.finalizeParentRecord(
+            case USER, SCHEDULED -> recordFinalizer.finalizeStakingRecord(
                     dispatch.finalizeContext(),
                     dispatch.txnInfo().functionality(),
                     extraRewardReceivers(
                             dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordBuilder()),
                     dispatch.handleContext().dispatchPaidRewards());
-            case CHILD, PRECEDING -> childRecordFinalizer.finalizeChildRecord(
+            case CHILD, PRECEDING -> recordFinalizer.finalizeNonStakingRecord(
                     dispatch.finalizeContext(), dispatch.txnInfo().functionality());
         }
     }
@@ -103,7 +99,7 @@ public class RecordFinalizer {
     public Set<AccountID> extraRewardReceivers(
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+            @NonNull final StreamBuilder recordBuilder) {
         if (body == null || recordBuilder.status() != SUCCESS) {
             return emptySet();
         }

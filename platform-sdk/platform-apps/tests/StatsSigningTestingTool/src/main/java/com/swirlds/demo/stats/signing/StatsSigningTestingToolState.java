@@ -37,7 +37,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
@@ -116,7 +116,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     return;
                 }
                 final TransactionSignature transactionSignature =
-                        sttTransactionPool.expandSignatures(transaction.getApplicationPayload());
+                        sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
                     transaction.setMetadata(transactionSignature);
                     CryptographyHolder.get().verifySync(List.of(transactionSignature));
@@ -129,7 +129,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
@@ -145,7 +145,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     EXCEPTION.getMarker(),
                     "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
                             + " publicKey = {}, signature = {}, data = {} ]",
-                    TransactionCodec.txId(trans.getApplicationPayload()),
+                    TransactionCodec.txId(trans.getApplicationTransaction()),
                     s.getSignatureStatus(),
                     s.getSignatureType(),
                     hex(Arrays.copyOfRange(
@@ -160,7 +160,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                             s.getContentsDirect(), s.getMessageOffset(), s.getMessageOffset() + s.getMessageLength())));
         }
 
-        runningSum += TransactionCodec.txId(trans.getApplicationPayload());
+        runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
     }

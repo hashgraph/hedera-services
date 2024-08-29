@@ -34,20 +34,21 @@ public class TestTags {
      * submits duplicate or invalid transactions to non-default nodes; or because it
      * uses direct state access only available in embedded mode.
      */
-    public static final String EMBEDDED = "EMBEDDED";
+    public static final String ONLY_EMBEDDED = "EMBEDDED";
     /**
-     * Tags a test that <b>cannot</b> be run in embedded mode.
+     * Tags a test that <b>must</b> be run in repeatable mode, either because it depends on
+     * virtual time to complete in a reasonable period or because .
      */
-    public static final String NOT_EMBEDDED = "NOT_EMBEDDED";
-    /**
-     * Tags a test that would generally be run in repeatable mode because it depends on
-     * virtual time to complete in a reasonable period.
-     */
-    public static final String REPEATABLE = "REPEATABLE";
+    public static final String ONLY_REPEATABLE = "REPEATABLE";
     /**
      * Tags a test that <b>cannot</b> be run with the {@code testRepeatable} task for
      * some reason; e.g., it does not use fake time; or uses randomness or parallelism
-     * that repeatable mode does not (yet) automatically toggle off.
+     * that repeatable mode does not yet automatically toggle off; or explicitly uses
+     * ECDSA keys (whose signatures are inherently random).
      */
     public static final String NOT_REPEATABLE = "NOT_REPEATABLE";
+    /**
+     * Tags a test that can be run alone, without any other tests.
+     */
+    public static final String ADHOC = "ADHOC";
 }

@@ -24,12 +24,12 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 import java.io.IOException;
 
 @SuppressWarnings("unused")
-public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable {
+public class ExampleLongLongKeyFixedSize implements VirtualKey, FastCopyable {
 
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 4685;
@@ -103,11 +103,6 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
     @Override
     public String toString() {
         return "ExampleLongLongKeyFixedSize{" + "value1=" + value1 + ", value2=" + value2 + '}';
-    }
-
-    @Override
-    public long getKeyAsLong() {
-        return value1;
     }
 
     public static class Serializer implements KeySerializer<ExampleLongLongKeyFixedSize> {

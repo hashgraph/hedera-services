@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,7 +34,7 @@ import java.util.Set;
 
 /**
  * Analyzes the ways in which the {@link MerkleSchemaRegistry} should apply a {@link Schema}
- * to the {@link MerkleHederaState}.
+ * to the {@link MerkleStateRoot}.
  *
  * @see SchemaApplicationType
  */

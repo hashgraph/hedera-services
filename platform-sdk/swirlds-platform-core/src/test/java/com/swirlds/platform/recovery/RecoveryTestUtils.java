@@ -37,7 +37,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -72,7 +72,7 @@ public final class RecoveryTestUtils {
      * @param random a source of randomness
      * @return an event
      */
-    public static DetailedConsensusEvent generateRandomEvent(
+    public static CesEvent generateRandomEvent(
             final Random random, final long round, final boolean lastInRound, final Instant now) {
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random)
@@ -89,7 +89,7 @@ public final class RecoveryTestUtils {
                 .setConsensusTimestamp(now)
                 .build();
 
-        return new DetailedConsensusEvent(platformEvent, round, lastInRound);
+        return new CesEvent(platformEvent, round, lastInRound);
     }
 
     /**
@@ -102,14 +102,14 @@ public final class RecoveryTestUtils {
      * @param evensPerRound   the number of events in each round
      * @return a list of events
      */
-    public static List<DetailedConsensusEvent> generateRandomEvents(
+    public static List<CesEvent> generateRandomEvents(
             final Random random,
             final long firstRound,
             final Duration timeToSimulate,
             final int roundsPerSecond,
             final int evensPerRound) {
 
-        final List<DetailedConsensusEvent> events = new ArrayList<>();
+        final List<CesEvent> events = new ArrayList<>();
 
         final FakeTime time = new FakeTime();
         final Instant stopTime = time.now().plus(timeToSimulate);
@@ -150,10 +150,7 @@ public final class RecoveryTestUtils {
      * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
-            final Random random,
-            final Path destination,
-            final int secondsPerFile,
-            final List<DetailedConsensusEvent> events)
+            final Random random, final Path destination, final int secondsPerFile, final List<CesEvent> events)
             throws IOException {
 
         final Configuration configuration = new TestConfigBuilder()
@@ -173,9 +170,9 @@ public final class RecoveryTestUtils {
         // Wrap events and count the number of times they are serialized.
         final AtomicInteger writeCount = new AtomicInteger(0);
 
-        final List<DetailedConsensusEvent> wrappedEvents = new ArrayList<>(events.size());
-        for (final DetailedConsensusEvent event : events) {
-            final DetailedConsensusEvent wrappedEvent = spy(event);
+        final List<CesEvent> wrappedEvents = new ArrayList<>(events.size());
+        for (final CesEvent event : events) {
+            final CesEvent wrappedEvent = spy(event);
 
             Mockito.doAnswer(invocation -> {
                         invocation.callRealMethod();

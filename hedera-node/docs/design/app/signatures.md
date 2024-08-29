@@ -30,9 +30,9 @@ transaction.
 
 Signature verification is broken down in the following steps:
 1. Based on the transaction and the current state of the system, determine the set of keys that are required to sign
-   the transaction.
+the transaction.
 2. Given a _sigmap_ a set of keys, _expand_ the `SignaturePairs` from prefixes to full keys, filtering out any
-   signatures that don't have a corresponding key and are not "full" keys already.
+signatures that don't have a corresponding key and are not "full" keys already.
 3. Verify the signatures and keys are valid for the given transaction bytes
 
 Each of these steps is executed as part of the pre-handle workflow. Indeed, one of the main reasons for having a
@@ -41,4 +41,6 @@ signatures matched, but we also don't know for sure which of the signatures supp
 to be valid. It is possible that the signing requirements change between pre-handle and handle if the keys on impacted
 accounts were modified between the time of pre-handle and handle.
 
-![sig-expansion.drawio.png](images/Signature Expansion.drawio.png)
+![sig-expansion.drawio.png](images/SignatureExpansion.drawio.png)
+
+**NEXT: [States](states.md)**

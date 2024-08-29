@@ -28,10 +28,10 @@ import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.IntSupplier;
 import javax.inject.Singleton;
@@ -57,10 +57,11 @@ public interface ThrottleServiceModule {
     @Singleton
     @IngestThrottle
     static ThrottleAccumulator provideIngestThrottleAccumulator(
-            Platform platform, ConfigProvider configProvider, Metrics metrics) {
+            @NonNull final IntSupplier frontendThrottleSplit,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final Metrics metrics) {
         final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
-        return new ThrottleAccumulator(
-                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE, throttleMetrics);
+        return new ThrottleAccumulator(frontendThrottleSplit, configProvider, FRONTEND_THROTTLE, throttleMetrics);
     }
 
     @Provides

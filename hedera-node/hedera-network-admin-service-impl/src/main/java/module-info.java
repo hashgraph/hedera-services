@@ -14,6 +14,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
+    requires transitive java.compiler; // javax.annotation.processing.Generated
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.common;
@@ -22,15 +23,13 @@ module com.hedera.node.app.service.network.admin.impl {
     requires org.apache.commons.io;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires static java.compiler; // javax.annotation.processing.Generated
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;
     provides NetworkService with
             com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 
-    exports com.hedera.node.app.service.networkadmin.impl to
-            com.hedera.node.app;
+    exports com.hedera.node.app.service.networkadmin.impl;
     exports com.hedera.node.app.service.networkadmin.impl.handlers;
     exports com.hedera.node.app.service.networkadmin.impl.schemas to
             com.hedera.node.app;

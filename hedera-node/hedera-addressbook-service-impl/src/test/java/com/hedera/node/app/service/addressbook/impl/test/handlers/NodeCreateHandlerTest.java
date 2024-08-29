@@ -48,7 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -56,7 +56,6 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -64,6 +63,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +80,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private NodeCreateRecordBuilder recordBuilder;
+    private NodeCreateStreamBuilder recordBuilder;
 
     @Mock
     private StoreFactory storeFactory;
@@ -93,10 +94,13 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private TransactionBody txn;
     private NodeCreateHandler subject;
 
+    private List<X509Certificate> certList;
+
     @BeforeEach
     void setUp() {
         final var addressBookValidator = new AddressBookValidator();
         subject = new NodeCreateHandler(addressBookValidator);
+        certList = generateX509Certificates(4);
     }
 
     @Test
@@ -160,12 +164,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey not specified")
-    void adminKeyNeedSet() {
+    void adminKeyNeedSet() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(1).getEncoded()))
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(msg.responseCode()).isEqualTo(KEY_REQUIRED);
@@ -173,12 +177,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey empty")
-    void adminKeyEmpty() {
+    void adminKeyEmpty() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withAdminKey(IMMUTABILITY_SENTINEL_KEY)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -187,12 +191,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks fail when adminKey not valid")
-    void adminKeyNeedValid() {
+    void adminKeyNeedValid() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withAdminKey(invalidKey)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -201,12 +205,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks succeeds when expected attributes are specified")
-    void pureCheckPass() {
+    void pureCheckPass() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .withServiceEndpoint(List.of(endpoint2))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(2).getEncoded()))
                 .withAdminKey(key)
                 .build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
@@ -391,6 +395,31 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
+    void failsWhenEndpointHaveInvalidIp2() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint9))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveInvalidIp3() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint10))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
     void failsWhenServiceEndpointTooLarge() {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
@@ -497,13 +526,13 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void hanldeWorkAsExpected() {
+    void hanldeWorkAsExpected() throws CertificateEncodingException {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
                 .withDescription("Description")
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint3))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(0).getEncoded()))
                 .withGrpcCertificateHash(Bytes.wrap("hash"))
                 .withAdminKey(key)
                 .build();
@@ -517,9 +546,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        final var recordBuilders = mock(RecordBuilders.class);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        final var stack = mock(HandleContext.SavepointStack.class);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -536,7 +565,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         assertArrayEquals(
                 (List.of(endpoint1, endpoint3)).toArray(),
                 createdNode.serviceEndpoint().toArray());
-        assertArrayEquals("cert".getBytes(), createdNode.gossipCaCertificate().toByteArray());
+        assertArrayEquals(
+                certList.get(0).getEncoded(), createdNode.gossipCaCertificate().toByteArray());
         assertArrayEquals("hash".getBytes(), createdNode.grpcCertificateHash().toByteArray());
         assertEquals(key, createdNode.adminKey());
     }

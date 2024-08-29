@@ -175,7 +175,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
             txInfo = previousResult == null
-                    ? transactionChecker.parseAndCheck(platformTx.getApplicationPayload())
+                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
                     : previousResult.txInfo();
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status

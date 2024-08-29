@@ -34,7 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -95,7 +95,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * A function that can be used to generate the output of a dispatch from its completed
      * record builder.
      */
-    public interface OutputFn extends Function<ContractCallRecordBuilder, ByteBuffer> {
+    public interface OutputFn extends Function<ContractCallStreamBuilder, ByteBuffer> {
         /**
          * The standard output function that simply returns the encoded status.
          */
@@ -212,7 +212,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
                     false);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();

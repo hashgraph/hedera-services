@@ -26,11 +26,11 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -46,13 +46,20 @@ class ConsensusRoundTests {
 
         when(snapshot.round()).thenReturn(1L);
 
-        final List<EventImpl> events = List.of(
-                EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null),
-                EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null),
-                EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null));
+        final List<PlatformEvent> events = List.of(
+                new TestingEventBuilder(r).build(),
+                new TestingEventBuilder(r).build(),
+                new TestingEventBuilder(r).build());
 
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class), events, mock(EventImpl.class), g, mock(EventWindow.class), snapshot, false);
+                mock(AddressBook.class),
+                events,
+                mock(PlatformEvent.class),
+                g,
+                mock(EventWindow.class),
+                snapshot,
+                false,
+                Instant.now());
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -65,27 +72,26 @@ class ConsensusRoundTests {
         final Random r = RandomUtils.initRandom(null);
 
         int numActualTransactions = 0;
-        final List<EventImpl> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             final int numTransactions = r.nextInt(200);
             numActualTransactions += numTransactions;
-            final EventImpl event = EventImplTestUtils.createEventImpl(
-                    new TestingEventBuilder(r)
-                            .setAppTransactionCount(numTransactions)
-                            .setSystemTransactionCount(0),
-                    null,
-                    null);
+            final PlatformEvent event = new TestingEventBuilder(r)
+                    .setAppTransactionCount(numTransactions)
+                    .setSystemTransactionCount(0)
+                    .build();
             events.add(event);
         }
 
         final ConsensusRound round = new ConsensusRound(
                 mock(AddressBook.class),
                 events,
-                mock(EventImpl.class),
+                mock(PlatformEvent.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
                 mock(ConsensusSnapshot.class),
-                false);
+                false,
+                Instant.now());
 
         assertEquals(
                 numActualTransactions, round.getNumAppTransactions(), "Incorrect number of application transactions.");

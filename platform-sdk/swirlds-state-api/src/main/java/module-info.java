@@ -13,7 +13,6 @@ module com.swirlds.state.api {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.merkle;
-    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.fcqueue;

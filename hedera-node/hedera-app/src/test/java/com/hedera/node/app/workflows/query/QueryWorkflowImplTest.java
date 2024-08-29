@@ -84,7 +84,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.InstantSource;
@@ -104,7 +104,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private static final long DEFAULT_CONFIG_VERSION = 1L;
 
     @Mock(strictness = LENIENT)
-    private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
+    private Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
 
     @Mock
     private SubmissionManager submissionManager;
@@ -175,8 +175,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
 
         final var signatureMap = SignatureMap.newBuilder().build();
-        transactionInfo =
-                new TransactionInfo(payment, txBody, signatureMap, payment.signedTransactionBytes(), CRYPTO_TRANSFER);
+        transactionInfo = new TransactionInfo(
+                payment, txBody, signatureMap, payment.signedTransactionBytes(), CRYPTO_TRANSFER, null);
         when(ingestChecker.runAllChecks(state, payment, configuration)).thenReturn(transactionInfo);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);

@@ -86,6 +86,10 @@ public class ContractKeysStillWorkAsExpectedSuite {
 
         return hapiTest(
                 streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
+                    if (txn.hasNodeStakeUpdate()) {
+                        // Avoid asserting something about an end-of-staking-period NodeStakeUpdate in CI
+                        return;
+                    }
                     final var tokenTransfers = txn.getCryptoTransfer().getTokenTransfersList();
                     assertEquals(1, tokenTransfers.size());
                     final var tokenTransfer = tokenTransfers.getFirst();

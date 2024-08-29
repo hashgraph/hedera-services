@@ -32,6 +32,8 @@ public class Log4JRunner implements Runnable {
     private final Logger logger;
 
     private final Marker marker1 = MarkerManager.getMarker("marker");
+
+    @SuppressWarnings("deprecation")
     private final Marker marker2 = MarkerManager.getMarker("marker2", marker1);
 
     public Log4JRunner(Logger logger) {

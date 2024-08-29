@@ -18,6 +18,7 @@ package com.swirlds.platform.event.hashing;
 
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Default implementation of the {@link EventHasher}.
@@ -26,7 +27,8 @@ public class DefaultEventHasher implements EventHasher {
     @Override
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
-        new StatefulEventHasher().hashEvent(event);
+        Objects.requireNonNull(event);
+        new PbjStreamHasher().hashEvent(event);
         return event;
     }
 }

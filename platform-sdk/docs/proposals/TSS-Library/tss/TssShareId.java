@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.api;
+package com.hedera.cryptography.tss.api;
 
-import com.swirlds.pairings.api.FieldElement;
+import com.hedera.cryptography.pairings.api.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

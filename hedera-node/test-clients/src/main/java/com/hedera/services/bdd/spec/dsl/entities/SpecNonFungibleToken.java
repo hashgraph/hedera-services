@@ -18,11 +18,11 @@ package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static java.util.Collections.emptyList;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.SpecOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -53,9 +53,6 @@ public class SpecNonFungibleToken extends SpecToken {
      * @param numPreMints the number of pre-mints to perform
      */
     public void setNumPreMints(final int numPreMints) {
-        if (numPreMints > 10) {
-            throw new IllegalArgumentException("Cannot pre-mint more than 10 NFTs");
-        }
         this.numPreMints = numPreMints;
     }
 
@@ -64,11 +61,15 @@ public class SpecNonFungibleToken extends SpecToken {
      */
     @Override
     protected List<SpecOperation> postSuccessOps() {
-        return numPreMints > 0 ? List.of(mintToken(name, snMetadata(numPreMints))) : emptyList();
+        final List<SpecOperation> preMintOps = new ArrayList<>();
+        for (int i = 0; i < numPreMints; i += Math.min(numPreMints - i, 10)) {
+            preMintOps.add(mintToken(name, snMetadata(i, Math.min(i + 10, numPreMints))));
+        }
+        return preMintOps;
     }
 
-    private List<ByteString> snMetadata(final int n) {
-        return IntStream.range(0, n)
+    private List<ByteString> snMetadata(final int start, final int end) {
+        return IntStream.range(start, end)
                 .mapToObj(i -> ByteString.copyFromUtf8("SN#" + (i + 1)))
                 .toList();
     }

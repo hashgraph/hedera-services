@@ -67,7 +67,8 @@ jvmDependencyConflicts.patch {
     module("com.google.guava:guava") {
         (annotationLibraries -
                 "com.google.code.findbugs:jsr305" -
-                "com.google.errorprone:error_prone_annotations")
+                "com.google.errorprone:error_prone_annotations" -
+                "org.checkerframework:checker-qual")
             .forEach { removeDependency(it) }
     }
     module("com.google.protobuf:protobuf-java-util") {
@@ -136,6 +137,7 @@ extraJavaModuleInfo {
     module("org.apache.commons:commons-math3", "org.apache.commons.math3")
     module("org.apache.commons:commons-collections4", "org.apache.commons.collections4")
     module("com.esaulpaugh:headlong", "headlong")
+    module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
     module("org.connid:framework", "org.connid.framework")
     module("org.connid:framework-internal", "org.connid.framework.internal") {
         exportAllPackages()

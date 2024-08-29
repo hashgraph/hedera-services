@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 
 /**
@@ -43,20 +44,20 @@ public final class CustomFeeExemptions {
      *     <li>if allCollectorsAreExempt set to true and payer is collector for any fee on token
      * </ul>
      *
-     * @param feeMeta metadata for the token that "owns" the specific custom fee
-     * @param fee the fee to check for a payer exemption
+     * @param token  metadata for the token that "owns" the specific custom fee
+     * @param fee    the fee to check for a payer exemption
      * @param sender the potential fee payer
      * @return whether the payer is exempt from the fee
      */
-    public static boolean isPayerExempt(final CustomFeeMeta feeMeta, final CustomFee fee, final AccountID sender) {
-        if (feeMeta.treasuryId().equals(sender)) {
+    public static boolean isPayerExempt(final Token token, final CustomFee fee, final AccountID sender) {
+        if (token.treasuryAccountIdOrThrow().equals(sender)) {
             return true;
         }
         if (fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT).equals(sender)) {
             return true;
         }
         if (fee.allCollectorsAreExempt()) {
-            return isPayerCollectorFor(feeMeta, sender);
+            return isPayerCollectorFor(token, sender);
         } else {
             // If payer isn't the treasury or the collector of a fee without
             // a global collector exemption, then it must pay, nothing more to check
@@ -66,12 +67,12 @@ public final class CustomFeeExemptions {
 
     /**
      * Returns whether the given payer is a collector for any of the fees on the given token.
-     * @param feeMeta metadata for the token to check
+     * @param token metadata for the token to check
      * @param sender the potential fee payer
      * @return whether the payer is a collector for any of the fees on the given token
      */
-    private static boolean isPayerCollectorFor(final CustomFeeMeta feeMeta, final AccountID sender) {
-        for (final var fee : feeMeta.customFees()) {
+    private static boolean isPayerCollectorFor(final Token token, final AccountID sender) {
+        for (final var fee : token.customFees()) {
             if (fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT).equals(sender)) {
                 return true;
             }

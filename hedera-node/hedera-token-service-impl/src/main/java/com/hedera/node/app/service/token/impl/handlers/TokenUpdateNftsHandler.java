@@ -22,16 +22,19 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
@@ -45,6 +48,8 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -80,8 +85,22 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var op = txn.tokenUpdateNftsOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
-        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (token.hasMetadataKey()) {
+        validateTruePreCheck(token != null, INVALID_TOKEN_ID);
+
+        final var nftStore = context.createStore(ReadableNftStore.class);
+        if (serialNumbersInTreasury(
+                token.treasuryAccountIdOrThrow(), op.serialNumbers(), nftStore, token.tokenIdOrThrow())) {
+            validateTruePreCheck(token.hasMetadataKey() || token.hasSupplyKey(), TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY);
+
+            if (token.hasMetadataKey() && token.hasSupplyKey()) {
+                context.requireKey(TokenUpdateHandler.oneOf(token.metadataKeyOrThrow(), token.supplyKeyOrThrow()));
+            } else if (token.hasMetadataKey()) {
+                context.requireKey(token.metadataKeyOrThrow());
+            } else if (token.hasSupplyKey()) {
+                context.requireKey(token.supplyKeyOrThrow());
+            }
+        } else {
+            validateTruePreCheck(token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             context.requireKey(token.metadataKeyOrThrow());
         }
     }
@@ -92,15 +111,10 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txnBody = context.body();
         final var op = txnBody.tokenUpdateNftsOrThrow();
         final var tokenId = op.tokenOrThrow();
-
-        // Ensure that the token has metadataKey
         final var storeFactory = context.storeFactory();
-        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
-        final var token = getIfUsable(tokenId, tokenStore);
-        validateTrue(token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
 
         validateSemantics(context, op);
-        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
 
         // Wrap in Set to de-duplicate serial numbers
         final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
@@ -150,5 +164,35 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
         }
         validateTrue(op.serialNumbers().size() <= tokensConfig.nftsMaxBatchSizeUpdate(), BATCH_SIZE_LIMIT_EXCEEDED);
+    }
+
+    /**
+     * Verifies that all serial numbers are owned by the treasury account.
+     * @param treasuryAccount the treasury account
+     * @param serialNumbers the serial numbers
+     * @param nftStore the nft store
+     * @param tokenId the token id
+     * @return true if all serial numbers are owned by the treasury account
+     * @throws PreCheckException if the Nft does not exist
+     */
+    private boolean serialNumbersInTreasury(
+            @NonNull final AccountID treasuryAccount,
+            @NonNull final List<Long> serialNumbers,
+            @NonNull final ReadableNftStore nftStore,
+            @NonNull final TokenID tokenId)
+            throws PreCheckException {
+        boolean serialNumbersInTreasury = true;
+        for (final Long serialNumber : serialNumbers) {
+            final Nft nft = nftStore.get(NftID.newBuilder()
+                    .tokenId(tokenId)
+                    .serialNumber(serialNumber)
+                    .build());
+            validateTruePreCheck(nft != null, INVALID_NFT_ID);
+            if (nft.ownerId() != null && !Objects.equals(nft.ownerId(), treasuryAccount)) {
+                serialNumbersInTreasury = false;
+                break;
+            }
+        }
+        return serialNumbersInTreasury;
     }
 }

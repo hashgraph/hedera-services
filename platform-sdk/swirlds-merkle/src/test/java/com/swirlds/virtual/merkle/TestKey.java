@@ -20,22 +20,17 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class TestKey implements VirtualLongKey {
+public final class TestKey implements VirtualKey {
 
     public static final int BYTES = Long.BYTES;
 
     private long k;
 
     public TestKey() {}
-
-    @Override
-    public long getKeyAsLong() {
-        return k;
-    }
 
     public TestKey(long path) {
         this.k = path;
@@ -47,6 +42,10 @@ public final class TestKey implements VirtualLongKey {
 
     public TestKey copy() {
         return new TestKey(k);
+    }
+
+    long getKey() {
+        return k;
     }
 
     @Override

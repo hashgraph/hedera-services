@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.pool;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,9 +45,10 @@ public class DefaultTransactionPool implements TransactionPool {
      * {@inheritDoc}
      */
     @Override
-    public void submitSystemTransaction(@NonNull final StateSignaturePayload payload) {
+    public void submitSystemTransaction(@NonNull final StateSignatureTransaction payload) {
         Objects.requireNonNull(payload);
-        transactionPoolNexus.submitTransaction(new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload), true);
+        transactionPoolNexus.submitTransaction(
+                new EventTransaction(new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, payload)), true);
     }
 
     /**

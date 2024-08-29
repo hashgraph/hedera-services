@@ -23,7 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Configuration for event handling inside the platform.
- * <p>
  *
  * @param eventIntakeQueueThrottleSize      The value for the event intake queue at which the node should stop syncing
  * @param eventStreamQueueCapacity          capacity of the blockingQueue from which we take events and write to
@@ -44,7 +43,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
-        @ConfigProperty(defaultValue = "true") boolean useOldStyleIntakeQueue) {
+        @ConfigProperty(defaultValue = "false") boolean useOldStyleIntakeQueue) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

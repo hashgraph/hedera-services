@@ -309,7 +309,7 @@ public class BaseTokenHandler {
     /**
      * Creates a new {@link TokenRelation} with the account and token. This is called when there is
      * no association yet, but have open slots for maxAutoAssociations on the account.
-     * @param account the account to link the tokens to
+     * @param accountId the accountId to link the tokens to
      * @param token the token to link to the account
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
@@ -317,7 +317,7 @@ public class BaseTokenHandler {
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
-            @NonNull final Account account,
+            @NonNull final AccountID accountId,
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
@@ -325,14 +325,15 @@ public class BaseTokenHandler {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
-        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        final var existingRel = tokenRelStore.get(accountId, tokenId);
+        validateTrue(existingRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
+        final var account = accountStore.get(accountId);
         // Check is number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(

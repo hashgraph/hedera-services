@@ -19,7 +19,7 @@ package com.swirlds.platform.reconnect;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class TestKeySerializer implements KeySerializer<TestKey> {
@@ -58,6 +58,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
 
     @Override
     public boolean equals(@NonNull final BufferedData buffer, @NonNull final TestKey keyToCompare) {
-        return buffer.readLong() == keyToCompare.getKeyAsLong();
+        return buffer.readLong() == keyToCompare.getKey();
     }
 }

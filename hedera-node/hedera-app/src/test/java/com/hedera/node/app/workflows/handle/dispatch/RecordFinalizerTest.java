@@ -22,7 +22,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,13 +42,12 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -63,10 +64,7 @@ public class RecordFinalizerTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
-    private ParentRecordFinalizer parentRecordFinalizer;
-
-    @Mock
-    private ChildRecordFinalizer childRecordFinalizer;
+    private FinalizeRecordHandler finalizeRecordHandler;
 
     @Mock
     private Dispatch dispatch;
@@ -99,14 +97,15 @@ public class RecordFinalizerTest {
             TX_BODY,
             SignatureMap.DEFAULT,
             Bytes.EMPTY,
-            HederaFunctionality.CRYPTO_TRANSFER);
+            HederaFunctionality.CRYPTO_TRANSFER,
+            null);
 
-    private SingleTransactionRecordBuilderImpl recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+    private RecordStreamBuilder recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private RecordFinalizer subject;
 
     @BeforeEach
     void setUp() {
-        subject = new RecordFinalizer(parentRecordFinalizer, childRecordFinalizer);
+        subject = new RecordFinalizer(finalizeRecordHandler);
 
         lenient().when(dispatch.txnInfo()).thenReturn(TXN_INFO);
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
@@ -122,8 +121,8 @@ public class RecordFinalizerTest {
 
         subject.finalizeRecord(dispatch);
 
-        verify(parentRecordFinalizer).finalizeParentRecord(any(), any(), any(), any());
-        verify(childRecordFinalizer, never()).finalizeChildRecord(any(), any());
+        verify(finalizeRecordHandler).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, never()).finalizeNonStakingRecord(any(), any());
     }
 
     @Test
@@ -131,9 +130,8 @@ public class RecordFinalizerTest {
         when(dispatch.txnCategory()).thenReturn(CHILD);
 
         subject.finalizeRecord(dispatch);
-
-        verify(childRecordFinalizer, times(1)).finalizeChildRecord(any(), any());
-        verify(parentRecordFinalizer, never()).finalizeParentRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, times(1)).finalizeNonStakingRecord(any(), any());
     }
 
     @Test

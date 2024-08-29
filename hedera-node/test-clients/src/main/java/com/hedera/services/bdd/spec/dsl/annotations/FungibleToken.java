@@ -54,4 +54,16 @@ public @interface FungibleToken {
      * @return whether to use an auto-renew account for the token
      */
     boolean useAutoRenewAccount() default false;
+
+    /**
+     * The initial supply of the token.
+     * @return the initial supply of the token
+     */
+    long initialSupply() default 100;
+
+    /**
+     * The max supply of the token.
+     * @return the max supply of the token
+     */
+    long maxSupply() default 0;
 }

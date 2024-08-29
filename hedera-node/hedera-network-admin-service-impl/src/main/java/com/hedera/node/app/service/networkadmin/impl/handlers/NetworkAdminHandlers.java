@@ -23,7 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A collection of all networkadmin handlers
+ * Singleton that provides access to the various handlers for the Network Admin Service.
  */
 @Singleton
 public class NetworkAdminHandlers {
@@ -87,34 +87,67 @@ public class NetworkAdminHandlers {
         return freezeHandler;
     }
 
+    /**
+     * Returns the network get account details handler
+     *
+     * @return the network get account details handler
+     */
     public NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler() {
         return networkGetAccountDetailsHandler;
     }
 
+    /**
+     * Returns the network get by key handler
+     * @return the network get by key handler
+     */
     public NetworkGetByKeyHandler networkGetByKeyHandler() {
         return networkGetByKeyHandler;
     }
 
+    /**
+     * Returns the network get execution time handler
+     * @return the network get execution time handler
+     */
     public NetworkGetExecutionTimeHandler networkGetExecutionTimeHandler() {
         return networkGetExecutionTimeHandler;
     }
 
+    /**
+     * Returns the network get version info handler
+     * @return the network get version info handler
+     */
     public NetworkGetVersionInfoHandler networkGetVersionInfoHandler() {
         return networkGetVersionInfoHandler;
     }
 
+    /**
+     * Returns the network transaction get receipt handler
+     * @return the network transaction get receipt handler
+     */
     public NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler() {
         return networkTransactionGetReceiptHandler;
     }
 
+    /**
+     * Returns the network transaction get record handler
+     * @return the network transaction get record handler
+     */
     public NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler() {
         return networkTransactionGetRecordHandler;
     }
 
+    /**
+     * Returns the network unchecked submit handler
+     * @return the network unchecked submit handler
+     */
     public NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler() {
         return networkUncheckedSubmitHandler;
     }
 
+    /**
+     * Returns the network transaction get fast record handler
+     * @return the network transaction get fast record handler
+     */
     public NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler() {
         return networkTransactionGetFastRecordHandler;
     }

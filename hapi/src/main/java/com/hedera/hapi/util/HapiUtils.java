@@ -118,10 +118,7 @@ public class HapiUtils {
 
     /** Converts the given {@link Instant} into a {@link Timestamp}. */
     public static Timestamp asTimestamp(@NonNull final Instant instant) {
-        return Timestamp.newBuilder()
-                .seconds(instant.getEpochSecond())
-                .nanos(instant.getNano())
-                .build();
+        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 
     /** Converts the given {@link Timestamp} into an {@link Instant}. */
@@ -130,7 +127,7 @@ public class HapiUtils {
     }
 
     /** Subtracts the given number of seconds from the given {@link Timestamp}, returning a new {@link Timestamp}. */
-    public static Timestamp minus(@NonNull final Timestamp ts, @NonNull final long seconds) {
+    public static Timestamp minus(@NonNull final Timestamp ts, final long seconds) {
         return Timestamp.newBuilder()
                 .seconds(ts.seconds() - seconds)
                 .nanos(ts.nanos())
@@ -228,12 +225,15 @@ public class HapiUtils {
             case TOKEN_UPDATE -> HederaFunctionality.TOKEN_UPDATE;
             case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
-            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
+            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
+            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

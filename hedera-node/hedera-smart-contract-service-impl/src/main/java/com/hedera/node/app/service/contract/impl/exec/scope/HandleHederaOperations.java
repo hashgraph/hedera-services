@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
@@ -36,8 +36,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadata;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -84,6 +84,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final HandleContext context;
     private final HederaFunctionality functionality;
     private final PendingCreationMetadataRef pendingCreationMetadataRef;
+    private final AccountsConfig accountsConfig;
 
     @Inject
     public HandleHederaOperations(
@@ -94,7 +95,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef) {
+            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef,
+            @NonNull final AccountsConfig accountsConfig) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
@@ -103,6 +105,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.functionality = requireNonNull(functionality);
         this.pendingCreationMetadataRef = requireNonNull(pendingCreationMetadataRef);
+        this.accountsConfig = requireNonNull(accountsConfig);
     }
 
     /**
@@ -134,14 +137,6 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
-        context.recordBuilders().revertRecordsFrom(checkpoint);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ContractStateStore getStore() {
         return context.storeFactory().writableStore(WritableContractStateStore.class);
     }
@@ -165,6 +160,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public long contractCreationLimit() {
         return contractsConfig.maxNumber();
+    }
+
+    @Override
+    public long accountCreationLimit() {
+        return accountsConfig.maxNumber();
     }
 
     /**
@@ -336,8 +336,8 @@ public class HandleHederaOperations implements HederaOperations {
 
     @Override
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
-        final var recordBuilder = context.recordBuilders()
-                .addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+        final var recordBuilder = context.savepointStack()
+                .addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
@@ -356,11 +356,6 @@ public class HandleHederaOperations implements HederaOperations {
         return configValidated(contractId, hederaConfig);
     }
 
-    @Override
-    public RecordListCheckPoint createRecordListCheckPoint() {
-        return context.recordBuilders().createRecordListCheckPoint();
-    }
-
     private enum ExternalizeInitcodeOnSuccess {
         YES,
         NO
@@ -375,16 +370,18 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ExternalizeInitcodeOnSuccess externalizeInitcodeOnSuccess) {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
-        // in the contract creation body for the dispatched crypto create body
+        // in the contract creation body for the dispatched crypto create body. This child transaction will not
+        // be throttled at consensus.
         final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
-                ContractCreateRecordBuilder.class,
+                ContractCreateStreamBuilder.class,
                 null,
                 context.payer(),
                 isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(number, bodyToExternalize));
+                        : contractBodyCustomizerFor(number, bodyToExternalize),
+                HandleContext.ConsensusThrottling.OFF);
         if (recordBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
@@ -396,7 +393,7 @@ public class HandleHederaOperations implements HederaOperations {
         // initcode in the bytecode sidecar if it's not already externalized via a body
         final var pendingCreationMetadata = new PendingCreationMetadata(
                 isTopLevelCreation
-                        ? context.recordBuilders().getOrCreate(ContractOperationRecordBuilder.class)
+                        ? context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class)
                         : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();

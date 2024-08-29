@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -51,6 +52,9 @@ class QueryHederaOperationsTest {
     @Mock
     private BlockRecordInfo blockRecordInfo;
 
+    @Mock
+    private TinybarValues tinybarValues;
+
     private QueryHederaOperations subject;
 
     private ContractID contractID;
@@ -59,7 +63,7 @@ class QueryHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new QueryHederaOperations(context, DEFAULT_HEDERA_CONFIG);
+        subject = new QueryHederaOperations(context, DEFAULT_HEDERA_CONFIG, tinybarValues);
         contractID = ContractID.newBuilder().contractNum(1234L).build();
         anotherContractID = ContractID.newBuilder().contractNum(1L).build();
     }
@@ -113,7 +117,8 @@ class QueryHederaOperationsTest {
 
     @Test
     void valueInTinybarsUsesOneToOneExchange() {
-        assertEquals(1L, subject.valueInTinybars(1L));
+        given(tinybarValues.asTinybars(1L)).willReturn(2L);
+        assertEquals(2L, subject.valueInTinybars(1L));
     }
 
     @Test
@@ -130,6 +135,7 @@ class QueryHederaOperationsTest {
     @Test
     void creatingAndDeletingContractsNotSupported() {
         assertThrows(UnsupportedOperationException.class, subject::contractCreationLimit);
+        assertThrows(UnsupportedOperationException.class, subject::accountCreationLimit);
         assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, null));
         assertThrows(
                 UnsupportedOperationException.class,

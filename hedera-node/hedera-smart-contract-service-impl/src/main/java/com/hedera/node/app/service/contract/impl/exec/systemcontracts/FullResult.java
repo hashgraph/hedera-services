@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -42,7 +42,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public record FullResult(
         @NonNull PrecompiledContract.PrecompileContractResult result,
         long gasRequirement,
-        @Nullable ContractCallRecordBuilder recordBuilder) {
+        @Nullable ContractCallStreamBuilder recordBuilder) {
     public FullResult {
         requireNonNull(result);
     }
@@ -79,7 +79,7 @@ public record FullResult(
     }
 
     public static FullResult revertResult(
-            @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+            @NonNull final ContractCallStreamBuilder recordBuilder, final long gasRequirement) {
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
@@ -90,7 +90,7 @@ public record FullResult(
     }
 
     public static FullResult haltResult(
-            @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+            @NonNull final ContractCallStreamBuilder recordBuilder, final long gasRequirement) {
         requireNonNull(recordBuilder);
         final var reason = recordBuilder.status() == NOT_SUPPORTED
                 ? CustomExceptionalHaltReason.NOT_SUPPORTED
@@ -112,7 +112,7 @@ public record FullResult(
     public static FullResult successResult(
             @NonNull final ByteBuffer encoded,
             final long gasRequirement,
-            @NonNull final ContractCallRecordBuilder recordBuilder) {
+            @NonNull final ContractCallStreamBuilder recordBuilder) {
         requireNonNull(encoded);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.success(Bytes.wrap(encoded.array())),

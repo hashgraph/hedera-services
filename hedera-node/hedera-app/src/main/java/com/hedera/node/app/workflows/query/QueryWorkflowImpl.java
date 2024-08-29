@@ -37,7 +37,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -63,7 +62,7 @@ import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -88,14 +87,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
-    private static final Response DEFAULT_UNSUPPORTED_RESPONSE = Response.newBuilder()
-            .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-                    .header(ResponseHeader.newBuilder()
-                            .nodeTransactionPrecheckCode(NOT_SUPPORTED)
-                            .build()))
-            .build();
-
-    private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
@@ -131,7 +123,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,

@@ -21,7 +21,7 @@ import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This interface represents the root node of Hedera Merkle tree.
+ * This interface represents the root node of the Merkle tree.
  */
 public interface MerkleRoot extends MerkleInternal {
     /**
@@ -38,13 +38,13 @@ public interface MerkleRoot extends MerkleInternal {
      * @return the platform state
      */
     @NonNull
-    PlatformState getPlatformState();
+    PlatformStateAccessor getPlatformState();
     /**
      * Set the platform state.
      *
      * @param platformState the platform state
      */
-    void setPlatformState(@NonNull final PlatformState platformState);
+    void updatePlatformState(@NonNull final PlatformStateAccessor platformState);
 
     /**
      * Generate a string that describes this state.

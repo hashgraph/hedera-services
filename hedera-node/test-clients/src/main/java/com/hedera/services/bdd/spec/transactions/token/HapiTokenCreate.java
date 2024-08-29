@@ -329,7 +329,16 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                             supplyType.ifPresent(b::setSupplyType);
                             symbol.ifPresent(b::setSymbol);
                             name.ifPresent(b::setName);
-                            entityMemo.ifPresent(s -> b.setMemo(s));
+                            // If the token doesn't have an explicit memo (which
+                            // should help us correlate any related failures to the
+                            // originating spec), then we set the spec name as the
+                            // memo for this purpose
+                            entityMemo.ifPresentOrElse(
+                                    b::setMemo,
+                                    () -> b.setMemo(spec.getName()
+                                            .substring(
+                                                    0,
+                                                    Math.min(100, spec.getName().length()))));
                             metadata.ifPresent(s -> b.setMetadata(ByteString.copyFromUtf8(s)));
                             initialSupply.ifPresent(b::setInitialSupply);
                             maxSupply.ifPresent(b::setMaxSupply);

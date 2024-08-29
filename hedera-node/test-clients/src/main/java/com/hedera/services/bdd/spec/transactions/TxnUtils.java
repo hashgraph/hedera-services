@@ -47,6 +47,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.pbj.runtime.JsonCodec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
@@ -82,11 +83,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
 import java.time.Instant;
@@ -128,12 +132,35 @@ public class TxnUtils {
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
     public static Key EMPTY_KEY_LIST =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-    public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
+    public static Key WRONG_LENGTH_EDDSA_KEY = Key.newBuilder()
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
 
     public static Key netOf(@NonNull final HapiSpec spec, @NonNull final Optional<String> keyName) {
         return netOf(spec, keyName, Optional.empty(), Optional.empty());
+    }
+
+    /**
+     * Dumps the given records to a file at the given path.
+     * @param path the path to the file to write to
+     * @param codec the codec to use to serialize the records
+     * @param records the records to dump
+     * @param <T> the type of the records
+     */
+    public static <T extends Record> void dumpJsonList(
+            @NonNull final Path path, @NonNull final JsonCodec<T> codec, @NonNull final List<T> records) {
+        try (final var fout = Files.newBufferedWriter(path)) {
+            fout.write("[");
+            for (int i = 0, n = records.size(); i < n; i++) {
+                fout.write(codec.toJSON(records.get(i)));
+                if (i < n - 1) {
+                    fout.write(",");
+                }
+            }
+            fout.write("]");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static Key netOf(
@@ -200,6 +227,17 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isLiteralEvmAddress(@NonNull final String s) {
+        return (s.startsWith("0x") && s.substring(2).matches("[0-9a-fA-F]+"))
+                || (s.length() == 40 && s.matches("[0-9a-fA-F]+"));
+    }
+
+    public static ByteString asLiteralEvmAddress(@NonNull final String s) {
+        return s.startsWith("0x")
+                ? ByteString.copyFrom(CommonUtils.unhex(s.substring(2)))
+                : ByteString.copyFrom(CommonUtils.unhex(s));
+    }
+
     public static boolean isNumericLiteral(final String s) {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
@@ -213,6 +251,9 @@ public class TxnUtils {
     }
 
     public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
+        if (isLiteralEvmAddress(s)) {
+            return AccountID.newBuilder().setAlias(asLiteralEvmAddress(s)).build();
+        }
         return isIdLiteral(s)
                 ? asAccount(s)
                 : (lookupSpec.registry().hasAccountId(s)
@@ -723,5 +764,23 @@ public class TxnUtils {
 
     public static KeyList getCompositeList(final Key key) {
         return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
+    }
+
+    /**
+     * Returns the contents of the resource at the given location as a string.
+     *
+     * @param loc the location of the resource
+     * @return the contents of the resource as a string
+     */
+    public static String resourceAsString(@NonNull final String loc) {
+        try {
+            try (final var in = TxnUtils.class.getClassLoader().getResourceAsStream(loc);
+                    final var bridge = new InputStreamReader(requireNonNull(in));
+                    final var reader = new BufferedReader(bridge)) {
+                return reader.lines().collect(joining("\n"));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

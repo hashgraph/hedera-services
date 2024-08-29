@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;

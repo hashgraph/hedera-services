@@ -72,7 +72,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FeesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.base.utility.Pair;
@@ -80,7 +79,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -172,7 +170,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var rejectingAccountID = op.ownerOrElse(context.payer());
         final var rejections = op.rejections();
 
-        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
@@ -186,18 +183,12 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var processedRejectTransfers = processRejectionsForTransfer(rejections, context, rejectingAccount);
 
         // Apply all changes to the handleContext's states by performing the transfer to the treasuries
+        // Allowances will not be affected with the token reject
         final var transferContext = new TransferContextImpl(context);
         final var fungibleTokensStep = new AdjustFungibleTokenChangesStep(processedRejectTransfers, context.payer());
         final var nftOwnersChangeStep = new NFTOwnersChangeStep(processedRejectTransfers, context.payer());
         fungibleTokensStep.doIn(transferContext);
         nftOwnersChangeStep.doIn(transferContext);
-
-        // Update the token allowances
-        if (hederaConfig.allowancesIsEnabled()) {
-            final var nftStore = context.storeFactory().writableStore(WritableNftStore.class);
-            updateFungibleAllowances(rejectingAccount, rejections, accountStore);
-            updateNFTAllowances(rejections, nftStore);
-        }
     }
 
     /**
@@ -288,49 +279,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
 
         return createFungibleTransfer(tokenId, accountID, tokenRelation.balance(), token.treasuryAccountId());
-    }
-
-    /**
-     * Updates the NFT allowances in the state after the token transfers have been processed,
-     * by setting the spender to null.
-     *
-     * @param tokenReferences The list of tokens that were rejected.
-     * @param nftStore The store to access writable NFT information.
-     */
-    private void updateNFTAllowances(
-            @NonNull final List<TokenReference> tokenReferences, @NonNull final WritableNftStore nftStore) {
-        tokenReferences.stream()
-                .filter(TokenReference::hasNft)
-                .map(reference -> getIfUsable(reference.nftOrThrow(), nftStore))
-                .forEach(nft -> {
-                    if (nft.hasSpenderId()) {
-                        nftStore.put(
-                                nft.copyBuilder().spenderId((AccountID) null).build());
-                    }
-                });
-    }
-
-    /**
-     * Updates the fungible token allowances in the state after the token transfers to the treasuries have been processed.
-     *
-     * @param rejectingAccount The account rejecting the tokens.
-     * @param tokenReferences The list of tokens that were rejected.
-     * @param accountStore The store to access writable account information.
-     */
-    private void updateFungibleAllowances(
-            @NonNull final Account rejectingAccount,
-            @NonNull final List<TokenReference> tokenReferences,
-            @NonNull final WritableAccountStore accountStore) {
-        final var updatedFungibleTokenAllowances = new ArrayList<>(rejectingAccount.tokenAllowances());
-        updatedFungibleTokenAllowances.removeIf(allowance -> tokenReferences.stream()
-                .filter(TokenReference::hasFungibleToken)
-                .anyMatch(fungibleToken -> Objects.equals(fungibleToken.fungibleToken(), allowance.tokenId())));
-
-        final var updatedAccount = rejectingAccount
-                .copyBuilder()
-                .tokenAllowances(updatedFungibleTokenAllowances)
-                .build();
-        accountStore.put(updatedAccount);
     }
 
     @NonNull

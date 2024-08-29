@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.regression.system;
 
-import static com.hedera.services.bdd.junit.TestTags.NOT_EMBEDDED;
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.Tag;
  * again.
  */
 @Tag(RESTART)
-@Tag(NOT_EMBEDDED)
 public class MixedOpsRestartTest implements LifecycleTest {
     private static final int MIXED_OPS_BURST_TPS = 50;
 

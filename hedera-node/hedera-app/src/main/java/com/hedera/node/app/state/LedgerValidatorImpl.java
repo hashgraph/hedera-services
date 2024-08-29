@@ -25,7 +25,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,7 +40,7 @@ public final class LedgerValidatorImpl implements LedgerValidator {
     }
 
     @Override
-    public void validate(@NonNull final HederaState state) throws IllegalStateException {
+    public void validate(@NonNull final State state) throws IllegalStateException {
         final var config = configProvider.getConfiguration().getConfigData(LedgerConfig.class);
         final var expectedTotalTinyBar = config.totalTinyBarFloat();
         final var tokenStates = state.getReadableStates(TokenService.NAME);

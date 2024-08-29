@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -59,8 +58,9 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()))
-                || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE)
+                : attempt.isSelector(ASSOCIATE_ONE, ASSOCIATE_MANY, DISSOCIATE_ONE, DISSOCIATE_MANY);
     }
 
     /**
@@ -70,7 +70,7 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
-                matchesHrcSelector(attempt.selector()) ? bodyForHrc(attempt) : bodyForClassic(attempt),
+                attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE) ? bodyForHrc(attempt) : bodyForClassic(attempt),
                 AssociationsTranslator::gasRequirement);
     }
 
@@ -83,7 +83,7 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
     }
 
     private TransactionBody bodyForHrc(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), HRC_ASSOCIATE.selector())) {
+        if (attempt.isSelector(HRC_ASSOCIATE)) {
             return decoder.decodeHrcAssociate(attempt);
         } else {
             return decoder.decodeHrcDissociate(attempt);
@@ -91,25 +91,14 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), ASSOCIATE_ONE.selector())) {
+        if (attempt.isSelector(ASSOCIATE_ONE)) {
             return decoder.decodeAssociateOne(attempt);
-        } else if (Arrays.equals(attempt.selector(), ASSOCIATE_MANY.selector())) {
+        } else if (attempt.isSelector(ASSOCIATE_MANY)) {
             return decoder.decodeAssociateMany(attempt);
-        } else if (Arrays.equals(attempt.selector(), DISSOCIATE_ONE.selector())) {
+        } else if (attempt.isSelector(DISSOCIATE_ONE)) {
             return decoder.decodeDissociateOne(attempt);
         } else {
             return decoder.decodeDissociateMany(attempt);
         }
-    }
-
-    private static boolean matchesHrcSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, HRC_ASSOCIATE.selector()) || Arrays.equals(selector, HRC_DISSOCIATE.selector());
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ASSOCIATE_ONE.selector())
-                || Arrays.equals(selector, DISSOCIATE_ONE.selector())
-                || Arrays.equals(selector, ASSOCIATE_MANY.selector())
-                || Arrays.equals(selector, DISSOCIATE_MANY.selector());
     }
 }

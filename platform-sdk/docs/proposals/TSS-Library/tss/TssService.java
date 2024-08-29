@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.api;
+package com.hedera.cryptography.tss.api;
 
-import com.swirlds.signaturescheme.api.PairingPrivateKey;
-import com.swirlds.signaturescheme.api.PairingPublicKey;
-import com.swirlds.signaturescheme.api.PairingSignature;
+import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
+import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
+import com.hedera.cryptography.signaturescheme.api.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -38,7 +38,7 @@ import java.util.List;
  *     <li>verify Signatures</li>
  *     <li>Aggregate Signatures</li>
  * </ul>
- * @implNote an instance of the service would require a source of randomness {@link java.util.Random}, and a{@link com.swirlds.signaturescheme.api.SignatureSchema}
+ * @implNote an instance of the service would require a source of randomness {@link java.util.Random}, and a{@link com.hedera.cryptography.signaturescheme.api.SignatureSchema}
  */
 public interface TssService {
 

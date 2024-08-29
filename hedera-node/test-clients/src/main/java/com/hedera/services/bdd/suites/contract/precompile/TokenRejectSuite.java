@@ -19,12 +19,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -42,13 +39,9 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.re
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -60,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
@@ -211,84 +203,6 @@ public class TokenRejectSuite {
                                 .hasNoSpender(),
                         getAccountBalance(ACCOUNT).logged().hasTokenBalance(FUNGIBLE_TOKEN_A, 0L),
                         getAccountBalance(TOKEN_TREASURY).logged().hasTokenBalance(FUNGIBLE_TOKEN_A, 1000L));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowancesCorrectly() {
-        return defaultHapiSpec("tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowances")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(3),
-                        cryptoCreate(ACCOUNT_1).maxAutomaticTokenAssociations(3),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(3),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN_A)
-                                .initialSupply(TOTAL_SUPPLY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN_B)
-                                .initialSupply(0)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
-                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN_A, NON_FUNGIBLE_TOKEN_B),
-                        mintToken(NON_FUNGIBLE_TOKEN_B, List.of(copyFromUtf8("memo"), copyFromUtf8("memo"))),
-                        cryptoTransfer(
-                                moving(250L, FUNGIBLE_TOKEN_A).between(TOKEN_TREASURY, ACCOUNT),
-                                movingUnique(NON_FUNGIBLE_TOKEN_B, 1L, 2L).between(TOKEN_TREASURY, ACCOUNT)),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addTokenAllowance(ACCOUNT, FUNGIBLE_TOKEN_A, SPENDER, 200L)
-                                .addTokenAllowance(TOKEN_TREASURY, FUNGIBLE_TOKEN_A, ACCOUNT, 50L)
-                                .signedBy(DEFAULT_PAYER, ACCOUNT, SPENDER, TOKEN_TREASURY)
-                                .fee(ONE_HBAR),
-                        // Verify Account's allowance works and exists:
-                        cryptoTransfer(movingWithAllowance(50, FUNGIBLE_TOKEN_A).between(ACCOUNT, ACCOUNT_1))
-                                .payingWith(SPENDER)
-                                .signedBy(SPENDER),
-                        getAccountDetails(ACCOUNT)
-                                .payingWith(GENESIS)
-                                .logged()
-                                .has(accountDetailsWith().tokenAllowancesContaining(FUNGIBLE_TOKEN_A, SPENDER, 150)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        // Try rejecting only when having allowance, without balance
-                        tokenAssociate(SPENDER, FUNGIBLE_TOKEN_A),
-                        tokenReject(SPENDER, rejectingToken(FUNGIBLE_TOKEN_A))
-                                .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
-                        tokenReject(
-                                        ACCOUNT,
-                                        rejectingToken(FUNGIBLE_TOKEN_A),
-                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 1L),
-                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 2L))
-                                .via("tokenRejectRemovesAllowance"),
-                        // Verify Spender's allowance is removed:
-                        cryptoTransfer(movingWithAllowance(50, FUNGIBLE_TOKEN_A).between(ACCOUNT, ACCOUNT_1))
-                                .payingWith(ACCOUNT)
-                                .signedBy(ACCOUNT)
-                                .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE))))
-                .then(
-                        getTxnRecord("tokenRejectRemovesAllowance")
-                                .andAllChildRecords()
-                                .logged(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN_B, 1L)
-                                .hasAccountID(TOKEN_TREASURY)
-                                .hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN_B, 2L)
-                                .hasAccountID(TOKEN_TREASURY)
-                                .hasNoSpender(),
-                        getAccountBalance(ACCOUNT).logged().hasTokenBalance(FUNGIBLE_TOKEN_A, 0L),
-                        getAccountDetails(ACCOUNT)
-                                .payingWith(GENESIS)
-                                .logged()
-                                .has(accountDetailsWith().noAllowances()),
-                        getAccountDetails(TOKEN_TREASURY)
-                                .payingWith(GENESIS)
-                                .logged()
-                                .has(accountDetailsWith().tokenAllowancesContaining(FUNGIBLE_TOKEN_A, ACCOUNT, 50)),
-                        getAccountBalance(TOKEN_TREASURY).logged().hasTokenBalance(FUNGIBLE_TOKEN_A, 950L));
     }
 
     @HapiTest

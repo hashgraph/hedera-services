@@ -21,8 +21,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -34,6 +37,22 @@ import java.time.Instant;
 public final class BlockRecordInfoImpl implements BlockRecordInfo {
     private final BlockInfo blockInfo;
     private final RunningHashes runningHashes;
+
+    /**
+     * Creates a {@code BlockRecordInfoImpl} from the given {@link State}.
+     * @param state the state
+     * @return the created {@code BlockRecordInfoImpl}
+     */
+    public static BlockRecordInfoImpl from(@NonNull final State state) {
+        final var states = state.getReadableStates(BlockRecordService.NAME);
+        final var blockInfoState =
+                requireNonNull(states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)
+                        .get());
+        final var runningHashState =
+                requireNonNull(states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY)
+                        .get());
+        return new BlockRecordInfoImpl(blockInfoState, runningHashState);
+    }
 
     /**
      * Constructor of {@code BlockRecordInfoImpl}.

@@ -58,8 +58,19 @@ public abstract class AbstractSpecTransaction<S extends AbstractSpecTransaction<
      * @return this
      */
     public S andAssert(@NonNull final Consumer<T> assertions) {
-        this.assertions = requireNonNull(assertions);
-        return self();
+        requireNonNull(assertions);
+        return incorporating(assertions);
+    }
+
+    /**
+     * Adds customizations to be made to the delegate transaction.
+     *
+     * @param customizations the customizations
+     * @return this
+     */
+    public S with(@NonNull final Consumer<T> customizations) {
+        requireNonNull(customizations);
+        return incorporating(customizations);
     }
 
     /**
@@ -78,4 +89,13 @@ public abstract class AbstractSpecTransaction<S extends AbstractSpecTransaction<
      * @return this
      */
     protected abstract S self();
+
+    private S incorporating(@NonNull final Consumer<T> consumer) {
+        if (assertions == null) {
+            assertions = consumer;
+        } else {
+            assertions = assertions.andThen(consumer);
+        }
+        return self();
+    }
 }

@@ -60,6 +60,22 @@ public class CryptoTransferHelper {
     }
 
     /**
+     * Creates a {@link AccountAmount} for a TokenTransferList.
+     *
+     * @param account the account
+     * @param amount the amount
+     * @param isApproval is approval
+     * @return AccountAmount containing the NFT transfer
+     */
+    public static AccountAmount createAccountAmount(final AccountID account, final long amount, boolean isApproval) {
+        return AccountAmount.newBuilder()
+                .accountID(account)
+                .amount(amount)
+                .isApproval(isApproval)
+                .build();
+    }
+
+    /**
      * Creates a {@link TokenTransferList} for a non-fungible token (NFT) transfer.
      *
      * @param tokenId the TokenID of the NFT to be transferred

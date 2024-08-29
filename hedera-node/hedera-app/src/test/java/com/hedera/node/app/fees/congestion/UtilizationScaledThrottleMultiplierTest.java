@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -42,12 +44,13 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -56,6 +59,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
@@ -119,7 +123,7 @@ class UtilizationScaledThrottleMultiplierTest {
     @Mock
     private TransactionInfo txnInfo;
 
-    private FakeHederaState state;
+    private FakeState state;
 
     @BeforeEach
     void setUp() {
@@ -137,7 +141,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -182,7 +186,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CONTRACT_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         ContractService.NAME,
                         Map.of(
@@ -210,7 +214,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(FILE_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         FileService.NAME,
                         Map.of(
@@ -241,10 +245,11 @@ class UtilizationScaledThrottleMultiplierTest {
                         .build(),
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                TOKEN_MINT);
+                TOKEN_MINT,
+                null);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -279,10 +284,11 @@ class UtilizationScaledThrottleMultiplierTest {
                         .build(),
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                TOKEN_MINT);
+                TOKEN_MINT,
+                null);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = new ReadableStoreFactory(new FakeState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
@@ -299,7 +305,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(TOKEN_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -307,6 +313,30 @@ class UtilizationScaledThrottleMultiplierTest {
                                 Map.of(
                                         TokenID.newBuilder().tokenNum(1L), Token.DEFAULT,
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
+
+        var storeFactory = new ReadableStoreFactory(state);
+        long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
+
+        assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
+    }
+
+    @Test
+    void testCurrentMultiplierPendingAirdrops() {
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(FeesConfig.class)).willReturn(feesConfig);
+        given(feesConfig.percentUtilizationScaleFactors()).willReturn(entityScaleFactors);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxAllowedPendingAirdrops()).willReturn(100L);
+
+        when(txnInfo.functionality()).thenReturn(TOKEN_AIRDROP);
+        when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
+
+        state = new FakeState()
+                .addService(
+                        TokenService.NAME,
+                        Map.of(
+                                V0530TokenSchema.AIRDROPS_KEY,
+                                Map.of(PendingAirdropId.DEFAULT, AccountPendingAirdrop.DEFAULT)));
 
         var storeFactory = new ReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
@@ -325,7 +355,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(TOKEN_ASSOCIATE_TO_ACCOUNT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -357,7 +387,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CONSENSUS_CREATE_TOPIC);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeState()
                 .addService(
                         ConsensusService.NAME,
                         Map.of(
@@ -379,7 +409,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_TRANSFER);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = new ReadableStoreFactory(new FakeState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.signaturescheme.api;
+package com.hedera.cryptography.signaturescheme.api;
 
-import com.swirlds.pairings.api.Field;
-import com.swirlds.pairings.api.FieldElement;
+import com.hedera.cryptography.pairings.api.Field;
+import com.hedera.cryptography.pairings.api.FieldElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 

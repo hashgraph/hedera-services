@@ -34,14 +34,17 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.OwningEntity;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
-import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokenOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
@@ -54,11 +57,12 @@ import org.bouncycastle.util.encoders.Hex;
  * registered with more than one {@link HapiSpec} if desired.
  */
 public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
-        implements SpecEntity, EvmAddressableEntity {
+        implements OwningEntity, EvmAddressableEntity {
     private static final int MAX_INLINE_INITCODE_SIZE = 4096;
 
     private final long creationGas;
     private final String contractName;
+    private final boolean immutable;
     private final Account.Builder builder = Account.newBuilder();
     /**
      * The constructor arguments for the contract's creation call; if the arguments are
@@ -67,8 +71,23 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     private Object[] constructorArgs = new Object[0];
 
-    public SpecContract(@NonNull final String name, @NonNull final String contractName, final long creationGas) {
+    /**
+     * Creates a new contract model from the given annotation.
+     * @param annotation the annotation
+     * @return the model
+     */
+    public static SpecContract contractFrom(@NonNull final Contract annotation) {
+        final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
+        return new SpecContract(name, annotation.contract(), annotation.creationGas(), annotation.isImmutable());
+    }
+
+    private SpecContract(
+            @NonNull final String name,
+            @NonNull final String contractName,
+            final long creationGas,
+            final boolean immutable) {
         super(name);
+        this.immutable = immutable;
         this.creationGas = creationGas;
         this.contractName = requireNonNull(contractName);
     }
@@ -91,6 +110,15 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         requireNonNull(network);
         final var networkContract = contractOrThrow(network);
         return headlongAddressOf(networkContract);
+    }
+
+    /**
+     * Returns an operation to get the balance of the account.
+     *
+     * @return the operation
+     */
+    public GetBalanceOperation getBalance() {
+        return new GetBalanceOperation(this);
     }
 
     /**
@@ -123,6 +151,20 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     public DissociateTokensOperation dissociateTokens(@NonNull final SpecToken... tokens) {
         requireNonNull(tokens);
         return new DissociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
+     * does not have an admin key.
+     *
+     * @param token the tokens to associate
+     * @return the operation
+     */
+    public TransferTokenOperation transferToken(
+            @NonNull final SpecToken token, final long amount, @NonNull final SpecAccount sender) {
+        requireNonNull(token);
+        requireNonNull(sender);
+        return new TransferTokenOperation(amount, token, sender, this);
     }
 
     /**
@@ -179,11 +221,15 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
             final var unhexedBytecode = Hex.decode(initcode.toByteArray());
             op = contractCreate(name, constructorArgs)
                     .gas(creationGas)
-                    .inlineInitCode(ByteString.copyFrom(unhexedBytecode));
+                    .inlineInitCode(ByteString.copyFrom(unhexedBytecode))
+                    .omitAdminKey(immutable);
         } else {
             op = blockingOrder(
                     createLargeFile(GENESIS, contractName, initcode),
-                    contractCreate(name, constructorArgs).gas(creationGas).bytecode(contractName));
+                    contractCreate(name, constructorArgs)
+                            .gas(creationGas)
+                            .bytecode(contractName)
+                            .omitAdminKey(immutable));
         }
         return new Creation<>(op, model);
     }

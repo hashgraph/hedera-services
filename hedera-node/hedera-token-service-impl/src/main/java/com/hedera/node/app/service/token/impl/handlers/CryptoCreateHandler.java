@@ -74,7 +74,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,7 +82,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -272,7 +272,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         final var createdAccountID = accountCreated.accountIdOrThrow();
-        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoCreateStreamBuilder.class);
         recordBuilder.accountID(createdAccountID);
 
         // Put if any new alias is associated with the account into account store
@@ -368,9 +368,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         cryptoCreateValidator.validateKey(
                 op.keyOrThrow(), // cannot be null by this point
                 context.attributeValidator(),
-                context.recordBuilders()
-                        .getOrCreate(SingleTransactionRecordBuilder.class)
-                        .isInternalDispatch());
+                context.savepointStack().getBaseBuilder(StreamBuilder.class).isInternalDispatch());
 
         // Validate the staking information included in this account creation.
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {

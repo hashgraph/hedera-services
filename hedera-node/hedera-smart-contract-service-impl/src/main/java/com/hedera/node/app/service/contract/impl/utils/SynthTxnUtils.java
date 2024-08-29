@@ -155,7 +155,6 @@ public class SynthTxnUtils {
      */
     public static CryptoCreateTransactionBody synthHollowAccountCreation(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
-        // TODO - for mono-service equivalence, need to set the initial balance here
         return CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(0L)
                 .alias(evmAddress)

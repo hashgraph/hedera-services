@@ -64,12 +64,18 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FreezeHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+
     // length of the hash of the update file included in the FreezeTransactionBody
     // used for a quick sanity check that the file hash is not invalid
-    public static final int UPDATE_FILE_HASH_LEN = 48;
+    private static final int UPDATE_FILE_HASH_LEN = 48;
 
     private final Executor freezeExecutor;
 
+    /**
+     * Constructs a {@link FreezeHandler} with the provided {@link Executor}.
+     *
+     * @param freezeExecutor the {@link Executor} to use for handling freeze transactions
+     */
     @Inject
     public FreezeHandler(@NonNull @Named("FreezeService") final Executor freezeExecutor) {
         this.freezeExecutor = requireNonNull(freezeExecutor);

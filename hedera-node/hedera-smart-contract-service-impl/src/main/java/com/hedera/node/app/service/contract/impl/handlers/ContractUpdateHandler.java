@@ -45,7 +45,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -118,13 +118,13 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
-        return !op.hasExpirationTime()
-                || hasCryptoAdminKey(op)
-                || op.hasMaxAutomaticTokenAssociations()
-                || op.hasProxyAccountID()
-                || op.hasAutoRenewPeriod()
-                || op.hasFileID()
-                || !op.memoOrElse("").isEmpty();
+        // Consider the update attempt with both expiration time and id reset to default fields
+        final var withDefaultExpirationTimeAndTarget = op.copyBuilder()
+                .contractID(ContractUpdateTransactionBody.DEFAULT.contractID())
+                .expirationTime(ContractUpdateTransactionBody.DEFAULT.expirationTime())
+                .build();
+        // If anything else was touched, then admin sig is required
+        return !withDefaultExpirationTimeAndTarget.equals(ContractUpdateTransactionBody.DEFAULT);
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
@@ -142,8 +142,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
-        context.recordBuilders()
-                .getOrCreate(ContractUpdateRecordBuilder.class)
+        context.savepointStack()
+                .getBaseBuilder(ContractUpdateStreamBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());
@@ -167,7 +167,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             }
         }
 
-        validateFalse(!onlyAffectsExpiry(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
+        validateFalse(nonExpiryFieldUpdated(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
         validateFalse(reducesExpiry(op, contract.expirationSecond()), EXPIRATION_REDUCTION_NOT_ALLOWED);
 
         if (op.hasMaxAutomaticTokenAssociations()) {
@@ -228,17 +228,12 @@ public class ContractUpdateHandler implements TransactionHandler {
         return keyIsNotValid || candidate.contractID() != null;
     }
 
-    private boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
-        return !(op.hasProxyAccountID()
-                        || op.hasFileID()
-                        || affectsMemo(op)
-                        || op.hasAutoRenewPeriod()
-                        || op.hasAdminKey())
-                || op.hasMaxAutomaticTokenAssociations();
+    private boolean nonExpiryFieldUpdated(ContractUpdateTransactionBody op) {
+        return isAdminSigRequired(op);
     }
 
     private boolean affectsMemo(@NonNull final ContractUpdateTransactionBody op) {
-        return op.hasMemoWrapper() || (op.hasMemo() && !op.memoOrThrow().isEmpty());
+        return op.hasMemoWrapper() || (!op.memoOrElse("").isEmpty());
     }
 
     private boolean isMutable(final Account contract) {

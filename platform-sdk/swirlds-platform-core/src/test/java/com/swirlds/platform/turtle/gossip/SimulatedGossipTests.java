@@ -34,11 +34,11 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
@@ -63,8 +63,8 @@ class SimulatedGossipTests {
      * @param events the list of events
      * @return the set of unique event descriptors
      */
-    private static Set<EventDescriptor> getUniqueDescriptors(@NonNull final List<PlatformEvent> events) {
-        final HashSet<EventDescriptor> uniqueDescriptors = new HashSet<>();
+    private static Set<EventDescriptorWrapper> getUniqueDescriptors(@NonNull final List<PlatformEvent> events) {
+        final HashSet<EventDescriptorWrapper> uniqueDescriptors = new HashSet<>();
         for (final PlatformEvent event : events) {
             uniqueDescriptors.add(event.getDescriptor());
         }
@@ -145,7 +145,7 @@ class SimulatedGossipTests {
             final NodeId creator = addressBook.getNodeId(randotron.nextInt(networkSize));
             final PlatformEvent event =
                     new TestingEventBuilder(randotron).setCreatorId(creator).build();
-            new StatefulEventHasher().hashEvent(event);
+            new DefaultEventHasher().hashEvent(event);
 
             eventsToGossip.add(event);
         }
@@ -176,9 +176,9 @@ class SimulatedGossipTests {
         network.tick(time.now());
 
         // Verify that all nodes received all events.
-        final Set<EventDescriptor> expectedDescriptors = getUniqueDescriptors(eventsToGossip);
+        final Set<EventDescriptorWrapper> expectedDescriptors = getUniqueDescriptors(eventsToGossip);
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-            final Set<EventDescriptor> uniqueDescriptors = getUniqueDescriptors(receivedEvents.get(nodeId));
+            final Set<EventDescriptorWrapper> uniqueDescriptors = getUniqueDescriptors(receivedEvents.get(nodeId));
             assertEquals(expectedDescriptors, uniqueDescriptors);
         }
     }

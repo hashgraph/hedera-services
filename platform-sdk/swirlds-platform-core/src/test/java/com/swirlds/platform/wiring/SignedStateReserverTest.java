@@ -30,7 +30,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.List;
@@ -51,7 +51,7 @@ class SignedStateReserverTest {
         final SignedState signedState = new SignedState(
                 platformContext,
                 Mockito.mock(SignatureVerifier.class),
-                Mockito.mock(State.class),
+                Mockito.mock(MerkleRoot.class),
                 "create",
                 false,
                 false,

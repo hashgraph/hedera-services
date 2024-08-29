@@ -72,7 +72,7 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
-        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
+        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValueExact();
         final var decimals = ((BigInteger) call.get(DECIMALS)).intValue();
         final var tokenCreateWrapper = getTokenCreateWrapper(
                 hederaToken, true, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
@@ -92,7 +92,7 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
-        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
+        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValueExact();
         final var decimals = ((Long) call.get(DECIMALS)).intValue();
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapper(
                 hederaToken, true, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
@@ -135,7 +135,7 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
-        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
+        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValueExact();
         final var decimals = ((BigInteger) call.get(DECIMALS)).intValue();
         final var fixedFee = (Tuple[]) call.get(FIXED_FEE);
         final var fractionalFees = (Tuple[]) call.get(FRACTIONAL_FEE);
@@ -164,7 +164,7 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.decodeCall(encoded);
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
-        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValue();
+        final var initSupply = ((BigInteger) call.get(INIT_SUPPLY)).longValueExact();
         final var decimals = ((Long) call.get(DECIMALS)).intValue();
         final var fixedFee = (Tuple[]) call.get(FIXED_FEE);
         final var fractionalFees = (Tuple[]) call.get(FRACTIONAL_FEE);

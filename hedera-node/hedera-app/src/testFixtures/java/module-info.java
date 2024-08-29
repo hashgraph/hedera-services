@@ -6,6 +6,7 @@ module com.hedera.node.app.test.fixtures {
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api.test.fixtures;
     requires transitive com.swirlds.state.api;
@@ -16,7 +17,6 @@ module com.hedera.node.app.test.fixtures {
     requires com.hedera.node.config;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions.test.fixtures;
-    requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core.test.fixtures;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;

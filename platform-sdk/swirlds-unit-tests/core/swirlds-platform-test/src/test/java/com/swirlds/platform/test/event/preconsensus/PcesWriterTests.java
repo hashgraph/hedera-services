@@ -22,6 +22,7 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -61,8 +62,7 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -201,7 +201,7 @@ class PcesWriterTests {
         final int transactionSizeStandardDeviationInKb = 5;
 
         return (final Random random) -> {
-            final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
+            final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
             for (int index = 0; index < transactionCount; index++) {
 
                 final int transactionSize = (int) UNIT_KILOBYTES.convertTo(
@@ -213,7 +213,7 @@ class PcesWriterTests {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
 
-                transactions[index] = new SwirldTransaction(bytes);
+                transactions[index] = createAppPayloadWrapper(bytes);
             }
             return transactions;
         };

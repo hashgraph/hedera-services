@@ -25,7 +25,7 @@ spotless {
 
     format("misc") {
         // define the files to apply `misc` to
-        target("*.md", ".gitignore")
+        target(".gitignore")
 
         // define the steps to apply to those files
         trimTrailingWhitespace()

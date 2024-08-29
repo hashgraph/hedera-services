@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -26,7 +28,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -46,15 +48,12 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    private final Logger log = LogManager.getLogger(AbstractScheduleHandler.class);
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -331,20 +330,21 @@ abstract class AbstractScheduleHandler {
             final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
-            final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(
+            final ScheduleStreamBuilder recordBuilder = context.dispatchChildTransaction(
                     childTransaction,
-                    ScheduleRecordBuilder.class,
+                    ScheduleStreamBuilder.class,
                     assistant,
                     scheduleToExecute.payerAccountId(),
-                    TransactionCategory.SCHEDULED);
+                    TransactionCategory.SCHEDULED,
+                    ON);
             // If the child failed, we would prefer to fail with the same result.
             //     We do not fail, however, at least mono service code does not.
             //     We succeed and the record of the child transaction is failed.
             // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // also set the child transaction ID as scheduled transaction ID in the parent record.
-            final ScheduleRecordBuilder parentRecordBuilder =
-                    context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
+            final ScheduleStreamBuilder parentRecordBuilder =
+                    context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
             parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {

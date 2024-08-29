@@ -46,7 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -127,7 +127,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
-        final var recordBuilder = context.recordBuilders().getOrCreate(TokenCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenCreateStreamBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(
@@ -193,7 +193,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             final List<CustomFee> requireCollectorAutoAssociation,
-            final TokenCreateRecordBuilder recordBuilder) {
+            final TokenCreateStreamBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 

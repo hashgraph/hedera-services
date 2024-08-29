@@ -216,6 +216,16 @@ public class KeyFactory {
     }
 
     /**
+     * Allow inclusion of another key factory from the shared state
+     *
+     * @param sharedStateKeyFactory key factory from shared state
+     */
+    public void include(KeyFactory sharedStateKeyFactory) {
+        pkMap.putAll(sharedStateKeyFactory.pkMap);
+        controlMap.putAll(sharedStateKeyFactory.controlMap);
+    }
+
+    /**
      * Incorporates the named Ed25519 private key, which must already exist in the {@link HapiSpecRegistry},
      * into the factory's internal map of hexed public keys to private keys along with a {@link SigControl}
      * mapping that assumes the key will always sign a transaction when requested.

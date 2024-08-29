@@ -53,7 +53,7 @@ public class FreezeUnfreezeTranslator extends AbstractCallTranslator<HtsCallAtte
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return attempt.isSelector(FREEZE, UNFREEZE);
     }
 
     /**
@@ -64,7 +64,7 @@ public class FreezeUnfreezeTranslator extends AbstractCallTranslator<HtsCallAtte
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                Arrays.equals(attempt.selector(), FREEZE.selector())
+                attempt.isSelector(FREEZE)
                         ? FreezeUnfreezeTranslator::freezeGasRequirement
                         : FreezeUnfreezeTranslator::unfreezeGasRequirement,
                 NOOP_CUSTOMIZER);
@@ -92,9 +92,5 @@ public class FreezeUnfreezeTranslator extends AbstractCallTranslator<HtsCallAtte
         } else {
             return decoder.decodeUnfreeze(attempt);
         }
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, FREEZE.selector()) || Arrays.equals(selector, UNFREEZE.selector());
     }
 }

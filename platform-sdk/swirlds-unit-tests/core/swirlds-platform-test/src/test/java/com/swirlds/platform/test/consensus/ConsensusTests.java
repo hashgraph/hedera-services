@@ -29,7 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -297,7 +296,6 @@ class ConsensusTests extends PlatformTest {
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Remove a node from the address book at restart")
-    @Disabled("Disabled until the implementation of the test properly simulates removing a node.")
     void nodeRemoveTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)

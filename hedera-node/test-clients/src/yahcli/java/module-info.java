@@ -1,5 +1,7 @@
 module com.hedera.node.test.clients.yahcli {
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.addressbook;
+    requires com.hedera.node.app;
     requires com.hedera.node.hapi;
     requires com.hedera.node.test.clients;
     requires com.swirlds.common;

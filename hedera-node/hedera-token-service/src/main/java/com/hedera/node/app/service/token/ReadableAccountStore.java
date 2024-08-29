@@ -78,6 +78,16 @@ public interface ReadableAccountStore {
     boolean contains(@NonNull final AccountID accountID);
 
     /**
+     * Returns true if the given account ID exists in state, or if the given account ID is an alias that exists in
+     * state.
+     * @param accountID the ID to check
+     * @return true if the account exists in state
+     */
+    default boolean isMissing(@NonNull final AccountID accountID) {
+        return getAliasedAccountById(accountID) == null;
+    }
+
+    /**
      * Returns the number of accounts in state.
      *
      * @return the number of accounts in state

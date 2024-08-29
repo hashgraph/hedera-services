@@ -29,7 +29,7 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -74,7 +74,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * The window of this map is shifted when the minimum non-ancient threshold is changed, so that only non-ancient
      * events are retained.
      */
-    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap;
+    private final SequenceMap<EventDescriptorWrapper, EventImpl> parentDescriptorMap;
 
     /**
      * A map from event hash to event.
@@ -112,11 +112,11 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -138,15 +138,15 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = event.getOtherParents();
+        final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
         EventCounter.incrementLinkedEventCount();
 
-        final EventDescriptor eventDescriptor = event.getDescriptor();
-        parentDescriptorMap.put(eventDescriptor, linkedEvent);
-        parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
+        final EventDescriptorWrapper eventDescriptorWrapper = event.getDescriptor();
+        parentDescriptorMap.put(eventDescriptorWrapper, linkedEvent);
+        parentHashMap.put(eventDescriptorWrapper.hash(), linkedEvent);
 
         return linkedEvent;
     }
@@ -160,7 +160,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         parentDescriptorMap.shiftWindow(eventWindow.getAncientThreshold(), (descriptor, event) -> {
-            parentHashMap.remove(descriptor.getHash());
+            parentHashMap.remove(descriptor.hash());
             eventHasBecomeAncient(event);
         });
     }
@@ -181,7 +181,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param parentDescriptor the descriptor of the missing parent
      */
     protected void childHasMissingParent(
-            @NonNull final PlatformEvent child, @NonNull final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @NonNull final EventDescriptorWrapper parentDescriptor) {
         missingParentLogger.error(
                 EXCEPTION.getMarker(),
                 "Child has a missing parent. This should not be possible. Child: {}, Parent EventDescriptor: {}",
@@ -198,7 +198,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      */
     protected void parentHasIncorrectGeneration(
             @NonNull final PlatformEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         generationMismatchLogger.warn(
                 EXCEPTION.getMarker(),
@@ -206,7 +206,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                         + "claimed generation: {}, actual generation: {}",
                 child,
                 candidateParent,
-                parentDescriptor.getGeneration(),
+                parentDescriptor.eventDescriptor().generation(),
                 candidateParent.getGeneration());
     }
 
@@ -219,7 +219,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      */
     protected void parentHasIncorrectBirthRound(
             @NonNull final PlatformEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         birthRoundMismatchLogger.warn(
                 EXCEPTION.getMarker(),
@@ -227,7 +227,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                         + "claimed birth round: {}, actual birth round: {}",
                 child,
                 candidateParent,
-                parentDescriptor.getBirthRound(),
+                parentDescriptor.eventDescriptor().birthRound(),
                 candidateParent.getBirthRound());
     }
 
@@ -290,7 +290,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      */
     @Nullable
     private EventImpl getParentToLink(
-            @NonNull final PlatformEvent child, @Nullable final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @Nullable final EventDescriptorWrapper parentDescriptor) {
 
         if (parentDescriptor == null) {
             // There is no claimed parent for linking.
@@ -302,18 +302,20 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.getHash());
+        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.hash());
         if (candidateParent == null) {
             childHasMissingParent(child, parentDescriptor);
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.getGeneration()) {
+        if (candidateParent.getGeneration()
+                != parentDescriptor.eventDescriptor().generation()) {
             parentHasIncorrectGeneration(child, parentDescriptor, candidateParent);
             return null;
         }
 
-        if (candidateParent.getBirthRound() != parentDescriptor.getBirthRound()) {
+        if (candidateParent.getBirthRound()
+                != parentDescriptor.eventDescriptor().birthRound()) {
             parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
             return null;
         }
@@ -323,7 +325,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time
-        if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
+        if (parentDescriptor.creator().equals(child.getDescriptor().creator())
                 && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
 
             childTimeIsNotAfterSelfParentTime(child, candidateParent, parentTimeCreated, childTimeCreated);

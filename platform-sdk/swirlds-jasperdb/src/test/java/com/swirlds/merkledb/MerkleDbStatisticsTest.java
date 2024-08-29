@@ -102,7 +102,6 @@ class MerkleDbStatisticsTest {
         assertDoesNotThrow(() -> statistics.setLeafKeysStoreFileSizeByLevelMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setOffHeapHashesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLeavesIndexMb(42));
-        assertDoesNotThrow(() -> statistics.setOffHeapLongKeysIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapObjectKeyBucketsIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapHashesListMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapDataSourceMb(42));
@@ -348,16 +347,6 @@ class MerkleDbStatisticsTest {
         final Metric metric = getMetric("offheap_", "leavesIndexMb_" + LABEL);
         // when
         statistics.setOffHeapLeavesIndexMb(42);
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    void testOffHeapLongKeysIndex() {
-        // given
-        final Metric metric = getMetric("offheap_", "longKeysIndexMb_" + LABEL);
-        // when
-        statistics.setOffHeapLongKeysIndexMb(42);
         // then
         assertValueSet(metric);
     }

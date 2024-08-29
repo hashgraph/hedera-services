@@ -34,7 +34,7 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -161,8 +161,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
-                        final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
+                        final ScheduleStreamBuilder scheduleRecords =
+                                context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
                         scheduleRecords.scheduledTransactionID(
                                 HandlerUtility.transactionIdForScheduled(scheduleToSign));
                         // Based on fuzzy-record matching this field may not be set in mono-service records

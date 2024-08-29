@@ -41,11 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Base class for both {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} and {@link
- * com.hedera.node.app.service.token.records.ChildRecordFinalizer}. This contains methods that are common to both
- * classes.
- */
 public class RecordFinalizerBase {
     protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();

@@ -23,7 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -85,7 +85,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void childHasMissingParent(
-            @NonNull final PlatformEvent child, @NonNull final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @NonNull final EventDescriptorWrapper parentDescriptor) {
         super.childHasMissingParent(child, parentDescriptor);
         missingParentAccumulator.update(1);
     }
@@ -96,7 +96,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
     @Override
     protected void parentHasIncorrectGeneration(
             @NonNull final PlatformEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         super.parentHasIncorrectGeneration(child, parentDescriptor, candidateParent);
         generationMismatchAccumulator.update(1);
@@ -108,7 +108,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
     @Override
     protected void parentHasIncorrectBirthRound(
             @NonNull final PlatformEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         super.parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
         birthRoundMismatchAccumulator.update(1);

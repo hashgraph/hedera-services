@@ -59,7 +59,7 @@ public class WritableStatesStack implements WritableStates {
      */
     @NonNull
     WritableStates getCurrent() {
-        return stack.peek().getWritableStates(statesName);
+        return stack.peek().state().getWritableStates(statesName);
     }
 
     /**

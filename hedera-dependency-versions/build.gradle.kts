@@ -21,9 +21,6 @@ plugins {
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
-    // Force commons compress version to close a security vulnerability
-    api(javaModuleDependencies.gav("org.apache.commons.compress"))
-
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
     runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j2.impl"))
 }
@@ -65,7 +62,13 @@ dependencies.constraints {
     api("com.google.protobuf:protobuf-java-util:3.21.7") {
         because("com.google.protobuf.util")
     }
-    api("com.hedera.pbj:pbj-runtime:0.8.9") {
+    api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.api")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-pairings-signatures:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.signatures")
+    }
+    api("com.hedera.pbj:pbj-runtime:0.9.2") {
         because("com.hedera.pbj.runtime")
     }
     api("com.squareup:javapoet:1.13.0") {

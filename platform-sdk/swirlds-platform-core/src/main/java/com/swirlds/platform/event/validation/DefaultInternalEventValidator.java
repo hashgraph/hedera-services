@@ -30,7 +30,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -177,7 +177,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         int totalTransactionBytes = 0;
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
-            totalTransactionBytes += iterator.next().getSerializedLength();
+            totalTransactionBytes += iterator.next().getSize();
         }
 
         if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
@@ -202,20 +202,20 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
     private boolean areParentsInternallyConsistent(@NonNull final PlatformEvent event) {
         // If a parent is not missing, then the generation and birth round must be valid.
 
-        final EventDescriptor selfParent = event.getSelfParent();
+        final EventDescriptorWrapper selfParent = event.getSelfParent();
         if (selfParent != null) {
-            if (selfParent.getGeneration() < FIRST_GENERATION) {
+            if (selfParent.eventDescriptor().generation() < FIRST_GENERATION) {
                 inconsistentSelfParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has self parent with generation less than the FIRST_GENERATION. self-parent generation: %s"
-                                .formatted(event, selfParent.getGeneration()));
+                                .formatted(event, selfParent.eventDescriptor().generation()));
                 inconsistentSelfParentAccumulator.update(1);
                 return false;
             }
         }
 
-        for (final EventDescriptor otherParent : event.getOtherParents()) {
-            if (otherParent.getGeneration() < FIRST_GENERATION) {
+        for (final EventDescriptorWrapper otherParent : event.getOtherParents()) {
+            if (otherParent.eventDescriptor().generation() < FIRST_GENERATION) {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with generation less than the FIRST_GENERATION. other-parent: %s"
@@ -227,12 +227,12 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
         // only single node networks are allowed to have identical self-parent and other-parent hashes
         if (!singleNodeNetwork && selfParent != null) {
-            for (final EventDescriptor otherParent : event.getOtherParents()) {
-                if (selfParent.getHash().equals(otherParent.getHash())) {
+            for (final EventDescriptorWrapper otherParent : event.getOtherParents()) {
+                if (selfParent.hash().equals(otherParent.hash())) {
                     identicalParentsLogger.error(
                             EXCEPTION.getMarker(),
                             "Event %s has identical self-parent and other-parent hash: %s"
-                                    .formatted(event, selfParent.getHash()));
+                                    .formatted(event, selfParent.hash()));
                     identicalParentsAccumulator.update(1);
                     return false;
                 }
@@ -262,8 +262,9 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         }
 
         long maxParentGeneration = EventConstants.GENERATION_UNDEFINED;
-        for (final EventDescriptor parent : event.getAllParents()) {
-            maxParentGeneration = Math.max(maxParentGeneration, parent.getGeneration());
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
+            maxParentGeneration =
+                    Math.max(maxParentGeneration, parent.eventDescriptor().generation());
         }
 
         if (eventGeneration != maxParentGeneration + 1) {
@@ -291,11 +292,12 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
             return true;
         }
 
-        final long eventBirthRound = event.getDescriptor().getBirthRound();
+        final long eventBirthRound = event.getDescriptor().eventDescriptor().birthRound();
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
-        for (final EventDescriptor parent : event.getAllParents()) {
-            maxParentBirthRound = Math.max(maxParentBirthRound, parent.getBirthRound());
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
+            maxParentBirthRound =
+                    Math.max(maxParentBirthRound, parent.eventDescriptor().birthRound());
         }
 
         if (eventBirthRound < maxParentBirthRound) {

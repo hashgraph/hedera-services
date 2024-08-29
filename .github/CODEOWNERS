@@ -12,6 +12,13 @@
 
 
 #########################
+##### HAPI protobuf #####
+#########################
+
+/hapi/                                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+
+
+#########################
 ##### Hedera Node  ######
 #########################
 
@@ -43,6 +50,11 @@
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
 /hedera-node/**/module-info.java                @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci
+
+###############################
+##### Hedera Cryptography #####
+###############################
+/hedera-cryptography/                           @hashgraph/platform-cryptography
 
 #########################
 ##### Platform SDK ######
@@ -86,18 +98,18 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.github/workflows/                             @hashgraph/devops-ci
+/.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Legacy Maven project files
 **/pom.xml                                      @hashgraph/devops-ci
 
 # Gradle project files and inline plugins
-/gradle/                                        @hashgraph/devops-ci
-gradlew                                         @hashgraph/devops-ci
-gradlew.bat                                     @hashgraph/devops-ci
-**/build-logic/                                 @hashgraph/devops-ci
-**/gradle.*                                     @hashgraph/devops-ci
-**/*.gradle.*                                   @hashgraph/devops-ci
+/gradle/                                        @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew.bat                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/build-logic/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/gradle.*                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/*.gradle.*                                   @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Codacy Tool Configurations
 /config/                                        @hashgraph/devops-ci @hashgraph/release-engineering-managers

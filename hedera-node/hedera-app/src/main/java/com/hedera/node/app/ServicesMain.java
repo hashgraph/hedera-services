@@ -30,7 +30,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -47,7 +46,7 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -135,8 +134,8 @@ public class ServicesMain implements SwirldMain {
      *     and the working directory <i>settings.txt</i>, providing the same
      *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
-     *     {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
-     *     on a {@link MerkleHederaState} instance that delegates the call back to our
+     *     {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+     *     on a {@link MerkleStateRoot} instance that delegates the call back to our
      *     Hedera instance.)</li>
      *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
      *     validation and register notification listeners on the platform.</li>
@@ -190,7 +189,6 @@ public class ServicesMain implements SwirldMain {
         // Add additional configuration to the platform
         final Configuration configuration = buildConfiguration();
         platformBuilder.withConfiguration(configuration);
-
         platformBuilder.withCryptography(CryptographyFactory.create());
         platformBuilder.withTime(Time.getCurrent());
 
@@ -207,9 +205,9 @@ public class ServicesMain implements SwirldMain {
         //   (2) Our Hedera instance's constructor registered its newState() method with the
         //       ConstructableRegistry as the factory for the Services Merkle tree class id.
         //
-        // Now, note that hedera::newState returns MerkleHederaState instances that delegate
-        // their lifecycle methods to an injected instance of HederaLifecycles---and
-        // hedera::newState injects an instance of HederaLifecyclesImpl which primarily
+        // Now, note that hedera::newState returns MerkleStateRoot instances that delegate
+        // their lifecycle methods to an injected instance of MerkleStateLifecycles---and
+        // hedera::newState injects an instance of MerkleStateLifecyclesImpl which primarily
         // delegates these calls back to the Hedera instance itself.
         //
         // Thus, the Hedera instance centralizes nearly all the setup and runtime logic for the

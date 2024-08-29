@@ -29,8 +29,7 @@ public class MerkleDbPaths {
     public final Path pathToDiskLocationLeafNodesFile;
     public final Path hashStoreRamFile;
     public final Path hashStoreDiskDirectory;
-    public final Path longKeyToPathFile;
-    public final Path objectKeyToPathDirectory;
+    public final Path keyToPathDirectory;
     public final Path pathToKeyValueDirectory;
 
     /**
@@ -46,8 +45,7 @@ public class MerkleDbPaths {
         pathToDiskLocationLeafNodesFile = storageDir.resolve("pathToDiskLocationLeafNodes.ll");
         hashStoreRamFile = storageDir.resolve("internalHashStoreRam.hl");
         hashStoreDiskDirectory = storageDir.resolve("internalHashStoreDisk");
-        longKeyToPathFile = storageDir.resolve("longKeyToPath.ll");
-        objectKeyToPathDirectory = storageDir.resolve("objectKeyToPath");
+        keyToPathDirectory = storageDir.resolve("objectKeyToPath");
         pathToKeyValueDirectory = storageDir.resolve("pathToHashKeyValue");
     }
 }

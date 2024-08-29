@@ -29,6 +29,9 @@ public class V0490NetworkSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
+    /**
+     * Constructs a new {@link V0490NetworkSchema}.
+     */
     public V0490NetworkSchema() {
         super(VERSION);
     }

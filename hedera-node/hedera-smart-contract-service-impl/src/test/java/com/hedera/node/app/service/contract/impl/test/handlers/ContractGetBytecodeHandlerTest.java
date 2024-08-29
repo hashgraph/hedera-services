@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -32,24 +33,33 @@ import com.hedera.hapi.node.contract.ContractGetBytecodeQuery;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ContractGetBytecodeHandlerTest {
+class ContractGetBytecodeHandlerTest {
     @Mock
     private QueryContext context;
 
     @Mock
     private ContractGetBytecodeQuery contractGetBytecodeQuery;
+
+    @Mock
+    private FeeCalculator feeCalculator;
 
     @Mock
     private QueryHeader header;
@@ -123,6 +133,47 @@ public class ContractGetBytecodeHandlerTest {
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void computeFeesWithNullContractTest() {
+        // given
+        when(context.feeCalculator()).thenReturn(feeCalculator);
+        when(context.query()).thenReturn(query);
+        when(query.contractGetBytecodeOrThrow()).thenReturn(contractGetBytecodeQuery);
+
+        QueryHeader defaultHeader =
+                QueryHeader.newBuilder().responseType(ANSWER_ONLY).build();
+        when(contractGetBytecodeQuery.headerOrElse(QueryHeader.DEFAULT)).thenReturn(defaultHeader);
+
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
+        when(store.getContractById(any())).thenReturn(null);
+
+        final var components = FeeComponents.newBuilder()
+                .setMax(15000)
+                .setBpt(25)
+                .setVpt(25)
+                .setRbh(25)
+                .setGas(25)
+                .build();
+        final var nodeData = com.hederahashgraph.api.proto.java.FeeData.newBuilder()
+                .setNodedata(components)
+                .build();
+
+        when(feeCalculator.legacyCalculate(any())).thenAnswer(invocation -> {
+            Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> function = invocation.getArgument(0);
+            final var feeData = function.apply(new SigValueObj(1, 1, 1));
+            long nodeFee = FeeBuilder.getComponentFeeInTinyCents(nodeData.getNodedata(), feeData.getNodedata());
+            return new Fees(nodeFee, 0L, 0L);
+        });
+
+        // when
+        Fees actualFees = subject.computeFees(context);
+
+        // then
+        assertThat(actualFees.nodeFee()).isEqualTo(5L);
+        assertThat(actualFees.networkFee()).isZero();
+        assertThat(actualFees.serviceFee()).isZero();
     }
 
     @Test

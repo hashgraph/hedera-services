@@ -23,12 +23,11 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.serialize.KeyIndexType;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 import java.io.IOException;
 
-public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
+public class ExampleLongLongKeyVariableSize implements VirtualKey {
 
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 1235;
@@ -170,16 +169,6 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
     }
 
     /**
-     * Direct access to the value of this key in its raw long format
-     *
-     * @return the long value of this key
-     */
-    @Override
-    public long getKeyAsLong() {
-        return value1;
-    }
-
-    /**
      * Compute number of bytes of non-zero data are there from the least significant side of a long.
      *
      * @param num the long to count non-zero bits for
@@ -199,12 +188,6 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
 
         private static final class ClassVersion {
             public static final int ORIGINAL = 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public KeyIndexType getIndexType() {
-            return KeyIndexType.GENERIC;
         }
 
         /** {@inheritDoc} */

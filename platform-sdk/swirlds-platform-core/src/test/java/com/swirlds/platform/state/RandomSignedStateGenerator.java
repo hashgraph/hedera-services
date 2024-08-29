@@ -19,6 +19,8 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -38,7 +40,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,7 +60,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private State state;
+    private MerkleRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
     private AddressBook addressBook;
@@ -67,7 +69,6 @@ public class RandomSignedStateGenerator {
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
-    private boolean protectionEnabled = false;
     private Hash stateHash = null;
     private Integer roundsNonAncient = null;
     private Hash epoch = null;
@@ -75,6 +76,7 @@ public class RandomSignedStateGenerator {
     private SignatureVerifier signatureVerifier;
     private boolean deleteOnBackgroundThread;
     private boolean pcesRound;
+    private boolean useBlockingState = false;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -112,14 +114,22 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
-        final State stateInstance;
+        final SoftwareVersion softwareVersionInstance;
+        if (softwareVersion == null) {
+            softwareVersionInstance = new BasicSoftwareVersion(random.nextInt(1, 100));
+        } else {
+            softwareVersionInstance = softwareVersion;
+        }
+
+        final MerkleRoot stateInstance;
+        registerMerkleStateRootClassIds();
         if (state == null) {
-            stateInstance = new State();
-            final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
-            stateInstance.setSwirldState(swirldState);
-            PlatformState platformState = new PlatformState();
-            platformState.setAddressBook(addressBookInstance);
-            stateInstance.setPlatformState(platformState);
+            if (useBlockingState) {
+                stateInstance = new BlockingSwirldState();
+            } else {
+                stateInstance = new MerkleStateRoot(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+            }
         } else {
             stateInstance = state;
         }
@@ -159,13 +169,6 @@ public class RandomSignedStateGenerator {
             roundsNonAncientInstance = roundsNonAncient;
         }
 
-        final SoftwareVersion softwareVersionInstance;
-        if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
-        } else {
-            softwareVersionInstance = softwareVersion;
-        }
-
         final ConsensusSnapshot consensusSnapshotInstance;
         if (consensusSnapshot == null) {
             consensusSnapshotInstance = new ConsensusSnapshot(
@@ -180,14 +183,16 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformState platformState = stateInstance.getPlatformState();
+        final PlatformStateAccessor platformState = stateInstance.getPlatformState();
 
-        platformState.setRound(roundInstance);
-        platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setConsensusTimestamp(consensusTimestampInstance);
-        platformState.setCreationSoftwareVersion(softwareVersionInstance);
-        platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setSnapshot(consensusSnapshotInstance);
+        platformState.bulkUpdate(v -> {
+            v.setSnapshot(consensusSnapshotInstance);
+            v.setAddressBook(addressBookInstance);
+            v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
+            v.setCreationSoftwareVersion(softwareVersionInstance);
+            v.setRoundsNonAncient(roundsNonAncientInstance);
+            v.setConsensusTimestamp(consensusTimestampInstance);
+        });
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -242,10 +247,6 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState dummySwirldState) {
-            dummySwirldState.disableDeletion();
-        }
-
         return signedState;
     }
 
@@ -282,7 +283,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setState(final State state) {
+    public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
         this.state = state;
         return this;
     }
@@ -385,17 +386,6 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Default false. If true and a {@link DummySwirldState} is being used, then disable deletion on the state.
-     *
-     * @return this object
-     */
-    @NonNull
-    public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
-        this.protectionEnabled = protectionEnabled;
-        return this;
-    }
-
-    /**
      * Set the number of non-ancient rounds.
      *
      * @return this object
@@ -441,6 +431,18 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
         this.pcesRound = pcesRound;
+        return this;
+    }
+
+    /**
+     * Set if this state should use a {@link BlockingSwirldState} instead of a {@link MerkleStateRoot}.
+     * This flag is fasle by default.
+     *
+     * @param useBlockingState true if this state should use {@link BlockingSwirldState}
+     * @return this object
+     */
+    public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {
+        this.useBlockingState = useBlockingState;
         return this;
     }
 }

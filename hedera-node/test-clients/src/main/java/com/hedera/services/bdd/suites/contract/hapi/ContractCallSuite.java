@@ -164,6 +164,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+// @Tag(ADHOC)
+@Tag("ONEOFF")
 public class ContractCallSuite {
 
     public static final String TOKEN = "yahcliToken";
@@ -879,7 +881,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 
     /**
@@ -2490,7 +2492,7 @@ public class ContractCallSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                        .consensusTimeImpliedByOffset(parentConsTime.get(), 1))));
     }
 
     @HapiTest

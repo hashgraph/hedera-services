@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
@@ -25,14 +26,14 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -54,7 +55,7 @@ import org.junit.jupiter.api.Test;
  * This is a regression test for swirlds/swirlds-platform/issues/6151, but
  * it can be used to find many different issues with VirtualMap.
  *
- * The test creates a virtual map and makes its copies in a loop, until it gets flushed to
+ * <p>The test creates a virtual map and makes its copies in a loop, until it gets flushed to
  * disk. Right after a flush is started, the last map is released, which triggers virtual
  * pipeline shutdown. The test then makes sure the flush completes without exceptions.
  */
@@ -80,19 +81,22 @@ public class CloseFlushTest {
         final AtomicReference<Exception> exception = new AtomicReference<>();
         for (int j = 0; j < 100; j++) {
             final Path storeDir = tmpFileDir.resolve("closeFlushTest-" + j);
-            final VirtualDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+            final VirtualDataSource dataSource =
                     TestType.fixed_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, false, true);
             // Create a custom data source builder, which creates a custom data source to capture
             // all exceptions happened in saveRecords()
-            final VirtualDataSourceBuilder<VirtualLongKey, ExampleByteArrayVirtualValue> builder =
-                    new CustomDataSourceBuilder<>(dataSource, exception);
-            VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> map = new VirtualMap<>("closeFlushTest", builder);
+            final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception);
+            VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> map = new VirtualMap(
+                    "closeFlushTest",
+                    TestType.fixed_fixed.dataType().getKeySerializer(),
+                    TestType.fixed_fixed.dataType().getValueSerializer(),
+                    builder);
             for (int i = 0; i < count; i++) {
                 final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
                 final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(i);
                 map.put(key, value);
             }
-            VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> copy;
+            VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> copy;
             final CountDownLatch shutdownLatch = new CountDownLatch(1);
             for (int i = 0; i < 100; i++) {
                 copy = map.copy();
@@ -100,9 +104,9 @@ public class CloseFlushTest {
                 map = copy;
             }
             copy = map.copy();
-            final VirtualRootNode<VirtualLongKey, ExampleByteArrayVirtualValue> root = map.getRight();
+            final VirtualRootNode<VirtualKey, ExampleByteArrayVirtualValue> root = map.getRight();
             root.enableFlush();
-            final VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> lastMap = map;
+            final VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> lastMap = map;
             final Future<?> job = exec.submit(() -> {
                 try {
                     Thread.sleep(new Random().nextInt(500));
@@ -116,7 +120,7 @@ public class CloseFlushTest {
             copy.release();
             shutdownLatch.await();
             if (exception.get() != null) {
-                exception.get().printStackTrace();
+                exception.get().printStackTrace(System.err);
                 break;
             }
             job.get();
@@ -124,16 +128,15 @@ public class CloseFlushTest {
         Assertions.assertNull(exception.get(), "No exceptions expected, but caught " + exception.get());
     }
 
-    public static class CustomDataSourceBuilder<K extends VirtualKey, V extends VirtualValue>
-            extends MerkleDbDataSourceBuilder<K, V> {
+    public static class CustomDataSourceBuilder extends MerkleDbDataSourceBuilder {
 
-        private VirtualDataSource<K, V> delegate = null;
+        private VirtualDataSource delegate = null;
         private AtomicReference<Exception> exceptionSink = null;
 
         // Provided for deserialization
         public CustomDataSourceBuilder() {}
 
-        public CustomDataSourceBuilder(final VirtualDataSource<K, V> delegate, AtomicReference<Exception> sink) {
+        public CustomDataSourceBuilder(final VirtualDataSource delegate, AtomicReference<Exception> sink) {
             this.delegate = delegate;
             this.exceptionSink = sink;
         }
@@ -144,8 +147,8 @@ public class CloseFlushTest {
         }
 
         @Override
-        public VirtualDataSource<K, V> build(final String label, final boolean withDbCompactionEnabled) {
-            return new VirtualDataSource<>() {
+        public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
+            return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {
                     delegate.close();
@@ -156,8 +159,8 @@ public class CloseFlushTest {
                         final long firstLeafPath,
                         final long lastLeafPath,
                         @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                        @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                         final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(
@@ -173,18 +176,18 @@ public class CloseFlushTest {
                 }
 
                 @Override
-                public VirtualLeafRecord<K, V> loadLeafRecord(final K key) throws IOException {
-                    return delegate.loadLeafRecord(key);
+                public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
+                    return delegate.loadLeafRecord(key, keyHashCode);
                 }
 
                 @Override
-                public VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException {
+                public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
                     return delegate.loadLeafRecord(path);
                 }
 
                 @Override
-                public long findKey(final K key) throws IOException {
-                    return delegate.findKey(key);
+                public long findKey(final Bytes key, int keyHashCode) throws IOException {
+                    return delegate.findKey(key, keyHashCode);
                 }
 
                 @Override
@@ -198,18 +201,13 @@ public class CloseFlushTest {
                 }
 
                 @Override
-                public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
+                public void copyStatisticsFrom(final VirtualDataSource that) {
                     delegate.copyStatisticsFrom(that);
                 }
 
                 @Override
                 public void registerMetrics(final Metrics metrics) {
                     delegate.registerMetrics(metrics);
-                }
-
-                @Override
-                public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-                    return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
                 }
 
                 public long getFirstLeafPath() {
@@ -228,6 +226,18 @@ public class CloseFlushTest {
                 @Override
                 public void stopAndDisableBackgroundCompaction() {
                     delegate.stopAndDisableBackgroundCompaction();
+                }
+
+                @Override
+                @SuppressWarnings("rawtypes")
+                public KeySerializer getKeySerializer() {
+                    throw new UnsupportedOperationException("This method should never be called");
+                }
+
+                @Override
+                @SuppressWarnings("rawtypes")
+                public ValueSerializer getValueSerializer() {
+                    throw new UnsupportedOperationException("This method should never be called");
                 }
             };
         }

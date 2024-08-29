@@ -32,7 +32,7 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,7 +48,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, Set<Bytes>> NEW_HASH_SET = ignored -> new HashSet<>();
+    private static final Function<EventDescriptorWrapper, Set<Bytes>> NEW_HASH_SET = ignored -> new HashSet<>();
 
     /**
      * Initial capacity of {@link #observedEvents}.
@@ -68,7 +68,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<Bytes>> observedEvents;
+    private final SequenceMap<EventDescriptorWrapper, Set<Bytes>> observedEvents;
 
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "eventsWithDisparateSignature")
@@ -112,9 +112,11 @@ public class StandardEventDeduplicator implements EventDeduplicator {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 

@@ -37,7 +37,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -104,7 +104,7 @@ public class TokenDeleteHandler implements TransactionHandler {
                 .build();
         accountStore.put(updatedAccount);
 
-        final var record = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
+        final var record = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
         record.tokenType(updatedToken.tokenType());
     }
 

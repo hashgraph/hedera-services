@@ -22,7 +22,9 @@ import com.hedera.node.app.spi.RpcService;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link FreezeService} {@link RpcService}. */
+/**
+ * Standard implementation of the {@link FreezeService} {@link RpcService}.
+ * */
 public final class FreezeServiceImpl implements FreezeService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {

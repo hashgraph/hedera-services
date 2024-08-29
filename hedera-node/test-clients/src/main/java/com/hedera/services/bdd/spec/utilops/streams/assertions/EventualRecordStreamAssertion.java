@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
@@ -75,9 +75,26 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         this.assertionFactory = assertionFactory;
     }
 
+    /**
+     * Returns an {@link EventualRecordStreamAssertion} that will pass as long as the given assertion does not
+     * throw an {@link AssertionError} before its timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must not fail
+     */
     public static EventualRecordStreamAssertion eventuallyAssertingNoFailures(
             final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
         return new EventualRecordStreamAssertion(assertionFactory, true);
+    }
+
+    /**
+     * Returns an {@link EventualRecordStreamAssertion} that will pass only if the given assertion explicitly
+     * passes within the default timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must pass
+     */
+    public static EventualRecordStreamAssertion eventuallyAssertingExplicitPass(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+        return new EventualRecordStreamAssertion(assertionFactory, false);
     }
 
     /**
@@ -92,7 +109,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return spec.targetNetworkOrThrow()
                 .nodes()
                 .getFirst()
-                .getExternalPath(STREAMS_DIR)
+                .getExternalPath(RECORD_STREAMS_DIR)
                 .toString();
     }
 
@@ -126,6 +143,11 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                         result.fail(e.getMessage());
                     }
                 }
+            }
+
+            @Override
+            public String name() {
+                return assertion.toString();
             }
         });
         return false;

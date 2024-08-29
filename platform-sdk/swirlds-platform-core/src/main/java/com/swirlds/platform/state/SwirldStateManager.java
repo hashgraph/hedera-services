@@ -18,7 +18,6 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
@@ -93,10 +92,9 @@ public class SwirldStateManager implements FreezePeriodChecker {
         this.stats = new SwirldStateMetrics(platformContext.getMetrics());
         Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
+        this.uptimeTracker = new UptimeTracker(
+                platformContext, addressBook, statusActionSubmitter, selfId, platformContext.getTime());
     }
 
     /**
@@ -120,18 +118,25 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformState)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateAccessor)}.
      *
      * @param round the round to handle
      */
     public void handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
-        uptimeTracker.handleRound(
-                round,
-                state.getPlatformState().getUptimeData(),
-                state.getPlatformState().getAddressBook());
+        uptimeTracker.handleRound(round, state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
+    }
+
+    /**
+     * Seals the platform's state changes for the given round.
+     * @param round the round to seal
+     */
+    public void sealConsensusRound(@NonNull final Round round) {
+        Objects.requireNonNull(round);
+        final MerkleRoot state = stateRef.get();
+        state.getSwirldState().sealConsensusRound(round);
     }
 
     /**
@@ -208,7 +213,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        final PlatformState platformState = getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState = getConsensusState().getPlatformState();
         return SwirldStateManagerUtils.isInFreezePeriod(
                 timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }
@@ -223,7 +228,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * event handling may or may not be blocked depending on the implementation.</p>
      *
      * @return a copy of the state to use for the next signed state
-     * @see State#copy()
+     * @see MerkleRoot#copy()
      */
     public MerkleRoot getStateForSigning() {
         fastCopyAndUpdateRefs(stateRef.get());

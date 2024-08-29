@@ -18,7 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -27,10 +27,14 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -60,17 +64,17 @@ class DependencyMigrationTest extends MerkleTestBase {
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     @Mock
-    private HederaLifecycles lifecycles;
+    private MerkleStateLifecycles lifecycles;
 
     @Mock
     private NetworkInfo networkInfo;
 
-    private MerkleHederaState merkleTree;
+    private MerkleStateRoot merkleTree;
 
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleHederaState(lifecycles);
+        merkleTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
     }
 
     @Nested
@@ -168,7 +172,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service));
+        Set.of(entityService, dsService).forEach(servicesRegistry::register);
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator();

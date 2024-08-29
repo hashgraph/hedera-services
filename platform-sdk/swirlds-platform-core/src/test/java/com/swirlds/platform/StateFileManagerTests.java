@@ -62,7 +62,8 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -98,7 +99,8 @@ class StateFileManagerTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach
@@ -193,8 +195,9 @@ class StateFileManagerTests {
     @Test
     @DisplayName("Save Fatal Signed State")
     void saveFatalSignedState() throws InterruptedException, IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
-        ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
+        final SignedState signedState =
+                new RandomSignedStateGenerator().setUseBlockingState(true).build();
+        ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -210,7 +213,7 @@ class StateFileManagerTests {
         // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((DummySwirldState) signedState.getSwirldState()).unblockSerialization();
+        ((BlockingSwirldState) signedState.getSwirldState()).unblockSerialization();
         thread.join(1000);
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());

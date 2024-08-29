@@ -19,7 +19,7 @@ package com.swirlds.virtual.merkle;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.KeySerializer;
 
 public class TestKeySerializer implements KeySerializer<TestKey> {
 
@@ -61,6 +61,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
 
     @Override
     public boolean equals(final BufferedData buffer, final TestKey keyToCompare) {
-        return buffer.readLong() == keyToCompare.getKeyAsLong();
+        return buffer.readLong() == keyToCompare.getKey();
     }
 }

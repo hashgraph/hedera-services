@@ -107,7 +107,7 @@ public class CustomFeesValidator {
                 case FIXED_FEE -> validateFixedFeeForCreation(
                         tokenType, fee, createdTokenId, tokenRelationStore, tokenStore, fees);
                 case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
-                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore, fees);
+                case ROYALTY_FEE -> validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
                 default -> throw new IllegalArgumentException(
                         "Unexpected value for custom fee type: " + fee.fee().kind());
             }
@@ -159,29 +159,11 @@ public class CustomFeesValidator {
                                 collectorId, fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
                     }
                 }
-                case FRACTIONAL_FEE -> {
-                    // fractional fee can be only applied to fungible common tokens
-                    validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
-                }
-                case ROYALTY_FEE -> {
-                    // royalty fee can be only applied to non-fungible unique tokens
-                    validateTrue(
-                            isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-                    final var royaltyFee = fee.royaltyFeeOrThrow();
-                    if (royaltyFee.hasFallbackFee()
-                            && royaltyFee.fallbackFeeOrThrow().hasDenominatingTokenId()) {
-                        final var tokenNum = royaltyFee
-                                .fallbackFeeOrThrow()
-                                .denominatingTokenId()
-                                .tokenNum();
-                        final var tokenId =
-                                TokenID.newBuilder().tokenNum(tokenNum).build();
-                        validateExplicitTokenDenomination(collectorId, tokenId, tokenRelationStore, tokenStore);
-                    }
-                }
-                default -> {
-                    throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-                }
+                case FRACTIONAL_FEE -> // fractional fee can be only applied to fungible common tokens
+                validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
+                case ROYALTY_FEE -> // royalty fee can be only applied to non-fungible unique tokens
+                validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
+                default -> throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
             }
         }
     }
@@ -257,12 +239,11 @@ public class CustomFeesValidator {
         fees.add(fee);
     }
 
-    private void validateRoyaltyFeeForCreation(
+    private void validateRoyaltyFee(
             @NonNull final TokenType tokenType,
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final WritableTokenStore tokenStore,
-            @NonNull final List<CustomFee> fees) {
+            @NonNull final WritableTokenStore tokenStore) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royaltyFee = fee.royaltyFeeOrThrow();
 

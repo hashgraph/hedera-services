@@ -22,6 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
+import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -33,7 +35,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -45,7 +47,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -78,7 +79,7 @@ public class NodeCreateHandler implements TransactionHandler {
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),
                 INVALID_GOSSIP_CA_CERTIFICATE);
-
+        validateX509Certificate(op.gossipCaCertificate());
         final var adminKey = op.adminKey();
         addressBookValidator.validateAdminKey(adminKey);
     }
@@ -114,8 +115,6 @@ public class NodeCreateHandler implements TransactionHandler {
                 .description(op.description())
                 .gossipEndpoint(op.gossipEndpoint())
                 .serviceEndpoint(op.serviceEndpoint())
-                .gossipEndpoint(op.gossipEndpoint())
-                .serviceEndpoint(op.serviceEndpoint())
                 .gossipCaCertificate(op.gossipCaCertificate())
                 .grpcCertificateHash(op.grpcCertificateHash())
                 .adminKey(op.adminKey());
@@ -123,7 +122,7 @@ public class NodeCreateHandler implements TransactionHandler {
 
         nodeStore.put(node);
 
-        final var recordBuilder = handleContext.recordBuilders().getOrCreate(NodeCreateRecordBuilder.class);
+        final var recordBuilder = handleContext.savepointStack().getBaseBuilder(NodeCreateStreamBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
     }
@@ -138,13 +137,5 @@ public class NodeCreateHandler implements TransactionHandler {
         // the price of the rest of the signatures.
         calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
         return calculator.calculate();
-    }
-
-    private long getNextNodeID(@NonNull final WritableNodeStore nodeStore) {
-        requireNonNull(nodeStore);
-        final var nodeIds = nodeStore.keys();
-        AtomicLong max = new AtomicLong(-1);
-        nodeIds.forEachRemaining(nodeId -> max.set(Math.max(max.get(), nodeId.number())));
-        return max.get() + 1;
     }
 }

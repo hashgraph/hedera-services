@@ -177,6 +177,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         frame.setState(MessageFrame.State.CODE_EXECUTING);
         frame.incrementRemainingGas(childFrame.getRemainingGas());
         frame.addLogs(childFrame.getLogs());
+        frame.addCreates(childFrame.getCreates());
         frame.addSelfDestructs(childFrame.getSelfDestructs());
         frame.incrementGasRefund(childFrame.getGasRefund());
         frame.popStackItems(getStackItemsConsumed());

@@ -27,7 +27,6 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -84,15 +83,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
 
     @Test
     void testPayerExemptWhenPayerIsTokenTreasury() {
-        CustomFeeMeta customFeeMetaFromTreasury = CustomFeeMeta.customFeeMetaFrom(treasuryToken);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMetaFromTreasury, customFee, sender))
+        assertThat(CustomFeeExemptions.isPayerExempt(treasuryToken, customFee, sender))
                 .isTrue();
     }
 
     @Test
     void testPayerExemptWhenPayerIsTheFeeCollector() {
-        CustomFeeMeta customFeeMeta = CustomFeeMeta.customFeeMetaFrom(nonTreasuryToken);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollectorSender, sender))
+        assertThat(CustomFeeExemptions.isPayerExempt(treasuryToken, customFeeCollectorSender, sender))
                 .isTrue();
     }
 
@@ -106,9 +103,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
                 .feeCollectorAccountId(sender)
                 .fixedFee(fixedFee)
                 .build();
-        final var customFeeMeta =
-                new CustomFeeMeta(tokenId, minter, List.of(customFee1, customFee2), TokenType.FUNGIBLE_COMMON);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollectorSender, sender))
+        final var token = Token.newBuilder()
+                .customFees(customFee1, customFee2)
+                .treasuryAccountId(minter)
+                .tokenId(tokenId)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .build();
+        assertThat(CustomFeeExemptions.isPayerExempt(token, customFeeCollectorSender, sender))
                 .isTrue();
     }
 
@@ -127,9 +128,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
                 .allCollectorsAreExempt(true)
                 .fixedFee(fixedFee)
                 .build();
-        final var customFeeMeta =
-                new CustomFeeMeta(tokenId, minter, List.of(customFee1, customFee2), TokenType.FUNGIBLE_COMMON);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollector, sender))
+        final var token = Token.newBuilder()
+                .customFees(customFee1, customFee2)
+                .treasuryAccountId(minter)
+                .tokenId(tokenId)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .build();
+        assertThat(CustomFeeExemptions.isPayerExempt(token, customFeeCollector, sender))
                 .isTrue();
     }
 
@@ -142,8 +147,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
                 .allCollectorsAreExempt(true)
                 .fixedFee(fixedFee)
                 .build();
-        final var customFeeMeta = new CustomFeeMeta(tokenId, minter, List.of(customFee), TokenType.FUNGIBLE_COMMON);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollector, sender))
+        final var token = Token.newBuilder()
+                .customFees(customFee)
+                .treasuryAccountId(minter)
+                .tokenId(tokenId)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .build();
+        assertThat(CustomFeeExemptions.isPayerExempt(token, customFeeCollector, sender))
                 .isFalse();
     }
 
@@ -153,9 +163,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
                 .feeCollectorAccountId(feeCollector)
                 .fixedFee(fixedFee)
                 .build();
-        final var customFeeMeta =
-                new CustomFeeMeta(tokenId, minter, List.of(customFeeCollector), TokenType.FUNGIBLE_COMMON);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollector, sender))
+        final var token = Token.newBuilder()
+                .customFees(customFeeCollector)
+                .treasuryAccountId(minter)
+                .tokenId(tokenId)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .build();
+        assertThat(CustomFeeExemptions.isPayerExempt(token, customFeeCollector, sender))
                 .isFalse();
     }
 
@@ -173,9 +187,13 @@ class CustomFeeExemptionsTest extends TokenHandlerTestBase {
                 .feeCollectorAccountId(feeCollector)
                 .fixedFee(fixedFee)
                 .build();
-        final var customFeeMeta =
-                new CustomFeeMeta(tokenId, minter, List.of(customFee1, customFee2), TokenType.FUNGIBLE_COMMON);
-        assertThat(CustomFeeExemptions.isPayerExempt(customFeeMeta, customFeeCollector, sender))
+        final var token = Token.newBuilder()
+                .customFees(customFee1, customFee2)
+                .treasuryAccountId(minter)
+                .tokenId(tokenId)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .build();
+        assertThat(CustomFeeExemptions.isPayerExempt(token, customFeeCollector, sender))
                 .isFalse();
     }
 }

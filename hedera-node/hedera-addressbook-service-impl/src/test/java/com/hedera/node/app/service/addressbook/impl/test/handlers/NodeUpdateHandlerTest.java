@@ -61,7 +61,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.io.IOException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -87,11 +88,13 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     private TransactionBody txn;
     private NodeUpdateHandler subject;
+    private List<X509Certificate> certList;
 
     @BeforeEach
     void setUp() {
         final var addressBookValidator = new AddressBookValidator();
         subject = new NodeUpdateHandler(addressBookValidator);
+        certList = generateX509Certificates(3);
     }
 
     @Test
@@ -120,7 +123,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1)
                 .withAccountId(accountId)
-                .withGossipCaCertificate(Bytes.wrap("cert"))
                 .withAdminKey(invalidKey)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
@@ -129,11 +131,11 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks succeeds when expected attributes are specified")
-    void pureCheckPass() {
+    void pureCheckPass() throws CertificateEncodingException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1)
                 .withAccountId(accountId)
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(1).getEncoded()))
                 .withAdminKey(key)
                 .build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
@@ -336,14 +338,14 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void hanldeWorkAsExpected() {
+    void hanldeWorkAsExpected() throws CertificateEncodingException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1L)
                 .withAccountId(accountId)
                 .withDescription("Description")
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint3))
-                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(2).getEncoded()))
                 .withGrpcCertificateHash(Bytes.wrap("hash"))
                 .withAdminKey(key)
                 .build();
@@ -365,6 +367,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         final var updatedNode = writableStore.get(1L);
         assertNotNull(updatedNode);
         assertEquals(1, updatedNode.nodeId());
+        assertEquals(accountId, updatedNode.accountId());
         assertEquals("Description", updatedNode.description());
         assertArrayEquals(
                 (List.of(endpoint1, endpoint2)).toArray(),
@@ -372,7 +375,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         assertArrayEquals(
                 (List.of(endpoint1, endpoint3)).toArray(),
                 updatedNode.serviceEndpoint().toArray());
-        assertArrayEquals("cert".getBytes(), updatedNode.gossipCaCertificate().toByteArray());
+        assertArrayEquals(
+                certList.get(2).getEncoded(), updatedNode.gossipCaCertificate().toByteArray());
         assertArrayEquals("hash".getBytes(), updatedNode.grpcCertificateHash().toByteArray());
         assertEquals(key, updatedNode.adminKey());
     }
@@ -479,7 +483,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    void testCalculateFeesInvocations() throws IOException {
+    void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);

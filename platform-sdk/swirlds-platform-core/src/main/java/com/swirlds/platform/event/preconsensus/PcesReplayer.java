@@ -22,8 +22,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -55,10 +57,12 @@ public class PcesReplayer {
     private final Supplier<ReservedSignedState> latestImmutableState;
     private final Supplier<Boolean> isSystemHealthy;
 
+    private final PcesConfig config;
+
     /**
      * Constructor
      *
-     * @param time                     a source of time
+     * @param context                  the platform context
      * @param eventOutputWire          the wire to put events on, to be replayed
      * @param flushIntake              a runnable that flushes the intake pipeline
      * @param flushTransactionHandling a runnable that flushes the transaction handling pipeline
@@ -67,19 +71,21 @@ public class PcesReplayer {
      *                                 overwhelmed
      */
     public PcesReplayer(
-            final @NonNull Time time,
+            final @NonNull PlatformContext context,
             final @NonNull StandardOutputWire<PlatformEvent> eventOutputWire,
             final @NonNull Runnable flushIntake,
             final @NonNull Runnable flushTransactionHandling,
             final @NonNull Supplier<ReservedSignedState> latestImmutableState,
             final @NonNull Supplier<Boolean> isSystemHealthy) {
 
-        this.time = Objects.requireNonNull(time);
+        this.time = context.getTime();
         this.eventOutputWire = Objects.requireNonNull(eventOutputWire);
         this.flushIntake = Objects.requireNonNull(flushIntake);
         this.flushTransactionHandling = Objects.requireNonNull(flushTransactionHandling);
         this.latestImmutableState = Objects.requireNonNull(latestImmutableState);
         this.isSystemHealthy = Objects.requireNonNull(isSystemHealthy);
+
+        this.config = context.getConfiguration().getConfigData(PcesConfig.class);
     }
 
     /**
@@ -162,6 +168,8 @@ public class PcesReplayer {
             }
         }
 
+        final RateLimiter rateLimiter = new RateLimiter(time, config.maxEventReplayFrequency());
+
         int eventCount = 0;
         int transactionCount = 0;
         try {
@@ -170,10 +178,14 @@ public class PcesReplayer {
                 // until it catches up before we can continue.
                 waitUntilHealthy();
 
+                if (config.limitReplayFrequency() && !rateLimiter.requestAndTrigger()) {
+                    continue;
+                }
+
                 final PlatformEvent event = eventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getPayloadCount();
+                transactionCount += event.getTransactionCount();
 
                 eventOutputWire.forward(event);
             }

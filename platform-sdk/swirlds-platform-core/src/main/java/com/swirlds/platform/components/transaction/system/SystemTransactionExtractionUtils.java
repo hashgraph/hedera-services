@@ -50,7 +50,7 @@ public class SystemTransactionExtractionUtils {
             @NonNull final ConsensusRound round, @NonNull final Class<T> systemTransactionTypeClass) {
 
         return round.getConsensusEvents().stream()
-                .map(event -> extractFromEvent(event.getBaseEvent(), systemTransactionTypeClass))
+                .map(event -> extractFromEvent(event, systemTransactionTypeClass))
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .collect(collectingAndThen(toList(), list -> list.isEmpty() ? null : list));
@@ -72,10 +72,11 @@ public class SystemTransactionExtractionUtils {
         final Iterator<Transaction> transactionIterator = event.transactionIterator();
         while (transactionIterator.hasNext()) {
             final Transaction transaction = transactionIterator.next();
-            if (systemTransactionTypeClass.isInstance(transaction.getPayload().value())) {
+            if (systemTransactionTypeClass.isInstance(
+                    transaction.getTransaction().transaction().value())) {
                 scopedTransactions.add(
                         new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
-                                transaction.getPayload().value()));
+                                transaction.getTransaction().transaction().value()));
             }
         }
 

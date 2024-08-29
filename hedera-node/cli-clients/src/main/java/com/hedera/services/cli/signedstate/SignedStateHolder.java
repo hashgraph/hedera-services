@@ -16,7 +16,6 @@
 
 package com.hedera.services.cli.signedstate;
 
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -25,6 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
@@ -55,7 +55,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * indexes of the virtual maps ("vmap"s) - ~1Gb serialized (2022-11). Then you can traverse the
  * rematerialized hashgraph state.
  *
- * <p>(FUTURE) Needs to be reworked for {@link MerkleHederaState}.
+ * <p>(FUTURE) Needs to be reworked for {@link MerkleStateRoot}.
  */
 @SuppressWarnings("java:S5738") // deprecated classes (several current platform classes have no replacement yet)
 public class SignedStateHolder implements AutoCloseableNonThrowing {
@@ -147,7 +147,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
     /** Deserialize the signed state file into an in-memory data structure. */
     @NonNull
-    private Pair<ReservedSignedState, MerkleHederaState> dehydrate(@NonNull final List<Path> configurationPaths) {
+    private Pair<ReservedSignedState, MerkleStateRoot> dehydrate(@NonNull final List<Path> configurationPaths) {
         Objects.requireNonNull(configurationPaths, "configurationPaths");
 
         registerConstructables();
@@ -168,13 +168,13 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var swirldsState = rss.get().getSwirldState();
         if (!(swirldsState
                 instanceof
-                MerkleHederaState
-                merkleHederaState)) { // Java booboo: precedence level of `instanceof` is way too low
+                MerkleStateRoot
+                merkleStateRoot)) { // Java booboo: precedence level of `instanceof` is way too low
             rss.close();
-            throw new MissingSignedStateComponent("MerkleHederaState", swhPath);
+            throw new MissingSignedStateComponent("MerkleStateRoot", swhPath);
         }
 
-        return Pair.of(rss, merkleHederaState);
+        return Pair.of(rss, merkleStateRoot);
     }
 
     /** Build a configuration object from the provided configuration paths. */

@@ -90,19 +90,18 @@ class MerkleDbCompactionCoordinatorTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void testCompactDiskStoreForObjectKeyToPathAsync(boolean compactionPassed)
-            throws IOException, InterruptedException {
+    void testCompactDiskStoreForKeyToPathAsync(boolean compactionPassed) throws IOException, InterruptedException {
         testCompaction(
                 objectKeyToPath,
-                coordinator::compactDiskStoreForObjectKeyToPathAsync,
+                coordinator::compactDiskStoreForKeyToPathAsync,
                 // expect compaction to be started
                 true,
                 compactionPassed);
     }
 
     @Test
-    void testCompactDiskStoreForObjectKeyToPathAsync_failed() throws IOException, InterruptedException {
-        testCompactionFailed(objectKeyToPath, coordinator::compactDiskStoreForObjectKeyToPathAsync);
+    void testCompactDiskStoreForKeyToPathAsync_failed() throws IOException, InterruptedException {
+        testCompactionFailed(objectKeyToPath, coordinator::compactDiskStoreForKeyToPathAsync);
     }
 
     @ParameterizedTest
@@ -138,11 +137,11 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     @Test
-    void testCompactDiskStoreForObjectKeyToPathAsync_compactionDisabled() throws IOException, InterruptedException {
+    void testCompactDiskStoreForKeyToPathAsync_compactionDisabled() throws IOException, InterruptedException {
         stopAndDisableCompaction();
         testCompaction(
                 objectKeyToPath,
-                coordinator::compactDiskStoreForObjectKeyToPathAsync,
+                coordinator::compactDiskStoreForKeyToPathAsync,
                 // compaction shouldn't be started
                 false,
                 nextBoolean());
@@ -178,7 +177,7 @@ class MerkleDbCompactionCoordinatorTest {
         initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch, new AtomicBoolean());
         initCompactorMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch, new AtomicBoolean());
 
-        coordinator.compactDiskStoreForObjectKeyToPathAsync();
+        coordinator.compactDiskStoreForKeyToPathAsync();
         coordinator.compactDiskStoreForHashesAsync();
         coordinator.compactPathToKeyValueAsync();
 

@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.allowance;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator.ERC_GET_ALLOWANCE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator.GET_ALLOWANCE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,11 +30,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +57,9 @@ public class GetAllowanceTranslatorTest {
     @Mock
     private HederaWorldUpdater.Enhancement enhancement;
 
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
     private GetAllowanceTranslator subject;
 
     @BeforeEach
@@ -62,30 +69,35 @@ public class GetAllowanceTranslatorTest {
 
     @Test
     void matchesGetAllowance() {
-        given(attempt.selector()).willReturn(GetAllowanceTranslator.GET_ALLOWANCE.selector());
-        final var matches = subject.matches(attempt);
-        assertTrue(matches);
+        attempt = prepareHtsAttemptWithSelector(
+                GET_ALLOWANCE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesERCGetAllowance() {
-        given(attempt.selector()).willReturn(GetAllowanceTranslator.GET_ALLOWANCE.selector());
-        final var matches = subject.matches(attempt);
-        assertTrue(matches);
+        attempt = prepareHtsAttemptWithSelector(
+                ERC_GET_ALLOWANCE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void failsOnInvalidSelector() {
-        given(attempt.selector()).willReturn(ClassicTransfersTranslator.CRYPTO_TRANSFER.selector());
-        final var matches = subject.matches(attempt);
-        assertFalse(matches);
+        attempt = prepareHtsAttemptWithSelector(
+                TOKEN_UPDATE_INFO_FUNCTION_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
     void callFromErcGetApprovedTest() {
         final Bytes inputBytes = Bytes.wrapByteBuffer(GetAllowanceTranslator.ERC_GET_ALLOWANCE.encodeCall(
                 Tuple.of(OWNER_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS)));
-        given(attempt.selector()).willReturn(GetAllowanceTranslator.ERC_GET_ALLOWANCE.selector());
+        given(attempt.isSelector(ERC_GET_ALLOWANCE)).willReturn(true);
         given(attempt.inputBytes()).willReturn(inputBytes.toArray());
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -97,9 +109,9 @@ public class GetAllowanceTranslatorTest {
 
     @Test
     void callFromGetAllowanceTest() {
-        final Bytes inputBytes = Bytes.wrapByteBuffer(GetAllowanceTranslator.GET_ALLOWANCE.encodeCall(
+        final Bytes inputBytes = Bytes.wrapByteBuffer(GET_ALLOWANCE.encodeCall(
                 Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS)));
-        given(attempt.selector()).willReturn(GetAllowanceTranslator.GET_ALLOWANCE.selector());
+        given(attempt.isSelector(ERC_GET_ALLOWANCE)).willReturn(false);
         given(attempt.inputBytes()).willReturn(inputBytes.toArray());
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);

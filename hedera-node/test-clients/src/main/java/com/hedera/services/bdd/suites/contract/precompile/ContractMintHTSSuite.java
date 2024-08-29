@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -347,13 +346,13 @@ public class ContractMintHTSSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
-                        uploadInitCode(NESTED_MINT_CONTRACT, MINT_NFT_CONTRACT),
-                        contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER))
+                        uploadInitCode(NESTED_MINT_CONTRACT, "MintNFTContract"),
+                        contractCreate("MintNFTContract").gas(GAS_TO_OFFER))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
                                         NESTED_MINT_CONTRACT,
-                                        asHeadlongAddress(getNestedContractAddress(MINT_NFT_CONTRACT, spec)),
+                                        asHeadlongAddress(getNestedContractAddress("MintNFTContract", spec)),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .gas(GAS_TO_OFFER),
@@ -418,7 +417,6 @@ public class ContractMintHTSSuite {
                                     childRecordsCheck(
                                             nestedTransferTxn,
                                             SUCCESS,
-                                            recordWith().status(SUCCESS),
                                             recordWith()
                                                     .status(SUCCESS)
                                                     .contractCallResult(resultWith()

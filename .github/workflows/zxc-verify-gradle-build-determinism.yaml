@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
 
     secrets:
       gradle-cache-username:
@@ -55,11 +55,12 @@ env:
   GRADLE_MANIFEST_GENERATOR: .github/workflows/support/scripts/generate-gradle-artifact-baseline.sh
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+  LC_ALL: C.UTF-8
 
 jobs:
   generate-baseline:
     name: Generate Baseline
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: network-node-linux-medium
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
       path: ${{ steps.baseline.outputs.path }}
@@ -145,8 +146,8 @@ jobs:
           #- macos-11
           - windows-2022
           - windows-2019
-          - [self-hosted, Linux, medium, ephemeral]
-          - [self-hosted, Linux, large, ephemeral]
+          - network-node-linux-medium
+          - network-node-linux-large
     steps:
       - name: Standardize Git Line Endings
         run: |

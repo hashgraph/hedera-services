@@ -28,7 +28,7 @@ env:
   TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
   VERSION_MIRRORNODE : "custom"
-  K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
+  K8S_CLUSTER : "gke_hedera-testing-1_us-south1-c_nightly-perfnet"
 
   USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
   PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
@@ -45,7 +45,7 @@ permissions:
 jobs:
   canonical-test:
     name: Canonical (10 hour)
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: network-node-linux-medium
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -106,13 +106,14 @@ jobs:
           unzip logcli-linux-amd64.zip
           chmod a+x logcli-linux-amd64
           bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 600 "${{ github.workspace }}/logcli-linux-amd64" 0
+          sleep 9m
 
       - name: Restore Old Signed State
         id: restore-old-signed-state
         run: |
           curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fengnet1-state%2Fengnet1-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
           echo "Sleep 18 minutes for network to load"
-          sleep 18m
+          sleep 20m
 
       - name: Run LogCLI to Wait for Network Active Again
         id: run-logcli-wait-network-active-again

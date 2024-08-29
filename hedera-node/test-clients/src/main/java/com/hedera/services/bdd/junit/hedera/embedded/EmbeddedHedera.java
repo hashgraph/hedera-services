@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,7 +45,13 @@ public interface EmbeddedHedera {
      *
      * @return the fake state of the embedded Hedera node
      */
-    FakeHederaState state();
+    FakeState state();
+
+    /**
+     * Returns the software version of the embedded Hedera node.
+     * @return the software version of the embedded Hedera node
+     */
+    SoftwareVersion version();
 
     /**
      * Returns the next in a repeatable sequence of valid start times that the embedded Hedera's

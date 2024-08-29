@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
@@ -58,7 +57,6 @@ public class TargetNetworkPrep {
         final var civilian = "civilian";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
         return hapiTest(
-                uploadDefaultFeeSchedules(GENESIS),
                 cryptoCreate(civilian),
                 balanceSnapshot(snapshot800, STAKING_REWARD),
                 cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))

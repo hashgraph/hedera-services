@@ -17,10 +17,13 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.EMBEDDED_WORKING_DIR;
+import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.REPEATABLE_WORKING_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateUpgradeArtifactsProperty;
 
@@ -54,7 +57,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     public HederaNode start() {
         assertWorkingDirInitialized();
         // Without the normal lag of node startup, record stream assertions may check this directory too fast
-        ensureDir(getExternalPath(STREAMS_DIR).normalize().toString());
+        ensureDir(getExternalPath(RECORD_STREAMS_DIR).normalize().toString());
         System.setProperty(
                 "hedera.app.properties.path",
                 getExternalPath(APPLICATION_PROPERTIES).toAbsolutePath().toString());
@@ -63,11 +66,13 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                 getExternalPath(GENESIS_PROPERTIES).toAbsolutePath().toString());
         System.setProperty(
                 "hedera.recordStream.logDir",
-                getExternalPath(STREAMS_DIR).getParent().toString());
+                getExternalPath(RECORD_STREAMS_DIR).getParent().toString());
+        System.setProperty(
+                "blockStream.blockFileDir",
+                getExternalPath(BLOCK_STREAMS_DIR).getParent().toString());
         System.setProperty("hedera.profiles.active", "DEV");
-        if (getExternalPath(LOG4J2_XML).toString().contains("embedded-test")) {
-            try (var ignored =
-                    Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
+        if (isSharedNetwork()) {
+            try (var ignored = Configurator.initialize(null, "")) {
                 // Only initialize logging for the shared embedded network
             }
         }
@@ -95,5 +100,10 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     @Override
     protected EmbeddedNode self() {
         return this;
+    }
+
+    private boolean isSharedNetwork() {
+        final var log4j2ConfigLoc = getExternalPath(LOG4J2_XML).toString();
+        return log4j2ConfigLoc.contains(EMBEDDED_WORKING_DIR) || log4j2ConfigLoc.contains(REPEATABLE_WORKING_DIR);
     }
 }

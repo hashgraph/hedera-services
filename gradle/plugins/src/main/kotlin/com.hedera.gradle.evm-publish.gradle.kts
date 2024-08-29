@@ -19,10 +19,17 @@ plugins {
     id("com.hedera.gradle.maven-publish")
 }
 
+// Publishing tasks are only enabled if we publish to the matching group.
+// Otherwise, Nexus configuration and credentials do not fit.
+val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    enabled = publishingPackageGroup == "com.hedera"
+}
+
 publishing {
     publications {
         named<MavenPublication>("maven") {
-            artifactId = "hedera-evm"
             pom.developers {
                 developer {
                     name = "Hedera Base Team"

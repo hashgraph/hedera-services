@@ -40,15 +40,12 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.linking.GossipLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -113,7 +110,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     private final SyncConfig syncConfig;
-    private final InOrderLinker inOrderLinker;
     private final Shadowgraph shadowgraph;
     private final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
@@ -163,11 +159,10 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param statusActionSubmitter         submits status actions
+     * @param statusActionSubmitter         for submitting updates to the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
-     * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -188,7 +183,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         this.threadManager = Objects.requireNonNull(threadManager);
 
-        inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
@@ -388,7 +382,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
-                                    syncProtocolFactory.build(otherId)))))
+                                    syncProtocolFactory.build(otherId))),
+                            platformContext.getTime()))
                     .build());
         }
     }
@@ -478,7 +473,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * Clear the internal state of the gossip engine.
      */
     private void clear() {
-        inOrderLinker.clear();
         shadowgraph.clear();
     }
 
@@ -501,17 +495,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         stopInput.bindConsumer(ignored -> stop());
         clearInput.bindConsumer(ignored -> clear());
 
-        eventInput.bindConsumer(event -> {
-            final EventImpl linkedEvent = inOrderLinker.linkEvent(event);
-            if (linkedEvent != null) {
-                shadowgraph.addEvent(linkedEvent);
-            }
-        });
-
-        eventWindowInput.bindConsumer(eventWindow -> {
-            inOrderLinker.setEventWindow(eventWindow);
-            shadowgraph.updateEventWindow(eventWindow);
-        });
+        eventInput.bindConsumer(shadowgraph::addEvent);
+        eventWindowInput.bindConsumer(shadowgraph::updateEventWindow);
 
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
         platformStatusInput.bindConsumer(currentPlatformStatus::set);

@@ -322,11 +322,11 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // or a null value, which indicates that the input hash needs not to be recalculated,
         // but loaded from disk. A special case of a task is leaf tasks, they are all of
         // height 1, both input dependencies are null, but they are given a leaf instead. For
-        // these tasks, the hash is calculaded based on leaf content rather than based on input
+        // these tasks, the hash is calculated based on leaf content rather than based on input
         // hashes.
 
         // All tasks also have an output dependency, also a task. When a hash for the task's chunk
-        // is calculated, it is set as a input dependency of that task. Output dependency value
+        // is calculated, it is set as an input dependency of that task. Output dependency value
         // may not be null.
 
         // Default chunk height, from config
@@ -340,7 +340,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
         // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
-        // The result task. It is never executed, but used as an output dependency for
+        // The result task is never executed but used as an output dependency for
         // the root task below. When the root task is done executing, that is it produced
         // a root hash, this hash is set as an input dependency for this result task, where
         // it's read and returned in the end of this method
@@ -403,28 +403,26 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 // clean. No dirty leaves in the remaining stream may affect these tasks
                 if (stack[curRank] != INVALID_PATH) {
                     long curStackPath = stack[curRank];
+                    stack[curRank] = INVALID_PATH;
                     final long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
                     final long curStackChunkNoInRank = (curStackPath - firstPathInRank) / chunkWidth;
-                    final long lastPathInCurStackChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth - 1;
+                    final long firstPathInNextChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth;
                     // Process all tasks starting from "stack" path to the end of the chunk
-                    while (curStackPath < Math.min(curPath, lastPathInCurStackChunk)) {
+                    for (; curStackPath < firstPathInNextChunk; ++curStackPath) {
+                        // It may happen that curPath is actually in the same chunk as stack[curRank].
+                        // In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which
+                        // all existing tasks between curPath and the end of the chunk hang in the tasks map and
+                        // are processed only after the last leaf (in the loop to set null data for all tasks
+                        // remaining in the map), despite these tasks being known to be clear.
+                        if (curStackPath == curPath) {
+                            if (curPath + 1 < firstPathInNextChunk) {
+                                stack[curRank] = curPath + 1;
+                            }
+                            break;
+                        }
                         final ChunkHashTask t = map.remove(curStackPath);
                         assert t != null;
                         t.complete();
-                        curStackPath++;
-                    }
-
-                    //  It may happen that curPath is actually in the same chunk as stack[curRank].
-                    //  In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which all
-                    //  existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
-                    //  processed only after the last leaf (in the loop to set null data for all tasks remaining in the
-                    // map),
-                    //   despite these tasks being known to be clear.
-
-                    if (curPath > curStackPath && curPath < lastPathInCurStackChunk) {
-                        stack[curRank] = curPath + 1;
-                    } else {
-                        stack[curRank] = INVALID_PATH;
                     }
                 }
 
@@ -458,6 +456,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         continue;
                     }
                     if (siblingPath > lastLeafPath) {
+                        // Special case for a tree with one leaf at path 1
                         assert siblingPath == 2;
                         parentTask.setHash((int) (siblingPath - firstSiblingPath), NULL_HASH);
                     } else if ((siblingPath < curPath) && !firstLeaf) {

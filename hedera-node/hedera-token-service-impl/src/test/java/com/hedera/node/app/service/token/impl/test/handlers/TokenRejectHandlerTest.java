@@ -134,7 +134,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void calculateFeesFungibleReject() {
-        final var txn = newTokenReject(ACCOUNT_3333, tokenRefFungible);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, tokenRefFungible);
 
         FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -153,7 +153,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void calculateFeesNonFungibleReject() {
-        final var txn = newTokenReject(ACCOUNT_3333, tokenRefNFT);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, tokenRefNFT);
         FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
@@ -171,7 +171,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void calculateFeesFungibleAndNonFungibleRejects() {
-        final var txn = newTokenReject(ACCOUNT_3333, tokenRefNFT, tokenRefFungible);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, tokenRefNFT, tokenRefFungible);
         FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
@@ -190,7 +190,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void handleExceedsMaxTokenReferences() {
         config = defaultConfig().withValue(LEDGER_TOKEN_REJECTS_MAX_LEN, 1).getOrCreateConfig();
-        final var txn = newTokenReject(ACCOUNT_3333, tokenRefFungible, tokenRefNFT);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, tokenRefFungible, tokenRefNFT);
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
@@ -200,7 +200,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void handleRepeatedTokenReferences() {
-        final var txn = newTokenReject(ACCOUNT_3333, tokenRefFungible, tokenRefFungible);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, tokenRefFungible, tokenRefFungible);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -215,7 +215,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
                         .serialNumber(0)
                         .build())
                 .build();
-        final var txn = newTokenReject(ACCOUNT_3333, invalidNftRef);
+        final var txn = newTokenReject(ACCOUNT_ID_3333, invalidNftRef);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -225,9 +225,9 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void handleRejectsTransactionWithEmptyRejections() {
         final var txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                 .tokenReject(TokenRejectTransactionBody.newBuilder()
-                        .owner(ACCOUNT_3333)
+                        .owner(ACCOUNT_ID_3333)
                         .build())
                 .build();
 

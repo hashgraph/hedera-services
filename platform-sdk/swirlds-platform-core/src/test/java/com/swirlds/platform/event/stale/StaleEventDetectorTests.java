@@ -35,10 +35,10 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -167,22 +167,18 @@ class StaleEventDetectorTests {
             @NonNull final Randotron randotron,
             @NonNull final List<PlatformEvent> events,
             final long ancientThreshold) {
-        final List<EventImpl> eventImpls = new ArrayList<>();
-        for (final PlatformEvent consensusEvent : events) {
-            eventImpls.add(new EventImpl(consensusEvent));
-        }
-
         final EventWindow eventWindow = new EventWindow(
                 randotron.nextPositiveLong(), ancientThreshold, randotron.nextPositiveLong(), BIRTH_ROUND_THRESHOLD);
 
         return new ConsensusRound(
                 mock(AddressBook.class),
-                eventImpls,
-                mock(EventImpl.class),
+                events,
+                mock(PlatformEvent.class),
                 mock(Generations.class),
                 eventWindow,
                 mock(ConsensusSnapshot.class),
-                false);
+                false,
+                Instant.now());
     }
 
     @Test

@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.customfee
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,20 +46,20 @@ public class CustomFixedFeeAssessor {
 
     /**
      * Assesses fixed fees in a custom fee.
-     * @param feeMeta the custom fee metadata for the token
+     * @param token the custom fee metadata for the token
      * @param sender the sender of the transaction, which will be payer for custom fees
      * @param result the assessment result which will be used to create next level of transaction body
      */
     public void assessFixedFees(
-            @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
-        for (final var fee : feeMeta.customFees()) {
+            @NonNull final Token token, @NonNull final AccountID sender, final AssessmentResult result) {
+        for (final var fee : token.customFees()) {
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
                 final var collector = fee.feeCollectorAccountId();
                 if (sender.equals(collector)) {
                     continue;
                 }
                 // This is a top-level fixed fee, not a fallback royalty fee
-                assessFixedFee(feeMeta, sender, fee, result);
+                assessFixedFee(token, sender, fee, result);
             }
         }
     }
@@ -66,21 +67,22 @@ public class CustomFixedFeeAssessor {
     /**
      * Fixed fee can be either a hbar or hts fee. This method assesses the fixed fee and adds the assessed fee to the
      * {@link AssessmentResult}.
-     * @param feeMeta the custom fee metadata for the token
+     *
+     * @param token  the custom fee metadata for the token
      * @param sender the sender of the transaction, which will be payer for custom fees
-     * @param fee the custom fee to be assessed
+     * @param fee    the custom fee to be assessed
      * @param result the assessment result which will be used to create next level of transaction body
      */
     public void assessFixedFee(
-            final CustomFeeMeta feeMeta, final AccountID sender, final CustomFee fee, final AssessmentResult result) {
-        if (isPayerExempt(feeMeta, fee, sender)) {
+            final Token token, final AccountID sender, final CustomFee fee, final AssessmentResult result) {
+        if (isPayerExempt(token, fee, sender)) {
             return;
         }
         final var fixedFeeSpec = fee.fixedFeeOrThrow();
         if (!fixedFeeSpec.hasDenominatingTokenId()) {
             assessHbarFees(sender, fee, result);
         } else {
-            assessHTSFees(sender, feeMeta, fee, result);
+            assessHTSFees(sender, token, fee, result);
         }
     }
 
@@ -110,20 +112,20 @@ public class CustomFixedFeeAssessor {
      * Assesses if the fixed fee is a hts fee and adds the assessed fee debit and credit
      * to the {@link AssessmentResult}.
      * @param sender the sender of the transaction, which will be payer for custom fees
-     * @param chargingTokenMeta the custom fee metadata for the token
+     * @param token token
      * @param htsFee the hts fee to be assessed
      * @param result the assessment result which will be used to create next level of transaction body
      */
     private void assessHTSFees(
             @NonNull final AccountID sender,
-            @NonNull final CustomFeeMeta chargingTokenMeta,
+            @NonNull final Token token,
             @NonNull final CustomFee htsFee,
             @NonNull final AssessmentResult result) {
         final var collector = htsFee.feeCollectorAccountIdOrThrow();
         final var fixedFeeSpec = htsFee.fixedFeeOrThrow();
         final var amount = fixedFeeSpec.amount();
         final var denominatingToken = fixedFeeSpec.denominatingTokenIdOrThrow();
-        adjustHtsFees(result, sender, collector, chargingTokenMeta, amount, denominatingToken);
+        adjustHtsFees(result, sender, collector, token, amount, denominatingToken);
 
         // add all assessed fees for transaction record
         result.addAssessedCustomFee(AssessedCustomFee.newBuilder()

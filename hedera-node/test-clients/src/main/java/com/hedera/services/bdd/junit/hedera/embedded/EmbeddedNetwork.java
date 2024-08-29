@@ -48,9 +48,11 @@ import org.apache.logging.log4j.Logger;
 public class EmbeddedNetwork extends AbstractNetwork {
     private static final Logger log = LogManager.getLogger(EmbeddedNetwork.class);
 
-    private static final String DEFAULT_WORKING_DIR = "embedded";
-    private static final String EMBEDDED_HOST = "127.0.0.1";
-    private static final String DEFAULT_NAME = DEFAULT_WORKING_DIR.toUpperCase();
+    private static final String FAKE_HOST = "127.0.0.1";
+    public static final String EMBEDDED_WORKING_DIR = "embedded";
+    private static final String EMBEDDED_NAME = EMBEDDED_WORKING_DIR.toUpperCase();
+    public static final String REPEATABLE_WORKING_DIR = "repeatable";
+    private static final String REPEATABLE_NAME = REPEATABLE_WORKING_DIR.toUpperCase();
 
     private final String configTxt;
     private final EmbeddedNode embeddedNode;
@@ -64,11 +66,13 @@ public class EmbeddedNetwork extends AbstractNetwork {
      * @return the embedded network
      */
     public static HederaNetwork newSharedNetwork() {
-        return new EmbeddedNetwork(DEFAULT_NAME, DEFAULT_WORKING_DIR);
+        return repeatableModeRequested()
+                ? new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR)
+                : new EmbeddedNetwork(EMBEDDED_NAME, EMBEDDED_WORKING_DIR);
     }
 
     public EmbeddedNetwork(@NonNull final String name, @NonNull final String workingDir) {
-        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0))));
+        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, 0, 0))));
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
@@ -77,8 +81,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
         this.configTxt = configTxtForLocal(
                 name(),
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
-                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
-                                classicMetadataFor(nodeId, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0)))
+                        .<HederaNode>mapToObj(nodeId ->
+                                new EmbeddedNode(classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0)))
                         .toList(),
                 0,
                 0);

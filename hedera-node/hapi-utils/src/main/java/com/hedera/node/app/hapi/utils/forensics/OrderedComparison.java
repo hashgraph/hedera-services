@@ -35,6 +35,9 @@ import java.util.function.Predicate;
 
 /** Provides helpers to compare and analyze record streams. */
 public class OrderedComparison {
+    private static final Predicate<RecordStreamEntry> DEFAULT_ENTRY_INCLUSION_TEST = e -> true;
+    private static final Predicate<String> DEFAULT_FILENAME_INCLUSION_TEST = filename -> true;
+
     private OrderedComparison() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -46,12 +49,11 @@ public class OrderedComparison {
      * time and same source transaction in both streams, but differed in some way (e.g., their
      * receipt status).
      *
-     * @param firstStreamDir the first record stream
-     * @param secondStreamDir the second record stream
+     * @param firstStreamDir the directory containing the expected record stream files
+     * @param secondStreamDir the directory containing the actual record stream files
      * @param recordDiffSummarizer if present, a summarizer for record diffs
      * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
-     * @throws IOException if any of the record stream files cannot be read or parsed
      * @throws IllegalArgumentException if the directories contain misaligned record streams
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
@@ -61,7 +63,8 @@ public class OrderedComparison {
             @Nullable final Predicate<String> maybeInclusionTest,
             @Nullable final String maybeInclusionDescription)
             throws IOException {
-        final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
+        final Predicate<String> inclusionTest =
+                maybeInclusionTest == null ? DEFAULT_FILENAME_INCLUSION_TEST : maybeInclusionTest;
         final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
         System.out.println("Parsing stream @ " + firstStreamDir + " (including " + inclusionDescription + ")");
         final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
@@ -69,7 +72,31 @@ public class OrderedComparison {
         System.out.println("Parsing stream @ " + secondStreamDir + " (including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        final var compareList = getCompareList(firstEntries, secondEntries);
+        // No inclusion test is needed here because the inclusion test has already been applied (during parsing)
+        return findDifferencesBetweenV6(firstEntries, secondEntries, recordDiffSummarizer, null);
+    }
+
+    /**
+     * Like {#findDifferencesBetweenV6(String, String, RecordDiffSummarizer, Predicate, String)}, but for
+     * in-memory {@link RecordStreamEntry} objects.
+     *
+     * @param firstEntries the first record stream (the expected records)
+     * @param secondEntries the second record stream (the records being tested)
+     * @param recordDiffSummarizer if present, a summarizer for record diffs
+     * @param maybeInclusionTest if set, a consumer receiving the consensus timestamp of each entry
+     * @return the stream diff
+     * @throws IllegalArgumentException if the record streams are misaligned
+     */
+    public static List<DifferingEntries> findDifferencesBetweenV6(
+            @NonNull final List<RecordStreamEntry> firstEntries,
+            @NonNull final List<RecordStreamEntry> secondEntries,
+            @Nullable final RecordDiffSummarizer recordDiffSummarizer,
+            @Nullable final Predicate<RecordStreamEntry> maybeInclusionTest) {
+        final var inclusionTest = maybeInclusionTest == null ? DEFAULT_ENTRY_INCLUSION_TEST : maybeInclusionTest;
+        final var filteredFirst = firstEntries.stream().filter(inclusionTest).toList();
+        final var filteredSecond = secondEntries.stream().filter(inclusionTest).toList();
+
+        final var compareList = getCompareList(filteredFirst, filteredSecond);
         return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
@@ -159,7 +186,8 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             firstEntry,
                             null,
-                            "No modular record found at " + firstEntry.consensusTime() + " for transactionID : "
+                            "No first/test stream record found at " + firstEntry.consensusTime()
+                                    + " for transactionID : "
                                     + firstEntry.txnRecord().getTransactionID() + " transBody : " + firstEntry.body()));
                     continue;
                 }
@@ -167,11 +195,11 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             null,
                             secondEntries.get(i),
-                            "Additional modular record found at "
+                            "Additional first/test stream record found at "
                                     + secondEntries.get(i).consensusTime() + " for transactionID : "
                                     + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
-                                    + secondEntries.get(i).body()
-                                    + "\n -> \n" + secondEntries.get(i).txnRecord()));
+                                    + secondEntries.get(i).body() + "\n -> \n"
+                                    + secondEntries.get(i).txnRecord()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);

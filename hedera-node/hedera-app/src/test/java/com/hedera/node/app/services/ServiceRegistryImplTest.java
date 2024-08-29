@@ -25,9 +25,9 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.spi.fixtures.TestService;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,5 +81,17 @@ final class ServicesRegistryImplTest {
         final var registrations = registry.registrations();
         assertThat(registrations.stream().map(r -> r.service().getServiceName()))
                 .containsExactly("A", "B", "C");
+    }
+
+    @Test
+    void subRegistryContainsOnlyRequestedServices() {
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
+        registry.register(TestService.newBuilder().name("A").build());
+        registry.register(TestService.newBuilder().name("B").build());
+        registry.register(TestService.newBuilder().name("C").build());
+
+        final var subRegistry = registry.subRegistryFor("A", "C");
+        assertThat(subRegistry.registrations().stream().map(r -> r.service().getServiceName()))
+                .containsExactly("A", "C");
     }
 }

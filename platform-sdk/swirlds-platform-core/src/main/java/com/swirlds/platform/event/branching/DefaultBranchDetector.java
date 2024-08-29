@@ -20,7 +20,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class DefaultBranchDetector implements BranchDetector {
     /**
      * The most recent non-ancient events for each node (not present or null if there are none).
      */
-    private final Map<NodeId, EventDescriptor> mostRecentEvents = new HashMap<>();
+    private final Map<NodeId, EventDescriptorWrapper> mostRecentEvents = new HashMap<>();
 
     /**
      * Create a new branch detector.
@@ -75,8 +75,8 @@ public class DefaultBranchDetector implements BranchDetector {
         }
 
         final NodeId creator = event.getCreatorId();
-        final EventDescriptor previousEvent = mostRecentEvents.get(creator);
-        final EventDescriptor selfParent = event.getSelfParent();
+        final EventDescriptorWrapper previousEvent = mostRecentEvents.get(creator);
+        final EventDescriptorWrapper selfParent = event.getSelfParent();
 
         final boolean branching = !(previousEvent == null || previousEvent.equals(selfParent));
 
@@ -93,7 +93,7 @@ public class DefaultBranchDetector implements BranchDetector {
         currentEventWindow = eventWindow;
 
         for (final NodeId nodeId : nodes) {
-            final EventDescriptor mostRecentEvent = mostRecentEvents.get(nodeId);
+            final EventDescriptorWrapper mostRecentEvent = mostRecentEvents.get(nodeId);
             if (mostRecentEvent != null && eventWindow.isAncient(mostRecentEvent)) {
                 // Event is ancient, forget it.
                 mostRecentEvents.put(nodeId, null);

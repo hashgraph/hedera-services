@@ -35,9 +35,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -55,7 +54,6 @@ import org.apache.logging.log4j.Logger;
 public class ThrottleServiceManager {
     private static final Logger log = LogManager.getLogger(ThrottleServiceManager.class);
 
-    private final ConfigProvider configProvider;
     private final ThrottleParser throttleParser;
     private final ThrottleAccumulator ingestThrottle;
     private final ThrottleAccumulator backendThrottle;
@@ -63,7 +61,6 @@ public class ThrottleServiceManager {
 
     @Inject
     public ThrottleServiceManager(
-            @NonNull final ConfigProvider configProvider,
             @NonNull final ThrottleParser throttleParser,
             @NonNull @IngestThrottle final ThrottleAccumulator ingestThrottle,
             @NonNull @BackendThrottle final ThrottleAccumulator backendThrottle,
@@ -71,7 +68,6 @@ public class ThrottleServiceManager {
         this.throttleParser = throttleParser;
         this.ingestThrottle = requireNonNull(ingestThrottle);
         this.backendThrottle = requireNonNull(backendThrottle);
-        this.configProvider = requireNonNull(configProvider);
         this.congestionMultipliers = requireNonNull(congestionMultipliers);
     }
 
@@ -86,7 +82,7 @@ public class ThrottleServiceManager {
      * @param state the state to use
      * @param throttleDefinitions the serialized throttle definitions
      */
-    public void init(@NonNull final HederaState state, @NonNull final Bytes throttleDefinitions) {
+    public void init(@NonNull final State state, @NonNull final Bytes throttleDefinitions) {
         requireNonNull(state);
         // Apply configuration for gas throttles
         applyGasConfig();
@@ -106,7 +102,7 @@ public class ThrottleServiceManager {
      *
      * @param state the state to save to
      */
-    public void saveThrottleSnapshotsAndCongestionLevelStartsTo(@NonNull final HederaState state) {
+    public void saveThrottleSnapshotsAndCongestionLevelStartsTo(@NonNull final State state) {
         requireNonNull(state);
         final var serviceStates = state.getWritableStates(CongestionThrottleService.NAME);
         saveThrottleSnapshotsTo(serviceStates);
@@ -212,6 +208,16 @@ public class ThrottleServiceManager {
                 serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
         final var usageSnapshots = requireNonNull(usageSnapshotsState.get());
         safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
+        if (usageSnapshots.hasGasThrottle()) {
+            backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
+        }
+    }
+
+    public void resetThrottlesUnconditionally(@NonNull final ReadableStates serviceStates) {
+        final ReadableSingletonState<ThrottleUsageSnapshots> usageSnapshotsState =
+                serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+        final var usageSnapshots = requireNonNull(usageSnapshotsState.get());
+        resetUnconditionally(backendThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
         if (usageSnapshots.hasGasThrottle()) {
             backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
         }

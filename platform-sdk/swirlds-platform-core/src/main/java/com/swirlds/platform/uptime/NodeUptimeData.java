@@ -16,65 +16,21 @@
 
 package com.swirlds.platform.uptime;
 
-import static com.swirlds.platform.uptime.UptimeDataImpl.NO_ROUND;
+import static com.swirlds.platform.uptime.UptimeData.NO_ROUND;
 
-import com.swirlds.common.FastCopyable;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 
 /**
  * Uptime data about a particular node.
  */
-class NodeUptimeData implements FastCopyable, SelfSerializable {
+class NodeUptimeData {
 
     private long lastEventRound = NO_ROUND;
     private Instant lastEventTime;
     private long lastJudgeRound = NO_ROUND;
     private Instant lastJudgeTime;
-
-    private static final long CLASS_ID = 0xa0893b5c8dc333d4L;
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-    }
-
-    /**
-     * Zero-arg constructor required by SelfSerializable interface.
-     */
-    public NodeUptimeData() {}
-
-    /**
-     * Copy constructor.
-     *
-     * @param that the object to copy
-     */
-    private NodeUptimeData(@NonNull final NodeUptimeData that) {
-        this.lastEventRound = that.lastEventRound;
-        this.lastEventTime = that.lastEventTime;
-        this.lastJudgeRound = that.lastJudgeRound;
-        this.lastJudgeTime = that.lastJudgeTime;
-    }
-
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(lastEventRound);
-        out.writeInstant(lastEventTime);
-        out.writeLong(lastJudgeRound);
-        out.writeInstant(lastJudgeTime);
-    }
-
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        lastEventRound = in.readLong();
-        lastEventTime = in.readInstant();
-        lastJudgeRound = in.readLong();
-        lastJudgeTime = in.readInstant();
-    }
 
     /**
      * Get the round number of the most recently observed consensus event.
@@ -152,30 +108,5 @@ class NodeUptimeData implements FastCopyable, SelfSerializable {
     public NodeUptimeData setLastJudgeTime(@Nullable final Instant lastJudgeTime) {
         this.lastJudgeTime = lastJudgeTime;
         return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public NodeUptimeData copy() {
-        return new NodeUptimeData(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
     }
 }

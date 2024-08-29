@@ -21,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -104,7 +104,7 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
             for (int node = 0; node < addressBook.getSize(); node++) {
                 manager.handlePostconsensusSignatureTransaction(
                         addressBook.getNodeId(node),
-                        StateSignaturePayload.newBuilder()
+                        StateSignatureTransaction.newBuilder()
                                 .round(round)
                                 .signature(buildFakeSignatureBytes(
                                         addressBook

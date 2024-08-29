@@ -16,18 +16,18 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -44,12 +44,12 @@ public class RandomEventUtils {
      * Similar to randomEvent, but the timestamp used for the event's creation timestamp
      * is provided by an argument.
      */
-    public static IndexedEvent randomEventWithTimestamp(
+    public static EventImpl randomEventWithTimestamp(
             final Random random,
             final NodeId creatorId,
             final Instant timestamp,
             final long birthRound,
-            final ConsensusTransactionImpl[] transactions,
+            final TransactionWrapper[] transactions,
             final EventImpl selfParent,
             final EventImpl otherParent,
             final boolean fakeHash) {
@@ -60,7 +60,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
+        return new EventImpl(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
     }
 
     /**
@@ -72,32 +72,29 @@ public class RandomEventUtils {
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
             final long birthRound,
-            @Nullable final ConsensusTransactionImpl[] transactions,
+            @Nullable final TransactionWrapper[] transactions,
             @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent,
             final boolean fakeHash) {
 
-        final EventDescriptor selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
+        final EventDescriptorWrapper selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptor(
-                        selfParent.getBaseHash(),
-                        selfParent.getCreatorId(),
-                        selfParent.getGeneration(),
-                        selfParent.getBaseEvent().getBirthRound());
-        final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
+                : new EventDescriptorWrapper(new EventDescriptor(
+                        selfParent.getBaseHash().getBytes(),
+                        selfParent.getCreatorId().id(),
+                        selfParent.getBaseEvent().getBirthRound(),
+                        selfParent.getGeneration()));
+        final EventDescriptorWrapper otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptor(
-                        otherParent.getBaseHash(),
-                        otherParent.getCreatorId(),
-                        otherParent.getGeneration(),
-                        otherParent.getBaseEvent().getBirthRound());
+                : new EventDescriptorWrapper(new EventDescriptor(
+                        otherParent.getBaseHash().getBytes(),
+                        otherParent.getCreatorId().id(),
+                        otherParent.getBaseEvent().getBirthRound(),
+                        otherParent.getGeneration()));
 
-        final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
+        final List<EventTransaction> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
-            Stream.of(transactions)
-                    .map(ConsensusTransactionImpl::getPayload)
-                    .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
-                    .forEach(convertedTransactions::add);
+            Stream.of(transactions).map(TransactionWrapper::getTransaction).forEach(convertedTransactions::add);
         }
         final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 new BasicSoftwareVersion(1),
@@ -111,7 +108,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashEvent(unsignedEvent);
+            new PbjStreamHasher().hashUnsignedEvent(unsignedEvent);
         }
         return unsignedEvent;
     }

@@ -34,11 +34,12 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
+import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -96,7 +97,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * The last event created by this node.
      */
-    private EventDescriptor lastSelfEvent;
+    private EventDescriptorWrapper lastSelfEvent;
 
     /**
      * The timestamp of the last event created by this node.
@@ -119,7 +120,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * Event hasher for unsigned events.
      */
-    private final StatefulEventHasher statefulEventHasher = new StatefulEventHasher();
+    private final UnsignedEventHasher eventHasher;
 
     /**
      * Create a new tipset event creator.
@@ -169,6 +170,7 @@ public class TipsetEventCreator implements EventCreator {
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
+        this.eventHasher = new PbjStreamHasher();
     }
 
     /**
@@ -187,12 +189,12 @@ public class TipsetEventCreator implements EventCreator {
         final boolean selfEvent = eventCreator.equals(selfId);
 
         if (selfEvent) {
-            if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
+            if (lastSelfEvent == null || lastSelfEvent.eventDescriptor().generation() < event.getGeneration()) {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = event.getDescriptor();
                 lastSelfEventCreationTime = event.getTimeCreated();
-                lastSelfEventTransactionCount = event.getPayloadCount();
+                lastSelfEventTransactionCount = event.getTransactionCount();
                 childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
@@ -200,8 +202,8 @@ public class TipsetEventCreator implements EventCreator {
             }
         }
 
-        final EventDescriptor descriptor = event.getDescriptor();
-        final List<EventDescriptor> parentDescriptors = event.getAllParents();
+        final EventDescriptorWrapper descriptor = event.getDescriptor();
+        final List<EventDescriptorWrapper> parentDescriptors = event.getAllParents();
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
 
@@ -267,14 +269,14 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Nullable
     private UnsignedEvent createEventByOptimizingAdvancementWeight() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
+        final List<EventDescriptorWrapper> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
-        EventDescriptor bestOtherParent = null;
+        EventDescriptorWrapper bestOtherParent = null;
         TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
-        for (final EventDescriptor otherParent : possibleOtherParents) {
+        for (final EventDescriptorWrapper otherParent : possibleOtherParents) {
 
-            final List<EventDescriptor> parents = new ArrayList<>(2);
+            final List<EventDescriptorWrapper> parents = new ArrayList<>(2);
             parents.add(otherParent);
             if (lastSelfEvent != null) {
                 parents.add(lastSelfEvent);
@@ -301,7 +303,7 @@ public class TipsetEventCreator implements EventCreator {
             return buildAndProcessEvent(null);
         }
 
-        tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
+        tipsetMetrics.getTipsetParentMetric(bestOtherParent.creator()).cycle();
         return buildAndProcessEvent(bestOtherParent);
     }
 
@@ -312,18 +314,18 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Nullable
     private UnsignedEvent createEventToReduceSelfishness() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
-        final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
+        final List<EventDescriptorWrapper> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
+        final List<EventDescriptorWrapper> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
         // Choose a random ignored node, weighted by how much it is currently being ignored.
 
         // First, figure out who is an ignored node and sum up all selfishness scores.
         int selfishnessSum = 0;
         final List<Integer> selfishnessScores = new ArrayList<>(possibleOtherParents.size());
-        for (final EventDescriptor possibleIgnoredNode : possibleOtherParents) {
-            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.getCreator());
+        for (final EventDescriptorWrapper possibleIgnoredNode : possibleOtherParents) {
+            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.creator());
 
-            final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
+            final List<EventDescriptorWrapper> theoreticalParents = new ArrayList<>(2);
             theoreticalParents.add(possibleIgnoredNode);
             if (lastSelfEvent == null) {
                 throw new IllegalStateException("lastSelfEvent is null");
@@ -368,8 +370,8 @@ public class TipsetEventCreator implements EventCreator {
         for (int i = 0; i < ignoredNodes.size(); i++) {
             runningSum += selfishnessScores.get(i);
             if (choice < runningSum) {
-                final EventDescriptor ignoredNode = ignoredNodes.get(i);
-                tipsetMetrics.getPityParentMetric(ignoredNode.getCreator()).cycle();
+                final EventDescriptorWrapper ignoredNode = ignoredNodes.get(i);
+                tipsetMetrics.getPityParentMetric(ignoredNode.creator()).cycle();
                 return buildAndProcessEvent(ignoredNode);
             }
         }
@@ -384,8 +386,8 @@ public class TipsetEventCreator implements EventCreator {
      * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
      */
-    private UnsignedEvent buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
-        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
+    private UnsignedEvent buildAndProcessEvent(@Nullable final EventDescriptorWrapper otherParent) {
+        final List<EventDescriptorWrapper> parentDescriptors = new ArrayList<>(2);
         if (lastSelfEvent != null) {
             parentDescriptors.add(lastSelfEvent);
         }
@@ -395,7 +397,7 @@ public class TipsetEventCreator implements EventCreator {
 
         final UnsignedEvent event = assembleEventObject(otherParent);
 
-        final EventDescriptor descriptor = event.getDescriptor();
+        final EventDescriptorWrapper descriptor = event.getDescriptor();
         tipsetTracker.addEvent(descriptor, parentDescriptors);
         final TipsetAdvancementWeight advancementWeight =
                 tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
@@ -409,7 +411,7 @@ public class TipsetEventCreator implements EventCreator {
 
         lastSelfEvent = descriptor;
         lastSelfEventCreationTime = event.getTimeCreated();
-        lastSelfEventTransactionCount = event.getTransactions().length;
+        lastSelfEventTransactionCount = event.getTransactions().size();
 
         return event;
     }
@@ -421,7 +423,7 @@ public class TipsetEventCreator implements EventCreator {
      * @return the event
      */
     @NonNull
-    private UnsignedEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
+    private UnsignedEvent assembleEventObject(@Nullable final EventDescriptorWrapper otherParent) {
         final Instant now = time.now();
         final Instant timeCreated;
         if (lastSelfEvent == null) {
@@ -441,7 +443,7 @@ public class TipsetEventCreator implements EventCreator {
                         : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
-        statefulEventHasher.hashEvent(event);
+        eventHasher.hashUnsignedEvent(event);
 
         return event;
     }
@@ -450,11 +452,11 @@ public class TipsetEventCreator implements EventCreator {
      * Get the creator of a descriptor, handle null appropriately.
      */
     @Nullable
-    private static NodeId getCreator(@Nullable final EventDescriptor descriptor) {
+    private static NodeId getCreator(@Nullable final EventDescriptorWrapper descriptor) {
         if (descriptor == null) {
             return CREATOR_ID_UNDEFINED;
         } else {
-            return descriptor.getCreator();
+            return descriptor.creator();
         }
     }
 
@@ -480,12 +482,12 @@ public class TipsetEventCreator implements EventCreator {
         sb.append(tipsetWeightCalculator);
 
         sb.append("Childless events:");
-        final List<EventDescriptor> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
+        final List<EventDescriptorWrapper> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
         if (childlessEvents.isEmpty()) {
             sb.append(" none\n");
         } else {
             sb.append("\n");
-            for (final EventDescriptor event : childlessEvents) {
+            for (final EventDescriptorWrapper event : childlessEvents) {
                 final Tipset tipset = tipsetTracker.getTipset(event);
                 sb.append("  - ").append(event).append(" ").append(tipset).append("\n");
             }

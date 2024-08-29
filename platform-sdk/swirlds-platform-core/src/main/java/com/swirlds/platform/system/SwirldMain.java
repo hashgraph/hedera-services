@@ -18,7 +18,6 @@ package com.swirlds.platform.system;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -47,7 +46,7 @@ public interface SwirldMain extends Runnable {
      *
      * <p>
      * Any changes necessary to initialize {@link SwirldState} should be made in
-     * {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
+     * {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
      * </p>
      *
      * @param platform the Platform that instantiated this SwirldMain

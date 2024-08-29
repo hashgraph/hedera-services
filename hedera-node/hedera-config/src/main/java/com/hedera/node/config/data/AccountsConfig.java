@@ -16,9 +16,13 @@
 
 package com.hedera.node.config.data;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @ConfigData("accounts")
 public record AccountsConfig(
@@ -36,6 +40,18 @@ public record AccountsConfig(
         @ConfigProperty(defaultValue = "2") @NetworkProperty long treasury,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeOnDisk,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean releaseAliasAfterDeletion,
-        @ConfigProperty(defaultValue = "40000000") @NetworkProperty long maxNumber,
+        @ConfigProperty(defaultValue = "20000000") @NetworkProperty long maxNumber,
         @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") @NetworkProperty boolean blocklistEnabled,
-        @ConfigProperty(value = "blocklist.path", defaultValue = "") @NetworkProperty String blocklistResource) {}
+        @ConfigProperty(value = "blocklist.path", defaultValue = "") @NetworkProperty String blocklistResource) {
+
+    /**
+     * Check if the given account is a superuser.
+     * @param accountId the account to check
+     * @return true if the account is a superuser, false otherwise
+     */
+    public boolean isSuperuser(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
+        final var accountNum = accountId.accountNumOrElse(0L);
+        return accountNum == treasury || accountNum == systemAdmin;
+    }
+}

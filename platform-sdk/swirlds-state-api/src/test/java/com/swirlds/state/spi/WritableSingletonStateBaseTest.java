@@ -16,12 +16,25 @@
 
 package com.swirlds.state.spi;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 
+import java.time.Duration;
+import java.util.SplittableRandom;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
 
@@ -41,7 +54,9 @@ public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
                     .isInstanceOf(NullPointerException.class);
         }
 
-        /** Make sure the constructor is holding onto the state key properly */
+        /**
+         * Make sure the constructor is holding onto the state key properly
+         */
         @Test
         @DisplayName("The state key must match what was provided in the constructor")
         void testStateKey() {
@@ -63,6 +78,54 @@ public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
             //noinspection DataFlowIssue
             assertThatThrownBy(() -> new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, null))
                     .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("get and put are thread safe")
+    class GetAndPutAreThreadSafe {
+        private static final int STRING_LENGTH = 16;
+        private static final int NUM_UNIQUE_STRINGS = 1000;
+        private static final Duration TEST_LENGTH = Duration.ofSeconds(1);
+
+        @Test
+        @DisplayName("last put is always the committed value")
+        void lastPutIsAlwaysCommittedValue() {
+            final var state = createState();
+            final var random = new SplittableRandom();
+            final var values = IntStream.range(0, NUM_UNIQUE_STRINGS)
+                    .mapToObj(i -> {
+                        final var bytes = new byte[STRING_LENGTH];
+                        random.nextBytes(bytes);
+                        return new String(bytes);
+                    })
+                    .toList();
+            final var done = new AtomicBoolean();
+            final var nextValue = new AtomicInteger();
+            final var putFuture = runAsync(() -> {
+                while (!done.get()) {
+                    final var value = values.get(nextValue.getAndIncrement() % NUM_UNIQUE_STRINGS);
+                    state.put(value);
+                    state.commit();
+                    // Confirm that concurrent get() calls don't corrupt the committed modification
+                    assertThat(backingStore.get()).isEqualTo(value);
+                }
+            });
+            final var getFuture = runAsync(() -> {
+                while (!done.get()) {
+                    state.get();
+                }
+            });
+            try {
+                CompletableFuture.allOf(putFuture, getFuture)
+                        .orTimeout(TEST_LENGTH.toMillis(), TimeUnit.MILLISECONDS)
+                        .join();
+            } catch (Exception ignore) {
+                // Always times out
+            }
+            done.set(true);
+            getFuture.join();
+            putFuture.join();
         }
     }
 
@@ -178,5 +241,36 @@ public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
         assertThat(state.get()).isEqualTo(ESTONIA);
         backingStore.set(FRANCE);
         assertThat(state.get()).isEqualTo(ESTONIA); // Does not see change
+    }
+
+    @Nested
+    @DisplayName("with registered listeners")
+    @ExtendWith(MockitoExtension.class)
+    final class WithRegisteredListeners {
+        @Mock
+        private SingletonChangeListener<String> firstListener;
+
+        @Mock
+        private SingletonChangeListener<String> secondListener;
+
+        private final WritableSingletonStateBase<String> subject = createState();
+
+        @BeforeEach
+        void setUp() {
+            subject.registerListener(firstListener);
+            subject.registerListener(secondListener);
+        }
+
+        @Test
+        @DisplayName("all listeners are notified of puts")
+        void allAreNotifiedOfPopsAndAddsInOrder() {
+            final var inOrder = inOrder(firstListener, secondListener);
+
+            subject.put("Dragonfruit");
+            subject.commit();
+
+            inOrder.verify(firstListener).singletonUpdateChange("Dragonfruit");
+            inOrder.verify(secondListener).singletonUpdateChange("Dragonfruit");
+        }
     }
 }

@@ -329,7 +329,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> usageGiven(query, account));
     }
 
-    public FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Account account) {
+    private FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Account account) {
         if (account == null) {
             return CONSTANT_FEE_DATA;
         }

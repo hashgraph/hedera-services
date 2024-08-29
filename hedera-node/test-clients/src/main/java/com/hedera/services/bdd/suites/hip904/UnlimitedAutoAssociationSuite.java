@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -32,17 +33,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCloseEnough;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChild;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
@@ -50,17 +56,28 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite.TREASURY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -70,7 +87,8 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 @DisplayName("UnlimitedAutoAssociationSuite")
 @Tag(TOKEN)
-class UnlimitedAutoAssociationSuite {
+public class UnlimitedAutoAssociationSuite {
+    public static final int UNLIMITED_AUTO_ASSOCIATION_SLOTS = -1;
     private static final double expectedCreateHollowAccountFee = 0.0472956012;
     private static final double transferFee = 0.00189;
     private static final double expectedFeeForOneAssociation = 0.05;
@@ -81,8 +99,64 @@ class UnlimitedAutoAssociationSuite {
     private static final String CAROL = "CAROL";
     private static final String DAVE = "DAVE";
 
-    @DisplayName("Auto-associate tokens will create a child record for association")
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
+    @DisplayName("auto-association through HTS system contract changes gas cost")
+    final Stream<DynamicTest> autoAssociationThroughSystemContractChangesGasCost(
+            @Contract(contract = "HTSCalls", creationGas = 4_000_000) SpecContract htsCallsContract,
+            @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken token,
+            @Account SpecAccount preAssociated,
+            @Account(maxAutoAssociations = 1) SpecAccount autoAssociated) {
+        // Note we have a 20% markup on doing HAPI operations through EVM
+        final var expectedUsdAssociationFee = 0.05 * 1.2;
+        final var gasWithoutAutoAssociation = new AtomicLong();
+        final var gasWithAutoAssociation = new AtomicLong();
+        return hapiTest(
+                // To make it trivial to compare actual gas costs refund all unused gas in this test
+                overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                preAssociated.associateTokens(token),
+                token.treasury().authorizeContract(htsCallsContract),
+                // Make two calls, the first with no auto-association and the second with auto-association
+                htsCallsContract
+                        .call("transferNFTCall", token, token.treasury(), preAssociated, 1L)
+                        .andAssert(txn -> txn.via("noAutoAssociation").gas(1_000_000)),
+                htsCallsContract
+                        .call("transferNFTCall", token, token.treasury(), autoAssociated, 2L)
+                        .andAssert(txn -> txn.via("autoAssociation").gas(1_000_000)),
+                // Look up their gas used
+                getTxnRecord("noAutoAssociation")
+                        .exposingTo(txnRecord -> gasWithoutAutoAssociation.set(
+                                txnRecord.getContractCallResult().getGasUsed())),
+                getTxnRecord("autoAssociation")
+                        .exposingTo(txnRecord -> gasWithAutoAssociation.set(
+                                txnRecord.getContractCallResult().getGasUsed())),
+                // Verify that the gas difference is consistent with the expected auto-association fee
+                withOpContext((spec, opLog) -> {
+                    final var gasDiff = gasWithAutoAssociation.get() - gasWithoutAutoAssociation.get();
+                    // Convert to USD by multiplying the gas difference by the price in thousandths of a
+                    // tinycent from the fee schedule; and then dividing by 1e13 to convert to USD
+                    final var approxUsdDiff = (1.0
+                                    * gasDiff
+                                    * spec.fees()
+                                            .getCurrentOpFeeData()
+                                            .get(ContractCall)
+                                            .get(DEFAULT)
+                                            .getServicedata()
+                                            .getGas()
+                                    / 1000
+                                    / TINY_PARTS_PER_WHOLE)
+                            / 100.0;
+                    assertCloseEnough(
+                            expectedUsdAssociationFee,
+                            approxUsdDiff,
+                            // Allow at most one percent deviation from expected
+                            1.0,
+                            "USD value of gas difference",
+                            "auto-association fee");
+                }));
+    }
+
     @HapiTest
+    @DisplayName("Auto-associate tokens do not require a child dispatch")
     final Stream<DynamicTest> autoAssociateTokensHappyPath() {
         final String tokenA = "tokenA";
         final String tokenB = "tokenB";
@@ -110,7 +184,7 @@ class UnlimitedAutoAssociationSuite {
                         .via(transferFungible),
                 getTxnRecord(transferFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasChildRecordCount(0)
                         .hasNewTokenAssociation(tokenA, secondUser)
                         .logged(),
                 // Transfer NFT
@@ -119,7 +193,7 @@ class UnlimitedAutoAssociationSuite {
                         .via(transferNonFungible),
                 getTxnRecord(transferNonFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasChildRecordCount(0)
                         .hasNewTokenAssociation(tokenB, secondUser)
                         .logged(),
                 getAccountInfo(secondUser)
@@ -128,6 +202,51 @@ class UnlimitedAutoAssociationSuite {
                 // Total fee should include  a token association fee ($0.05) and CryptoTransfer fee ($0.001)
                 validateChargedUsdWithChild(transferFungible, 0.05 + 0.001, 0.1),
                 validateChargedUsdWithChild(transferNonFungible, 0.05 + 0.001, 0.1));
+    }
+
+    @HapiTest
+    @DisplayName("Auto-association with insufficient payer balance fails")
+    final Stream<DynamicTest> autoAssociationWithInsufficientPayerBalanceFails(
+            @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken token) {
+        final var insufficientPayerBalance = new AtomicLong();
+        return hapiTest(
+                token.getInfo(),
+                cryptoCreate("aReceiver").maxAutomaticTokenAssociations(1),
+                cryptoCreate("bReceiver").maxAutomaticTokenAssociations(1),
+                // Create a payer with just $0.09 balance, enough to afford just one auto-association
+                withOpContext((spec, opLog) -> insufficientPayerBalance.set(
+                        spec.ratesProvider().toTbWithActiveRates(9 * TINY_PARTS_PER_WHOLE))),
+                sourcing(() -> cryptoCreate("payer").balance(insufficientPayerBalance.get())),
+                cryptoTransfer(
+                                movingUnique(token.name(), 1L)
+                                        .between(token.treasury().name(), "aReceiver"),
+                                movingUnique(token.name(), 2L)
+                                        .between(token.treasury().name(), "bReceiver"))
+                        .payingWith("payer")
+                        .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE),
+                token.serialNo(1L).assertOwnerIs(token.treasury()),
+                token.serialNo(2L).assertOwnerIs(token.treasury()));
+    }
+
+    @HapiTest
+    @DisplayName("auto-association through HTS system contract does not charge dispatch payer")
+    final Stream<DynamicTest> autoAssociationThroughSystemContractChangesGasCost(
+            @Contract(contract = "HTSCalls", creationGas = 4_000_000) SpecContract htsCallsContract,
+            @NonFungibleToken(numPreMints = 1) SpecNonFungibleToken token,
+            @Account(maxAutoAssociations = 1) SpecAccount autoAssociated) {
+        return hapiTest(
+                token.treasury().authorizeContract(htsCallsContract),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, htsCallsContract.name(), ONE_HUNDRED_HBARS)),
+                htsCallsContract
+                        .getInfo()
+                        .andAssert(query -> query.has(contractWith().balance(ONE_HUNDRED_HBARS))),
+                htsCallsContract
+                        .call("transferNFTCall", token, token.treasury(), autoAssociated, 1L)
+                        .andAssert(txn -> txn.via("autoAssociation").gas(1_000_000)),
+                getTxnRecord("autoAssociation").andAllChildRecords().logged(),
+                htsCallsContract
+                        .getInfo()
+                        .andAssert(query -> query.has(contractWith().balance(ONE_HUNDRED_HBARS))));
     }
 
     @DisplayName("Hollow account creation has correct auto associations")
@@ -143,7 +262,7 @@ class UnlimitedAutoAssociationSuite {
         final var hollowAccountTxn = "hollowAccountTxn";
         return hapiTest(
                 newKeyNamed(hollowKey).shape(SECP_256K1_SHAPE),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 tokenCreate(tokenA)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(10L)
@@ -191,7 +310,7 @@ class UnlimitedAutoAssociationSuite {
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowKey, id))
                                 .logged())),
                 // Transfer some hbars to the hollow account so that it could pay the next transaction
-                cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowKey)),
+                cryptoTransfer(movingHbar(ONE_HBAR).between(TREASURY, hollowKey)),
                 // Send transfer to complete the hollow account
                 cryptoTransfer(moving(1, tokenA).between(hollowKey, TREASURY))
                         .payingWith(hollowKey)
@@ -218,7 +337,7 @@ class UnlimitedAutoAssociationSuite {
         return hapiTest(
                 newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                 newKeyNamed(MULTI_KEY),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 // Create NFT1
                 tokenCreate(tokenA)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -290,7 +409,7 @@ class UnlimitedAutoAssociationSuite {
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
-                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
+                        cryptoTransfer(movingHbar(ONE_HBAR).between(TREASURY, hollowAccountKey)),
                         cryptoTransfer(movingUnique(tokenA, 1L).between(hollowAccountKey, TREASURY))
                                 .payingWith(hollowAccountKey)
                                 .signedBy(hollowAccountKey, TREASURY)
@@ -316,11 +435,11 @@ class UnlimitedAutoAssociationSuite {
 
         return hapiTest(
                 newKeyNamed(MULTI_KEY),
-                cryptoCreate(ALICE).balance(10_000 * ONE_MILLION_HBARS),
-                cryptoCreate(BOB).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(ALICE).balance(10_000 * ONE_HBAR),
+                cryptoCreate(BOB).balance(10_000 * ONE_HBAR),
                 newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
                 cryptoCreate(DAVE).maxAutomaticTokenAssociations(1),
-                cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(ONE_HBAR),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(5)
@@ -369,7 +488,7 @@ class UnlimitedAutoAssociationSuite {
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
-                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(BOB, CAROL)),
+                        cryptoTransfer(movingHbar(ONE_HBAR).between(BOB, CAROL)),
                         // Send transfer to complete the hollow account
                         cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(CAROL, DAVE))
                                 .payingWith(CAROL)

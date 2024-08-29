@@ -24,21 +24,19 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
 
 public record RecordDispatch(
-        @NonNull SingleTransactionRecordBuilderImpl recordBuilder,
+        @NonNull StreamBuilder recordBuilder,
         @NonNull Configuration config,
         @NonNull Fees fees,
         @NonNull TransactionInfo txnInfo,
@@ -54,7 +52,6 @@ public record RecordDispatch(
         @NonNull SavepointStackImpl stack,
         @NonNull HandleContext.TransactionCategory txnCategory,
         @NonNull FinalizeContext finalizeContext,
-        @NonNull RecordListBuilder recordListBuilder,
-        @NonNull PlatformState platformState,
-        @NonNull PreHandleResult preHandleResult)
+        @NonNull PreHandleResult preHandleResult,
+        @NonNull HandleContext.ConsensusThrottling throttleStrategy)
         implements Dispatch {}

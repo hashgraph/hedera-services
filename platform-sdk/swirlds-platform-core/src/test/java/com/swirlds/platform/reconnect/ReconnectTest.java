@@ -45,6 +45,7 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -83,6 +84,8 @@ final class ReconnectTest {
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.platform.state.signed");
+        registry.registerConstructables("com.swirlds.platform.system");
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @Test

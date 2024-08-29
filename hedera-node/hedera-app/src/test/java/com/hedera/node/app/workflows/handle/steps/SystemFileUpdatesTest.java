@@ -35,12 +35,11 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
@@ -69,7 +68,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProviderImpl configProvider;
 
-    private FakeHederaState state;
+    private FakeState state;
 
     private Map<FileID, File> files;
 
@@ -87,7 +86,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         files = new HashMap<>();
-        state = new FakeHederaState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
+        state = new FakeState().addService(FileService.NAME, Map.of(BLOBS_KEY, files));
 
         final var config = new TestConfigBuilder(false)
                 .withConverter(Bytes.class, new BytesConverter())
@@ -129,7 +128,6 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var txBody = TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
                 .build();
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
         assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();

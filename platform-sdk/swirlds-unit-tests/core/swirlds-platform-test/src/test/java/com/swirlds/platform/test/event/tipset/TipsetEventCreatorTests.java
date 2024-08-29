@@ -29,7 +29,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
@@ -54,7 +55,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -71,7 +72,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -154,7 +154,7 @@ class TipsetEventCreatorTests {
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final UnsignedEvent newEvent,
-            @NonNull final List<OneOf<PayloadOneOfType>> expectedTransactions,
+            @NonNull final List<EventTransaction> expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
@@ -195,13 +195,13 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getPayloadCount());
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getTransactionCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
 
         // Validate tipset constraints.
-        final EventDescriptor descriptor = newEvent.getDescriptor();
+        final EventDescriptorWrapper descriptor = newEvent.getDescriptor();
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode
@@ -212,14 +212,15 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<PayloadOneOfType>> convertedTransactions = Stream.of(newEvent.getTransactions())
-                .map(Transaction::getPayload)
-                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
+        final List<EventTransaction> convertedTransactions = newEvent.getTransactions().stream()
+                .map(Transaction::getTransaction)
                 .toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {
-            final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
-            final OneOf<PayloadOneOfType> actual = convertedTransactions.get(i);
+            final OneOf<TransactionOneOfType> expected =
+                    expectedTransactions.get(i).transaction();
+            final OneOf<TransactionOneOfType> actual =
+                    convertedTransactions.get(i).transaction();
             assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
             assertEquals(expected.value(), actual.value(), "Transaction payload " + i + " mismatch");
         });
@@ -276,14 +277,16 @@ class TipsetEventCreatorTests {
      * Generate a small number of random transactions.
      */
     @NonNull
-    private List<OneOf<PayloadOneOfType>> generateRandomTransactions(@NonNull final Random random) {
+    private List<EventTransaction> generateRandomTransactions(@NonNull final Random random) {
         final int transactionCount = random.nextInt(0, 10);
-        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
+        final List<EventTransaction> transactions = new ArrayList<>();
 
         for (int i = 0; i < transactionCount; i++) {
             final byte[] bytes = new byte[32];
             random.nextBytes(bytes);
-            transactions.add(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
+            final OneOf<TransactionOneOfType> oneOf =
+                    new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, Bytes.wrap(bytes));
+            transactions.add(new EventTransaction(oneOf));
         }
 
         return transactions;
@@ -305,7 +308,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -359,7 +362,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -427,7 +430,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
@@ -502,7 +505,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -580,7 +583,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -622,7 +625,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -677,7 +680,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -719,7 +722,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -775,7 +778,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -903,7 +906,7 @@ class TipsetEventCreatorTests {
 
         final NodeId otherParentId;
         if (eventA2.hasOtherParent()) {
-            otherParentId = eventA2.getOtherParents().getFirst().getCreator();
+            otherParentId = eventA2.getOtherParents().getFirst().creator();
         } else {
             otherParentId = null;
         }
@@ -1022,7 +1025,6 @@ class TipsetEventCreatorTests {
     /**
      * Checks that birth round on events is being set if the setting for using birth round is set.
      * <p>
-     * FUTURE WORK: Update this test to use RosterDiff instead of EventWindow
      */
     @ParameterizedTest
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})
@@ -1037,7 +1039,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,

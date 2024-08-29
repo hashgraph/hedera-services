@@ -37,10 +37,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -50,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
@@ -76,6 +80,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.HODL_XFE
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -104,6 +109,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
@@ -114,9 +120,35 @@ import org.junit.jupiter.api.DynamicTest;
 public class AirdropsDisabledTest {
     private static final Logger LOG = LogManager.getLogger(AirdropsDisabledTest.class);
 
+    private static String owner = "owner";
+    private static String receiver = "receiver";
+    private static String fungibleToken = "fungibleToken";
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.overrideInClass(Map.of("entities.unlimitedAutoAssociationsEnabled", "false"));
+        testLifecycle.overrideInClass(Map.of(
+                "tokens.airdrops.enabled", "false",
+                "entities.unlimitedAutoAssociationsEnabled", "false",
+                "tokens.airdrops.claim.enabled", "false"));
+        testLifecycle.doAdhoc(
+                cryptoCreate(owner).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(receiver),
+                tokenCreate(fungibleToken).tokenType(TokenType.FUNGIBLE_COMMON).treasury(owner));
+    }
+
+    @HapiTest
+    @DisplayName("airdrop feature flag is disabled")
+    final Stream<DynamicTest> airdropNotSupported() {
+        return hapiTest(tokenAirdrop(moving(10, fungibleToken).between(owner, receiver))
+                .payingWith(owner)
+                .hasPrecheck(NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    @DisplayName("airdrop claim feature flag is disabled")
+    final Stream<DynamicTest> airdropClaimNotSupported() {
+        return hapiTest(tokenClaimAirdrop(pendingAirdrop(owner, receiver, fungibleToken))
+                .hasPrecheck(NOT_SUPPORTED));
     }
 
     @HapiTest

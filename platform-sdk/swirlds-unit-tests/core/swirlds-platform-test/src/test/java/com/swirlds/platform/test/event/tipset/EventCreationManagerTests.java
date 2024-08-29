@@ -116,6 +116,10 @@ class EventCreationManagerTests {
         assertSame(eventsToCreate.get(1), e1);
     }
 
+    /**
+     * This form of backpressure is not currently enabled.
+     */
+    @Disabled
     @Test
     void backpressurePreventsCreation() {
         final UnsignedEvent e0 = manager.maybeCreateEvent();
@@ -159,10 +163,6 @@ class EventCreationManagerTests {
         assertSame(eventsToCreate.get(1), e1);
     }
 
-    /**
-     * This form of backpressure is not currently enabled.
-     */
-    @Disabled
     @Test
     void unhealthyNodePreventsCreation() {
         final UnsignedEvent e0 = manager.maybeCreateEvent();

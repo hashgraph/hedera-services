@@ -56,6 +56,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateKeysTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe.WipeTranslator;
 import dagger.Module;
 import dagger.Provides;
@@ -397,6 +398,15 @@ public interface HtsTranslatorsModule {
     @IntoSet
     @Named("HtsTranslators")
     static CallTranslator provideUpdateKeysTranslator(@NonNull final UpdateKeysTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HtsTranslators")
+    static CallTranslator provideUpdateTokenCustomFeesTranslator(
+            @NonNull final UpdateTokenCustomFeesTranslator translator) {
         return translator;
     }
 }

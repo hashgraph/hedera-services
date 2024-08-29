@@ -36,8 +36,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -152,16 +151,14 @@ public class HashLoggerTest {
         final MerkleNode merkleNode = MerkleTestUtils.buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
-        final MerkleRoot state = mock(State.class);
+        final MerkleRoot state = mock(MerkleRoot.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         final AddressBook addressBook = new AddressBook();
         addressBook.setHash(merkleNode.getHash());
 
-        final PlatformState platformState = new PlatformState();
-
-        platformState.setRound(round);
-        platformState.setHash(merkleNode.getHash());
-        platformState.setAddressBook(addressBook);
+        when(platformState.getRound()).thenReturn(round);
+        when(platformState.getAddressBook()).thenReturn(addressBook);
 
         when(state.getPlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
