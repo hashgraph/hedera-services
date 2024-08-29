@@ -68,7 +68,7 @@ public class TokenKeyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 getTokenKey(token, keyType.intValue(), metadataSupport));
     }
 
-    private Key getTokenKey(final Token token, final int keyType, final boolean metadataSupport)
+    public Key getTokenKey(final Token token, final int keyType, final boolean metadataSupport)
             throws InvalidTransactionException {
         if (token == null) {
             return null;
