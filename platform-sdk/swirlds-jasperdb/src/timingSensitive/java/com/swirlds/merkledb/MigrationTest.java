@@ -17,9 +17,6 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.merkledb.VirtualMapSerializationTests.KEY_SERIALIZER;
-import static com.swirlds.merkledb.VirtualMapSerializationTests.VALUE_SERIALIZER;
-import static com.swirlds.merkledb.VirtualMapSerializationTests.constructBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +29,8 @@ import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +46,12 @@ import org.junit.jupiter.api.Test;
 // This test requires more memory than others, decide what to do with it
 @Disabled("This test needs to be investigated")
 class MigrationTest {
+
+    private static final KeySerializer<ExampleLongKeyFixedSize> KEY_SERIALIZER =
+            new ExampleLongKeyFixedSize.Serializer();
+
+    private static final ValueSerializer<ExampleFixedSizeVirtualValue> VALUE_SERIALIZER =
+            new ExampleFixedSizeVirtualValueSerializer();
 
     @Test
     @DisplayName("extractVirtualMapData() Test")
@@ -151,23 +156,15 @@ class MigrationTest {
     /**
      * Create a new virtual map data source builder.
      */
-    private static MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> constructBuilder()
-            throws IOException {
+    private static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
-                new MerkleDbTableConfig<>(
-                                (short) 1,
-                                DigestType.SHA_384,
-                                (short) 3054,
-                                new ExampleLongKeyFixedSize.Serializer(),
-                                (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION,
-                                new ExampleFixedSizeVirtualValueSerializer())
-                        .preferDiskIndices(false)
-                        .hashesRamToDiskThreshold(Long.MAX_VALUE)
-                        .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                .preferDiskIndices(false)
+                .hashesRamToDiskThreshold(Long.MAX_VALUE)
+                .maxNumberOfKeys(1234);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 }
