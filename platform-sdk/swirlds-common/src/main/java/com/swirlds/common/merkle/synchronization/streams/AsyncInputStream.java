@@ -26,7 +26,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -64,6 +64,23 @@ public class AsyncInputStream {
     private static final String THREAD_NAME = "async-input-stream";
 
     private final SerializableDataInputStream inputStream;
+
+    // Reading directly from inputStream is expensive, since every read results in
+    // taking a lock. To minimize the number of reads, let's use our own buffer
+    private final byte[] readBuffer = new byte[256 * 1024];
+
+    // A position in readBuffer to read data next. If the position is equal readLimit
+    // below, there is no data available in the buffer, and a read from inputStream
+    // is required
+    private int readPos = 0;
+
+    // Read buffer may not be filled up completely, it really depends on how much
+    // data is available in the socket. This limit indicates the last position in
+    // the buffer that holds data read from inputStream
+    private int readLimit = 0;
+
+    // A byte buffer on top of readBuffer. Used to read ints and bytes from the array
+    private final ByteBuffer inputStreamAccessor = ByteBuffer.wrap(readBuffer);
 
     // Messages read from the underlying input stream so far, per merkle sub-tree
     public final Map<Integer, Queue<byte[]>> viewQueues;
@@ -131,17 +148,15 @@ public class AsyncInputStream {
         logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                final int viewId = inputStream.readInt();
+                final int viewId = readInt();
                 if (viewId < 0) {
                     logger.info(RECONNECT.getMarker(), "Async input stream is done");
                     alive.set(false);
                     break;
                 }
-                final int len = inputStream.readInt();
+                final int len = readInt();
                 final byte[] messageBytes = new byte[len];
-                if (completelyRead(inputStream, messageBytes) != len) {
-                    throw new MerkleSynchronizationException("Failed to read a message completely");
-                }
+                readBytes(messageBytes);
 
                 if (useSharedQueue.contains(viewId)) {
                     assert !viewQueues.containsKey(viewId);
@@ -169,25 +184,45 @@ public class AsyncInputStream {
     }
 
     /**
-     * Reads bytes from an input stream to an array, until array length bytes are read, or EOF
-     * is encountered.
+     * Makes sure that at least {@code bytes} bytes are available to use in the read
+     * buffer. It may require a read from the underlying input stream. This method may
+     * update both {@link #readPos} and {@link #readLimit}.
      *
-     * @param in the input stream to read from
-     * @param dst the byte array to read to
-     * @return the total number of bytes read
-     * @throws IOException if an exception occurs while reading
+     * @param bytes number of bytes to make available in the read buffer
+     * @throws IOException if an I/O error occurs
      */
-    private static int completelyRead(final InputStream in, final byte[] dst) throws IOException {
-        int totalBytesRead = 0;
-        while (totalBytesRead < dst.length) {
-            final int bytesRead = in.read(dst, totalBytesRead, dst.length - totalBytesRead);
-            if (bytesRead < 0) {
-                // Reached EOF
-                break;
-            }
-            totalBytesRead += bytesRead;
+    private void ensureAvailable(final int bytes) throws IOException {
+        if (bytes > readBuffer.length) {
+            throw new IllegalStateException("Read buffer is too small to read " + bytes + " bytes");
         }
-        return totalBytesRead;
+        final int currentlyAvailable = readLimit - readPos;
+        if (currentlyAvailable >= bytes) {
+            return;
+        }
+        if (readPos + bytes > readBuffer.length) {
+            System.arraycopy(readBuffer, readPos, readBuffer, 0, currentlyAvailable);
+            readPos = 0;
+            readLimit = currentlyAvailable;
+        }
+        while (readLimit - readPos < bytes) {
+            // Try to read up to the end of the buffer
+            final int toRead = readBuffer.length - readLimit;
+            readLimit += inputStream.read(readBuffer, readLimit, toRead);
+        }
+        assert readPos + bytes <= readBuffer.length;
+    }
+
+    private int readInt() throws IOException {
+        ensureAvailable(4);
+        final int result = inputStreamAccessor.getInt(readPos);
+        readPos += Integer.BYTES;
+        return result;
+    }
+
+    private void readBytes(final byte[] dst) throws IOException {
+        ensureAvailable(dst.length);
+        inputStreamAccessor.get(readPos, dst);
+        readPos += dst.length;
     }
 
     public void setNeedsSharedQueue(final int viewId) {
