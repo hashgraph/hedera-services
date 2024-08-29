@@ -202,34 +202,6 @@ public class TokenInfoHTSSuite {
                                 .wipeKey(WIPE_KEY)
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
-                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
-                                // Include a fractional fee with no minimum to collect
-                                .withCustom(fractionalFee(
-                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
-                                .withCustom(fractionalFee(
-                                        NUMERATOR,
-                                        DENOMINATOR,
-                                        MINIMUM_TO_COLLECT,
-                                        OptionalLong.of(MAXIMUM_TO_COLLECT),
-                                        TOKEN_TREASURY))
-                                .via(CREATE_TXN),
-                        tokenCreate("tokenWithMetadata")
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .symbol(SYMBOL)
-                                .name(PRIMARY_TOKEN_NAME)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(MAX_SUPPLY)
-                                .initialSupply(500L)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY)
-                                .pauseKey(PAUSE_KEY)
                                 .metadataKey(TokenKeyType.METADATA_KEY.name())
                                 .metaData("metadata")
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
@@ -242,8 +214,7 @@ public class TokenInfoHTSSuite {
                                         MINIMUM_TO_COLLECT,
                                         OptionalLong.of(MAXIMUM_TO_COLLECT),
                                         TOKEN_TREASURY))
-                                .via(CREATE_TXN),
-                        getTokenInfo("tokenWithMetadata").via(GET_TOKEN_INFO_TXN))
+                                .via(CREATE_TXN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
@@ -262,7 +233,7 @@ public class TokenInfoHTSSuite {
                                         "TokenInfo",
                                         "getInformationForTokenV2",
                                         HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID("tokenWithMetadata"))))
+                                                asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME))))
                                 .via("TOKEN_INFO_TXN_V2")
                                 .gas(1_000_000L))))
                 .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
@@ -362,35 +333,6 @@ public class TokenInfoHTSSuite {
                                 .wipeKey(WIPE_KEY)
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
-                                .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
-                                // Also include a fractional fee with no minimum to collect
-                                .withCustom(fractionalFee(
-                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
-                                .withCustom(fractionalFee(
-                                        NUMERATOR,
-                                        DENOMINATOR,
-                                        MINIMUM_TO_COLLECT,
-                                        OptionalLong.of(MAXIMUM_TO_COLLECT),
-                                        TOKEN_TREASURY))
-                                .via(CREATE_TXN),
-                        tokenCreate("tokenWithMetadata")
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(MEMO)
-                                .name(FUNGIBLE_TOKEN_NAME)
-                                .symbol(FUNGIBLE_SYMBOL)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(MAX_SUPPLY)
-                                .initialSupply(500)
-                                .decimals(decimals)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY)
-                                .pauseKey(PAUSE_KEY)
                                 .metadataKey(TokenKeyType.METADATA_KEY.name())
                                 .metaData("metadata")
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
@@ -422,7 +364,7 @@ public class TokenInfoHTSSuite {
                                         "TokenInfo",
                                         "getInformationForFungibleTokenV2",
                                         HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID("tokenWithMetadata"))))
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN_NAME))))
                                 .via("FUNGIBLE_TOKEN_INFO_TXN_V2")
                                 .gas(1_000_000L))))
                 .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
@@ -503,8 +445,11 @@ public class TokenInfoHTSSuite {
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(FEE_SCHEDULE_KEY),
                         newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(TokenKeyType.METADATA_KEY.name()),
                         uploadInitCode(TOKEN_INFO_CONTRACT),
                         contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        uploadInitCode("TokenInfo"),
+                        contractCreate("TokenInfo").gas(1_000_000L),
                         tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
                         tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -524,6 +469,8 @@ public class TokenInfoHTSSuite {
                                 .wipeKey(WIPE_KEY)
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
+                                .metadataKey(TokenKeyType.METADATA_KEY.name())
+                                .metaData("metadata")
                                 .withCustom(royaltyFeeWithFallback(
                                         1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR))
                                 .via(CREATE_TXN),
@@ -555,7 +502,15 @@ public class TokenInfoHTSSuite {
                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))),
-                                1L))))
+                                1L),
+                        contractCall(
+                                        "TokenInfo",
+                                        "getInformationForNonFungibleTokenV2",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))),
+                                        1L)
+                                .via("NON_FUNGIBLE_TOKEN_INFO_TXN_V2")
+                                .gas(1_000_000L))))
                 .then(exposeTargetLedgerIdTo(targetLedgerId::set), withOpContext((spec, opLog) -> {
                     final var getTokenInfoQuery = getTokenInfo(NON_FUNGIBLE_TOKEN_NAME);
                     allRunFor(spec, getTokenInfoQuery);
@@ -584,6 +539,27 @@ public class TokenInfoHTSSuite {
                                                             .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                                                             .withStatus(SUCCESS)
                                                             .withTokenInfo(getTokenInfoStructForNonFungibleToken(
+                                                                    spec,
+                                                                    NON_FUNGIBLE_TOKEN_NAME,
+                                                                    NON_FUNGIBLE_SYMBOL,
+                                                                    MEMO,
+                                                                    spec.registry()
+                                                                            .getAccountID(TOKEN_TREASURY),
+                                                                    getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY),
+                                                                    expirySecond,
+                                                                    targetLedgerId.get()))
+                                                            .withNftTokenInfo(nftTokenInfo)))),
+                            childRecordsCheck(
+                                    "NON_FUNGIBLE_TOKEN_INFO_TXN_V2",
+                                    SUCCESS,
+                                    recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith()
+                                                    .contractCallResult(htsPrecompileResult()
+                                                            .forFunction(
+                                                                    FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO_V2)
+                                                            .withStatus(SUCCESS)
+                                                            .withTokenInfo(getTokenInfoStructForNonFungibleTokenV2(
                                                                     spec,
                                                                     NON_FUNGIBLE_TOKEN_NAME,
                                                                     NON_FUNGIBLE_SYMBOL,
@@ -1906,6 +1882,45 @@ public class TokenInfoHTSSuite {
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
                 .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .build();
+    }
+
+    private TokenInfo getTokenInfoStructForNonFungibleTokenV2(
+            final HapiSpec spec,
+            final String tokenName,
+            final String symbol,
+            final String memo,
+            final AccountID treasury,
+            final Key adminKey,
+            final long expirySecond,
+            final ByteString ledgerId) {
+        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
+        final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
+
+        return TokenInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
+                .setAutoRenewAccount(autoRenewAccount)
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(THREE_MONTHS_IN_SECONDS)
+                        .build())
+                .setSymbol(symbol)
+                .setName(tokenName)
+                .setMemo(memo)
+                .setTreasury(treasury)
+                .setTotalSupply(1L)
+                .setMaxSupply(10L)
+                .addAllCustomFees(getCustomFeeForNFT(spec))
+                .setAdminKey(adminKey)
+                .setMetadata(meta)
+                .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
+                .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
+                .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
+                .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
+                .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY))
                 .build();
     }
 
