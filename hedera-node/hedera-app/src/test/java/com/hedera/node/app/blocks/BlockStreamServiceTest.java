@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
@@ -73,7 +72,7 @@ final class BlockStreamServiceTest {
             assertEquals(1, args.length);
             Schema schema = (Schema) args[0];
             assertThat(schema).isInstanceOf(V0540BlockStreamSchema.class);
-            Set<StateDefinition> states = schema.statesToCreate();
+            Set<StateDefinition> states = schema.statesToCreate(DEFAULT_CONFIG);
             assertEquals(1, states.size());
             assertTrue(states.contains(StateDefinition.singleton(BLOCK_STREAM_INFO_KEY, BlockStreamInfo.PROTOBUF)));
 
@@ -83,14 +82,17 @@ final class BlockStreamServiceTest {
 
             // FINISH:
             ArgumentCaptor<BlockStreamInfo> blockInfoCapture = ArgumentCaptor.forClass(BlockStreamInfo.class);
-            verify(blockStreamState).put(blockInfoCapture.capture());
 
             schema.migrate(migrationContext);
-            assertEquals(
-                    new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture.getValue());
+
+            verify(blockStreamState).put(blockInfoCapture.capture());
+            assertEquals(BlockStreamInfo.DEFAULT, blockInfoCapture.getValue());
             return null;
         });
-        BlockStreamService blockStreamService = new BlockStreamService(DEFAULT_CONFIG);
+        final var testConfig = HederaTestConfigBuilder.create()
+                .withValue("blockStream.streamMode", "BOTH")
+                .getOrCreateConfig();
+        BlockStreamService blockStreamService = new BlockStreamService(testConfig);
         blockStreamService.registerSchemas(schemaRegistry);
     }
 }

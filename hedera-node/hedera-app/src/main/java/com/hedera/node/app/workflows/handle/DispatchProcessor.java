@@ -117,7 +117,11 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
-        dispatch.stack().commitFullStack();
+        if (dispatch.txnCategory() == USER) {
+            dispatch.stack().commitTransaction(dispatch.recordBuilder());
+        } else {
+            dispatch.stack().commitFullStack();
+        }
     }
 
     /**
@@ -171,6 +175,7 @@ public class DispatchProcessor {
         final var fileUpdateResult = systemFileUpdates.handleTxBody(
                 dispatch.stack(), dispatch.txnInfo().txBody());
 
+        // In case we just changed the exchange rates via 0.0.112 update, reset them now
         dispatch.recordBuilder()
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .status(fileUpdateResult);

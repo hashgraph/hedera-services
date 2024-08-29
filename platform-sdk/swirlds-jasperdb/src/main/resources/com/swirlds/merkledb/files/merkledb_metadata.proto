@@ -31,12 +31,16 @@ message TableConfig {
   // Digest type ID: 0x58ff811b for SHA_384 (default), 0x8fc9497e for SHA_512
   optional uint32 digestTypeId = 2;
 
+  // Deprecated
   optional uint32 keyVersion = 3;
 
+  // Deprecated
   uint64 keySerializerClassId = 4;
 
+  // Deprecated
   optional uint32 valueVersion = 5;
 
+  // Deprecated
   uint64 valueSerializerClassId = 6;
 
   // Bool

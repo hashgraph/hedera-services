@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class StorageChange {
     private ByteString slot;
@@ -36,7 +37,7 @@ public class StorageChange {
     }
 
     public static StorageChange onlyRead(ByteString slot, ByteString value) {
-        return new StorageChange(slot, value);
+        return new StorageChange(slot, withoutLeadingZeroes(value));
     }
 
     public static StorageChange readAndWritten(ByteString slot, ByteString prevValue, ByteString value) {
@@ -53,5 +54,13 @@ public class StorageChange {
 
     public BytesValue getValueWritten() {
         return this.valueWritten;
+    }
+
+    private static ByteString withoutLeadingZeroes(@NonNull final ByteString value) {
+        int i = 0;
+        while (i < value.size() && value.byteAt(i) == 0) {
+            i++;
+        }
+        return value.substring(i);
     }
 }

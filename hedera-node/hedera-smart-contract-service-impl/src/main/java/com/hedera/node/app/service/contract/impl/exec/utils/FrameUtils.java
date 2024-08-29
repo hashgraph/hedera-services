@@ -32,7 +32,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -143,7 +143,7 @@ public class FrameUtils {
      * @param frame the frame whose EVM transaction we are tracking beneficiaries in
      * @return the record builder able to track beneficiary ids
      */
-    public static @NonNull DeleteCapableTransactionRecordBuilder selfDestructBeneficiariesFor(
+    public static @NonNull DeleteCapableTransactionStreamBuilder selfDestructBeneficiariesFor(
             @NonNull final MessageFrame frame) {
         return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
     }

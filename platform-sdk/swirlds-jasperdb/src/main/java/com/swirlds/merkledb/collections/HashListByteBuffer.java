@@ -38,12 +38,12 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * An implementation of {@link HashList} which makes use of an expanding, dynamic list of {@link ByteBuffer}s
  * for storing hashes. An instance of this class should <strong>only</strong> be used for a homogenous set of hashes.
- * A {@link Hash} normally serializes with both the hash bytes and a hash type. When scaled to billions of hashes,
+ * A hash normally serializes with both the hash bytes and a hash type. When scaled to billions of hashes,
  * this amounts to a lot of wasted space. This implementation assumes a homogenous set of hashes and omits serializing
  * the hash type, only storing the hash bytes themselves.
  *
- * This class improves upon the memory usage of a simple {@link Hash} array. In this class, each hash is stored as
- * exactly the number of hash bytes (48 for an SHA-384 hash). An array of {@link Hash} objects would include java object
+ * This class improves upon the memory usage of a simple hash array. In this class, each hash is stored as
+ * exactly the number of hash bytes (48 for an SHA-384 hash). An array of hash objects would include java object
  * overhead, amounting to about a 2x overhead.
  *
  * <pre>
@@ -96,7 +96,7 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
     private final AtomicLong numberOfHashesStored = new AtomicLong(0);
 
     /**
-     * The number of {@link Hash}es to store in each allocated buffer. Must be a positive integer.
+     * The number of hashes to store in each allocated buffer. Must be a positive integer.
      * If the value is small, then we will end up allocating a very large number of buffers.
      * If the value is large, then we will waste a lot of memory in the unfilled buffer.
      */
