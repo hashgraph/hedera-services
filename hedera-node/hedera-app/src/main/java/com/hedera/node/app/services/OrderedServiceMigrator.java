@@ -126,10 +126,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             config,
                             networkInfo,
                             metrics,
-                            // If we have reached this point in the code, entityIdStore should not be null because the
-                            // EntityIdService should have been migrated already. We enforce with requireNonNull in case
-                            // there are scenarios we haven't considered.
-                            requireNonNull(entityIdStore),
+                            entityIdStore,
                             sharedValues,
                             migrationStateChanges);
                     // Now commit any changes that were made to the entity ID state (since other service entities could

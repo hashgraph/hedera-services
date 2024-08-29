@@ -87,6 +87,6 @@ public class V0540BlockStreamSchemaTest {
         verify(mockBlockStreamInfo).put(captor.capture());
 
         BlockStreamInfo blockInfoCapture = captor.getValue();
-        assertEquals(new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture);
+        assertEquals(BlockStreamInfo.DEFAULT, blockInfoCapture);
     }
 }

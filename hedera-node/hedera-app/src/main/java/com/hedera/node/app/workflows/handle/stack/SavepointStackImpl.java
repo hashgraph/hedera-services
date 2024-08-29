@@ -222,17 +222,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     /**
      * Commits all state changes captured in this stack; and captures the details for
-     * the block stream, correlated to the given builder.
-     *
-     * @param builder the builder to correlate the state changes to
-     */
-    public void commitTransaction(@NonNull final StreamBuilder builder) {
-        requireNonNull(builder);
-        commitFullStack(builder);
-    }
-
-    /**
-     * Commits all state changes captured in this stack; and captures the details for
      * the block stream, correlated to state changes preceding the first transaction.
      */
     public void commitSystemStateChanges() {

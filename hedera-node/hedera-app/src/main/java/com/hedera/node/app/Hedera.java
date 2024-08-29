@@ -239,10 +239,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private final BoundaryStateChangeListener boundaryStateChangeListener = new BoundaryStateChangeListener();
 
     /**
-     * A {@link StateChangeListener} that accumulates state changes that immediately reported as they occur,
+     * A {@link StateChangeListener} that accumulates state changes that must be immediately reported as they occur,
      * because the exact order of mutations---not just the final values---determines the Merkle root hash.
      */
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
+
+    /**
+     * The state root supplier to use for creating a new state root.
+     */
+    private final Supplier<MerkleStateRoot> stateRootSupplier;
 
     /*==================================================================================================================
     *
@@ -321,9 +326,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         try {
             final var blockStreamsEnabled =
                     bootstrapConfig.getConfigData(BlockStreamConfig.class).streamBlocks();
-            final Supplier<MerkleStateRoot> stateRootSupplier = blockStreamsEnabled
-                    ? () -> withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory))
-                    : () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
+            final Supplier<MerkleStateRoot> baseSupplier =
+                    () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
+            stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
@@ -363,7 +368,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     @Override
     @NonNull
     public MerkleRoot newMerkleStateRoot() {
-        return withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory));
+        return stateRootSupplier.get();
     }
 
     @Override

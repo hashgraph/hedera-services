@@ -156,7 +156,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         singletonUpdates.put(stateId, stateChange);
     }
 
-    private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NonNull V value) {
+    private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NonNull final V value) {
         switch (value) {
             case ProtoBytes protoBytesElement -> {
                 return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement.value());

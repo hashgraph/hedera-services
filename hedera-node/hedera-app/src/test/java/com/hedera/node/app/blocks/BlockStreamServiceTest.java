@@ -87,8 +87,7 @@ final class BlockStreamServiceTest {
             schema.migrate(migrationContext);
 
             verify(blockStreamState).put(blockInfoCapture.capture());
-            assertEquals(
-                    new BlockStreamInfo(0, Bytes.EMPTY, null, Bytes.EMPTY, Bytes.EMPTY), blockInfoCapture.getValue());
+            assertEquals(BlockStreamInfo.DEFAULT, blockInfoCapture.getValue());
             return null;
         });
         final var testConfig = HederaTestConfigBuilder.create()
