@@ -114,6 +114,7 @@ public class TokenAirdropBase {
      */
     protected static SpecOperation[] setUpTokensAndAllReceivers() {
         var nftSupplyKey = "nftSupplyKey";
+        final var validAlias = "validAlias";
         final var t = new ArrayList<SpecOperation>(List.of(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
                 // base tokens
@@ -161,7 +162,12 @@ public class TokenAirdropBase {
                 cryptoTransfer(moving(10, "dummy").between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)),
                 cryptoCreate(ASSOCIATED_RECEIVER),
                 tokenAssociate(ASSOCIATED_RECEIVER, FUNGIBLE_TOKEN),
-                tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN)));
+                tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN),
+                // create hollow account with 0 auto associations
+                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE)
+        ));
+        t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
+        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
 
         return t.toArray(new SpecOperation[0]);
     }
@@ -281,20 +287,20 @@ public class TokenAirdropBase {
     }
 
     protected static SpecOperation[] setUpEntitiesPreHIP904() {
-        final var validAlias = "validAlias";
+//        final var validAlias = "validAlias";
         final var aliasTwo = "alias2.0";
         final var validAliasForAirdrop = "validAliasForAirdrop";
         final var sponsor = "sponsor";
         final var t = new ArrayList<SpecOperation>(List.of(
                 // create hollow account with 0 auto associations
                 cryptoCreate(sponsor).balance(ONE_HUNDRED_HBARS),
-                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE),
+//                newKeyNamed(validAlias).shape(SECP_256K1_SHAPE),
                 newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE),
                 newKeyNamed(validAliasForAirdrop).shape(SECP_256K1_SHAPE)));
-        t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
+//        t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
         t.addAll(Arrays.stream(createHollowAccountFrom(aliasTwo)).toList());
         t.addAll(Arrays.stream(createHollowAccountFrom(validAliasForAirdrop)).toList());
-        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
+//        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, aliasTwo)));
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasForAirdrop)));
         return t.toArray(new SpecOperation[0]);

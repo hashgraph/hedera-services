@@ -1151,7 +1151,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     .hasMaxAutomaticAssociations(0)
                                     .hasNoTokenRelationship(NON_FUNGIBLE_TOKEN),
                             // assert owner account balance
-                            getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 16L),
+                            getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 15L),
                             validateChargedUsd("EVM address NFT airdrop", 0.1, 10));
         }
 
