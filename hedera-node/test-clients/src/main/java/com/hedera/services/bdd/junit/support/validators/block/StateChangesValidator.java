@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
@@ -144,18 +145,18 @@ public class StateChangesValidator implements BlockStreamValidator {
     private MerkleStateRoot state;
 
     public static void main(String[] args) {
+        final var node0Dir = Paths.get("hedera-node/test-clients")
+                .resolve(workingDirFor(0, "hapi"))
+                .toAbsolutePath()
+                .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "d7d0cb025b3c5a4043b7c8d801b13caf49d4ba8f9b486d2fc09ec6a3cfe3d9743a659582e3d953ad4bc23cae9c87c628"),
-                Paths.get(
-                        "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log"),
-                Paths.get(
-                        "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/config.txt"),
-                Paths.get(
-                        "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/config/application.properties"));
-        final var input =
-                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
-        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
+                        "8fcceb3f724d5b765d96c9e27cbf20ac6a158eb5f06b8c5f71c3369ef5a0f1a6a01f6500dc3c464795cfa9fd5837dec8"),
+                node0Dir.resolve("output/swirlds.log"),
+                node0Dir.resolve("config.txt"),
+                node0Dir.resolve("data/config/application.properties"));
+        final var blocks =
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
         validator.validateBlocks(blocks);
     }
 

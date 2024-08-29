@@ -59,8 +59,8 @@ message BlockStreamInfo {
 
     /**
      * A consensus time for the current block.<br/>
-     * This is the _first_ consensus time in the current block, and
-     * is used to determine if this block was the first across an
+     * This is the consensus time of the first round in the current block,
+     * and is used to determine if this block was the first across an
      * important boundary in consensus time, such as UTC midnight.
      * This may also be used to purge entities expiring between the last
      * block time and this time.
@@ -72,6 +72,7 @@ message BlockStreamInfo {
      * This combines several trailing output block item hashes and
      * is used as a seed value for a pseudo-random number generator.<br/>
      * This is also requiried to implement the EVM `PREVRANDAO` opcode.
+     * This MUST contain at least 256 bits of entropy.
      */
     bytes trailing_output_hashes = 3;
 

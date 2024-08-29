@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static java.util.Objects.requireNonNull;
 
@@ -70,13 +71,23 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         }
     };
 
-    public static void main(String[] args) throws IOException {
-        final var input =
-                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
-        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
-        final var loc =
-                "/Users/michaeltinker/YetAnotherDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/recordStreams/record0.0.3";
-        final var records = RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(loc, "sidecar");
+    /**
+     * A main method to run a standalone validation of the block stream against the record stream in this project.
+     * @param args unused
+     * @throws IOException if there is an error reading the block or record streams
+     */
+    public static void main(@NonNull final String[] args) throws IOException {
+        final var node0Data = Paths.get("hedera-node/test-clients")
+                .resolve(workingDirFor(0, "hapi").resolve("data"))
+                .toAbsolutePath()
+                .normalize();
+        final var blocksLoc =
+                node0Data.resolve("block-streams/block-0.0.3").toAbsolutePath().normalize();
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(blocksLoc);
+        final var recordsLoc =
+                node0Data.resolve("recordStreams/record0.0.3").toAbsolutePath().normalize();
+        final var records =
+                RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(recordsLoc.toString(), "sidecar");
 
         final var validator = new TransactionRecordParityValidator();
         validator.validateBlockVsRecords(blocks, records);

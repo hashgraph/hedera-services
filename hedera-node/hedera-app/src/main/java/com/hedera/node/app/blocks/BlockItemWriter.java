@@ -35,16 +35,10 @@ public interface BlockItemWriter {
      *
      * @param serializedItem the serialized item to write
      */
-    void writeItem(@NonNull Bytes serializedItem);
+    BlockItemWriter writeItem(@NonNull Bytes serializedItem);
 
     /**
      * Closes the block.
      */
     void closeBlock();
-
-    /**
-     * Returns whether the writer is closed, when the block is closed
-     * @return true if the writer is closed, false otherwise
-     */
-    boolean isClosed();
 }
