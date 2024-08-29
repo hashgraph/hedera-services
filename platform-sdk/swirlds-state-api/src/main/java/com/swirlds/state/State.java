@@ -17,19 +17,22 @@
 package com.swirlds.state;
 
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The full state used of the app. The primary implementation is based on a merkle tree, and the data
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface State extends FastCopyable {
+public interface State extends FastCopyable, Hashable {
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
@@ -72,8 +75,34 @@ public interface State extends FastCopyable {
         throw new UnsupportedOperationException();
     }
 
+    /***
+     * {$inheritDoc}
+     */
     @Override
     default State copy() {
+        throw new UnsupportedOperationException();
+    }
+
+    /***
+     * {$inheritDoc}
+     */
+    @Nullable
+    @Override
+    default Hash getHash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /***
+     * {$inheritDoc}
+     */
+    default void setHash(@NonNull Hash hash) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Hashes the state on demand if it is not already hashed. If the state is already hashed, this method is a no-op.
+     */
+    default void calculateHash() {
         throw new UnsupportedOperationException();
     }
 }
