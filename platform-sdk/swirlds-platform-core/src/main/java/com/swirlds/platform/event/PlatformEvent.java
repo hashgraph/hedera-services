@@ -158,7 +158,9 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        return new PlatformEvent(gossipEvent);
+        final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
+        platformEvent.setHash(getHash());
+        return platformEvent;
     }
 
     /**
