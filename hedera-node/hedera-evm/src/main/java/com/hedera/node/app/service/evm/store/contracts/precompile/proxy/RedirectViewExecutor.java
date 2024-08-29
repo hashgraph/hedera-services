@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
+import static com.hedera.node.app.hapi.utils.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.hapi.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
@@ -31,7 +32,6 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 

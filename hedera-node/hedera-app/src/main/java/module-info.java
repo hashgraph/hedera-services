@@ -42,7 +42,6 @@ module com.hedera.node.app {
     requires com.swirlds.virtualmap;
     requires com.google.common;
     requires com.google.protobuf;
-    requires com.hedera.evm;
     requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;

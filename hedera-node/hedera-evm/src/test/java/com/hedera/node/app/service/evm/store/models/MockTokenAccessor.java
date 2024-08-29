@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.evm.store.models;
 
+import com.hedera.node.app.hapi.utils.TokenType;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;

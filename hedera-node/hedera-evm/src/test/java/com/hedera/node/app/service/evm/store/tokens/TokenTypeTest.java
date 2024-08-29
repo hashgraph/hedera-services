@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.store.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.hapi.utils.TokenType;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import org.junit.jupiter.api.Test;
 

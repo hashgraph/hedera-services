@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.utils.InvalidTransactionException;
+import com.hedera.node.app.hapi.utils.TokenType;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
@@ -50,7 +51,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsAppr
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;

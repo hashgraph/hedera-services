@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.evm.store.models;
 
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-
-import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 
 public class HederaEvmAccount {
 
@@ -53,8 +53,7 @@ public class HederaEvmAccount {
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                var addressBytes =
-                        recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                var addressBytes = recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 return addressBytes.length == 0 ? address : Address.wrap(Bytes.wrap(addressBytes));
             } else {
                 return address;

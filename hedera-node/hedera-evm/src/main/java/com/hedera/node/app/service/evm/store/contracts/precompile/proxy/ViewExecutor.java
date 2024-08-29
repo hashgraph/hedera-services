@@ -35,6 +35,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
@@ -54,7 +55,6 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 
 public class ViewExecutor {
     private final Bytes input;

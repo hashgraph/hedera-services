@@ -1,5 +1,6 @@
 /** Provides the core interfaces for the Hedera EVM implementation. */
 module com.hedera.evm {
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.hapi;
     requires transitive com.github.benmanes.caffeine;
     requires transitive com.google.protobuf;
@@ -13,7 +14,6 @@ module com.hedera.evm {
     requires transitive tuweni.units;
     requires com.swirlds.common;
     requires com.google.common;
-    requires com.hedera.node.app.hapi.utils;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 

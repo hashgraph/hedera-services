@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.tokens;
 
+import com.hedera.node.app.hapi.utils.TokenType;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
