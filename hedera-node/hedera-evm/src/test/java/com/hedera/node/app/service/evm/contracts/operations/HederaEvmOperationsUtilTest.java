@@ -24,6 +24,8 @@ import static org.mockito.Mockito.verify;
 
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;

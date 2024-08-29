@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;

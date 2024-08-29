@@ -1,25 +1,10 @@
-/*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.hedera.node.app.hapi.utils;
 
-package com.hedera.node.app.service.evm.contracts.operations;
-
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
-/** Hedera adapted {@link ExceptionalHaltReason} */
+/**
+ * Hedera adapted {@link ExceptionalHaltReason}
+ */
 public class HederaExceptionalHaltReason {
 
     /**
@@ -37,21 +22,32 @@ public class HederaExceptionalHaltReason {
      * enabled and the account receives HBars
      */
     public static final ExceptionalHaltReason INVALID_SIGNATURE = HederaExceptionalHalt.INVALID_SIGNATURE;
-    /** Used when the target of a {@code selfdestruct} is a token treasury. */
+    /**
+     * Used when the target of a {@code selfdestruct} is a token treasury.
+     */
     public static final ExceptionalHaltReason CONTRACT_IS_TREASURY = HederaExceptionalHalt.CONTRACT_IS_TREASURY;
-    /** Used when the target of a {@code selfdestruct} has positive fungible unit balances. */
+    /**
+     * Used when the target of a {@code selfdestruct} has positive fungible unit balances.
+     */
     public static final ExceptionalHaltReason CONTRACT_STILL_OWNS_NFTS = HederaExceptionalHalt.CONTRACT_STILL_OWNS_NFTS;
-    /** Used when the target of a {@code selfdestruct} has positive balances. */
+    /**
+     * Used when the target of a {@code selfdestruct} has positive balances.
+     */
     public static final ExceptionalHaltReason TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES =
             HederaExceptionalHalt.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-    /** Used when а Hedera precompile input is invalid and cannot be decoded. */
+    /**
+     * Used when а Hedera precompile input is invalid and cannot be decoded.
+     */
     public static final ExceptionalHaltReason ERROR_DECODING_PRECOMPILE_INPUT =
             HederaExceptionalHalt.ERROR_DECODING_PRECOMPILE_INPUT;
-    /** Used when a lazy account creation fails and a lazy creation can't be completed. */
+    /**
+     * Used when a lazy account creation fails and a lazy creation can't be completed.
+     */
     public static final ExceptionalHaltReason FAILURE_DURING_LAZY_ACCOUNT_CREATE =
             HederaExceptionalHalt.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
-    /** Used when there is a EVM call attempt with value, where value is not allowed to be sent. Example is calls
-     * to all the precompiles (except for the {@link EvmHTSPrecompiledContract}*/
+    /**
+     * Used when there is a EVM call attempt with value, where value is not allowed to be sent.
+     */
     public static final ExceptionalHaltReason INVALID_FEE_SUBMITTED = HederaExceptionalHalt.INVALID_FEE_SUBMITTED;
 
     public static final ExceptionalHaltReason NOT_SUPPORTED = HederaExceptionalHalt.NOT_SUPPORTED;

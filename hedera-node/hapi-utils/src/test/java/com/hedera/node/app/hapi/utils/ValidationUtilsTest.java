@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.evm.utils;
+package com.hedera.node.app.hapi.utils;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateFalseOrRevert;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 

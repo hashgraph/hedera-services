@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiPredicate;

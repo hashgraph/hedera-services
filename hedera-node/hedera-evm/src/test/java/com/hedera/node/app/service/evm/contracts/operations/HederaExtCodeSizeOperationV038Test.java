@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;

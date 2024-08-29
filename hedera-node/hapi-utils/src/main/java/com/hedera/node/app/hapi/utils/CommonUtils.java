@@ -147,4 +147,5 @@ public final class CommonUtils {
     public static Instant pbjTimestampToInstant(final com.hedera.hapi.node.base.Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
+
 }

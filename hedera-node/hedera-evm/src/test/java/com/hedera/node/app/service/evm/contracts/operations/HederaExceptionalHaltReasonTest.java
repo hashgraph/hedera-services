@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

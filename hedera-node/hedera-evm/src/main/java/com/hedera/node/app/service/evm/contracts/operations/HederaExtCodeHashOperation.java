@@ -39,6 +39,8 @@ package com.hedera.node.app.service.evm.contracts.operations;
  */
 
 import java.util.function.BiPredicate;
+
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;

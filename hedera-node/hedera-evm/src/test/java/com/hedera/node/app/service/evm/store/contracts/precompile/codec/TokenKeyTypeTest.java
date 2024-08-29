@@ -19,7 +19,7 @@ package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 

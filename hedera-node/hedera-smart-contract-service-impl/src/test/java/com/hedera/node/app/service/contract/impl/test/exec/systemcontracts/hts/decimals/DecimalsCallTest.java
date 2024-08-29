@@ -21,10 +21,10 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUN
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNREASONABLY_DIVISIBLE_TOKEN;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;

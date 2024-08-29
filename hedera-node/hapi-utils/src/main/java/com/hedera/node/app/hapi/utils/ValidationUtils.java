@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.evm.utils;
+package com.hedera.node.app.hapi.utils;
 
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.Supplier;
 
 /**
- * A minimalist collection of helpers to improve readability of code that throws an {@code
- * InvalidTransactionException}.
+ * A minimalist collection of helpers to improve readability of code that throws a
+ * {@link InvalidTransactionException} when a validation check fails.
  */
 public final class ValidationUtils {
     private ValidationUtils() {

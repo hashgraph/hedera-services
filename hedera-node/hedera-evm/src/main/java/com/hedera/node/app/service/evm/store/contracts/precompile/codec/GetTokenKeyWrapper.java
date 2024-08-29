@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public record GetTokenKeyWrapper<T>(T token, long keyType) {
