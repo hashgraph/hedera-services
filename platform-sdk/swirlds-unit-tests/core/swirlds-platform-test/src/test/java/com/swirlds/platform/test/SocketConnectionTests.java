@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,7 +43,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -91,7 +89,6 @@ class SocketConnectionTests {
 
     @ParameterizedTest
     @MethodSource("booleans")
-    @Tag(TIME_CONSUMING)
     void testSingleDisconnect(final boolean outbound) throws IOException {
         initConnection(outbound);
 

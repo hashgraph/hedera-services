@@ -17,11 +17,8 @@
 plugins {
     id("java-platform")
     id("com.hedera.gradle.jpms-modules")
-    id("com.hedera.gradle.jpms-module-dependencies")
     id("org.gradlex.java-module-versions")
 }
-
-group = "com.hedera.hashgraph"
 
 javaPlatform { allowDependencies() }
 

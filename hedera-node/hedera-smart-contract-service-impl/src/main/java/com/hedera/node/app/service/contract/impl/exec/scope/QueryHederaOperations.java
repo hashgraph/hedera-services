@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -42,11 +43,16 @@ import org.hyperledger.besu.datatypes.Address;
 public class QueryHederaOperations implements HederaOperations {
     private final QueryContext context;
     private final HederaConfig hederaConfig;
+    private final TinybarValues tinybarValues;
 
     @Inject
-    public QueryHederaOperations(@NonNull final QueryContext context, @NonNull final HederaConfig hederaConfig) {
+    public QueryHederaOperations(
+            @NonNull final QueryContext context,
+            @NonNull final HederaConfig hederaConfig,
+            @NonNull final TinybarValues tinybarValues) {
         this.context = requireNonNull(context);
         this.hederaConfig = requireNonNull(hederaConfig);
+        this.tinybarValues = requireNonNull(tinybarValues);
     }
 
     /**
@@ -108,12 +114,17 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries should not be considering creations");
     }
 
+    @Override
+    public long accountCreationLimit() {
+        throw new UnsupportedOperationException("Queries should not be considering creations");
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public @NonNull Bytes entropy() {
-        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        final var entropy = context.blockRecordInfo().prngSeed();
         return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
@@ -141,8 +152,7 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        // TODO - implement correctly
-        return 1L;
+        return tinybarValues.asTinybars(tinycents);
     }
 
     /**

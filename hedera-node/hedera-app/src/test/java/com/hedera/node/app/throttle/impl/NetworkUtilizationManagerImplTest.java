@@ -101,7 +101,7 @@ class NetworkUtilizationManagerImplTest {
         subject.trackTxn(transactionInfo, consensusNow, state);
 
         // then
-        verify(throttleAccumulator).shouldThrottle(transactionInfo, consensusNow, state);
+        verify(throttleAccumulator).checkAndEnforceThrottle(transactionInfo, consensusNow, state);
         verify(congestionMultipliers).updateMultiplier(consensusNow);
     }
 
@@ -115,13 +115,14 @@ class NetworkUtilizationManagerImplTest {
                 AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                CRYPTO_TRANSFER);
+                CRYPTO_TRANSFER,
+                null);
 
         // when
         subject.trackFeePayments(consensusNow, state);
 
         // then
-        verify(throttleAccumulator).shouldThrottle(expectedTxnToBeChargedFor, consensusNow, state);
+        verify(throttleAccumulator).checkAndEnforceThrottle(expectedTxnToBeChargedFor, consensusNow, state);
         verify(congestionMultipliers).updateMultiplier(consensusNow);
     }
 }

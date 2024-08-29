@@ -34,43 +34,92 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdrop;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
+import static com.hedera.services.bdd.suites.crypto.TransferWithCustomFixedFees.htsFee;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
+import com.hedera.services.bdd.junit.EmbeddedReason;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.EmbeddedVerbs;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
@@ -81,6 +130,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         lifecycle.overrideInClass(Map.of(
                 "tokens.airdrops.enabled", "true",
+                "tokens.airdrops.claim.enabled", "true",
                 "entities.unlimitedAutoAssociationsEnabled", "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
@@ -123,6 +173,38 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 // unlimited associations receiver - 0.1 (because not associated yet)
                                 // free auto associations receiver - 0.1 (because not associated yet)
                                 validateChargedUsd("fungible airdrop", 0.2, 1));
+            }
+
+            @HapiTest
+            final Stream<DynamicTest> tokenMultipleAirdropsToSameAccount() {
+                String receiver = "OneReceiver";
+                return defaultHapiSpec("to multiple accounts should transfer fungible tokens")
+                        .given()
+                        .when(
+                                cryptoCreate("Sender1"),
+                                cryptoCreate("Sender2"),
+                                cryptoCreate("Sender3"),
+                                cryptoCreate(receiver).maxAutomaticTokenAssociations(1),
+                                tokenAssociate("Sender1", FUNGIBLE_TOKEN),
+                                tokenAssociate("Sender2", FUNGIBLE_TOKEN),
+                                tokenAssociate("Sender3", FUNGIBLE_TOKEN),
+                                cryptoTransfer(
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, "Sender1"),
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, "Sender2"),
+                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, "Sender3")),
+                                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between("Sender1", receiver))
+                                        .payingWith("Sender1"),
+                                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between("Sender2", receiver))
+                                        .payingWith("Sender2"),
+                                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between("Sender3", receiver))
+                                        .payingWith("Sender3")
+                                        .via("multiple fungible airdrop"))
+                        .then(
+                                // assert balance
+                                getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 30),
+                                getAccountBalance("Sender1").hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance("Sender2").hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance("Sender3").hasTokenBalance(FUNGIBLE_TOKEN, 0));
             }
 
             @HapiTest
@@ -221,6 +303,90 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 // without free auto associations receiver - 0.1 (creates pending airdrop)
                                 validateChargedUsd("non fungible airdrop", 0.2, 1));
             }
+
+            @HapiTest
+            @DisplayName("charge association fee for FT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.05, 1));
+            }
+
+            @HapiTest
+            @DisplayName("charge association fee for NFT correctly")
+            final Stream<DynamicTest> chargeAssociationFeeForNFT() {
+                var receiver = "receiver";
+                return hapiTest(
+                        cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("airdrop"),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 2).between(OWNER, receiver))
+                                .payingWith(OWNER)
+                                .via("second airdrop"),
+                        validateChargedUsd("airdrop", 0.1, 1),
+                        validateChargedUsd("second airdrop", 0.1, 1));
+            }
+
+            @HapiTest
+            @DisplayName("with multiple tokens")
+            final Stream<DynamicTest> tokenAirdropMultipleTokens() {
+                return defaultHapiSpec("airdrop multiple tokens should pass")
+                        .given(
+                                createTokenWithName("FT1"),
+                                createTokenWithName("FT2"),
+                                createTokenWithName("FT3"),
+                                createTokenWithName("FT4"),
+                                createTokenWithName("FT5"),
+                                createTokenWithName("FT6"),
+                                createTokenWithName("FT7"),
+                                createTokenWithName("FT8"),
+                                createTokenWithName("FT9"),
+                                createTokenWithName("FT10"))
+                        .when(tokenAirdrop(
+                                        defaultMovementOfToken("FT1"),
+                                        defaultMovementOfToken("FT2"),
+                                        defaultMovementOfToken("FT3"),
+                                        defaultMovementOfToken("FT4"),
+                                        defaultMovementOfToken("FT5"),
+                                        defaultMovementOfToken("FT6"),
+                                        defaultMovementOfToken("FT7"),
+                                        defaultMovementOfToken("FT8"),
+                                        defaultMovementOfToken("FT9"),
+                                        defaultMovementOfToken("FT10"))
+                                .payingWith(OWNER)
+                                .via("fungible airdrop"))
+                        .then(
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT1", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT2", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT3", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT4", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT5", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT6", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT7", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT8", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT9", 10),
+                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance("FT10", 10));
+            }
         }
 
         @HapiTest
@@ -263,6 +429,32 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
+        @DisplayName("that is alias with 0 free maxAutoAssociations")
+        final Stream<DynamicTest> airdropToAliasWithNoFreeSlots() {
+            final var validAlias = "validAlias";
+            return defaultHapiSpec("should go in pending state")
+                    .given(newKeyNamed(validAlias))
+                    .when(
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAlias))
+                                    .payingWith(OWNER)
+                                    .signedBy(OWNER, validAlias),
+                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)),
+                            cryptoUpdateAliased(validAlias)
+                                    .maxAutomaticAssociations(1)
+                                    .signedBy(validAlias, DEFAULT_PAYER))
+                    .then(
+                            tokenAirdrop(moveFungibleTokensTo(validAlias))
+                                    .payingWith(OWNER)
+                                    .via("aliasAirdrop"),
+                            getTxnRecord("aliasAirdrop")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(
+                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAlias)))),
+                            getAccountBalance(validAlias).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+        }
+
+        @HapiTest
         @DisplayName("airdrop to contract with admin key")
         final Stream<DynamicTest> airdropToContractWithAdminKey() {
             final var testContract = "ToyMaker";
@@ -275,24 +467,211 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .signedBy(OWNER)
                             .payingWith(OWNER));
         }
+
+        @HapiTest
+        @DisplayName("after reject should keep the association")
+        final Stream<DynamicTest> afterRejectShouldKeepTheAssociation() {
+            final var receiver = "receiver";
+            return hapiTest(
+                    cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+
+                    // Token airdrop and verify that the receiver balance is 0
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Claim and verify that receiver balance is 10
+                    tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
+                            .payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+
+                    // Reject and verify that receiver balance is 0
+                    tokenReject(rejectingToken(FUNGIBLE_TOKEN)).payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Airdrop without claim and verify that the receiver balance is 10
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop after claim should result in CryptoTransfer")
+        final Stream<DynamicTest> airdropAfterClaimShouldResultInCryptoTransfer() {
+            final var receiver = "receiver";
+            return hapiTest(
+                    cryptoCreate(receiver).maxAutomaticTokenAssociations(0),
+
+                    // Token airdrop and verify that the receiver balance is 0
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+
+                    // Claim and verify that receiver balance is 10
+                    tokenClaimAirdrop(pendingAirdrop(OWNER, receiver, FUNGIBLE_TOKEN))
+                            .payingWith(receiver),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+
+                    // Airdrop without claim and verify that the receiver balance is 20
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, receiver))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER),
+                    getAccountBalance(receiver).hasTokenBalance(FUNGIBLE_TOKEN, 20));
+        }
+
+        @Nested
+        @DisplayName("and with receiverSigRequired=true")
+        class ReceiverSigRequiredTests {
+            private static final String RECEIVER_WITH_SIG_REQUIRED = "receiver_sig_required";
+
+            @HapiTest
+            @DisplayName("signed and no free slots")
+            final Stream<DynamicTest> receiverSigInPending() {
+
+                return defaultHapiSpec("should go to pending state")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(0))
+                        .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                .via("sigTxn"))
+                        .then(
+                                getTxnRecord("sigTxn")
+                                        // assert transfers
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(
+                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+            }
+
+            @HapiTest
+            @DisplayName("signed and with free slots")
+            final Stream<DynamicTest> receiverSigInPendingFreeSlots() {
+
+                return defaultHapiSpec("should result in successful transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                .payingWith(OWNER)
+                                .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                .via("sigTxn"))
+                        .then(
+                                getTxnRecord("sigTxn")
+                                        // assert transfers
+                                        .hasPriority(recordWith()
+                                                .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                // assert balances
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+            }
+
+            @HapiTest
+            @DisplayName("and is associated and signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociated() {
+
+                return defaultHapiSpec("should result in successful transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(RECEIVER_WITH_SIG_REQUIRED, OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .tokenTransfers(includingFungibleMovement(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+            }
+
+            @HapiTest
+            @DisplayName("and is associated but not signed by receiver")
+            final Stream<DynamicTest> receiverSigIsAssociatedButNotSigned() {
+
+                return defaultHapiSpec("should result in pending transfer")
+                        .given(cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                .receiverSigRequired(true)
+                                .maxAutomaticTokenAssociations(5))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, FUNGIBLE_TOKEN))
+                        .then(
+                                tokenAirdrop(moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                        moveFungibleTokensTo(RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+            }
+
+            @HapiTest
+            @DisplayName("multiple tokens with one associated")
+            final Stream<DynamicTest> multipleTokensOneAssociated() {
+
+                return defaultHapiSpec("should transfer one token and keep the other in pending state")
+                        .given(
+                                tokenCreate("FT_B").treasury(OWNER).initialSupply(500),
+                                cryptoCreate(RECEIVER_WITH_SIG_REQUIRED)
+                                        .receiverSigRequired(true)
+                                        .maxAutomaticTokenAssociations(0))
+                        .when(tokenAssociate(RECEIVER_WITH_SIG_REQUIRED, "FT_B"))
+                        .then(
+                                tokenAirdrop(
+                                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_SIG_REQUIRED),
+                                                moving(10, "FT_B").between(OWNER, RECEIVER_WITH_SIG_REQUIRED))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER, RECEIVER_WITH_SIG_REQUIRED)
+                                        .via("sigTxn"),
+                                getTxnRecord("sigTxn")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(
+                                                        includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                                .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))
+                                                .tokenTransfers(includingFungibleMovement(moving(10, "FT_B")
+                                                        .between(OWNER, RECEIVER_WITH_SIG_REQUIRED)))),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance(RECEIVER_WITH_SIG_REQUIRED).hasTokenBalance("FT_B", 10));
+            }
+        }
+
+        @HapiTest
+        @DisplayName("token not associated after pending airdrop")
+        final Stream<DynamicTest> tokenNotAssociatedAfterPendingAirdrop() {
+            final var notAssociatedReceiver = "notAssociatedReceiver";
+            return hapiTest(
+                    cryptoCreate(notAssociatedReceiver).maxAutomaticTokenAssociations(0),
+                    tokenAirdrop(moveFungibleTokensTo(notAssociatedReceiver)).payingWith(OWNER),
+                    cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, notAssociatedReceiver))
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
     }
 
     // custom fees
     @Nested
     @DisplayName("with custom fees for")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AirdropTokensWithCustomFees {
-
-        private static long hbarFee = 1_000L;
-        private static long tokenTotal = 1_000L;
-        private static long htsFee = 100L;
+        private static final long HBAR_FEE = 1000L;
+        private static final long HTS_FEE = 100L;
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-            lifecycle.doAdhoc(setUpTokensWithCustomFees(tokenTotal, hbarFee, htsFee));
+            lifecycle.doAdhoc(setUpTokensWithCustomFees(1_000_000L, HBAR_FEE, HTS_FEE));
         }
 
         @HapiTest
         @DisplayName("fungible token with fixed Hbar fee")
+        @Order(1)
         final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFee() {
             final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return defaultHapiSpec(" sender should prepay hbar custom fee")
@@ -310,14 +689,14 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             // assert balances
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                     .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 0),
-                            getAccountBalance(HBAR_COLLECTOR).hasTinyBars(hbarFee),
+                            getAccountBalance(HBAR_COLLECTOR).hasTinyBars(HBAR_FEE),
                             withOpContext((spec, log) -> {
                                 final var record = getTxnRecord("transferTx");
                                 allRunFor(spec, record);
                                 final var txFee = record.getResponseRecord().getTransactionFee();
                                 // the token should not be transferred but the custom fee should be charged
                                 final var ownerBalance = getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                        .hasTinyBars(initialBalance - (txFee + hbarFee))
+                                        .hasTinyBars(initialBalance - (txFee + HBAR_FEE))
                                         .hasTokenBalance(FT_WITH_HBAR_FIXED_FEE, 1000);
                                 allRunFor(spec, ownerBalance);
                             }),
@@ -326,7 +705,24 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
+        @DisplayName("fungible token with fixed Hbar fee payed by treasury")
+        final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFeePayedByTreasury() {
+            return defaultHapiSpec(" sender should prepay hbar custom fee")
+                    .given()
+                    .when(tokenAirdrop(moving(1, TREASURY_AS_SENDER_TOKEN)
+                                    .between(TREASURY_AS_SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(TREASURY_AS_SENDER)
+                            .signedBy(TREASURY_AS_SENDER)
+                            .via("transferTx"))
+                    .then(
+                            // custom fee should not be charged
+                            getAccountBalance(TREASURY_AS_SENDER).hasTokenBalance(DENOM_TOKEN, 0),
+                            validateChargedUsd("transferTx", 0.1, 10));
+        }
+
+        @HapiTest
         @DisplayName("NFT with 2 layers fixed Hts fee")
+        @Order(2)
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
             return defaultHapiSpec("sender should prepay hts custom fee")
                     .given(
@@ -338,58 +734,133 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             cryptoTransfer(
                                     movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES),
-                                    moving(tokenTotal, FT_WITH_HTS_FIXED_FEE)
+                                    moving(HTS_FEE, FT_WITH_HTS_FIXED_FEE)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES),
-                                    moving(tokenTotal, DENOM_TOKEN)
+                                    moving(HTS_FEE, DENOM_TOKEN)
                                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_CUSTOM_FEES)))
                     .when(
                             tokenAirdrop(movingUnique(NFT_WITH_HTS_FIXED_FEE, 1L)
                                             .between(
                                                     OWNER_OF_TOKENS_WITH_CUSTOM_FEES,
                                                     RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                                    .fee(ONE_HUNDRED_HBARS)
                                     .payingWith(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
                                     .via("transferTx"),
                             // pending airdrop should be created
                             validateChargedUsd("transferTx", 0.1, 10))
                     .then(
                             getAccountBalance(OWNER_OF_TOKENS_WITH_CUSTOM_FEES)
-                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1)
-                                    .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, tokenTotal - htsFee)
-                                    .hasTokenBalance(DENOM_TOKEN, tokenTotal - htsFee),
+                                    .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 1) // token was transferred
+                                    .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, 0) // hts was charged
+                                    .hasTokenBalance(DENOM_TOKEN, 0), // hts was charged
                             getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                     .hasTokenBalance(NFT_WITH_HTS_FIXED_FEE, 0),
                             getAccountBalance(HTS_COLLECTOR).hasTokenBalance(DENOM_TOKEN, htsFee),
-                            getAccountBalance(HTS_COLLECTOR2).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
+                            getAccountBalance(HTS_COLLECTOR).hasTokenBalance(FT_WITH_HTS_FIXED_FEE, htsFee));
         }
 
         @HapiTest
-        @DisplayName("fungible token with fractional fee")
-        final Stream<DynamicTest> fungibleTokenWithFractionalFeesPaidByReceiverFails() {
+        @DisplayName("FT with fractional fee and net of transfers true")
+        @Order(3)
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersTre() {
             return defaultHapiSpec("should be successful transfer")
                     .given(
-                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
-                            cryptoTransfer(
-                                    moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
-                    .when(tokenAirdrop(moving(25, FT_WITH_FRACTIONAL_FEE)
+                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .when(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(OWNER)
                             .via("fractionalTxn"))
                     .then(
                             validateChargedUsd("fractionalTxn", 0.1, 10),
+                            // sender should pay 1 token for fractional fee
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 89),
+                            getAccountBalance(HTS_COLLECTOR)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 1),
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_NET_OF_TRANSFERS, 10));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false")
+        @Order(4)
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalse() {
+            return defaultHapiSpec("should be successful transfer")
+                    .given(
+                            tokenAssociate(OWNER, FT_WITH_FRACTIONAL_FEE),
+                            cryptoTransfer(
+                                    moving(100, FT_WITH_FRACTIONAL_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .when(tokenAirdrop(moving(10, FT_WITH_FRACTIONAL_FEE)
+                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER)
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 90),
+                            // the fee is charged from the transfer value
+                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 9));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false, in pending state")
+        @Order(5)
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseInPendingState() {
+            var sender = "sender";
+            return defaultHapiSpec("the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE)
+                                    .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(sender)
+                            .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.1, 10),
+                            // the fee is charged from the transfer value,
+                            // so we expect 90% of the value to be in the pending state
                             getTxnRecord("fractionalTxn")
                                     .hasPriority(recordWith()
-                                            .tokenTransfers(includingFungibleMovement(moving(25, FT_WITH_FRACTIONAL_FEE)
-                                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))),
-                            getAccountBalance(OWNER).hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 75),
-                            getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                    .hasTokenBalance(FT_WITH_FRACTIONAL_FEE, 25));
+                                            .pendingAirdrops(
+                                                    includingFungiblePendingAirdrop(moving(90, FT_WITH_FRACTIONAL_FEE)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))));
+        }
+
+        @HapiTest
+        @DisplayName("FT with fractional fee with netOfTransfers=false and dissociated collector")
+        @Order(6)
+        final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
+            var sender = "sender";
+            return defaultHapiSpec("should have 2 pending airdrops and the value should be reduced")
+                    .given(
+                            cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                            tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE_2),
+                            cryptoTransfer(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)))
+                    .when(
+                            tokenDissociate(HTS_COLLECTOR, FT_WITH_FRACTIONAL_FEE_2),
+                            tokenAirdrop(moving(100, FT_WITH_FRACTIONAL_FEE_2)
+                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(sender)
+                                    .via("fractionalTxn"))
+                    .then(
+                            validateChargedUsd("fractionalTxn", 0.2, 10),
+                            getTxnRecord("fractionalTxn")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moving(90, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                                    moving(10, FT_WITH_FRACTIONAL_FEE_2)
+                                                            .between(sender, HTS_COLLECTOR)))));
         }
 
         @HapiTest
         @DisplayName("NFT with royalty fee")
+        @Order(7)
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION")
+            return defaultHapiSpec("should fail - TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY")
                     .given()
                     .when(
                             tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
@@ -398,7 +869,85 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .then(tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 1L)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .signedByPayerAnd(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS, OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION));
+                            .hasKnownStatus(TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with royalty fee with fee collector as receiver")
+        final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
+                    cryptoTransfer(
+                            movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(OWNER, HTS_COLLECTOR))
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
+        }
+
+        @HapiTest
+        @DisplayName("FT with royalty fee with fee collector as receiver")
+        final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
+                    tokenAssociate(OWNER, DENOM_TOKEN),
+                    cryptoTransfer(
+                            moving(HTS_FEE, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(HTS_FEE, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, HTS_COLLECTOR))
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with royalty fee with treasury as receiver")
+        final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
+                    cryptoTransfer(
+                            movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
+        }
+
+        @HapiTest
+        @DisplayName("FT with royalty fee with treasury as receiver")
+        final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
+            return hapiTest(
+                    cryptoCreate(OWNER),
+                    tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
+                    tokenAssociate(OWNER, DENOM_TOKEN),
+                    cryptoTransfer(
+                            moving(HTS_FEE, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
+                            moving(HTS_FEE, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
+                    tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
+        }
+
+        // When a receiver is a custom fee collector it should be exempt from the custom fee
+        @HapiTest
+        @DisplayName("NFT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
+        final Stream<DynamicTest> nftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
+            return hapiTest(
+                    mintToken(
+                            NFT_ALL_COLLECTORS_EXEMPT_TOKEN, List.of(ByteStringUtils.wrapUnsafely("meta".getBytes()))),
+                    cryptoTransfer(movingUnique(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1L)
+                            .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, NFT_ALL_COLLECTORS_EXEMPT_OWNER)),
+                    tokenAirdrop(movingUnique(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1L)
+                                    .between(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_RECEIVER))
+                            .signedByPayerAnd(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER, NFT_ALL_COLLECTORS_EXEMPT_OWNER));
+        }
+
+        // When a receiver is a custom fee collector it should be exempt from the custom fee
+        @HapiTest
+        @DisplayName("FT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
+        final Stream<DynamicTest> ftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
+            return hapiTest(
+                    cryptoTransfer(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                            .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, FT_ALL_COLLECTORS_EXEMPT_OWNER)),
+                    tokenAirdrop(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                                    .between(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_RECEIVER))
+                            .signedByPayerAnd(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_OWNER));
         }
     }
 
@@ -410,7 +959,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> airdropToNonExistingED25519Account() {
             var ed25519key = "ed25519key";
             return defaultHapiSpec("should auto-create and transfer the tokens")
-                    .given(newKeyNamed(ed25519key))
+                    .given(newKeyNamed(ed25519key).shape(SigControl.ED25519_ON))
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, ed25519key))
                             .payingWith(OWNER)
                             .via("ed25519Receiver"))
@@ -425,7 +974,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> airdropToNonExistingSECP256K1Account() {
             var secp256K1 = "secp256K1";
             return defaultHapiSpec("should auto-create and transfer the tokens")
-                    .given(newKeyNamed(secp256K1))
+                    .given(newKeyNamed(secp256K1).shape(SigControl.SECP256K1_ON))
                     .when(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, secp256K1))
                             .payingWith(OWNER)
                             .via("secp256k1Receiver"))
@@ -450,6 +999,26 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .via("evmAddressReceiver"))
                     .then(
                             getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                            // Any new auto-creation needs to explicitly associate token. So it will be $0.1
+                            validateChargedUsd("evmAddressReceiver", 0.1, 1));
+        }
+
+        @HapiTest
+        @DisplayName("a NFT to an EVM address account")
+        final Stream<DynamicTest> airdropNftToNonExistingAccount() {
+            // calculate evmAddress;
+            final byte[] publicKey =
+                    CommonUtils.unhex("02641dc27aa851ddc5a238dc569718f82b4e5eb3b61030942432fe7ac9088459c5");
+            final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+
+            return defaultHapiSpec("should lazy-create and transfer with NFT")
+                    .given()
+                    .when(tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 15L)
+                                    .between(OWNER, evmAddress))
+                            .payingWith(OWNER)
+                            .via("evmAddressReceiver"))
+                    .then(
+                            getAliasedAccountBalance(evmAddress).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                             // Any new auto-creation needs to explicitly associate token. So it will be $0.1
                             validateChargedUsd("evmAddressReceiver", 0.1, 1));
         }
@@ -489,6 +1058,32 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER));
         }
 
+        @HapiTest
+        @DisplayName("in pending state")
+        final Stream<DynamicTest> freezeAndAirdrop() {
+            var sender = "Sender";
+            return defaultHapiSpec("can't be frozen and airdropped again")
+                    .given(
+                            cryptoCreate(sender),
+                            tokenAssociate(sender, FUNGIBLE_TOKEN),
+                            cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, sender)),
+                            // send first airdrop
+                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(sender)
+                                    .via("first"),
+                            getTxnRecord("first")
+                                    // assert pending airdrops
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                    .between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))))
+                    .when(tokenFreeze(FUNGIBLE_TOKEN, sender))
+                    .then( // the airdrop should fail
+                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(sender, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(sender)
+                                    .via("second")
+                                    .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        }
+
         /**
          *  When we set the token value as negative value, the transfer list that we aggregate just switch
          *  the roles of sender and receiver, so the sender checks will fail.
@@ -519,19 +1114,33 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("with missing owner's signature")
-        final Stream<DynamicTest> missingPayerSigFails() {
+        @DisplayName("fungible token with allowance")
+        final Stream<DynamicTest> airdropFtWithAllowance() {
             var spender = "spender";
-            return defaultHapiSpec("should fail - INVALID_SIGNATURE")
+            return defaultHapiSpec("should fail - NOT_SUPPORTED")
                     .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
                     .when(cryptoApproveAllowance()
                             .payingWith(OWNER)
                             .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spender, 100))
                     .then(tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
                                     .between(spender, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            // Should be signed by owner as well
-                            .signedBy(spender)
-                            .hasPrecheck(INVALID_SIGNATURE));
+                            .signedBy(OWNER, spender)
+                            .hasPrecheck(NOT_SUPPORTED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with allowance")
+        final Stream<DynamicTest> airdropNftWithAllowance() {
+            var spender = "spender";
+            return defaultHapiSpec("should fail - NOT_SUPPORTED")
+                    .given(cryptoCreate(spender).balance(ONE_HUNDRED_HBARS))
+                    .when(cryptoApproveAllowance()
+                            .payingWith(OWNER)
+                            .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, spender, true, List.of()))
+                    .then(tokenAirdrop(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                            .signedBy(OWNER, spender)
+                            .hasPrecheck(NOT_SUPPORTED));
         }
 
         @HapiTest
@@ -547,7 +1156,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN)
                                     .between(lowBalanceOwner, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                             .payingWith(lowBalanceOwner)
-                            .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
+                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
 
         @HapiTest
@@ -581,9 +1190,9 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("has transfer list size above the max")
+        @DisplayName("has transfer list size above the max to one account")
         final Stream<DynamicTest> aboveMaxTransfersFails() {
-            return defaultHapiSpec("should fail - INVALID_TRANSACTION_BODY")
+            return defaultHapiSpec("should fail - TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED")
                     .given(
                             createTokenWithName("FUNGIBLE1"),
                             createTokenWithName("FUNGIBLE2"),
@@ -610,7 +1219,558 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasPrecheck(INVALID_TRANSACTION_BODY));
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop from sender that is not associated with the fungible token")
+        final Stream<DynamicTest> airdropFungibleTokenNotAssociatedWithSender() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(moving(50, FUNGIBLE_TOKEN).between(OWNER_TWO, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop from sender that is not associated with the NFT")
+        final Stream<DynamicTest> airdropNFTNotAssociatedWithSender() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER_TWO, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("with different payer signature")
+        final Stream<DynamicTest> missingTheRightPayerSigFails() {
+            final String OWNER_TWO = "owner2";
+            return hapiTest(
+                    cryptoCreate(OWNER_TWO).balance(ONE_HUNDRED_HBARS),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, ASSOCIATED_RECEIVER))
+                            .signedByPayerAnd(OWNER_TWO)
+                            .hasKnownStatus(INVALID_SIGNATURE));
+        }
+
+        @HapiTest
+        @DisplayName("when sending fungible token to system address")
+        final Stream<DynamicTest> fungibleTokenReceiverSystemAddress() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(100L),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, FREEZE_ADMIN))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("when sending nft to system address")
+        final Stream<DynamicTest> nftTokenReceiverSystemAddress() {
+            return hapiTest(tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, FREEZE_ADMIN))
+                    .signedByPayerAnd(OWNER)
+                    .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT));
+        }
+
+        @HapiTest
+        @DisplayName("FT to deleted ECDSA account")
+        final Stream<DynamicTest> ftOnDeletedECDSAAccount() {
+            final var ecdsaKey = "ecdsaKey";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ecdsaKey).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ecdsaKey),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT to deleted ECDSA account")
+        final Stream<DynamicTest> nftToDeletedECDSAAccount() {
+            final var ecdsaKey = "ecdsaKey";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ecdsaKey).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ecdsaKey),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 6)
+                                    .between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("FT on deleted ED25519 account")
+        final Stream<DynamicTest> ftOnDeletedED25519Account() {
+            final var ed25519 = "ED25519";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ed25519).shape(SigControl.ED25519_ON),
+                    cryptoCreate(deletedAccount).key(ed25519),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("NFT on deleted ED25519 account")
+        final Stream<DynamicTest> nftOnDeletedED25519Account() {
+            final var ed25519 = "ED25519";
+            final var deletedAccount = "deletedAccount";
+            return hapiTest(
+                    newKeyNamed(ed25519).shape(SigControl.SECP256K1_ON),
+                    cryptoCreate(deletedAccount).key(ed25519),
+                    cryptoDelete(deletedAccount),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 7)
+                                    .between(OWNER, deletedAccount))
+                            .signedBy(OWNER)
+                            .payingWith(OWNER)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to incorrect account")
+        final Stream<DynamicTest> transferFungibleTokenToIncorrectAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, "0.0.999999999999999"))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token from invalid account")
+        final Stream<DynamicTest> transferFungibleTokenFromIncorrectAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A).between("0.0.999999999999999", ALICE))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer NFT to incorrect account")
+        final Stream<DynamicTest> transferNFTTokenToIncorrectAccount() {
+            final String ALICE = "alice";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between(ALICE, "0.0.999999999999999"))
+                            .signedByPayerAnd(ALICE, OWNER)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer NFT to from invalid account")
+        final Stream<DynamicTest> transferNFTTokenFromIncorrectAccount() {
+            final String ALICE = "alice";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                    .between("0.0.999999999999999", ALICE))
+                            .signedByPayerAnd(ALICE, OWNER)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token to incorrect alias")
+        final Stream<DynamicTest> transferFungibleTokenToIncorrectAliasAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
+                                    .between(ALICE, "0x000000000000000000000069175290276410818578"))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ALIAS_KEY));
+        }
+
+        @HapiTest
+        @DisplayName("transfer fungible token from incorrect alias")
+        final Stream<DynamicTest> transferFungibleTokenFromIncorrectAliasAccount() {
+            final String ALICE = "alice";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAirdrop(moving(10L, FUNGIBLE_TOKEN_A)
+                                    .between("0x000000000000000000000069175290276410818578", ALICE))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer invalid fungible token")
+        final Stream<DynamicTest> transferInvalidFungibleToken() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    withOpContext((spec, opLog) -> {
+                        spec.registry()
+                                .saveTokenId(
+                                        FUNGIBLE_TOKEN_A,
+                                        TokenID.newBuilder()
+                                                .setTokenNum(5555555L)
+                                                .build());
+                    }),
+                    tokenAirdrop(moving(50L, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_TOKEN_ID));
+        }
+
+        @HapiTest
+        @DisplayName("transfer invalid NFT token")
+        final Stream<DynamicTest> transferInvalidNFT() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String nftKey = "nftKey";
+
+            final String NON_FUNGIBLE_TOKEN_A = "onnFungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    newKeyNamed(nftKey),
+                    tokenCreate(NON_FUNGIBLE_TOKEN_A)
+                            .treasury(OWNER)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .initialSupply(0L)
+                            .name(NON_FUNGIBLE_TOKEN_A)
+                            .supplyKey(nftKey),
+                    tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN_A),
+                    withOpContext((spec, opLog) -> {
+                        spec.registry()
+                                .saveTokenId(
+                                        NON_FUNGIBLE_TOKEN_A,
+                                        TokenID.newBuilder()
+                                                .setTokenNum(5555555L)
+                                                .build());
+                    }),
+                    tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_A, 1L)
+                                    .between(ALICE, BOB))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INVALID_TOKEN_ID));
+        }
+
+        @HapiTest
+        @DisplayName("duplicate nft airdrop during handle")
+        final Stream<DynamicTest> duplicateNFTHandleTokenAirdrop() {
+            return hapiTest(
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER),
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(PENDING_NFT_AIRDROP_ALREADY_EXISTS));
+        }
+
+        @HapiTest
+        @DisplayName("duplicate nft airdrop during pure checks")
+        final Stream<DynamicTest> duplicateNFTPreHAndleTokenAirdrop() {
+            return hapiTest(tokenAirdrop(
+                            movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                            movingUnique(NON_FUNGIBLE_TOKEN, 9L).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                    .payingWith(OWNER)
+                    .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
+        }
+
+        @HapiTest
+        @DisplayName("not enough hbar to pay for the trx fee")
+        final Stream<DynamicTest> notEnoughHbarToPayForTheTrx() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(0L),
+                    cryptoCreate(BOB).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+        }
+
+        @HapiTest
+        @DisplayName("more than 10 tokens to multiple accounts")
+        final Stream<DynamicTest> moreThanTenTokensToMultipleAccounts() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String CAROL = "carol";
+            final String STEVE = "steve";
+            final String TOM = "tom";
+            final String YULIA = "yulia";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
+            final String FUNGIBLE_TOKEN_C = "fungibleTokenC";
+            final String FUNGIBLE_TOKEN_D = "fungibleTokenD";
+            final String FUNGIBLE_TOKEN_E = "fungibleTokenE";
+            final String FUNGIBLE_TOKEN_F = "fungibleTokenF";
+            final String FUNGIBLE_TOKEN_G = "fungibleTokenG";
+            final String FUNGIBLE_TOKEN_H = "fungibleTokenH";
+            final String FUNGIBLE_TOKEN_I = "fungibleTokenI";
+            final String FUNGIBLE_TOKEN_J = "fungibleTokenJ";
+            final String FUNGIBLE_TOKEN_K = "fungibleTokenK";
+
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(CAROL).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(STEVE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(YULIA).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_B)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_C)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_D)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_E)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_F)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_G)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_H)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_I)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_J)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenCreate(FUNGIBLE_TOKEN_K)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_B),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_C),
+                    tokenAssociate(CAROL, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(TOM, FUNGIBLE_TOKEN_E),
+                    tokenAssociate(TOM, FUNGIBLE_TOKEN_F),
+                    tokenAssociate(YULIA, FUNGIBLE_TOKEN_G),
+                    tokenAssociate(YULIA, FUNGIBLE_TOKEN_H),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_I),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_J),
+                    tokenAssociate(STEVE, FUNGIBLE_TOKEN_K),
+                    tokenAirdrop(
+                                    moving(10L, FUNGIBLE_TOKEN_A).between(ALICE, BOB),
+                                    moving(10L, FUNGIBLE_TOKEN_B).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_C).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_D).between(ALICE, CAROL),
+                                    moving(10L, FUNGIBLE_TOKEN_E).between(ALICE, TOM),
+                                    moving(10L, FUNGIBLE_TOKEN_F).between(ALICE, TOM),
+                                    moving(10L, FUNGIBLE_TOKEN_G).between(ALICE, YULIA),
+                                    moving(10L, FUNGIBLE_TOKEN_H).between(ALICE, YULIA),
+                                    moving(10L, FUNGIBLE_TOKEN_I).between(ALICE, STEVE),
+                                    moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
+                                    moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+        }
+
+        @HapiTest
+        @DisplayName("account that supposed to pay has no enough tokens to pay custom fees")
+        final Stream<DynamicTest> accountThatSupposedToPayHasNoEnoughTokensForCustomFees() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String TOM = "tom";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(HBAR_COLLECTOR).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L)
+                            .withCustom(fixedHbarFee(ONE_HUNDRED_HBARS, HBAR_COLLECTOR)),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoTransfer(moving(10, FUNGIBLE_TOKEN_A).between(TOM, ALICE)),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+        }
+
+        @HapiTest
+        @DisplayName("account that supposed to signed has been deleted")
+        final Stream<DynamicTest> accountThatSupposedToSignedHasBeenDeleted() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(BOB)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(15L),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoDelete(ALICE),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            // pay by default payer, but sign with ALICE too
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("account that has a token is frozen supposed to fail")
+        final Stream<DynamicTest> accountThatHasTokenIsFrozenSupposedToFail() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    newKeyNamed("freezeKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .freezeKey("freezeKey")
+                            .initialSupply(15L),
+                    tokenFreeze(FUNGIBLE_TOKEN_A, ALICE),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        }
+
+        @HapiTest
+        @DisplayName("account that has a token is paused supposed to fail")
+        final Stream<DynamicTest> accountThatHasTokenIsPausedSupposedToFail() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(
+                    newKeyNamed("pauseKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .pauseKey("pauseKey")
+                            .initialSupply(15L),
+                    tokenPause(FUNGIBLE_TOKEN_A),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_A).hasKnownStatus(TOKEN_IS_PAUSED),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(TOKEN_IS_PAUSED));
+        }
+
+        @HapiTest
+        @DisplayName("token with three layers of custom fees")
+        final Stream<DynamicTest> tokenWithThreeLayersOfCustomFees() {
+            final String ALICE = "alice";
+            final String BOB = "bob";
+            final String TOM = "tom";
+            final String COLLECTOR = "collector";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            final String FUNGIBLE_TOKEN_B = "fungibleTokenB";
+            final String FUNGIBLE_TOKEN_C = "fungibleTokenC";
+            final String FUNGIBLE_TOKEN_D = "fungibleTokenD";
+
+            return hapiTest(
+                    cryptoCreate(ALICE).balance(ONE_MILLION_HBARS),
+                    cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(TOM).balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate(COLLECTOR).balance(0L),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHbarFee(100, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_A),
+                    tokenCreate(FUNGIBLE_TOKEN_B)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_A, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_B),
+                    tokenCreate(FUNGIBLE_TOKEN_C)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_B, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_C),
+                    tokenCreate(FUNGIBLE_TOKEN_D)
+                            .treasury(TOM)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .initialSupply(5000L)
+                            .withCustom(fixedHtsFee(100, FUNGIBLE_TOKEN_C, COLLECTOR)),
+                    tokenAssociate(COLLECTOR, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(BOB, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_D),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_C),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_B),
+                    tokenAssociate(ALICE, FUNGIBLE_TOKEN_A),
+                    cryptoTransfer(moving(1000, FUNGIBLE_TOKEN_D).between(TOM, ALICE)),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_D).between(ALICE, BOB))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH));
         }
 
         @HapiTest
@@ -623,8 +1783,72 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, testContract))
                             .signedBy(OWNER)
                             .payingWith(OWNER)
-                            .hasKnownStatus(INVALID_TRANSACTION_BODY));
+                            .hasKnownStatus(NOT_SUPPORTED));
         }
+
+        @HapiTest
+        @DisplayName("self airdrop fails")
+        final Stream<DynamicTest> selfAirdropFails() {
+            return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, OWNER))
+                    .signedBy(OWNER)
+                    .payingWith(OWNER)
+                    .hasPrecheck(INVALID_TRANSACTION_BODY));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop to 0x0 address")
+        final Stream<DynamicTest> airdropTo0x0Address() {
+            final byte[] publicKey =
+                    CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000");
+            final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+
+            return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
+                    .payingWith(OWNER)
+                    .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+    }
+
+    @EmbeddedHapiTest(EmbeddedReason.NEEDS_STATE_ACCESS)
+    @DisplayName("verify that two fungible tokens airdrops combined into one pending airdrop")
+    final Stream<DynamicTest> twoFungibleTokenCombinedIntoOneAirdrop() {
+        final String ALICE = "alice";
+        final String BOB = "bob";
+        final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_A)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(100L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_A).between(ALICE, BOB)).signedByPayerAnd(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_A).between(ALICE, BOB)).signedByPayerAnd(ALICE),
+                EmbeddedVerbs.viewAccountPendingAirdrop(
+                        FUNGIBLE_TOKEN_A,
+                        ALICE,
+                        BOB,
+                        pendingAirdrop -> Assertions.assertEquals(
+                                2, pendingAirdrop.pendingAirdropValueOrThrow().amount())));
+    }
+
+    @HapiTest
+    @DisplayName("max supply hit - max long value")
+    final Stream<DynamicTest> fungibleTokenMaxSupplyHit() {
+        final String ALICE = "alice";
+        final String BOB = "bob";
+        final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN_A)
+                        .treasury(ALICE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE),
+                tokenAirdrop(moving(Long.MAX_VALUE, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                        .signedByPayerAnd(ALICE),
+                tokenAirdrop(moving(Long.MAX_VALUE, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
+                        .signedByPayerAnd(ALICE)
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
     }
 
     @Nested
@@ -655,6 +1879,213 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+        }
+    }
+
+    @Nested
+    @DisplayName("to contracts")
+    class ToContracts {
+        // 1 EOA Airdrops a token to a Contract who is associated to the token
+        @HapiTest
+        @DisplayName("single token to associated contract should transfer")
+        final Stream<DynamicTest> singleTokenToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 2 EOA airdrops multiple tokens to a contract that is associated to all of them
+        @HapiTest
+        @DisplayName("multiple tokens to associated contract should transfer")
+        final Stream<DynamicTest> multipleTokensToAssociatedContract() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 1).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 1:
+        // associated only to FT
+        @HapiTest
+        @DisplayName("multiple tokens, but only FT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 2).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingNftPendingAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 2)
+                                            .between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        // 3 Airdrop multiple tokens to a contract that is associated to SOME of them when the contract has free auto
+        // association slots.
+        // Case 2:
+        // associated only to NFT
+        @HapiTest
+        @DisplayName("multiple tokens, but only NFT is associated to the contract")
+        final Stream<DynamicTest> multipleTokensOnlyNFTIsAssociated() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, NFT_FOR_CONTRACT_TESTS),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 3).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContract"),
+                    getTxnRecord("airdropToContract")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("two tokens, one associated should transfer and go to pending")
+        final Stream<DynamicTest> multipleTokensOneAssociated() {
+            var mutableContract = "PayReceivable";
+            var secondToken = "secondFT";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN),
+                    tokenCreate(secondToken).treasury(OWNER),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    moving(1, secondToken).between(OWNER, mutableContract))
+                            .via("airdropToContractTxn")
+                            .payingWith(OWNER),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, secondToken).between(OWNER, mutableContract)))),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(secondToken, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("with custom royalty fee with fallback to collector succeeds when exempt")
+        final Stream<DynamicTest> customFeeToCollector() {
+            var collectorContract = "PayReceivable";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(collectorContract, 0),
+                    newKeyNamed(supplyKey),
+                    createNftWithRoyaltyWithFallbackFee(nftWithCustomFee, OWNER, collectorContract, supplyKey),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAirdrop(TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                    .between(OWNER, collectorContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContractTxn"),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .pendingAirdrops(includingNftPendingAirdrop(
+                                            movingUnique(nftWithCustomFee, 1L).between(OWNER, collectorContract)))),
+                    getAccountBalance(collectorContract).hasTokenBalance(nftWithCustomFee, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("with multiple custom royalty fee with fallback succeeds when exempt")
+        final Stream<DynamicTest> customFeeToDifferentCollectorWhenExempt() {
+            var collectorContract = "PayReceivable";
+            var nftCollector = "nftCollector";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(collectorContract, 1),
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(nftCollector),
+                    createNft(nftWithCustomFee, supplyKey)
+                            .withCustom(royaltyFeeWithFallback(
+                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), nftCollector, true))
+                            .withCustom(royaltyFeeWithFallback(
+                                    1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), collectorContract, true)),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAirdrop(TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                    .between(OWNER, collectorContract))
+                            .payingWith(OWNER)
+                            .via("airdropToContractTxn"),
+                    getTxnRecord("airdropToContractTxn")
+                            .hasPriority(recordWith()
+                                    .tokenTransfers(includingNonfungibleMovement(
+                                            movingUnique(nftWithCustomFee, 1L).between(OWNER, collectorContract)))),
+                    getAccountBalance(collectorContract).hasTokenBalance(nftWithCustomFee, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("with custom fee to treasury")
+        final Stream<DynamicTest> customFeeToTreasury() {
+            var treasuryContract = "PayReceivable";
+            var nftCollector = "nftCollector";
+            var nftWithCustomFee = "nfTokenWithCustomFee";
+            var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    deployMutableContract(treasuryContract, 0),
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(nftCollector),
+                    createNftWithRoyaltyWithFallbackFee(nftWithCustomFee, treasuryContract, nftCollector, supplyKey),
+                    mintToken(nftWithCustomFee, List.of(ByteStringUtils.wrapUnsafely(("customToken1").getBytes()))),
+                    tokenAssociate(OWNER, nftWithCustomFee),
+                    cryptoTransfer(movingUnique(nftWithCustomFee, 1L).between(treasuryContract, OWNER)),
+                    tokenAirdrop(movingUnique(nftWithCustomFee, 1L).between(OWNER, treasuryContract))
+                            .payingWith(OWNER)
+                            .via("airdropToTreasuryTxn"),
+                    getTxnRecord("airdropToTreasuryTxn")
+                            .hasPriority(recordWith()
+                                    .tokenTransfers(includingNonfungibleMovement(
+                                            TokenMovement.movingUnique(nftWithCustomFee, 1L)
+                                                    .between(OWNER, treasuryContract)))),
+                    getAccountBalance(treasuryContract).hasTokenBalance(nftWithCustomFee, 1)));
+        }
+
+        private HapiTokenCreate createNftWithRoyaltyWithFallbackFee(
+                String tokenName, String treasury, String collector, String supplyKey) {
+            return tokenCreate(tokenName)
+                    .treasury(treasury)
+                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                    .maxSupply(10L)
+                    .initialSupply(0)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .supplyKey(supplyKey)
+                    .withCustom(
+                            royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), collector, false));
+        }
+
+        private HapiTokenCreate createNft(String tokenName, String supplyKey) {
+            return tokenCreate(tokenName)
+                    .treasury(OWNER)
+                    .tokenType(NON_FUNGIBLE_UNIQUE)
+                    .maxSupply(10L)
+                    .initialSupply(0)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .supplyKey(supplyKey);
+        }
+
+        @HapiTest
+        @DisplayName("empty transfer list should fail")
+        final Stream<DynamicTest> emptyTransferListFails() {
+            return hapiTest(tokenAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_TOKEN_TRANSFER_BODY));
         }
     }
 }

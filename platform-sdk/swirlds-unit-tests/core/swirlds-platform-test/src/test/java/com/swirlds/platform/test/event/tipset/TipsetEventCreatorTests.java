@@ -1025,7 +1025,6 @@ class TipsetEventCreatorTests {
     /**
      * Checks that birth round on events is being set if the setting for using birth round is set.
      * <p>
-     * FUTURE WORK: Update this test to use RosterDiff instead of EventWindow
      */
     @ParameterizedTest
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})

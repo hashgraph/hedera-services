@@ -18,6 +18,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
@@ -209,6 +211,8 @@ class FileUpdateTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -293,6 +297,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -312,13 +318,15 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
 
     @Test
-    void validatesNewContentEmptyRemainSameContent() {
+    void validatesNewContentEmptyRemainSameContentIfNotSuperuserPayer() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
@@ -327,6 +335,8 @@ class FileUpdateTest extends FileTestBase {
                 .contents(Bytes.wrap(new byte[0]))
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:
@@ -334,6 +344,27 @@ class FileUpdateTest extends FileTestBase {
 
         final var updatedFile = writableFileState.get(fileId);
         assertEquals(file.contents(), updatedFile.contents());
+    }
+
+    @Test
+    void validatesNewContentsAreEmptyIfSuperuserPayerAndOverrideFile() {
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var op = OP_BUILDER
+                .fileID(WELL_KNOWN_SYSTEM_FILE_ID)
+                .contents(Bytes.wrap(new byte[0]))
+                .build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(50L).build());
+        when(handleContext.body()).thenReturn(txBody);
+
+        // expect:
+        subject.handle(handleContext);
+
+        final var updatedFile = requireNonNull(writableFileState.get(WELL_KNOWN_SYSTEM_FILE_ID));
+        assertEquals(0, updatedFile.contents().length());
     }
 
     @Test
@@ -346,6 +377,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -390,6 +423,8 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.savepointStack()).thenReturn(stack);
         when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -414,6 +449,8 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.savepointStack()).thenReturn(stack);
         when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -429,6 +466,8 @@ class FileUpdateTest extends FileTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 

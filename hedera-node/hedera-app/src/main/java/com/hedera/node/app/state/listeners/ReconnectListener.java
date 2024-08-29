@@ -23,12 +23,11 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -47,16 +46,12 @@ public class ReconnectListener implements ReconnectCompleteListener {
 
     private final Executor executor;
     private final ConfigProvider configProvider;
-    private final PlatformStateAccessor platformStateAccessor;
 
     @Inject
     public ReconnectListener(
-            @NonNull @Named("FreezeService") final Executor executor,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final PlatformStateAccessor platformStateAccessor) {
-        this.executor = executor;
-        this.configProvider = configProvider;
-        this.platformStateAccessor = platformStateAccessor;
+            @NonNull @Named("FreezeService") final Executor executor, @NonNull final ConfigProvider configProvider) {
+        this.executor = requireNonNull(executor);
+        this.configProvider = requireNonNull(configProvider);
     }
 
     @Override
@@ -70,18 +65,23 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 notification.getSequence());
         final State state = notification.getState().cast();
         final var readableStoreFactory = new ReadableStoreFactory(state);
-        final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
         final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
         final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
         final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
+        final var platformStateStore = readableStoreFactory.getStore(ReadablePlatformStateStore.class);
         final var upgradeActions = new ReadableFreezeUpgradeActions(
-                networkAdminConfig, freezeStore, executor, upgradeFileStore, upgradeNodeStore, upgradeStakingInfoStore);
+                configProvider.getConfiguration(),
+                freezeStore,
+                executor,
+                upgradeFileStore,
+                upgradeNodeStore,
+                upgradeStakingInfoStore);
         try {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state
             // will be up-to-date
-            upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
+            upgradeActions.catchUpOnMissedSideEffects(platformStateStore);
         } catch (Exception e) {
             log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }

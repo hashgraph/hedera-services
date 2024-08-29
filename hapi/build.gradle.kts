@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.gradle.protobuf")
     id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.test-fixtures")
     alias(libs.plugins.pbj)
 }
 
@@ -34,7 +34,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     // tag = "v0.53.0"
     // uncomment below to use a specific branch
-    branch = "add-throttle-at-consensus"
+    branch = "main"
 }
 
 sourceSets {
@@ -43,11 +43,13 @@ sourceSets {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
         }
         proto {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("block") })
         }
     }
 }

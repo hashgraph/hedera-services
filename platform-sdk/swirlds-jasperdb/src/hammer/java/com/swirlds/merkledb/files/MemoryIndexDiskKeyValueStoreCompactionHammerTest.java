@@ -96,12 +96,11 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         final var serializer = new ExampleFixedSizeDataSerializer();
         LongListOffHeap storeIndex = new LongListOffHeap();
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        final var store = new MemoryIndexDiskKeyValueStore<>(
+        final var store = new MemoryIndexDiskKeyValueStore(
                 dbConfig,
                 testDirectory.resolve("megaMergeHammerTest"),
                 "megaMergeHammerTest",
                 null,
-                serializer,
                 (dataLocation, dataValue) -> {},
                 storeIndex);
 
@@ -241,12 +240,12 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         /** The chance of performing an update */
         private final int numIterationsPerFlush;
         /** Represents the database */
-        private final MemoryIndexDiskKeyValueStore<long[]> coll;
+        private final MemoryIndexDiskKeyValueStore coll;
 
         private final AtomicInteger counter = new AtomicInteger(0);
 
         public FakeVirtualMap(
-                final MemoryIndexDiskKeyValueStore<long[]> coll,
+                final MemoryIndexDiskKeyValueStore coll,
                 final int chanceOfAddElement,
                 final int chanceOfDeleteElement,
                 final int numIterationsPerFlush) {
@@ -362,7 +361,8 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
          * @throws IOException in case of emergency
          */
         private void save(final Map<Long, Long> cache) throws IOException {
-            coll.startWriting(firstPath, lastPath);
+            coll.updateValidKeyRange(firstPath, lastPath);
+            coll.startWriting();
             final List<Long> sortedKeys = cache.keySet().stream().sorted().toList();
             for (final long key : sortedKeys) {
                 if (key < firstPath || key > lastPath || key == DELETED) {
@@ -370,7 +370,13 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
                 } else {
                     final long value = cache.get(key);
                     expected.put(key, value);
-                    coll.put(key, new long[] {key, value});
+                    coll.put(
+                            key,
+                            o -> {
+                                o.writeLong(key);
+                                o.writeLong(value);
+                            },
+                            2 * Long.BYTES);
                 }
             }
             coll.endWriting();
@@ -397,7 +403,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
                     assertNotNull(coll.get(key), () -> String.format("Missing key %s in DB that we expected!", key));
                     assertEquals(
                             expected.get(key),
-                            coll.get(key)[1],
+                            coll.get(key).getLong(Long.BYTES),
                             () -> String.format("Not the value for key %s from DB that we expected!", key));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -467,10 +473,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         private int iteration = 1;
         private final DataFileCompactor compactor;
 
-        Compactor(
-                final MerkleDbConfig dbConfig,
-                final MemoryIndexDiskKeyValueStore<long[]> coll,
-                LongListOffHeap storeIndex) {
+        Compactor(final MerkleDbConfig dbConfig, final MemoryIndexDiskKeyValueStore coll, LongListOffHeap storeIndex) {
             compactor = new DataFileCompactor(
                     dbConfig, "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null, null);
         }

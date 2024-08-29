@@ -40,7 +40,6 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
@@ -129,7 +128,6 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var txBody = TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
                 .build();
-        final var recordBuilder = new RecordStreamBuilder();
 
         // then
         assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();

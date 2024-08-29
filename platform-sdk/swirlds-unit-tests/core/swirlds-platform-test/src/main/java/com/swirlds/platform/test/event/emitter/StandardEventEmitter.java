@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 
 /**
@@ -38,8 +38,8 @@ public class StandardEventEmitter extends AbstractEventEmitter<StandardEventEmit
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent emitEvent() {
-        final IndexedEvent event = getGraphGenerator().generateEvent();
+    public EventImpl emitEvent() {
+        final EventImpl event = getGraphGenerator().generateEvent();
         numEventsEmitted++;
         return event;
     }

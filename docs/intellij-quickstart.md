@@ -112,7 +112,7 @@ Run `HelloWorldSpec` with the following Gradle command:
 ./gradlew runTestClient -PtestClient=com.hedera.services.bdd.suites.crypto.HelloWorldSpec
 ```
 
-Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties) in the
+Because [`node=localhost`](../test-clients/src/main/resources/spec-default.properties) in the
 _spec-default.properties_ controlling the `HelloWorldSpec` test, this will run against your local
 network, culminating in logs similar to:
 
@@ -129,7 +129,7 @@ network, culminating in logs similar to:
 
 (This client uses account `0.0.2` as the default payer, and is aware of the above keypair via its
 configuration in
-[_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties) under the
+[_spec-default.properties_](../test-clients/src/main/resources/spec-default.properties) under the
 `startupAccounts.path` key).
 
 ### Stopping/restarting the network
@@ -145,3 +145,13 @@ client.
 :information*source:&nbsp; In case of an unclean shutdown, or unwanted accumulation of logs and
 audit data in the local workspace, use the Maven `antrun:run@app-clean` goal in the `hedera-node`
 project to get a clean state. (Or simply delete \_rm -rf hedera-node/data/saved* for a quick reset.)
+
+## Recommended IDE Settings
+
+### Spotbugs annotations
+
+Hedera Services uses Spotbugs annotations everywhere and to help ensuring this as standard practice,
+we recommend adding both `javax.annotation` and `org.jetbrains.annotations` to the IntelliJ setting
+Editor/General/Auto Import/Exclude from auto-import and completion.
+
+![intellij-spotbugs](./assets/intellij-spotbugs.png)

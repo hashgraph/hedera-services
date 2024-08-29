@@ -51,6 +51,8 @@ import "state/contract/bytecode.proto";
 import "state/contract/storage_slot.proto";
 import "state/file/file.proto";
 import "state/recordcache/recordcache.proto";
+import "state/roster/roster.proto";
+import "state/roster/roster_state.proto";
 import "state/schedule/schedule.proto";
 import "state/throttles/throttle_usage_snapshots.proto";
 import "state/token/account.proto";
@@ -60,6 +62,7 @@ import "state/token/nft.proto";
 import "state/token/staking_node_info.proto";
 import "state/token/token.proto";
 import "state/token/token_relation.proto";
+import "state/platform_state.proto";
 import "timestamp.proto";
 
 /**
@@ -336,9 +339,24 @@ enum StateIdentifier {
     STATE_ID_PENDING_AIRDROPS = 25;
 
     /**
-     * A state identifier for the record cache.
+     * A state identifier for the platform state singleton.
      */
-    STATE_ID_RECORD_QUEUE = 126;
+    STATE_ID_PLATFORM_STATE = 26;
+
+    /**
+     * A state identifier for the roster state singleton.
+     */
+    STATE_ID_ROSTER_STATE = 27;
+
+    /**
+     * A state identifier for the rosters key/value map.
+     */
+    STATE_ID_ROSTERS = 28;
+
+    /**
+     * A state identifier for the round receipts queue.
+     */
+    STATE_ID_TRANSACTION_RECEIPTS_QUEUE = 126;
 
     /**
      * A state for the `150` upgrade file data
@@ -534,6 +552,16 @@ message SingletonUpdateChange {
          * information for the immediately prior block.
          */
         com.hedera.hapi.node.state.blockstream.BlockStreamInfo block_stream_info_value = 11;
+
+        /**
+         * A change to the platform state singleton.
+         */
+        com.hedera.hapi.platform.state.PlatformState platform_state_value = 12;
+
+        /**
+         * A change to the roster state singleton.
+         */
+        com.hedera.hapi.node.state.roster.RosterState roster_state_value = 13;
     }
 }
 
@@ -763,6 +791,10 @@ message MapChangeValue {
          */
         proto.AccountPendingAirdrop account_pending_airdrop_value = 15;
 
+        /**
+         * A roster value.
+         */
+        com.hedera.hapi.node.state.roster.Roster roster_value = 16;
     }
 }
 
@@ -786,17 +818,9 @@ message QueuePushChange {
         google.protobuf.StringValue proto_string_element = 2;
 
         /**
-         * A transaction record entry added to queue state.
-         * <p>
-         * <blockquote>REVIEW NOTE<blockquote>
-         * Do we really intend to push `transaction records` as state
-         * changes in the block stream? I would think that any queue holding
-         * transaction records is temporary storage (e.g. record cache) and
-         * will be removed or replaced with a block item queue as part
-         * of the change over to block stream.
-         * </blockquote></blockquote>
+         * All transaction receipts for a round added to queue state.
          */
-        proto.TransactionRecordEntry transaction_record_entry_element = 3;
+        proto.TransactionReceiptEntries transaction_receipt_entries_element = 3;
     }
 }
 

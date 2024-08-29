@@ -18,5 +18,3 @@ plugins {
     id("java-library")
     id("com.hedera.gradle.java")
 }
-
-group = "com.hedera.hashgraph"

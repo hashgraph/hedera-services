@@ -27,6 +27,7 @@ import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -35,6 +36,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -48,7 +50,8 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -71,6 +74,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -92,6 +96,9 @@ final class BlockRecordManagerTest extends AppTestBase {
     private BlockRecordFormat blockRecordFormat;
     private BlockRecordWriterFactory blockRecordWriterFactory;
 
+    @Mock
+    private BlockStreamManagerImpl blockStreamManager;
+
     @BeforeEach
     void setUpEach() throws Exception {
         // create in memory temp dir
@@ -112,6 +119,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
                 .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
                 .withService(new BlockRecordService())
+                .withService(PLATFORM_STATE_SERVICE)
                 .build();
 
         // Preload the specific state we want to test with
@@ -121,6 +129,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withSingletonState(
                         BLOCK_INFO_STATE_KEY,
                         new BlockInfo(-1, EPOCH, STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
+                .commit();
+        app.stateMutator(PlatformStateService.NAME)
+                .withSingletonState(
+                        V0540PlatformStateSchema.PLATFORM_STATE_KEY, V0540PlatformStateSchema.GENESIS_PLATFORM_STATE)
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
@@ -182,7 +194,7 @@ final class BlockRecordManagerTest extends AppTestBase {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
-            assertThat(blockRecordManager.currentBlockTimestamp()).isNotNull();
+            assertThat(blockRecordManager.blockTimestamp()).isNotNull();
             assertThat(blockRecordManager.blockNo()).isEqualTo(blockRecordManager.lastBlockNo() + 1);
             // write a blocks & record files
             int transactionCount = 0;
@@ -192,9 +204,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                            merkleState,
-                            mock(PlatformState.class));
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
@@ -288,9 +298,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.transactionRecord().consensusTimestamp()),
-                                merkleState,
-                                mock(PlatformState.class));
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
                         blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                         transactionCount++;
                         // collect hashes
@@ -302,13 +310,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                         if (runningHashNMinus3 != null) {
                             // check running hash N - 3
                             assertThat(runningHashNMinus3.toHex())
-                                    .isEqualTo(blockRecordManager
-                                            .getNMinus3RunningHash()
-                                            .toHex());
+                                    .isEqualTo(blockRecordManager.prngSeed().toHex());
                         } else {
                             // check empty as well
-                            assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isEqualTo(Bytes.EMPTY);
+                            assertThat(blockRecordManager.prngSeed()).isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;

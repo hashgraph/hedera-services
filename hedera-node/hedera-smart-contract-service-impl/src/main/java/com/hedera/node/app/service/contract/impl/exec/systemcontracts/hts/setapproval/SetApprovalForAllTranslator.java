@@ -64,7 +64,6 @@ public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallA
     @Override
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var result = bodyForClassic(attempt);
-        // @Future remove to revert #9214 after modularization is completed
         return new SetApprovalForAllCall(
                 attempt,
                 result,

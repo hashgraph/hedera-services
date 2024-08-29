@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.evm")
-    id("com.hedera.gradle.evm-publish")
-}
+plugins { id("com.hedera.gradle.evm") }
 
 description = "Hedera EVM - Implementation"

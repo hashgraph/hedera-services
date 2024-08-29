@@ -114,7 +114,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer());
+                    synthTxn,
+                    CryptoCreateStreamBuilder.class,
+                    null,
+                    context.payer(),
+                    HandleContext.ConsensusThrottling.ON);
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
             return childRecordBuilder.status();
@@ -137,8 +141,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
-        // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
-        context.entityNumGenerator().newEntityNum();
     }
 
     /**

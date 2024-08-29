@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -67,7 +68,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
@@ -183,7 +184,11 @@ class HandleHederaNativeOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
         when(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        any()))
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -201,7 +206,11 @@ class HandleHederaNativeOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
-                        eq(synthLazyCreate), eq(CryptoCreateStreamBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthLazyCreate),
+                        eq(CryptoCreateStreamBuilder.class),
+                        eq(null),
+                        eq(A_NEW_ACCOUNT_ID),
+                        any()))
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
@@ -217,13 +226,11 @@ class HandleHederaNativeOperationsTest {
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(context.entityNumGenerator()).willReturn(entityNumGenerator);
         given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
         verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID);
-        verify(entityNumGenerator).newEntityNum();
     }
 
     @Test
@@ -294,7 +301,7 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void trackDeletionUpdatesMap() {
-        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        final DeleteCapableTransactionStreamBuilder beneficiaries = mock(DeleteCapableTransactionStreamBuilder.class);
         given(frame.getMessageFrameStack()).willReturn(stack);
         stack.push(frame);
         given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);
