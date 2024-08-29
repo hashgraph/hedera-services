@@ -363,6 +363,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         listeners.add(listener);
     }
 
+    @Override
+    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.remove(listener);
+    }
     /**
      * {@inheritDoc}
      */
@@ -951,9 +956,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         }
 
         private <K, V> void registerKVListener(
-                @NonNull final String serviceName,
-                WritableKVStateBase<K, V> state,
-                @NonNull final StateChangeListener listener) {
+                @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
             final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
             state.registerListener(new KVChangeListener<>() {
                 @Override

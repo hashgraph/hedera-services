@@ -61,6 +61,10 @@ import java.util.Objects;
 import java.util.Set;
 import javax.inject.Singleton;
 
+/**
+ * A state change listener that tracks an entire sequence of changes, even if this sequence
+ * repeats changes to the same key multiple times in a block boundary.
+ */
 @Singleton
 public class KVStateChangeListener implements StateChangeListener {
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP);
@@ -74,6 +78,9 @@ public class KVStateChangeListener implements StateChangeListener {
 
     @Override
     public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
+        Objects.requireNonNull(serviceName, "serviceName must not be null");
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+
         return BlockImplUtils.stateIdFor(serviceName, stateKey);
     }
 

@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.services;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
+import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -33,15 +37,24 @@ public class MigrationStateChanges {
     private final List<List<StateChange>> stateChanges = new ArrayList<>();
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
     private final BoundaryStateChangeListener roundStateChangeListener = new BoundaryStateChangeListener();
+    private final State state;
 
     /**
      * Constructs a new instance of {@link MigrationStateChanges} based on migration
      * changes to the given state.
-     * @param state The state to track changes on
+     *
+     * @param state  The state to track changes on
+     * @param config
      */
-    public MigrationStateChanges(@NonNull final State state) {
-        state.registerCommitListener(kvStateChangeListener);
-        state.registerCommitListener(roundStateChangeListener);
+    public MigrationStateChanges(@NonNull final State state, final Configuration config) {
+        requireNonNull(state);
+        this.state = state;
+        final var blockStreamsEnabled =
+                config.getConfigData(BlockStreamConfig.class).streamBlocks();
+        if (blockStreamsEnabled) {
+            state.registerCommitListener(kvStateChangeListener);
+            state.registerCommitListener(roundStateChangeListener);
+        }
     }
 
     /**
@@ -67,6 +80,9 @@ public class MigrationStateChanges {
         if (!roundChanges.isEmpty()) {
             stateChanges.add(roundChanges);
         }
+        state.unregisterCommitListener(kvStateChangeListener);
+        state.unregisterCommitListener(roundStateChangeListener);
+
         return stateChanges.stream()
                 .map(changes -> StateChanges.newBuilder().stateChanges(changes))
                 .toList();

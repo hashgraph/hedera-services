@@ -53,7 +53,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary (either
@@ -157,7 +156,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         singletonUpdates.put(stateId, stateChange);
     }
 
-    private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NotNull V value) {
+    private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NonNull final V value) {
         switch (value) {
             case ProtoBytes protoBytesElement -> {
                 return new OneOf<>(QueuePushChange.ValueOneOfType.PROTO_BYTES_ELEMENT, protoBytesElement.value());
@@ -172,8 +171,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
     }
 
-    public static <V> @NotNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
-            @NotNull V value) {
+    private static <V> @NonNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
+            @NonNull V value) {
         switch (value) {
             case BlockInfo blockInfo -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.BLOCK_INFO_VALUE, blockInfo);

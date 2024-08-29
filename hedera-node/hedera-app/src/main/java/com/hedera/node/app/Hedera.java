@@ -74,6 +74,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.Utils;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -115,6 +116,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -237,10 +239,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private final BoundaryStateChangeListener boundaryStateChangeListener = new BoundaryStateChangeListener();
 
     /**
-     * A {@link StateChangeListener} that accumulates state changes that immediately reported as they occur,
+     * A {@link StateChangeListener} that accumulates state changes that must be immediately reported as they occur,
      * because the exact order of mutations---not just the final values---determines the Merkle root hash.
      */
     private final KVStateChangeListener kvStateChangeListener = new KVStateChangeListener();
+
+    /**
+     * The state root supplier to use for creating a new state root.
+     */
+    private final Supplier<MerkleStateRoot> stateRootSupplier;
 
     /*==================================================================================================================
     *
@@ -317,10 +324,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
+            final var blockStreamsEnabled =
+                    bootstrapConfig.getConfigData(BlockStreamConfig.class).streamBlocks();
+            final Supplier<MerkleStateRoot> baseSupplier =
+                    () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
+            stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             // And the factory for the MerkleStateRoot class id must be our constructor
-            constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    MerkleStateRoot.class,
-                    () -> withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory))));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
@@ -357,7 +368,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     @Override
     @NonNull
     public MerkleRoot newMerkleStateRoot() {
-        return withListeners(new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory));
+        return stateRootSupplier.get();
     }
 
     @Override
@@ -387,10 +398,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     /**
      * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
      * @param state the root state to be initialized
+     * @return the state changes after initialization
      */
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         requireNonNull(state);
-        logger.info("Initializing Hedera platform state");
         return serviceMigrator.doMigrations(
                 state,
                 servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
@@ -498,6 +509,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             }
             migrationStateChanges.addAll(merkleStateRoot.platformStateInitChangesOrThrow());
         }
+
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
