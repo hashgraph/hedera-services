@@ -23,6 +23,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -133,6 +135,12 @@ class HandleWorkflowTest {
     @Mock
     private Round round;
 
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -160,7 +168,10 @@ class HandleWorkflowTest {
                 systemSetup,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                List.of());
     }
 
     @Test

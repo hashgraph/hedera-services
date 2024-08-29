@@ -19,7 +19,6 @@ package com.hedera.node.app.fixtures.state;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
-import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -150,6 +149,12 @@ public class FakeState implements State {
         listeners.add(listener);
     }
 
+    @Override
+    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.remove(listener);
+    }
+
     /**
      * Commits all pending changes made to the states.
      */
@@ -196,40 +201,40 @@ public class FakeState implements State {
             @NonNull final String serviceName,
             @NonNull final WritableSingletonStateBase<V> singletonState,
             @NonNull final StateChangeListener listener) {
-        final var stateName = computeLabel(serviceName, singletonState.getStateKey());
-        singletonState.registerListener(value -> listener.singletonUpdateChange(stateName, value));
+        final var stateId = listener.stateIdFor(serviceName, singletonState.getStateKey());
+        singletonState.registerListener(value -> listener.singletonUpdateChange(stateId, value));
     }
 
     private <V> void registerQueueListener(
             @NonNull final String serviceName,
             @NonNull final WritableQueueStateBase<V> queueState,
             @NonNull final StateChangeListener listener) {
-        final var stateName = computeLabel(serviceName, queueState.getStateKey());
+        final var stateId = listener.stateIdFor(serviceName, queueState.getStateKey());
         queueState.registerListener(new QueueChangeListener<>() {
             @Override
             public void queuePushChange(@NonNull final V value) {
-                listener.queuePushChange(stateName, value);
+                listener.queuePushChange(stateId, value);
             }
 
             @Override
             public void queuePopChange() {
-                listener.queuePopChange(stateName);
+                listener.queuePopChange(stateId);
             }
         });
     }
 
     private <K, V> void registerKVListener(
             @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
-        final var stateName = computeLabel(serviceName, state.getStateKey());
+        final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
         state.registerListener(new KVChangeListener<>() {
             @Override
             public void mapUpdateChange(@NonNull final K key, @NonNull final V value) {
-                listener.mapUpdateChange(stateName, key, value);
+                listener.mapUpdateChange(stateId, key, value);
             }
 
             @Override
             public void mapDeleteChange(@NonNull final K key) {
-                listener.mapDeleteChange(stateName, key);
+                listener.mapDeleteChange(stateId, key);
             }
         });
     }
