@@ -110,9 +110,6 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
             validateResource(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
         }
 
-        final var childThrottleIsAvailable = context.throttleAdviser().hasThrottleCapacityForChildTransactions();
-        validateResource(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
-
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {
             updatedContractNonces = contractChangeSummary.updatedContractNonces();

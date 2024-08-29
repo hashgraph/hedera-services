@@ -43,6 +43,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -64,7 +65,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
@@ -84,7 +84,6 @@ public class StandaloneDispatchFactory {
     private final FeeManager feeManager;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
-    private final PlatformState platformState;
     private final ConfigProvider configProvider;
     private final DispatchProcessor dispatchProcessor;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -100,7 +99,6 @@ public class StandaloneDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final PlatformState platformState,
             @NonNull final ConfigProvider configProvider,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
@@ -113,7 +111,6 @@ public class StandaloneDispatchFactory {
         this.feeManager = requireNonNull(feeManager);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
-        this.platformState = requireNonNull(platformState);
         this.configProvider = requireNonNull(configProvider);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -163,7 +160,7 @@ public class StandaloneDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
+        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var baseBuilder = initializeBuilderInfo(
                 stack.getBaseBuilder(StreamBuilder.class), txnInfo, exchangeRateManager.exchangeRates());
         final var feeAccumulator =
@@ -181,7 +178,6 @@ public class StandaloneDispatchFactory {
                 storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 NO_OP_KEY_VERIFIER,
-                platformState,
                 txnInfo.functionality(),
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
@@ -211,8 +207,8 @@ public class StandaloneDispatchFactory {
                 stack,
                 USER,
                 tokenContext,
-                platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {

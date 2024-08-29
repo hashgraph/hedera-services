@@ -41,6 +41,6 @@ signatures matched, but we also don't know for sure which of the signatures supp
 to be valid. It is possible that the signing requirements change between pre-handle and handle if the keys on impacted
 accounts were modified between the time of pre-handle and handle.
 
-![sig-expansion.drawio.png](images/Signature Expansion.drawio.png)
+![sig-expansion.drawio.png](images/SignatureExpansion.drawio.png)
 
 **NEXT: [States](states.md)**

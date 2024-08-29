@@ -23,7 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -81,7 +81,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
 
         final AddressBook stateAddressBook;
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformState platformState =
+            final PlatformStateAccessor platformState =
                     reservedSignedState.get().getState().getPlatformState();
             System.out.printf("Extracting the state address book for comparison %n");
             stateAddressBook = platformState.getAddressBook();

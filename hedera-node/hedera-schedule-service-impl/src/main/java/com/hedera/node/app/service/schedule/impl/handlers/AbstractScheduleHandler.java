@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -46,15 +48,12 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    private final Logger log = LogManager.getLogger(AbstractScheduleHandler.class);
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -336,7 +335,8 @@ abstract class AbstractScheduleHandler {
                     ScheduleStreamBuilder.class,
                     assistant,
                     scheduleToExecute.payerAccountId(),
-                    TransactionCategory.SCHEDULED);
+                    TransactionCategory.SCHEDULED,
+                    ON);
             // If the child failed, we would prefer to fail with the same result.
             //     We do not fail, however, at least mono service code does not.
             //     We succeed and the record of the child transaction is failed.

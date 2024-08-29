@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.KeyRange;
@@ -88,10 +89,27 @@ class DataFileCollectionTest {
     static Path tempFileDir;
 
     protected static final Instant TEST_START = Instant.now();
-    protected static final Map<FilesTestType, DataFileCollection<long[]>> fileCollectionMap = new HashMap<>();
+    protected static final Map<FilesTestType, DataFileCollection> fileCollectionMap = new HashMap<>();
     protected static final Map<FilesTestType, LongListHeap> storedOffsetsMap = new HashMap<>();
 
-    private static final int MAX_TEST_FILE_MB = 16;
+    private static long storeDataItem(final DataFileCollection coll, long[] values) throws IOException {
+        return coll.storeDataItem(
+                o -> {
+                    for (final long value : values) {
+                        o.writeLong(value);
+                    }
+                },
+                values.length * Long.BYTES);
+    }
+
+    private static long[] readDataItem(final DataFileCollection coll, final long location) throws IOException {
+        final BufferedData data = coll.readDataItem(location);
+        final long[] items = new long[Math.toIntExact(data.remaining() / Long.BYTES)];
+        for (int i = 0; i < items.length; i++) {
+            items[i] = data.readLong();
+        }
+        return items;
+    }
 
     // =================================================================================================================
     // Tests
@@ -100,8 +118,8 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void createDataFileCollection(FilesTestType testType) throws Exception {
-        final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
-                config, tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, null);
+        final DataFileCollection fileCollection =
+                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", null);
 
         assertSame(
                 Collections.emptyList(),
@@ -109,7 +127,7 @@ class DataFileCollectionTest {
                 "Initially there are no fully written files");
         assertThrows(
                 IOException.class,
-                () -> fileCollection.storeDataItem(new long[0]),
+                () -> storeDataItem(fileCollection, new long[0]),
                 "Should not able to store data until writing is started");
         assertNull(
                 fileCollection.readDataItem(DataFileCommon.NON_EXISTENT_DATA_LOCATION),
@@ -123,6 +141,7 @@ class DataFileCollectionTest {
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        storedOffsets.updateValidRange(0, 1100);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
         int count = 0;
@@ -147,9 +166,9 @@ class DataFileCollectionTest {
                         break;
                 }
                 // store in file
-                storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
+                storedOffsets.put(i, storeDataItem(fileCollection, dataValue));
             }
-            final DataFileReader<long[]> newFile = fileCollection.endWriting(0, count + 100);
+            final DataFileReader newFile = fileCollection.endWriting(0, count + 100);
             newFile.setFileCompleted();
             assertEquals(new KeyRange(0, count + 100), fileCollection.getValidKeyRange(), "Range should be this");
             assertEquals(Files.size(newFile.getPath()), newFile.getSize());
@@ -170,9 +189,9 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void checkFilesStates(final FilesTestType testType) throws IOException {
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
         for (int f = 0; f < 10; f++) {
-            final DataFileReader<long[]> dataFileReader = fileCollection.getDataFile(f);
+            final DataFileReader dataFileReader = fileCollection.getDataFile(f);
             final DataFileMetadata metadata = dataFileReader.getMetadata();
             assertEquals(f, metadata.getIndex(), "Data file metadata should know self-index");
             assertTrue(metadata.getCreationDate().isAfter(TEST_START), "Creation dates should go forward in time");
@@ -201,12 +220,8 @@ class DataFileCollectionTest {
     void createDataFileCollectionWithLoadedDataCallback(final FilesTestType testType) throws Exception {
         fileCollectionMap.get(testType).close(); // close the old one so metadata is written to disk
         final LoadedDataCallbackImpl loadedDataCallbackImpl = new LoadedDataCallbackImpl();
-        final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
-                config,
-                tempFileDir.resolve(testType.name()),
-                "test",
-                testType.dataItemSerializer,
-                loadedDataCallbackImpl);
+        final DataFileCollection fileCollection =
+                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", loadedDataCallbackImpl);
         fileCollectionMap.put(testType, fileCollection);
         reinitializeDirectMemoryUsage();
         // check that the 10 files were created previously (in the very first unit test) still are
@@ -235,12 +250,8 @@ class DataFileCollectionTest {
 
         // also try specifying a testStore (that doesn't exist) in a storeDir that does
         final LoadedDataCallbackImpl loadedDataCallbackImpl2 = new LoadedDataCallbackImpl();
-        final DataFileCollection<long[]> fileCollection2 = new DataFileCollection<>(
-                config,
-                tempFileDir.resolve(testType.name()),
-                "test2",
-                testType.dataItemSerializer,
-                loadedDataCallbackImpl2);
+        final DataFileCollection fileCollection2 =
+                new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test2", loadedDataCallbackImpl2);
         assertEquals(
                 0,
                 loadedDataCallbackImpl2.dataLocationMap.size(),
@@ -260,24 +271,19 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void closeAndReopen(final FilesTestType testType) throws Exception {
         final AtomicInteger numKeysRead = new AtomicInteger();
-        final DataFileCollection.LoadedDataCallback<long[]> testCallback =
-                (dataLoc, data) -> numKeysRead.incrementAndGet();
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCollection.LoadedDataCallback testCallback = (dataLoc, data) -> numKeysRead.incrementAndGet();
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
         assertEquals(new KeyRange(0, 1000), fileCollection.getValidKeyRange(), "Should still have the valid range");
         fileCollection.close();
         assertDoesNotThrow(
                 () -> {
-                    final DataFileCollection<long[]> reopenedFileCollection = new DataFileCollection<>(
-                            config,
-                            tempFileDir.resolve(testType.name()),
-                            "test",
-                            testType.dataItemSerializer,
-                            testCallback);
+                    final DataFileCollection reopenedFileCollection =
+                            new DataFileCollection(config, tempFileDir.resolve(testType.name()), "test", testCallback);
                     fileCollectionMap.put(testType, reopenedFileCollection);
                 },
                 "Shouldn't be a problem re-opening a closed collection");
         assertEquals(1000, numKeysRead.get(), "Should have been 1000 keys in the collection");
-        final DataFileCollection<long[]> reopened = fileCollectionMap.get(testType);
+        final DataFileCollection reopened = fileCollectionMap.get(testType);
         assertEquals(new KeyRange(0, 1000), reopened.getValidKeyRange(), "Should still have the valid range");
     }
 
@@ -316,26 +322,24 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void closeAndReopenInSlowModeForMerging(final FilesTestType testType) throws Exception {
         final AtomicInteger numKeysRead = new AtomicInteger();
-        final DataFileCollection.LoadedDataCallback<long[]> testCallback =
-                (dataLoc, data) -> numKeysRead.incrementAndGet();
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCollection.LoadedDataCallback testCallback = (dataLoc, data) -> numKeysRead.incrementAndGet();
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
         fileCollection.close();
         assertDoesNotThrow(
                 () -> {
-                    final DataFileCollection<long[]> reopenedFileCollection = new DataFileCollection<>(
+                    final DataFileCollection reopenedFileCollection = new DataFileCollection(
                             config,
                             tempFileDir.resolve(testType.name()),
                             "test",
                             null,
-                            testType.dataItemSerializer,
                             testCallback,
-                            l -> new SlowImmutableIndexedObjectListUsingArray<DataFileReader<long[]>>(
+                            l -> new SlowImmutableIndexedObjectListUsingArray<DataFileReader>(
                                     DataFileReader[]::new, l));
                     fileCollectionMap.put(testType, reopenedFileCollection);
                 },
                 "Shouldn't be a problem re-opening a closed collection");
         assertEquals(1000, numKeysRead.get(), "Should have been 1000 keys in the collection");
-        final DataFileCollection<long[]> reopened = fileCollectionMap.get(testType);
+        final DataFileCollection reopened = fileCollectionMap.get(testType);
         assertEquals(new KeyRange(0, 1000), reopened.getValidKeyRange(), "Should still have the valid range");
     }
 
@@ -343,8 +347,8 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor<long[]> fileCompactor = createFileCompactor("merge", fileCollection, testType);
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -355,8 +359,8 @@ class DataFileCollectionTest {
                 while (!mergeComplete.get()) {
                     try {
                         for (int i = 0; i < NUM_OF_KEYS; i++) {
-                            final long[] dataItem = fileCollection.readDataItemUsingIndex(storedOffsets, i);
-                            assertNotNull(dataItem, "DataItem should never be null");
+                            final BufferedData dataItemData = fileCollection.readDataItemUsingIndex(storedOffsets, i);
+                            assertNotNull(dataItemData, "DataItem should never be null");
                         }
                     } catch (Exception e) {
                         fail("Exception should not be thrown", e);
@@ -368,8 +372,8 @@ class DataFileCollectionTest {
                 System.out.println("START READING");
                 while (!mergeComplete.get()) {
                     try {
-                        final long[] dataItem = fileCollection.readDataItemUsingIndex(storedOffsets, 100);
-                        assertNotNull(dataItem, "DataItem should never be null");
+                        final BufferedData dataItemData = fileCollection.readDataItemUsingIndex(storedOffsets, 100);
+                        assertNotNull(dataItemData, "DataItem should never be null");
                     } catch (IOException e) {
                         fail("Exception should not be thrown", e);
                     }
@@ -378,7 +382,7 @@ class DataFileCollectionTest {
                 System.out.println("DataFileCollectionTest.merge");
                 List<Path> mergedFiles = null;
                 try {
-                    List<DataFileReader<long[]>> filesToMerge = fileCollection.getAllCompletedFiles();
+                    List<DataFileReader> filesToMerge = fileCollection.getAllCompletedFiles();
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
@@ -444,7 +448,7 @@ class DataFileCollectionTest {
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
         // empty.
-        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllCompletedFiles();
+        List<DataFileReader> filesLeft = fileCollection.getAllCompletedFiles();
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
 
         // and trying to merge just one file is a no-op
@@ -464,7 +468,7 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void changeSomeData(final FilesTestType testType) throws Exception {
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         fileCollection.startWriting();
         // put in 1000 items
@@ -480,7 +484,7 @@ class DataFileCollectionTest {
                     break;
             }
             // store in file
-            storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
+            storedOffsets.put(i, storeDataItem(fileCollection, dataValue));
         }
         fileCollection.endWriting(0, 1000).setFileCompleted();
         // check we now have 2 files
@@ -506,8 +510,8 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor<long[]> fileCompactor = createFileCompactor("merge2", fileCollection, testType);
+        final DataFileCollection fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge2", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
@@ -539,7 +543,7 @@ class DataFileCollectionTest {
             } else if (thread == 1) { // move thread
                 // merge 2 files
                 try {
-                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllCompletedFiles();
+                    List<DataFileReader> allFiles = fileCollection.getAllCompletedFiles();
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, 1000).boxed().collect(Collectors.toSet());
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
@@ -600,9 +604,9 @@ class DataFileCollectionTest {
                 "unexpected # of files");
     }
 
-    private static DataFileCompactor<long[]> createFileCompactor(
-            String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
-        return new DataFileCompactor<>(
+    private static DataFileCompactor createFileCompactor(
+            String storeName, DataFileCollection fileCollection, FilesTestType testType) {
+        return new DataFileCompactor(
                 config, storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
@@ -632,12 +636,12 @@ class DataFileCollectionTest {
     void mergeWorksAfterOpen(final FilesTestType testType) throws Exception {
         final Path dbDir = tempFileDir.resolve(testType.name());
         final String storeName = "mergeWorksAfterOpen";
-        final DataFileCollection<long[]> fileCollection =
-                new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
+        final DataFileCollection fileCollection = new DataFileCollection(config, dbDir, storeName, null);
         assertSame(0, fileCollection.getAllCompletedFiles().size(), "Should be no files");
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        storedOffsets.updateValidRange(0, 1100);
         storedOffsetsMap.put(testType, storedOffsets);
         // create 10x 100 item files
         populateDataFileCollection(testType, fileCollection, storedOffsets);
@@ -655,9 +659,8 @@ class DataFileCollectionTest {
         // close
         fileCollection.close();
         // reopen
-        final DataFileCollection<long[]> fileCollection2 =
-                new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
-        final DataFileCompactor<long[]> fileCompactor = new DataFileCompactor<>(
+        final DataFileCollection fileCollection2 = new DataFileCollection(config, dbDir, storeName, null);
+        final DataFileCompactor fileCompactor = new DataFileCompactor(
                 config, storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
@@ -684,8 +687,7 @@ class DataFileCollectionTest {
     }
 
     private static void populateDataFileCollection(
-            FilesTestType testType, DataFileCollection<long[]> fileCollection, LongListHeap storedOffsets)
-            throws IOException {
+            FilesTestType testType, DataFileCollection fileCollection, LongListHeap storedOffsets) throws IOException {
         int count = 0;
         for (int f = 0; f < 10; f++) {
             fileCollection.startWriting();
@@ -702,7 +704,7 @@ class DataFileCollectionTest {
                         break;
                 }
                 // store in file
-                storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
+                storedOffsets.put(i, storeDataItem(fileCollection, dataValue));
             }
             fileCollection.endWriting(0, count + 100).setFileCompleted();
             count += 100;
@@ -724,19 +726,19 @@ class DataFileCollectionTest {
         final String storeName = "testClosedByInterruptException";
 
         // init file collection with some content to compact
-        final DataFileCollection<long[]> fileCollection =
-                new DataFileCollection<>(config, dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
+        final DataFileCollection fileCollection = new DataFileCollection(config, dbDir, storeName, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
-        final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(config, storeName, fileCollection, storedOffsets, null, null, null, null);
+        storedOffsets.updateValidRange(0, 1100);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(config, storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th
         AtomicBoolean closedByInterruptFromCompaction = new AtomicBoolean(false);
 
         final Thread thread = new Thread(() -> {
-            List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
-            DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
+            List<DataFileReader> allCompletedFiles = fileCollection.getAllCompletedFiles();
+            DataFileReader spy = Mockito.spy(allCompletedFiles.get(0));
             try {
                 when(spy.leaseFileChannel()).thenAnswer(invocation -> {
                     // on the first call to leaseFileChannel(), we interrupt the thread
@@ -744,7 +746,7 @@ class DataFileCollectionTest {
                     return invocation.callRealMethod();
                 });
 
-                List<DataFileReader<long[]>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
+                List<DataFileReader> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
                 allCompletedFilesUpdated.set(0, spy);
                 compactor.compactFiles(storedOffsets, allCompletedFilesUpdated, 1);
             } catch (InterruptedException e) {
@@ -800,13 +802,14 @@ class DataFileCollectionTest {
                         + "MB");
     }
 
-    private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback<long[]> {
+    private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
+
         public final Map<Long, Long> dataLocationMap = new HashMap<>();
-        public final Map<Long, long[]> dataValueMap = new HashMap<>();
+        public final Map<Long, BufferedData> dataValueMap = new HashMap<>();
 
         @Override
-        public void newIndexEntry(final long dataLocation, final long[] dataValue) {
-            final long key = dataValue[0];
+        public void newIndexEntry(final long dataLocation, final BufferedData dataValue) {
+            final long key = dataValue.readLong();
             dataLocationMap.put(key, dataLocation);
             dataValueMap.put(key, dataValue);
         }

@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -96,7 +96,7 @@ public class AirdropSigReqsTest {
         return hapiTest(
                 airdropTo(mutableContract).with(txn -> txn.via("successAirdrop")),
                 getTxnRecord("successAirdrop").hasPriority(recordWith().pendingAirdropsCount(2)),
-                airdropTo(immutableContract).andAssert(txn -> txn.hasKnownStatus(INVALID_TRANSACTION_BODY)));
+                airdropTo(immutableContract).andAssert(txn -> txn.hasKnownStatus(NOT_SUPPORTED)));
     }
 
     @HapiTest

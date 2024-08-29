@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -114,7 +117,8 @@ public class StreamBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -149,8 +153,8 @@ public class StreamBuilderTest {
                 .scheduledTransactionID(scheduledTransactionID)
                 .serialNumbers(serialNumbers)
                 .contractStateChanges(List.of(new AbstractMap.SimpleEntry<>(contractStateChanges, false)))
-                .contractActions(List.of(new AbstractMap.SimpleEntry<>(contractActions, false)))
-                .contractBytecodes(List.of(new AbstractMap.SimpleEntry<>(contractBytecode, false)));
+                .addContractActions(contractActions, false)
+                .addContractBytecode(contractBytecode, false);
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             singleTransactionRecordBuilder.entropyBytes(prngBytes);
@@ -247,7 +251,8 @@ public class StreamBuilderTest {
 
     @Test
     void testTopLevelRecordBuilder() {
-        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder.transaction(transaction);
 
@@ -268,7 +273,8 @@ public class StreamBuilderTest {
 
     @Test
     void testBuilderWithAddMethods() {
-        RecordStreamBuilder singleTransactionRecordBuilder = new RecordStreamBuilder();
+        RecordStreamBuilder singleTransactionRecordBuilder =
+                new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)

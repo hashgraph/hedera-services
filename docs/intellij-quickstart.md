@@ -112,7 +112,7 @@ Run `HelloWorldSpec` with the following Gradle command:
 ./gradlew runTestClient -PtestClient=com.hedera.services.bdd.suites.crypto.HelloWorldSpec
 ```
 
-Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties) in the
+Because [`node=localhost`](../test-clients/src/main/resources/spec-default.properties) in the
 _spec-default.properties_ controlling the `HelloWorldSpec` test, this will run against your local
 network, culminating in logs similar to:
 
@@ -129,7 +129,7 @@ network, culminating in logs similar to:
 
 (This client uses account `0.0.2` as the default payer, and is aware of the above keypair via its
 configuration in
-[_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties) under the
+[_spec-default.properties_](../test-clients/src/main/resources/spec-default.properties) under the
 `startupAccounts.path` key).
 
 ### Stopping/restarting the network

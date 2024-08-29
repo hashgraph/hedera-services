@@ -21,6 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.FileStatisticAware;
@@ -34,8 +36,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -65,8 +65,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <p><b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey>
-        implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
+public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
 
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
@@ -98,13 +97,8 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
-    private final DataFileCollection<Bucket<K>> fileCollection;
+    private final DataFileCollection fileCollection;
 
-    /**
-     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
-     * percent full
-     */
-    private final int minimumBuckets;
     /**
      * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so
      * that we can optimize and avoid the cost of doing a % to find the bucket index from hash code.
@@ -118,9 +112,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
     /** The name to use for the files prefix on disk */
     private final String storeName;
 
-    private final BucketSerializer<K> bucketSerializer;
+    /** Bucket pool used by this HDHM */
+    private final ReusableBucketPool bucketPool;
     /** Store for session data during a writing transaction */
-    private IntObjectHashMap<BucketMutation<K>> oneTransactionsData = null;
+    private IntObjectHashMap<BucketMutation> oneTransactionsData = null;
     /**
      * The thread that called startWriting. We use it to check that other writing calls are done on
      * same thread
@@ -158,7 +153,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @param config                         MerkleDb config
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
-     * @param keySerializer                  Serializer for converting raw data to/from keys
      * @param storeDir                       The directory to use for storing data files.
      * @param storeName                      The name for the data store, this allows more than one data store in a
      *                                       single directory.
@@ -174,7 +168,6 @@ public class HalfDiskHashMap<K extends VirtualKey>
     public HalfDiskHashMap(
             final MerkleDbConfig config,
             final long mapSize,
-            final KeySerializer<K> keySerializer,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
@@ -183,10 +176,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
         this.mapSize = mapSize;
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
-        // create bucket serializer
-        this.bucketSerializer = new BucketSerializer<>(keySerializer);
+        // create bucket pool
+        this.bucketPool = new ReusableBucketPool(Bucket::new);
         // load or create new
-        LoadedDataCallback<Bucket<K>> loadedDataCallback;
+        LoadedDataCallback loadedDataCallback;
         if (Files.exists(storeDir)) {
             // load metadata
             Path metaDataFile = storeDir.resolve(storeName + METADATA_FILENAME_SUFFIX);
@@ -206,7 +199,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
                                 + METADATA_FILE_FORMAT_VERSION
                                 + "].");
                     }
-                    minimumBuckets = metaIn.readInt();
+                    metaIn.readInt(); // backwards compatibility, was: minimumBuckets
                     numOfBuckets = metaIn.readInt();
                 }
                 if (loadedLegacyMetadata) {
@@ -231,8 +224,11 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
-                loadedDataCallback = (dataLocation, bucket) ->
-                        bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
+                loadedDataCallback = (dataLocation, bucketData) -> {
+                    final Bucket bucket = bucketPool.getBucket();
+                    bucket.readFrom(bucketData);
+                    bucketIndexToBucketLocation.put(bucket.getBucketIndex(), dataLocation);
+                };
             }
         } else {
             // create store dir
@@ -240,9 +236,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
             // create new index
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
-            minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
-            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
-            numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
+            final int minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
+            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 2
+            numOfBuckets = Math.max(Integer.highestOneBit(minimumBuckets) * 2, 2);
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
             // write metadata
@@ -254,29 +250,21 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     minimumBuckets,
                     numOfBuckets);
         }
+        bucketIndexToBucketLocation.updateValidRange(0, numOfBuckets - 1);
         // create file collection
-        fileCollection = new DataFileCollection<>(
+        fileCollection = new DataFileCollection(
                 // Need: propagate MerkleDb config from the database
-                config, storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
+                config, storeDir, storeName, legacyStoreName, loadedDataCallback);
     }
 
     private void writeMetadata(final Path dir) throws IOException {
         try (DataOutputStream metaOut =
                 new DataOutputStream(Files.newOutputStream(dir.resolve(storeName + METADATA_FILENAME_SUFFIX)))) {
             metaOut.writeInt(METADATA_FILE_FORMAT_VERSION);
-            metaOut.writeInt(minimumBuckets);
+            metaOut.writeInt(0); // backwards compatibility, was: minimumBuckets
             metaOut.writeInt(numOfBuckets);
             metaOut.flush();
         }
-    }
-
-    /**
-     * Get the key serializer.
-     *
-     * @return the key serializer
-     */
-    public KeySerializer<K> getKeySerializer() {
-        return bucketSerializer.getKeySerializer();
     }
 
     /** {@inheritDoc} */
@@ -336,8 +324,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
         writingThread = Thread.currentThread();
     }
 
-    private BucketMutation<K> findBucketForUpdate(final K key, final long oldValue, final long value) {
-        if (key == null) {
+    private BucketMutation findBucketForUpdate(
+            final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
+        if (keyBytes == null) {
             throw new IllegalArgumentException("Can not write a null key");
         }
         if (oneTransactionsData == null) {
@@ -348,8 +337,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
             throw new IllegalStateException("Tried to write with different thread to startWriting()");
         }
         // store key and value in transaction cache
-        final int bucketIndex = computeBucketIndex(key.hashCode());
-        return oneTransactionsData.getIfAbsentPut(bucketIndex, () -> new BucketMutation<>(key, oldValue, value));
+        final int bucketIndex = computeBucketIndex(keyHashCode);
+        return oneTransactionsData.getIfAbsentPut(
+                bucketIndex, () -> new BucketMutation(keyBytes, keyHashCode, oldValue, value));
     }
 
     /**
@@ -360,17 +350,18 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * session. The value from the last call will be stored in this map after the session is
      * ended.
      *
-     * @param key the key to store the value for
+     * @param keyBytes the key to store the value for
+     * @param keyHashCode the key hash code
      * @param value the value to store for given key
      */
-    public void put(final K key, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, INVALID_VALUE, value);
-        bucketMap.put(key, value);
+    public void put(final Bytes keyBytes, final int keyHashCode, final long value) {
+        final BucketMutation bucketMap = findBucketForUpdate(keyBytes, keyHashCode, INVALID_VALUE, value);
+        bucketMap.put(keyBytes, keyHashCode, value);
     }
 
     /**
      * Put a key/value during the current writing session. This method is similar to {@link
-     * #put(VirtualKey, long)}, but the new value is set only if the current value is equal to
+     * #put(Bytes, int, long)}, but the new value is set only if the current value is equal to
      * the given {@code oldValue}.
      *
      * <p>This method may be called multiple times for the same key in a single writing
@@ -379,38 +370,39 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * is ended, otherwise the value from the second call will be ignored.
      *
      * <p>If the value for {@code oldValue} is {@link #INVALID_VALUE}, it's ignored, and this
-     * method is identical to {@link #put(VirtualKey, long)}.
+     * method is identical to {@link #put(Bytes, int, long)}.
      *
-     * @param key the key to store the value for
+     * @param keyBytes the key to store the value for
+     * @param keyHashCode the key hash code
      * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
      *                 if no current value check is needed
      * @param value the value to store for the given key
      */
-    public void putIfEqual(final K key, final long oldValue, final long value) {
-        final BucketMutation<K> bucketMap = findBucketForUpdate(key, oldValue, value);
-        bucketMap.putIfEqual(key, oldValue, value);
+    public void putIfEqual(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
+        final BucketMutation bucketMap = findBucketForUpdate(keyBytes, keyHashCode, oldValue, value);
+        bucketMap.putIfEqual(keyBytes, keyHashCode, oldValue, value);
     }
 
     /**
      * Delete a key entry from the map.
      *
-     * @param key The key to delete entry for
+     * @param keyBytes The key to delete entry for
      */
-    public void delete(final K key) {
-        put(key, INVALID_VALUE);
+    public void delete(final Bytes keyBytes, final int keyHashCode) {
+        put(keyBytes, keyHashCode, INVALID_VALUE);
     }
 
     /**
      * Delete a key entry from the map, if the current value is equal to the given {@code oldValue}.
      * If {@code oldValue} is {@link #INVALID_VALUE}, no current value check is performed, and this
-     * method is identical to {@link #delete(VirtualKey)}.
+     * method is identical to {@link #delete(Bytes, int)}.
      *
-     * @param key the key to delete the entry for
+     * @param keyBytes the key to delete the entry for
      * @param oldValue the value to check the current value against, or {@link #INVALID_VALUE}
      *                 if no current value check is needed
      */
-    public void deleteIfEqual(final K key, final long oldValue) {
-        putIfEqual(key, oldValue, INVALID_VALUE);
+    public void deleteIfEqual(final Bytes keyBytes, final int keyHashCode, final long oldValue) {
+        putIfEqual(keyBytes, keyHashCode, oldValue, INVALID_VALUE);
     }
 
     /**
@@ -420,7 +412,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @throws IOException If there was a problem committing data to store
      */
     @Nullable
-    public DataFileReader<Bucket<K>> endWriting() throws IOException {
+    public DataFileReader endWriting() throws IOException {
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3943 */
         if (Thread.currentThread() != writingThread) {
             throw new IllegalStateException("Tried calling endWriting with different thread to startWriting()");
@@ -435,10 +427,10 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
 
         final ExecutorService flushExecutor = getFlushExecutor();
-        final DataFileReader<Bucket<K>> dataFileReader;
+        final DataFileReader dataFileReader;
         if (size > 0) {
-            final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
-            final Iterator<IntObjectPair<BucketMutation<K>>> iterator =
+            final Queue<ReadBucketResult> queue = new ConcurrentLinkedQueue<>();
+            final Iterator<IntObjectPair<BucketMutation>> iterator =
                     oneTransactionsData.keyValuesView().iterator();
 
             // read and update all buckets in parallel, write sequentially in random order
@@ -448,27 +440,28 @@ public class HalfDiskHashMap<K extends VirtualKey>
             while (processed < size) {
                 // submit read tasks
                 while (inFlight < MAX_IN_FLIGHT && iterator.hasNext()) {
-                    IntObjectPair<BucketMutation<K>> keyValue = iterator.next();
+                    IntObjectPair<BucketMutation> keyValue = iterator.next();
                     final int bucketIndex = keyValue.getOne();
-                    final BucketMutation<K> bucketMap = keyValue.getTwo();
+                    final BucketMutation bucketMap = keyValue.getTwo();
                     flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
                     ++inFlight;
                 }
 
-                ReadBucketResult<K> res;
+                ReadBucketResult res;
                 while ((res = queue.poll()) != null) {
                     --inFlight;
                     if (res.error != null) {
                         throw new RuntimeException(res.error);
                     }
-                    try (final Bucket<K> bucket = res.bucket) {
+                    try (final Bucket bucket = res.bucket) {
                         final int bucketIndex = bucket.getBucketIndex();
                         if (bucket.isEmpty()) {
                             // bucket is missing or empty, remove it from the index
                             bucketIndexToBucketLocation.remove(bucketIndex);
                         } else {
                             // save bucket
-                            final long bucketLocation = fileCollection.storeDataItem(bucket);
+                            final long bucketLocation =
+                                    fileCollection.storeDataItem(bucket::writeTo, bucket.sizeInBytes());
                             // update bucketIndexToBucketLocation
                             bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                         }
@@ -500,21 +493,25 @@ public class HalfDiskHashMap<K extends VirtualKey>
      * @param queue The queue to put the bucket or exception to
      */
     private void readUpdateQueueBucket(
-            final int bucketIndex, final BucketMutation<K> keyUpdates, final Queue<ReadBucketResult<K>> queue) {
+            final int bucketIndex, final BucketMutation keyUpdates, final Queue<ReadBucketResult> queue) {
         try {
             // The bucket will be closed on the lifecycle thread
-            Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-            if (bucket == null) {
+            final Bucket bucket;
+            BufferedData bucketData = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+            if (bucketData == null) {
                 // create a new bucket
-                bucket = bucketSerializer.getBucketPool().getBucket();
+                bucket = bucketPool.getBucket();
                 bucket.setBucketIndex(bucketIndex);
+            } else {
+                bucket = bucketPool.getBucket();
+                bucket.readFrom(bucketData);
             }
             // for each changed key in bucket, update bucket
             keyUpdates.forEachKeyValue(bucket::putValue);
-            queue.offer(new ReadBucketResult<>(bucket, null));
+            queue.offer(new ReadBucketResult(bucket, null));
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Failed to read / update bucket", e);
-            queue.offer(new ReadBucketResult<>(null, e));
+            queue.offer(new ReadBucketResult(null, e));
         }
     }
 
@@ -524,24 +521,34 @@ public class HalfDiskHashMap<K extends VirtualKey>
     /**
      * Get a value from this map
      *
-     * @param key The key to get value for
+     * @param keyBytes the key to get value for
+     * @param keyHashCode the key hash code
      * @param notFoundValue the value to return if the key was not found
      * @return the value retrieved from the map or {notFoundValue} if no value was stored for the
      *     given key
      * @throws IOException If there was a problem reading from the map
      */
-    public long get(final K key, final long notFoundValue) throws IOException {
-        if (key == null) {
+    public long get(final Bytes keyBytes, final int keyHashCode, final long notFoundValue) throws IOException {
+        if (keyBytes == null) {
             throw new IllegalArgumentException("Can not get a null key");
         }
-        final int keyHash = key.hashCode();
-        final int bucketIndex = computeBucketIndex(keyHash);
-        try (final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex)) {
+        final int bucketIndex = computeBucketIndex(keyHashCode);
+        try (final Bucket bucket = readBucket(bucketIndex)) {
             if (bucket != null) {
-                return bucket.findValue(keyHash, key, notFoundValue);
+                return bucket.findValue(keyHashCode, keyBytes, notFoundValue);
             }
         }
         return notFoundValue;
+    }
+
+    private Bucket readBucket(final int bucketIndex) throws IOException {
+        final BufferedData bucketData = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+        if (bucketData == null) {
+            return null;
+        }
+        final Bucket bucket = bucketPool.getBucket();
+        bucket.readFrom(bucketData);
+        return bucket;
     }
 
     // =================================================================================================================
@@ -554,17 +561,15 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 """
                         HalfDiskHashMap Stats {
                         	mapSize = {}
-                        	minimumBuckets = {}
                         	numOfBuckets = {}
                         	GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
                         }""",
                 mapSize,
-                minimumBuckets,
                 numOfBuckets,
                 GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
     }
 
-    public DataFileCollection<Bucket<K>> getFileCollection() {
+    public DataFileCollection getFileCollection() {
         return fileCollection;
     }
 
@@ -586,7 +591,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         return (numOfBuckets - 1) & keyHash;
     }
 
-    private record ReadBucketResult<K extends VirtualKey>(Bucket<K> bucket, Throwable error) {
+    private record ReadBucketResult(Bucket bucket, Throwable error) {
         public ReadBucketResult {
             assert (bucket != null) ^ (error != null);
         }

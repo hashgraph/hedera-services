@@ -17,6 +17,8 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.merkledb.VirtualMapSerializationTests.KEY_SERIALIZER;
+import static com.swirlds.merkledb.VirtualMapSerializationTests.VALUE_SERIALIZER;
 import static com.swirlds.merkledb.VirtualMapSerializationTests.constructBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,7 +52,7 @@ class MigrationTest {
 
         // Build a virtual map.
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractVirtualMapDataTest", constructBuilder());
+                new VirtualMap<>("extractVirtualMapDataTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
         for (int i = 0; i < size; i++) {
             if (((i + 1) % (size / 100) == 0)) {
                 // Make a copy of the map in order to allow things to be flushed to disk
@@ -113,7 +115,7 @@ class MigrationTest {
 
         // Build a virtual map.
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractDataConcurrentlyTest", constructBuilder());
+                new VirtualMap<>("extractDataConcurrentlyTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
 
         final Random random = new Random(42);
         final byte[] value = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];

@@ -28,11 +28,9 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
 
+sourceSets {
     create("rcdiff")
     create("yahcli")
 }
@@ -47,6 +45,7 @@ tasks.register<JavaExec>("runTestClient") {
 
 val prCheckTags =
     mapOf(
+        "hapiTestAdhoc" to "ADHOC",
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
         "hapiTestRestart" to "RESTART|UPGRADE",
@@ -57,6 +56,7 @@ val prCheckTags =
     )
 val prCheckStartPorts =
     mapOf(
+        "hapiTestAdhoc" to "25000",
         "hapiTestCrypto" to "26000",
         "hapiTestToken" to "27000",
         "hapiTestRestart" to "28000",

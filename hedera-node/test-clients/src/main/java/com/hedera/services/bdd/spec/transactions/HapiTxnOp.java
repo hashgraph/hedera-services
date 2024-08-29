@@ -422,6 +422,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     public void finalizeExecFor(HapiSpec spec) throws Throwable {
         if (deferStatusResolution) {
             resolveStatus(spec);
+            assertExpectationsGiven(spec);
             updateStateOf(spec);
         }
     }

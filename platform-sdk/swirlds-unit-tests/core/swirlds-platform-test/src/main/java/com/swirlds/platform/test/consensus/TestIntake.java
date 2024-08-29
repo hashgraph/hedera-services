@@ -45,7 +45,6 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
@@ -83,8 +82,7 @@ public class TestIntake {
         model = WiringModelBuilder.create(platformContext).build();
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
-        final EventHasher eventHasher =
-                new DefaultEventHasher(new BasicSoftwareVersion(1).getPbjSemanticVersion(), false);
+        final EventHasher eventHasher = new DefaultEventHasher();
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<PlatformEvent> postHashCollectorWiring =

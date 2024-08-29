@@ -28,7 +28,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
@@ -194,7 +193,7 @@ public final class SyncUtils {
      */
     public static Callable<Void> sendEventsTheyNeed(
             final Connection connection,
-            final List<EventImpl> events,
+            final List<PlatformEvent> events,
             final CountDownLatch eventReadingDone,
             final AtomicBoolean writeAborted,
             final Duration syncKeepalivePeriod) {
@@ -204,7 +203,7 @@ public final class SyncUtils {
                     "{} writing events start. send list size: {}",
                     connection.getDescription(),
                     events.size());
-            for (final EventImpl event : events) {
+            for (final PlatformEvent event : events) {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
                 connection.getDos().writeEventData(event);
             }
@@ -371,13 +370,13 @@ public final class SyncUtils {
      * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
-    public static List<EventImpl> filterLikelyDuplicates(
+    public static List<PlatformEvent> filterLikelyDuplicates(
             @NonNull final NodeId selfId,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
-            @NonNull final List<EventImpl> eventsTheyNeed) {
+            @NonNull final List<PlatformEvent> eventsTheyNeed) {
 
-        final LinkedList<EventImpl> filteredList = new LinkedList<>();
+        final LinkedList<PlatformEvent> filteredList = new LinkedList<>();
 
         final Set<Hash> parentHashesOfEventsToSend = new HashSet<>();
 
@@ -386,14 +385,14 @@ public final class SyncUtils {
         // filtered list in reverse order, resulting in a list that is in topological order.
 
         for (int index = eventsTheyNeed.size() - 1; index >= 0; index--) {
-            final EventImpl event = eventsTheyNeed.get(index);
+            final PlatformEvent event = eventsTheyNeed.get(index);
 
             final boolean sendEvent =
                     // Always send self events
                     event.getCreatorId().equals(selfId)
                             ||
                             // Always send parents of other events we plan to send
-                            parentHashesOfEventsToSend.contains(event.getBaseHash())
+                            parentHashesOfEventsToSend.contains(event.getHash())
                             ||
                             // Send all other events if we've known about it for long enough
                             haveWeKnownAboutEventForALongTime(event, nonAncestorThreshold, now);
@@ -402,8 +401,7 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                for (final EventDescriptorWrapper otherParent :
-                        event.getBaseEvent().getAllParents()) {
+                for (final EventDescriptorWrapper otherParent : event.getAllParents()) {
                     parentHashesOfEventsToSend.add(otherParent.hash());
                 }
             }
@@ -421,8 +419,10 @@ public final class SyncUtils {
      * @return true if we've known about the event for long enough, false otherwise
      */
     private static boolean haveWeKnownAboutEventForALongTime(
-            @NonNull final EventImpl event, @NonNull final Duration nonAncestorThreshold, @NonNull final Instant now) {
-        final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
+            @NonNull final PlatformEvent event,
+            @NonNull final Duration nonAncestorThreshold,
+            @NonNull final Instant now) {
+        final Instant eventReceivedTime = event.getTimeReceived();
         final Duration timeKnown = Duration.between(eventReceivedTime, now);
         return isGreaterThan(timeKnown, nonAncestorThreshold);
     }
@@ -454,8 +454,8 @@ public final class SyncUtils {
 
         final long minimumSearchThreshold =
                 Math.max(myEventWindow.getExpiredThreshold(), theirEventWindow.getAncientThreshold());
-        return s -> s.getEvent().getBaseEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold
-                && !knownShadows.contains(s);
+        return s ->
+                s.getEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold && !knownShadows.contains(s);
     }
 
     /**
@@ -496,10 +496,10 @@ public final class SyncUtils {
      *
      * @param sendList The list of events to sort.
      */
-    static void sort(@NonNull final List<EventImpl> sendList) {
+    static void sort(@NonNull final List<PlatformEvent> sendList) {
         // Note: regardless of ancient mode, sorting uses generations and not birth rounds.
         //       Sorting by generations yields a list in topological order, sorting by birth rounds does not.
-        sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
+        sendList.sort((PlatformEvent e1, PlatformEvent e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
     /**

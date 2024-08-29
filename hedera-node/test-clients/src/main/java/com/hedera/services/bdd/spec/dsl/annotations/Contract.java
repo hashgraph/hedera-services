@@ -49,7 +49,7 @@ public @interface Contract {
      *
      * @return the amount of gas to use
      */
-    long creationGas() default 100_000L;
+    long creationGas() default 250_000L;
 
     /**
      * Whether this contract is immutable.

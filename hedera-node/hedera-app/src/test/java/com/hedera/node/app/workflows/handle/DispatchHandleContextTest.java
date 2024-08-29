@@ -25,9 +25,13 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.OFF;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -95,7 +99,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -110,7 +113,6 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -165,7 +167,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
 
     @Mock
     private AppKeyVerifier verifier;
@@ -186,9 +188,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private BlockRecordManager blockRecordManager;
 
     @Mock
-    private HederaRecordCache recordCache;
-
-    @Mock
     private ResourcePriceCalculator resourcePriceCalculator;
 
     @Mock
@@ -207,19 +206,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private ThrottleAdviser throttleAdviser;
 
     @Mock
-    private PlatformState platformState;
-
-    @Mock
     private StoreMetricsService storeMetricsService;
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
-
-    @Mock
-    private RecordStreamBuilder oneChildBuilder;
-
-    @Mock
-    private RecordStreamBuilder twoChildBuilder;
 
     @Mock
     private ChildDispatchFactory childDispatchFactory;
@@ -254,6 +244,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
+    @Mock
+    private Predicate<Key> signatureTest;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -272,12 +265,27 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private RecordStreamBuilder childRecordBuilder = new RecordStreamBuilder();
+    private final RecordStreamBuilder childRecordBuilder =
+            new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private final TransactionBody txnBodyWithoutId = TransactionBody.newBuilder()
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.newBuilder().body(txBody).build(),
+            txBody,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER,
+            null);
+
+    private static final TransactionBody MISSING_PAYER_ID =
+            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
+
+    private static final AccountID PAYER_ID =
+            AccountID.newBuilder().accountNum(1_234L).build();
+    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
+            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -372,7 +380,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             storeFactory,
             payerId,
             verifier,
-            platformState,
             CONTRACT_CALL,
             Key.newBuilder().build(),
             exchangeRateManager,
@@ -578,16 +585,21 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() ->
-                            subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            null, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+            assertThatThrownBy(() -> subject.dispatchChildTransaction(
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD, ON))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
+                            null,
+                            StreamBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            NOOP_RECORD_CUSTOMIZER,
+                            OFF))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER, OFF))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -596,13 +608,14 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD)),
+                            txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD, ON)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             txBody,
                             StreamBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID(),
-                            (ignore) -> Transaction.DEFAULT)));
+                            (ignore) -> Transaction.DEFAULT,
+                            OFF)));
         }
 
         @ParameterizedTest
@@ -631,7 +644,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
             verify(dispatcher, never()).dispatchHandle(any());
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test
@@ -658,7 +671,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             context.dispatchPrecedingTransaction(txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
 
             verify(dispatchProcessor).processDispatch(childDispatch);
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test
@@ -668,7 +681,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchRemovablePrecedingTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -693,7 +706,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatchChildTransaction(
-                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
+                    txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED, ON);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -735,7 +748,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
+                Transaction.newBuilder().body(txBody).build(),
+                txBody,
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                function,
+                null);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,
@@ -748,7 +766,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 storeFactory,
                 payerId,
                 verifier,
-                platformState,
                 CRYPTO_TRANSFER,
                 Key.DEFAULT,
                 exchangeRateManager,
