@@ -7,5 +7,5 @@ release:
         name: release/0.54
         initial-tag:
           create: true
-          name: v0.54.0-alpha.0
+          name: v0.54.0-alpha.1
 
