@@ -24,8 +24,7 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -37,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 /**
  *
  */
-public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
+public final class ParsedBucket extends Bucket {
 
     private static final Logger logger = LogManager.getLogger(ParsedBucket.class);
 
@@ -49,20 +48,16 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
 
     /**
      * Create a new bucket with the default size.
-     *
-     * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    ParsedBucket(final KeySerializer<K> keySerializer) {
-        this(keySerializer, null);
+    ParsedBucket() {
+        this(null);
     }
 
     /**
      * Create a new bucket with the default size.
-     *
-     * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    ParsedBucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
-        super(keySerializer, bucketPool);
+    ParsedBucket(final ReusableBucketPool bucketPool) {
+        super(bucketPool);
     }
 
     /**
@@ -114,7 +109,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      * @return the stored value for given key or notFoundValue if nothing is stored for the key
      * @throws IOException If there was a problem reading the value from file
      */
-    public long findValue(final int keyHashCode, final K key, final long notFoundValue) throws IOException {
+    public long findValue(final int keyHashCode, final Bytes key, final long notFoundValue) throws IOException {
         final int entryIndex = findEntryIndex(keyHashCode, key);
         if (entryIndex >= 0) {
             // yay! we found it
@@ -128,11 +123,10 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      * {@inheritDoc}
      */
     @Override
-    public void putValue(final K key, final long oldValue, final long value) {
+    public void putValue(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
         final boolean needCheckOldValue = oldValue != INVALID_VALUE;
-        final int keyHashCode = key.hashCode();
         try {
-            final int entryIndex = findEntryIndex(keyHashCode, key);
+            final int entryIndex = findEntryIndex(keyHashCode, keyBytes);
             if (value == INVALID_VALUE) {
                 if (entryIndex >= 0) { // if found
                     final BucketEntry entry = entries.get(entryIndex);
@@ -156,12 +150,12 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
                 if (needCheckOldValue) {
                     return;
                 }
-                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
+                final BucketEntry newEntry = new BucketEntry(keyHashCode, value, keyBytes);
                 entries.add(newEntry);
                 checkLargestBucket(entries.size());
             }
         } catch (IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
+            logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", keyBytes, value, e);
             throw new UncheckedIOException(e);
         }
     }
@@ -206,12 +200,12 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
     // =================================================================================================================
     // Private API
 
-    private int findEntryIndex(final int keyHashCode, final K key) throws IOException {
+    private int findEntryIndex(final int keyHashCode, final Bytes keyBytes) throws IOException {
         final int entryCount = entries.size();
         for (int index = 0; index < entryCount; index++) {
             final BucketEntry entry = entries.get(index);
             if (keyHashCode == entry.getHashCode()) {
-                if (entry.getKey().equals(key)) {
+                if (entry.getKeyBytes().equals(keyBytes)) {
                     return index;
                 }
             }
@@ -231,8 +225,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             final BucketEntry entry = entries.get(i);
             final int hashCode = entry.getHashCode();
             final long value = entry.getValue();
-            final K key = entry.getKey();
-            sb.append("    ENTRY[" + i + "] value= " + value + " keyHashCode=" + hashCode + " key=" + key + "\n");
+            final Bytes keyBytes = entry.getKeyBytes();
+            sb.append("    ENTRY[" + i + "] value= " + value + " keyHashCode=" + hashCode + " key=" + keyBytes + "\n");
         }
         sb.append("}");
         return sb.toString();
@@ -246,20 +240,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
      * in a bucket, and a bucket entry already exists for the same key, instead of creating
      * a new entry, we just update the value in the existing entry.
      */
-    private class BucketEntry {
+    private static class BucketEntry {
 
         /** Key hash code */
         private final int hashCode;
         /** Long value. May be updated */
         private long value;
         /** Key */
-        private final K key;
+        private final Bytes keyBytes;
 
         /** Creates new bucket entry from hash code, value, and serialized key bytes */
-        public BucketEntry(final int hashCode, final long value, @NonNull final K key) {
+        public BucketEntry(final int hashCode, final long value, @NonNull final Bytes keyBytes) {
             this.hashCode = hashCode;
             this.value = value;
-            this.key = key;
+            this.keyBytes = keyBytes;
         }
 
         /** Creates new bucket entry by reading its fields from the given protobuf buffer */
@@ -267,7 +261,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             // defaults
             int hashCode = 0;
             long value = 0;
-            K key = null;
+            Bytes keyBytes = null;
 
             // read fields
             while (entryData.hasRemaining()) {
@@ -279,23 +273,20 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
                     value = entryData.readLong();
                 } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
                     final int bytesSize = entryData.readVarInt(false);
-                    long oldLimit = entryData.limit();
-                    entryData.limit(entryData.position() + bytesSize);
-                    key = keySerializer.deserialize(entryData);
-                    entryData.limit(oldLimit);
+                    keyBytes = entryData.readBytes(bytesSize);
                 } else {
                     throw new IllegalArgumentException("Unknown bucket entry field: " + fieldNum);
                 }
             }
 
             // check required fields
-            if (key == null) {
+            if (keyBytes == null) {
                 throw new IllegalArgumentException("Null key for bucket entry");
             }
 
             this.hashCode = hashCode;
             this.value = value;
-            this.key = key;
+            this.keyBytes = keyBytes;
         }
 
         public int getHashCode() {
@@ -310,8 +301,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             this.value = value;
         }
 
-        public K getKey() {
-            return key;
+        public Bytes getKeyBytes() {
+            return keyBytes;
         }
 
         public int sizeInBytes() {
@@ -320,7 +311,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
                     + Integer.BYTES;
             size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
                     + Long.BYTES;
-            size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, Math.toIntExact(keyBytes.length()));
             return size;
         }
 
@@ -330,10 +321,7 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
             out.writeLong(value);
             ProtoWriterTools.writeDelimited(
-                    out,
-                    FIELD_BUCKETENTRY_KEYBYTES,
-                    keySerializer.getSerializedSize(key),
-                    o -> keySerializer.serialize(key, o));
+                    out, FIELD_BUCKETENTRY_KEYBYTES, Math.toIntExact(keyBytes.length()), keyBytes::writeTo);
         }
     }
 }

@@ -17,7 +17,9 @@
 package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_DELETE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_DELETE;
@@ -35,6 +37,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.services.bdd.junit.support.translators.impl.NoExplicitSideEffectsTranslator.NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR;
 import static java.util.Objects.requireNonNull;
@@ -54,6 +57,7 @@ import com.hedera.services.bdd.junit.support.translators.impl.ScheduleCreateTran
 import com.hedera.services.bdd.junit.support.translators.impl.SubmitMessageTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TokenMintTranslator;
+import com.hedera.services.bdd.junit.support.translators.impl.TokenUpdateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.TopicCreateTranslator;
 import com.hedera.services.bdd.junit.support.translators.impl.UtilPrngTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionalUnit;
@@ -82,8 +86,10 @@ public class BlockTransactionalUnitTranslator {
     private final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators =
             new EnumMap<>(HederaFunctionality.class) {
                 {
-                    put(CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
                     put(CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
+                    put(CONSENSUS_DELETE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
+                    put(CONSENSUS_UPDATE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONTRACT_CALL, new ContractCallTranslator());
                     put(CONTRACT_CREATE, new ContractCreateTranslator());
                     put(CONTRACT_DELETE, new ContractDeleteTranslator());
@@ -100,6 +106,7 @@ public class BlockTransactionalUnitTranslator {
                     put(SCHEDULE_CREATE, new ScheduleCreateTranslator());
                     put(TOKEN_ASSOCIATE_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_CREATE, new TokenCreateTranslator());
+                    put(TOKEN_UPDATE, new TokenUpdateTranslator());
                     put(TOKEN_MINT, new TokenMintTranslator());
                     put(UTIL_PRNG, new UtilPrngTranslator());
                 }

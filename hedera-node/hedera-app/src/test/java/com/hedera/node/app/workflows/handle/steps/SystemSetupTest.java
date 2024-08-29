@@ -38,6 +38,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -267,9 +268,10 @@ class SystemSetupTest {
                 })
                 .when(syntheticAccountCreator)
                 .generateSyntheticAccounts(any(), any(), any(), any(), any(), any());
+        given(genesisAccountRecordBuilder.accountID(any())).willReturn(genesisAccountRecordBuilder);
 
         // Call the first time to make sure records are generated
-        subject.externalizeInitSideEffects(context);
+        subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
@@ -279,13 +281,14 @@ class SystemSetupTest {
 
         // Call externalizeInitSideEffects() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
-        assertThatThrownBy(() -> subject.externalizeInitSideEffects(context)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT))
+                .isInstanceOf(NullPointerException.class);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
     @Test
     void externalizeInitSideEffectsCreatesNoRecordsWhenEmpty() {
-        subject.externalizeInitSideEffects(context);
+        subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
