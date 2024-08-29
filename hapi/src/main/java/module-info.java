@@ -62,6 +62,8 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream.input;
     exports com.hedera.hapi.block.stream.output;
     exports com.hedera.hapi.block.stream.schema;
+    exports com.hedera.hapi.block.protoc;
+    exports com.hedera.hapi.block.stream.protoc;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
