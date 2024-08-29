@@ -34,7 +34,9 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
@@ -239,7 +241,10 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // create path to disk location index
         final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationInternalNodes = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
+            final FileSystemManager fileSystemManager =
+                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
+            pathToDiskLocationInternalNodes =
+                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, fileSystemManager);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
             pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
         } else {
@@ -247,7 +252,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
         // path to disk location index, leaf nodes
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile);
+            final FileSystemManager fileSystemManager =
+                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
+            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, fileSystemManager);
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
             pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
         } else {

@@ -18,6 +18,7 @@ package com.swirlds.merkledb.collections;
 
 import static java.lang.Math.toIntExact;
 
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -77,15 +77,23 @@ public class LongListDisk extends AbstractLongList<Long> {
     /**
      * Create a {@link LongListDisk} with default parameters.
      */
-    public LongListDisk() {
-        this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH);
+    public LongListDisk(FileSystemManager fileSystemManager) {
+        this(
+                DEFAULT_NUM_LONGS_PER_CHUNK,
+                DEFAULT_MAX_LONGS_TO_STORE,
+                DEFAULT_RESERVED_BUFFER_LENGTH,
+                fileSystemManager);
     }
 
-    LongListDisk(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
+    LongListDisk(
+            final int numLongsPerChunk,
+            final long maxLongs,
+            final long reservedBufferLength,
+            FileSystemManager fileSystemManager) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
         try {
             currentFileChannel = FileChannel.open(
-                    createTempFile(DEFAULT_FILE_NAME),
+                    createTempFile(DEFAULT_FILE_NAME, fileSystemManager),
                     StandardOpenOption.CREATE,
                     StandardOpenOption.READ,
                     StandardOpenOption.WRITE);
@@ -102,12 +110,15 @@ public class LongListDisk extends AbstractLongList<Long> {
      * @param file The file to read and write to
      * @throws IOException If there was a problem reading the file
      */
-    public LongListDisk(final Path file) throws IOException {
-        this(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+    public LongListDisk(final Path file, FileSystemManager fileSystemManager) throws IOException {
+        this(file, DEFAULT_RESERVED_BUFFER_LENGTH, fileSystemManager);
     }
 
-    LongListDisk(final Path file, final long reservedBufferLength) throws IOException {
-        super(file, reservedBufferLength);
+    LongListDisk(final Path file, final long reservedBufferLength, FileSystemManager fileSystemManager)
+            throws IOException {
+        super();
+        tempFile = createTempFile(file.toFile().getName(), fileSystemManager);
+        super.init(file, reservedBufferLength);
         freeChunks = new ConcurrentLinkedDeque<>();
         // IDE complains that the tempFile is not initialized, but it's initialized in readBodyFromFileChannelOnInit
         // which is called from the constructor of the parent class
@@ -119,20 +130,10 @@ public class LongListDisk extends AbstractLongList<Long> {
                 tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
-    /**
-     * Initializes the file channel to a temporary file.
-     * @param path the path to the source file
-     */
-    @Override
-    protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
-        tempFile = createTempFile(path.toFile().getName());
-    }
-
     /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
-        tempFile = createTempFile(sourceFileName);
         // create temporary file for writing
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.
@@ -192,8 +193,8 @@ public class LongListDisk extends AbstractLongList<Long> {
         return buffer;
     }
 
-    static Path createTempFile(final String sourceFileName) throws IOException {
-        return Files.createTempDirectory(null).resolve(sourceFileName);
+    static Path createTempFile(final String sourceFileName, FileSystemManager fileSystemManager) throws IOException {
+        return fileSystemManager.resolveNewTemp(sourceFileName);
     }
 
     /** {@inheritDoc} */

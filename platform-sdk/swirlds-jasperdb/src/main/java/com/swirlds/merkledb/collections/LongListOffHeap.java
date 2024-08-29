@@ -91,7 +91,8 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
      * @throws IOException If there was a problem reading the file
      */
     public LongListOffHeap(final Path file) throws IOException {
-        super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+        super();
+        super.init(file, DEFAULT_RESERVED_BUFFER_LENGTH);
     }
 
     /** {@inheritDoc} */
