@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
@@ -28,6 +29,7 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -71,6 +73,7 @@ public class TokenAirdropValidator {
      */
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         final var tokenTransfers = op.tokenTransfers();
+        validateTruePreCheck(!tokenTransfers.isEmpty(), EMPTY_TOKEN_TRANSFER_BODY);
         // If there is not exactly one debit we throw an exception
         for (var tokenTransfer : tokenTransfers) {
             if (tokenTransfer.transfers().isEmpty()) {

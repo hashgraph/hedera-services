@@ -25,6 +25,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -51,6 +53,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,6 +115,9 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
+                .kvStateChangeListener(new KVStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .migrationStateChanges(List.of())
                 .build();
 
         final var state = new FakeState();

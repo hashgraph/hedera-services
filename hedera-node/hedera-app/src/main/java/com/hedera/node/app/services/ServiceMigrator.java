@@ -37,11 +37,12 @@ public interface ServiceMigrator {
      *
      * @param state            The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
-     * @param previousVersion  The previous version of the state
-     * @param currentVersion   The current version of the state
-     * @param config           The configuration to use for the migrations
-     * @param networkInfo      The network information to use for the migrations
-     * @param metrics          The metrics to use for the migrations
+     * @param previousVersion The previous version of the state
+     * @param currentVersion The current version of the state
+     * @param config The configuration to use for the migrations
+     * @param networkInfo The network information to use for the migrations
+     * @param metrics The metrics to use for the migrations
+     * @return The list of builders for state changes that occurred during the migrations
      */
     List<StateChanges.Builder> doMigrations(
             @NonNull State state,
