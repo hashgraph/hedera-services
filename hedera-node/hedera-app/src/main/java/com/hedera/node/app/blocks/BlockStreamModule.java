@@ -51,7 +51,7 @@ public interface BlockStreamModule {
                 //                    executorService, new FileBlockItemWriter(configProvider, selfNodeInfo,
                 // fileSystem));
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-            case GRPC -> () -> new GrpcBlockItemWriter();
+            case GRPC -> GrpcBlockItemWriter::new;
             default -> throw new IllegalArgumentException(
                     "Unknown BlockStreamWriterMode: " + blockStreamConfig.writerMode());
         };

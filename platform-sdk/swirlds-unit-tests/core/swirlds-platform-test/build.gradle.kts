@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.feature.benchmark")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default

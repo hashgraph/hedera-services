@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
@@ -45,7 +44,6 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.MessageSupplier;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class HashLoggerTest {
@@ -95,7 +93,6 @@ public class HashLoggerTest {
     }
 
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     public void loggingEarlierEventsDropped() {
         hashLogger.logHashes(createSignedState(1));
         hashLogger.logHashes(createSignedState(2));

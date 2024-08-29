@@ -204,7 +204,7 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(@NonNull State state, @NonNull Round round) {
+    private void handleEvents(@NonNull final State state, @NonNull final Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         for (final var event : round) {
