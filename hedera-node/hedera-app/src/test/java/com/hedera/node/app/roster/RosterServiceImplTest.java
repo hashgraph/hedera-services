@@ -65,6 +65,6 @@ class RosterServiceImplTest {
 
     @Test
     void testServiceNameReturnsCorrectName() {
-        assertThat(rosterService.getServiceName()).isEqualTo(RosterServiceImpl.SCHEMA_NAME);
+        assertThat(rosterService.getServiceName()).isEqualTo(RosterServiceImpl.NAME);
     }
 }

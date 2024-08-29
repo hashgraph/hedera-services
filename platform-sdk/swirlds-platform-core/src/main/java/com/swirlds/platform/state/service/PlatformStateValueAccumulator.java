@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * It's not meant to be used for other purposes. This class tracks the changes to the fields to prevent resetting original
  * platform state fields to null if they are not updated.
  */
-class PlatformStateValueAccumulator implements PlatformStateAccessor {
+public class PlatformStateValueAccumulator implements PlatformStateAccessor {
 
     /**
      * The address book for this round.
@@ -479,6 +479,6 @@ class PlatformStateValueAccumulator implements PlatformStateAccessor {
 
     @Override
     public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
-        throw new UnsupportedOperationException("This implementation doesn't support bulkUpdate operation");
+        updater.accept(this);
     }
 }

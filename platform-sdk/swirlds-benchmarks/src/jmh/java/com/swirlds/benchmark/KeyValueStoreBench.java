@@ -16,6 +16,7 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
@@ -48,15 +49,10 @@ public class KeyValueStoreBench extends BaseBench {
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
         final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
-        final var store = new MemoryIndexDiskKeyValueStore<>(
-                dbConfig,
-                getTestDir(),
-                storeName,
-                null,
-                new BenchmarkRecordSerializer(),
-                (dataLocation, dataValue) -> {},
-                keyToDiskLocationIndex);
-        final DataFileCompactor<BenchmarkRecord> compactor = new DataFileCompactor<>(
+        final BenchmarkRecordSerializer serializer = new BenchmarkRecordSerializer();
+        final var store = new MemoryIndexDiskKeyValueStore(
+                dbConfig, getTestDir(), storeName, null, (dataLocation, dataValue) -> {}, keyToDiskLocationIndex);
+        final DataFileCompactor compactor = new DataFileCompactor(
                 dbConfig, storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
 
         // Write files
@@ -68,7 +64,7 @@ public class KeyValueStoreBench extends BaseBench {
             for (int j = 0; j < numRecords; ++j) {
                 long id = nextAscKey();
                 BenchmarkRecord value = new BenchmarkRecord(id, nextValue());
-                store.put(id, value);
+                store.put(id, value::serialize, BenchmarkRecord.getSerializedSize());
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -84,13 +80,16 @@ public class KeyValueStoreBench extends BaseBench {
         if (verify) {
             start = System.currentTimeMillis();
             for (int key = 0; key < map.length; ++key) {
-                BenchmarkRecord dataItem = store.get(key);
-                if (dataItem == null) {
+                BufferedData dataItemBytes = store.get(key);
+                if (dataItemBytes == null) {
                     if (map[key] != null) {
                         throw new RuntimeException("Missing value");
                     }
-                } else if (!dataItem.equals(map[key])) {
-                    throw new RuntimeException("Bad value");
+                } else {
+                    BenchmarkRecord dataItem = serializer.deserialize(dataItemBytes);
+                    if (!dataItem.equals(map[key])) {
+                        throw new RuntimeException("Bad value");
+                    }
                 }
             }
             System.out.println("Verified key-value store in " + (System.currentTimeMillis() - start) + "ms");

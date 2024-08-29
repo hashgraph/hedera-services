@@ -49,12 +49,11 @@ public class OrderedComparison {
      * time and same source transaction in both streams, but differed in some way (e.g., their
      * receipt status).
      *
-     * @param firstStreamDir the first record stream
-     * @param secondStreamDir the second record stream
+     * @param firstStreamDir the directory containing the expected record stream files
+     * @param secondStreamDir the directory containing the actual record stream files
      * @param recordDiffSummarizer if present, a summarizer for record diffs
      * @param maybeInclusionTest if set, a consumer receiving the name of each file as it is parsed
      * @return the stream diff
-     * @throws IOException if any of the record stream files cannot be read or parsed
      * @throws IllegalArgumentException if the directories contain misaligned record streams
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
@@ -81,8 +80,8 @@ public class OrderedComparison {
      * Like {#findDifferencesBetweenV6(String, String, RecordDiffSummarizer, Predicate, String)}, but for
      * in-memory {@link RecordStreamEntry} objects.
      *
-     * @param firstEntries the first record stream (typically the records being tested)
-     * @param secondEntries the second record stream (typically the expected records)
+     * @param firstEntries the first record stream (the expected records)
+     * @param secondEntries the second record stream (the records being tested)
      * @param recordDiffSummarizer if present, a summarizer for record diffs
      * @param maybeInclusionTest if set, a consumer receiving the consensus timestamp of each entry
      * @return the stream diff

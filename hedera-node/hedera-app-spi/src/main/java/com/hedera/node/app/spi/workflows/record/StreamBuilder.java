@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -29,9 +30,11 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -42,11 +45,26 @@ import java.util.Set;
  */
 public interface StreamBuilder {
     /**
+     * Adds state changes to this stream builder.
+     * @return this builder
+     */
+    default StreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+        return this;
+    }
+
+    /**
      * Sets the transaction for this stream item builder.
      * @param transaction the transaction
      * @return this builder
      */
     StreamBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Sets the serialized bytes for the transaction; if known, we can avoid re-serializing the transaction.
+     * @param serializedTransaction if non-null, the serialized transaction
+     * @return this builder
+     */
+    StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction);
 
     /**
      * Returns the transaction for this stream item builder.
@@ -110,8 +128,8 @@ public interface StreamBuilder {
     StreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * The transaction category of the transaction that created this record
-     * @return the transaction category
+     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
+     * @return the {@link TransactionRecord.Builder} of the record
      */
     HandleContext.TransactionCategory category();
 
@@ -186,6 +204,13 @@ public interface StreamBuilder {
      * @return the number of associations
      */
     int getNumAutoAssociations();
+
+    /**
+     * Sets the congestion multiplier used for charging the fees for this transaction. This is set if non-zero.
+     * @param congestionMultiplier the congestion multiplier
+     * @return this builder
+     */
+    StreamBuilder congestionMultiplier(long congestionMultiplier);
 
     /**
      * Returns true if this builder's transaction originated from inside another handler or workflow; and not

@@ -16,14 +16,15 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtual.merkle.TestKey;
-import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,12 +32,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public final class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
+public final class BreakableDataSource implements VirtualDataSource {
 
-    final VirtualDataSource<TestKey, TestValue> delegate;
+    final VirtualDataSource delegate;
     private final BrokenBuilder builder;
 
-    public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource<TestKey, TestValue> delegate) {
+    public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource delegate) {
         this.delegate = Objects.requireNonNull(delegate);
         this.builder = Objects.requireNonNull(builder);
     }
@@ -46,11 +47,11 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
             final long firstLeafPath,
             final long lastLeafPath,
             @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-            @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException {
-        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
+        final List<VirtualLeafBytes> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
             // Syncronization block is not required here, as this code is never called in parallel
@@ -74,18 +75,18 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     }
 
     @Override
-    public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
-        return delegate.loadLeafRecord(key);
+    public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
+        return delegate.loadLeafRecord(key, keyHashCode);
     }
 
     @Override
-    public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final long path) throws IOException {
+    public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
         return delegate.loadLeafRecord(path);
     }
 
     @Override
-    public long findKey(final TestKey key) throws IOException {
-        return delegate.findKey(key);
+    public long findKey(final Bytes key, final int keyHashCode) throws IOException {
+        return delegate.findKey(key, keyHashCode);
     }
 
     @Override
@@ -104,7 +105,7 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     }
 
     @Override
-    public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {}
+    public void copyStatisticsFrom(final VirtualDataSource that) {}
 
     @Override
     public void registerMetrics(final Metrics metrics) {}
@@ -120,11 +121,6 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     }
 
     @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-        return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
-    }
-
-    @Override
     public void enableBackgroundCompaction() {
         delegate.enableBackgroundCompaction();
     }
@@ -132,5 +128,17 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     @Override
     public void stopAndDisableBackgroundCompaction() {
         delegate.stopAndDisableBackgroundCompaction();
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public KeySerializer getKeySerializer() {
+        throw new UnsupportedOperationException("This method should never be called");
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public ValueSerializer getValueSerializer() {
+        throw new UnsupportedOperationException("This method should never be called");
     }
 }

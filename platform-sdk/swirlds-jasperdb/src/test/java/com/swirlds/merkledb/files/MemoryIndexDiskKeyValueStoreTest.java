@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
@@ -75,26 +76,30 @@ class MemoryIndexDiskKeyValueStoreTest {
 
     private void checkRange(
             final FilesTestType testType,
-            final MemoryIndexDiskKeyValueStore<long[]> store,
+            final MemoryIndexDiskKeyValueStore store,
             final int start,
             final int count,
             final int valueAddition)
             throws IOException {
         for (int i = start; i < (start + count); i++) {
             // read
-            final var dataItem = store.get(i);
+            final BufferedData dataItem = store.get(i);
             assertNotNull(dataItem, "dataItem unexpectedly null");
             switch (testType) {
                 default:
                 case fixed:
-                    assertEquals(2, dataItem.length, "unexpected dataItem length"); // size
-                    assertEquals(i, dataItem[0], "unexpected dataItem key"); // key
-                    assertEquals(i + valueAddition, dataItem[1], "unexpected dataItem value"); // value
+                    assertEquals(2 * Long.BYTES, dataItem.length(), "unexpected dataItem length"); // size
+                    assertEquals(i, dataItem.readLong(), "unexpected dataItem key"); // key
+                    assertEquals(i + valueAddition, dataItem.readLong(), "unexpected dataItem value"); // value
                     break;
                 case variable:
+                    final long[] dataItemLongs = new long[Math.toIntExact(dataItem.remaining() / Long.BYTES)];
+                    for (int j = 0; j < dataItemLongs.length; j++) {
+                        dataItemLongs[j] = dataItem.readLong();
+                    }
                     assertEquals(
                             Arrays.toString(getVariableSizeDataForI(i, valueAddition)),
-                            Arrays.toString(dataItem),
+                            Arrays.toString(dataItemLongs),
                             "unexpected dataItem value for variable-sized test");
                     break;
             }
@@ -103,7 +108,7 @@ class MemoryIndexDiskKeyValueStoreTest {
 
     private void writeBatch(
             final FilesTestType testType,
-            final MemoryIndexDiskKeyValueStore<long[]> store,
+            final MemoryIndexDiskKeyValueStore store,
             final int start,
             final int count,
             final long lastLeafPath,
@@ -117,13 +122,13 @@ class MemoryIndexDiskKeyValueStoreTest {
 
     private void writeDataBatch(
             final FilesTestType testType,
-            final MemoryIndexDiskKeyValueStore<long[]> store,
+            final MemoryIndexDiskKeyValueStore store,
             final int start,
             final int count,
             final int valueAddition)
             throws IOException {
         for (int i = start; i < (start + count); i++) {
-            long[] dataValue;
+            final long[] dataValue;
             //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
@@ -134,7 +139,14 @@ class MemoryIndexDiskKeyValueStoreTest {
                     dataValue = getVariableSizeDataForI(i, valueAddition);
                     break;
             }
-            store.put(i, dataValue);
+            store.put(
+                    i,
+                    o -> {
+                        for (int k = 0; k < dataValue.length; k++) {
+                            o.writeLong(dataValue[k]);
+                        }
+                    },
+                    dataValue.length * Long.BYTES);
         }
     }
 
@@ -177,10 +189,10 @@ class MemoryIndexDiskKeyValueStoreTest {
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
         String storeName = "MemoryIndexDiskKeyValueStoreTest";
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        final MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
-                dbConfig, tempDir, storeName, null, testType.dataItemSerializer, null, index);
-        final DataFileCompactor<long[]> dataFileCompactor =
-                new DataFileCompactor<>(
+        final MemoryIndexDiskKeyValueStore store =
+                new MemoryIndexDiskKeyValueStore(dbConfig, tempDir, storeName, null, null, index);
+        final DataFileCompactor dataFileCompactor =
+                new DataFileCompactor(
                         dbConfig,
                         storeName,
                         store.fileCollection,
@@ -274,12 +286,11 @@ class MemoryIndexDiskKeyValueStoreTest {
         });
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
-        final MemoryIndexDiskKeyValueStore<long[]> storeFromSnapshot = new MemoryIndexDiskKeyValueStore<>(
+        final MemoryIndexDiskKeyValueStore storeFromSnapshot = new MemoryIndexDiskKeyValueStore(
                 ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 tempSnapshotDir,
                 storeName,
                 null,
-                testType.dataItemSerializer,
                 null,
                 snapshotIndex);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);

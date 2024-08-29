@@ -33,8 +33,6 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -143,7 +141,6 @@ public final class MerkleDb {
      * All currently opened data sources. When a data source is closed, it gets removed from this
      * array. Array is indexed by table IDs.
      */
-    @SuppressWarnings("rawtypes")
     private final AtomicReferenceArray<MerkleDbDataSource> dataSources = new AtomicReferenceArray<>(MAX_TABLES);
 
     /**
@@ -345,14 +342,12 @@ public final class MerkleDb {
      * @param dbCompactionEnabled Whether background compaction process needs to be enabled for this
      *     data source
      * @return A created data source
-     * @param <K> Virtual key type
-     * @param <V> Virtual value type
      * @throws IOException If an I/O error happened while creating a new data source
      * @throws IllegalStateException If a data source (table) with the specified name already exists
      *     in the database instance
      */
-    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
-            final String label, final MerkleDbTableConfig<K, V> tableConfig, final boolean dbCompactionEnabled)
+    public MerkleDbDataSource createDataSource(
+            final String label, final MerkleDbTableConfig tableConfig, final boolean dbCompactionEnabled)
             throws IOException {
         // This method should be synchronized, as between tableExists() and tableConfigs.set()
         // a new data source can be created in a parallel thread. However, the current assumption
@@ -364,8 +359,8 @@ public final class MerkleDb {
         }
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
-        MerkleDbDataSource<K, V> dataSource =
-                new MerkleDbDataSource<>(this, label, tableId, tableConfig, dbCompactionEnabled);
+        final MerkleDbDataSource dataSource =
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -387,27 +382,24 @@ public final class MerkleDb {
      * @param dataSource Data source to copy
      * @param makeCopyPrimary Whether to make the copy primary
      * @return A copied data source
-     * @param <K> Virtual key type
-     * @param <V> Virtual value type
      * @throws IOException If an I/O error occurs
      */
-    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> copyDataSource(
-            final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
+    public MerkleDbDataSource copyDataSource(final MerkleDbDataSource dataSource, final boolean makeCopyPrimary)
+            throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
         return getDataSource(tableId, label, false);
     }
 
-    private <K extends VirtualKey, V extends VirtualValue> void importDataSource(
-            final MerkleDbDataSource<K, V> dataSource,
+    private void importDataSource(
+            final MerkleDbDataSource dataSource,
             final int tableId,
             final boolean leaveSourcePrimary,
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbTableConfig<K, V> tableConfig =
-                dataSource.getTableConfig().copy();
+        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy();
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }
@@ -437,11 +429,8 @@ public final class MerkleDb {
      * @param dbCompactionEnabled Whether background compaction process needs to be enabled for this
      *     data source. If the data source was previously opened, this flag is ignored
      * @return The datasource
-     * @param <K> Virtual key type
-     * @param <V> Virtual value type
      */
-    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
-            final String name, final boolean dbCompactionEnabled) throws IOException {
+    public MerkleDbDataSource getDataSource(final String name, final boolean dbCompactionEnabled) throws IOException {
         final TableMetadata metadata = getTableMetadata(name);
         if (metadata == null) {
             throw new IllegalStateException("Unknown table: " + name);
@@ -450,17 +439,16 @@ public final class MerkleDb {
         return getDataSource(tableId, name, dbCompactionEnabled);
     }
 
-    @SuppressWarnings({"unchecked"})
-    private <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
+    private MerkleDbDataSource getDataSource(
             final int tableId, final String tableName, final boolean dbCompactionEnabled) throws IOException {
-        final MerkleDbTableConfig<K, V> tableConfig = getTableConfig(tableId);
+        final MerkleDbTableConfig tableConfig = getTableConfig(tableId);
         final AtomicReference<IOException> rethrowIO = new AtomicReference<>(null);
-        final MerkleDbDataSource<K, V> dataSource = dataSources.updateAndGet(tableId, ds -> {
+        final MerkleDbDataSource dataSource = dataSources.updateAndGet(tableId, ds -> {
             if (ds != null) {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource<>(this, tableName, tableId, tableConfig, dbCompactionEnabled);
+                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -478,11 +466,8 @@ public final class MerkleDb {
      * {@link #getDataSource(String, boolean)} method.
      *
      * @param dataSource The closed data source
-     * @param <K> Virtual key type
-     * @param <V> Virtual value type
      */
-    public <K extends VirtualKey, V extends VirtualValue> void closeDataSource(
-            final MerkleDbDataSource<K, V> dataSource) {
+    public void closeDataSource(final MerkleDbDataSource dataSource) {
         if (this != dataSource.getDatabase()) {
             throw new IllegalStateException("Can't close table in a different database");
         }
@@ -502,23 +487,20 @@ public final class MerkleDb {
     /**
      * Returns table serialization config for the specified table ID.
      *
-     * Implementation notes: this method should be very fast and lock free, as it is / will be
+     * <p>Implementation notes: this method should be very fast and lock free, as it is / will be
      * used in multi-table stores to find the right serialization config during merges, so it will
      * be called very often
      *
      * @param tableId Table ID
      * @return Table serialization config
-     * @param <K> Virtual key type
-     * @param <V> Virtual value type
      */
-    public <K extends VirtualKey, V extends VirtualValue> MerkleDbTableConfig<K, V> getTableConfig(final int tableId) {
+    public MerkleDbTableConfig getTableConfig(final int tableId) {
         if ((tableId < 0) || (tableId >= MAX_TABLES)) {
             // Throw an exception instead? Perhaps, not
             return null;
         }
         final TableMetadata metadata = tableConfigs.get(tableId);
-        @SuppressWarnings("unchecked")
-        final MerkleDbTableConfig<K, V> tableConfig = metadata != null ? metadata.getTableConfig() : null;
+        final MerkleDbTableConfig tableConfig = metadata != null ? metadata.getTableConfig() : null;
         return tableConfig;
     }
 
@@ -528,7 +510,6 @@ public final class MerkleDb {
      * @param destination Destination folder
      * @throws IOException If an I/O error occurred
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void snapshot(final Path destination, final MerkleDbDataSource dataSource) throws IOException {
         if (this != dataSource.getDatabase()) {
             logger.error(

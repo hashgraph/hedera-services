@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * just-deleted account was going to receive staking rewards in the transaction, those rewards
  * should be redirected to the beneficiary account.
  */
-public interface DeleteCapableTransactionRecordBuilder extends StreamBuilder {
+public interface DeleteCapableTransactionStreamBuilder extends StreamBuilder {
     /**
      * Gets number of deleted accounts in this transaction.
      * @return number of deleted accounts in this transaction
@@ -50,7 +50,8 @@ public interface DeleteCapableTransactionRecordBuilder extends StreamBuilder {
     AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID);
 
     /**
-     * Adds a beneficiary for a deleted account.
+     * Adds a beneficiary for a deleted account into the map. This is needed while computing staking rewards.
+     * If the deleted account receives staking reward, it is transferred to the beneficiary.
      *
      * @param deletedAccountID the deleted account ID
      * @param beneficiaryForDeletedAccount the beneficiary account ID

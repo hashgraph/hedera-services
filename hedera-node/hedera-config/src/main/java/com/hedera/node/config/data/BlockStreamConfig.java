@@ -32,12 +32,13 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-        // Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
+        // Default value of BOTH enables both record and block stream
         @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
         /* [FILE|GRPC] */
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation) {
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
+        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {
     public boolean streamBlocks() {
         return streamMode == StreamMode.BLOCKS || streamMode == StreamMode.BOTH;
     }
