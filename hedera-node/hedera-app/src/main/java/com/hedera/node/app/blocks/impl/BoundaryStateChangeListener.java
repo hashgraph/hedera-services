@@ -171,7 +171,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
     }
 
-    private static <V> @NonNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
+    public static <V> @NonNull OneOf<SingletonUpdateChange.NewValueOneOfType> singletonUpdateChangeValueFor(
             @NonNull V value) {
         switch (value) {
             case BlockInfo blockInfo -> {
