@@ -57,6 +57,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.LongPair;
@@ -176,7 +177,9 @@ public class FileUpdateHandler implements TransactionHandler {
         builder.deleted(file.deleted());
 
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
+        final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
+        resolveMutableBuilderAttributes(
+                fileUpdate, builder, fileServiceConfig, file, fileID, accountsConfig, handleContext.payer());
         fileStore.put(builder.build());
     }
 
@@ -228,16 +231,21 @@ public class FileUpdateHandler implements TransactionHandler {
     private void resolveMutableBuilderAttributes(
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
-            @NonNull final FilesConfig fileServiceConfig,
-            @NonNull final File file) {
+            @NonNull final FilesConfig filesConfig,
+            @NonNull final File file,
+            @NonNull final FileID fileId,
+            @NonNull final AccountsConfig accountsConfig,
+            @NonNull final AccountID payerId) {
         if (op.hasKeys()) {
             builder.keys(op.keys());
         } else {
             builder.keys(file.keys());
         }
-        var contentLength = op.contents().length();
-        if (contentLength > 0) {
-            if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
+        final var contentLength = op.contents().length();
+        final var zeroLengthShouldClearTarget =
+                accountsConfig.isSuperuser(payerId) && filesConfig.isOverrideFile(fileId);
+        if (contentLength > 0 || zeroLengthShouldClearTarget) {
+            if (contentLength > filesConfig.maxSizeKb() * 1024L) {
                 throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
             }
             builder.contents(op.contents());

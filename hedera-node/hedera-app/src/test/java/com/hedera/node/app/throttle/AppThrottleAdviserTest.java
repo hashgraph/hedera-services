@@ -51,14 +51,14 @@ class AppThrottleAdviserTest {
                     ContractCallTransactionBody.newBuilder().gas(GAS_LIMIT).build())
             .build();
     private static final TransactionInfo CONTRACT_CALL_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
+            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
     private static final TransactionBody CRYPTO_TRANSFER_TXN_BODY = TransactionBody.newBuilder()
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
 
     @Mock
     private NetworkUtilizationManager networkUtilizationManager;
@@ -78,7 +78,7 @@ class AppThrottleAdviserTest {
 
     @BeforeEach
     void setup() {
-        subject = new AppThrottleAdviser(networkUtilizationManager, CONSENSUS_NOW, stack);
+        subject = new AppThrottleAdviser(networkUtilizationManager, CONSENSUS_NOW);
     }
 
     @Test

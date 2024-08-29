@@ -22,9 +22,6 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
-import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
-import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
@@ -40,11 +37,7 @@ class MerkleDbTableConfigTest {
 
     @Test
     void deserializeDefaultsTest() throws IOException {
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
-                new MerkleDbTableConfig<>(
-                        (short) 1, DigestType.SHA_384,
-                        (short) 1, new ExampleLongKeyFixedSize.Serializer(),
-                        (short) 1, new ExampleFixedSizeVirtualValueSerializer());
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
 
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         Assertions.assertEquals(dbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());
@@ -63,9 +56,9 @@ class MerkleDbTableConfigTest {
         }
 
         final byte[] arr = bout.toByteArray();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored;
+        final MerkleDbTableConfig restored;
         try (final ReadableStreamingData in = new ReadableStreamingData(arr)) {
-            restored = new MerkleDbTableConfig<>(in);
+            restored = new MerkleDbTableConfig(in);
         }
 
         Assertions.assertEquals(dbConfig.maxNumOfKeys(), restored.getMaxNumberOfKeys());

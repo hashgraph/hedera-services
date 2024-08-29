@@ -652,13 +652,54 @@ Note the `kh`/`mh`/`bh` suffixes to express thousands, millions, and billions of
 
 # (DAB) Creating a node
 
-To create a new node, you can use the `nodes create` command. There are six required options, and an optional
-seventh `--description` argument. The six required options are,
+To create a new node, you can use the `nodes create` command.
+
+If the gossip CA certificate is to be read from a PKCS#12 (.pfx) file, there are seven required options, and an
+optional eighth `--description` argument. The seven required options are,
 1. The number of the new node's fee collection account; if this account does not have a key in the _keys/_ directory,
 yahcli will warn that at least one of the payer and admin key signatures must provide this account's signature.
 2. A comma-separated list of the node's gossip endpoints, given in the form `{<IPV4>|<FQDN>}:<PORT>`.
 3. A comma-separated list of the node's HAPI endpoints, given in the form `{<IPV4>|<FQDN>}:<PORT>`.
-4. A path to the node's CA-signed X.509 gossip certificate.
+4. A path to the .pfx file with the node's CA-signed X.509 gossip certificate.
+5. The alias of the node's CA-signed X.509 gossip certificate in the .pfx file.
+6. A path to the node's self-signed X.509 HAPI TLS certificate.
+7. A path to a _.pem_, _.words_, or _.hex_ file containing an admin key for the node; if there is a _.pass_ file
+corresponding to a _.pem_ file, its contents will automatically be used for the PEM passphrase.
+
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes create \
+  --accountNum 23 \
+  --description 'Testing 123' \
+  --gossipEndpoints 127.0.0.1:50070,10.1.2.3:50070 \
+  --serviceEndpoints a.b.com:50213 \
+  --gossipCaCertificatePfx private-node1.pfx \
+  --gossipCaCertificateAlias s-node1 \
+  --hapiCertificate node1.crt \
+  --adminKey adminKey.pem
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+.!. No key on disk for account 0.0.23, payer and admin key signatures must meet its signing requirements
+Please enter the passphrase for .pfx file private-node1.pfx:
+2024-08-22 15:37:29.998 INFO   216  HapiNodeCreate -
+
+********************************************************************************
+********************************************************************************
+**                                                                            **
+** Created node 'Testing 123' with id '7'.                                    **
+**                                                                            **
+********************************************************************************
+********************************************************************************
+
+.i. SUCCESS - created node7
+```
+
+If the gossip CA certificate is to be read from a PEM file, there are six required options, and an
+optional seventh `--description` argument. The six required options are,
+1. The number of the new node's fee collection account; if this account does not have a key in the _keys/_ directory,
+yahcli will warn that at least one of the payer and admin key signatures must provide this account's signature.
+2. A comma-separated list of the node's gossip endpoints, given in the form `{<IPV4>|<FQDN>}:<PORT>`.
+3. A comma-separated list of the node's HAPI endpoints, given in the form `{<IPV4>|<FQDN>}:<PORT>`.
+4. A path to the PEM file with the node's CA-signed X.509 gossip certificate.
 5. A path to the node's self-signed X.509 HAPI TLS certificate.
 6. A path to a _.pem_, _.words_, or _.hex_ file containing an admin key for the node; if there is a _.pass_ file
 corresponding to a _.pem_ file, its contents will automatically be used for the PEM passphrase.
@@ -672,20 +713,6 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localh
   --gossipCaCertificate s-public-node1.pem \
   --hapiCertificate s-public-node1.pem \
   --adminKey adminKey.pem
-Log level is WARN
-Targeting localhost, paying with 0.0.2
-.!. No key on disk for account 0.0.23, payer and admin key signatures must meet its signing requirements
-2024-08-09 13:59:26.692 INFO   215  HapiNodeCreate -
-
-********************************************************************************
-********************************************************************************
-**                                                                            **
-** Created node 'Testing 123' with id '3'.                                    **
-**                                                                            **
-********************************************************************************
-********************************************************************************
-
-.i. SUCCESS - created node3
 ```
 
 :warning: If the payer and admin keys do not meet the signing requirements of the new node's fee collection account,
@@ -712,7 +739,32 @@ To update a node, you can use the `nodes update` command. The only required opti
 general you will also want to provide the `--adminKey` option with the path to the admin key for the node being updated.
 (This can be omitted if the yahcli payer key is the same as the admin key.)
 
-To change every available field, the command might look like,
+:warning: You can only change the fee collection account if the target network's properties include,
+
+```
+nodes.updateAccountIdAllowed=true
+```
+
+To change every available field using a new gossip certificate from a PKCS#12 (.pfx) file, the command might look like,
+
+```
+docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes update \
+  --nodeId 1 \
+  --adminKey adminKey.pem \
+  --description 'Testing 456' \
+  --gossipEndpoints 127.0.0.1:60070,10.1.2.3:60070 \
+  --serviceEndpoints a.b.com:60213 \
+  --gossipCaCertificatePfx private-node1.pfx \
+  --gossipCaCertificateAlias s-node1 \
+  --hapiCertificate node1.crt \
+  --newAdminKey newAdminKey.pem
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+Please enter the passphrase for .pfx file private-node1.pfx:
+.i. SUCCESS - node1 has been updated
+```
+
+And to change every available field using a new gossip certificate in PEM format, the command might look like,
 
 ```
 docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.8 -n localhost -p 2 nodes update \
@@ -729,10 +781,4 @@ Log level is WARN
 Targeting localhost, paying with 0.0.2
 .!. No key on disk for account 0.0.42, payer and admin key signatures must meet its signing requirements
 .i. SUCCESS - node1 has been updated
-```
-
-:warning: You can only change the fee collection account if the target network's properties include,
-
-```
-nodes.updateAccountIdAllowed=true
 ```

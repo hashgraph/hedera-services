@@ -17,14 +17,10 @@
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Application - SPI"
-
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
 testModuleInfo {
     requires("com.hedera.node.app.spi")

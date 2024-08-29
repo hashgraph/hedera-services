@@ -17,7 +17,10 @@
 package com.swirlds.state.spi;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.util.Comparator;
 
 /**
@@ -26,8 +29,10 @@ import java.util.Comparator;
 public final class HapiUtils {
 
     // FUTURE WORK: Add unit tests for this class.
-    /** A {@link Comparator} for {@link SemanticVersion}s that ignores
-     * any semver part that cannot be parsed as an integer. */
+    /**
+     * A {@link Comparator} for {@link SemanticVersion}s that ignores
+     * any semver part that cannot be parsed as an integer.
+     */
     public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
                     SemanticVersion::major)
             .thenComparingInt(SemanticVersion::minor)
@@ -44,6 +49,37 @@ public final class HapiUtils {
             } catch (NumberFormatException ignore) {
                 return 0;
             }
+        }
+    }
+
+    public static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
+        final var ans = SemanticVersion.newBuilder();
+        ans.major(in.readInt()).minor(in.readInt()).patch(in.readInt());
+        if (in.readBoolean()) {
+            ans.pre(in.readNormalisedString(Integer.MAX_VALUE));
+        }
+        if (in.readBoolean()) {
+            ans.build(in.readNormalisedString(Integer.MAX_VALUE));
+        }
+        return ans.build();
+    }
+
+    public static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
+            throws IOException {
+        out.writeInt(semVer.major());
+        out.writeInt(semVer.minor());
+        out.writeInt(semVer.patch());
+        serializeIfUsed(semVer.pre(), out);
+        serializeIfUsed(semVer.build(), out);
+    }
+
+    private static void serializeIfUsed(final String semVerPart, final SerializableDataOutputStream out)
+            throws IOException {
+        if (semVerPart.isBlank()) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            out.writeNormalisedString(semVerPart);
         }
     }
 }

@@ -19,8 +19,6 @@ package com.swirlds.merkledb;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -31,20 +29,14 @@ import java.util.Objects;
 /**
  * Virtual data source builder that manages {@link MerkleDb} based data sources.
  *
- * One of the key MerkleDb builder config options is database directory. When a builder is
+ * <p>One of the key MerkleDb builder config options is database directory. When a builder is
  * requested to create a new data source, or restore an existing data sources from snapshot,
  * the data source is hosted in the specified database. Full data source path is therefore
  * databaseDir + "/" + dataSource.label. To make sure there are no folder name conflicts
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
  * use different database directories, usually managed using {@link LegacyTemporaryFileBuilder}.
- *
- * @param <K>
- *     Virtual key type
- * @param <V>
- *     Virtual value type
  */
-public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualValue>
-        implements VirtualDataSourceBuilder<K, V> {
+public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
 
     private static final long CLASS_ID = 0x176ede0e1a69828L;
 
@@ -61,7 +53,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
     /**
      * Table configuration to use when this builder is requested to create a new data source.
      */
-    private MerkleDbTableConfig<K, V> tableConfig;
+    private MerkleDbTableConfig tableConfig;
 
     /**
      * Default constructor for deserialization purposes.
@@ -76,7 +68,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig<K, V> tableConfig) {
+    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig) {
         this(null, tableConfig);
     }
 
@@ -88,7 +80,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig<K, V> tableConfig) {
+    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
     }
@@ -97,7 +89,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource<K, V> build(final String label, final boolean withDbCompactionEnabled) {
+    public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
         if (tableConfig == null) {
             throw new IllegalArgumentException("Table serialization config is missing");
         }
@@ -117,8 +109,8 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource<K, V> copy(final VirtualDataSource<K, V> snapshotMe, final boolean makeCopyActive) {
-        if (!(snapshotMe instanceof MerkleDbDataSource<K, V> source)) {
+    public VirtualDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
+        if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
         try {
@@ -132,8 +124,8 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * {@inheritDoc}
      */
     @Override
-    public void snapshot(final Path destination, final VirtualDataSource<K, V> snapshotMe) {
-        if (!(snapshotMe instanceof MerkleDbDataSource<K, V> source)) {
+    public void snapshot(final Path destination, final VirtualDataSource snapshotMe) {
+        if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
         try {
@@ -150,7 +142,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource<K, V> restore(final String label, final Path source) {
+    public VirtualDataSource restore(final String label, final Path source) {
         try {
             // Restore to the default database. Assuming the default database hasn't been initialized yet.
             // Note that all database data, shared and per-table for all tables, will be restored.
@@ -207,7 +199,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof MerkleDbDataSourceBuilder<?, ?> that)) {
+        if (!(obj instanceof MerkleDbDataSourceBuilder that)) {
             return false;
         }
         return Objects.equals(tableConfig, that.tableConfig);

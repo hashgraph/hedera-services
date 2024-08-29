@@ -17,7 +17,6 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,7 +54,6 @@ class StateTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         state = new State();
-        state.setPlatformState(randomPlatformState());
         state.setSwirldState(new BlockingSwirldState());
 
         state.invalidateHash();
