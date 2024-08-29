@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -285,7 +286,9 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     void pureChecksForEmptyHbarTransferAndEmptyTokenTransfers() {
         // It's actually valid to have no token transfers
         final var txn = newTokenAirdrop(Collections.emptyList());
-        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(txn)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(EMPTY_TOKEN_TRANSFER_BODY));
     }
 
     @Test
