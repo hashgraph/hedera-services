@@ -342,16 +342,13 @@ public class HandleWorkflow {
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
-                final var streamsRecords = configProvider
-                        .getConfiguration()
-                        .getConfigData(BlockStreamConfig.class)
-                        .streamRecords();
-                if (streamsRecords) {
+                final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
+                if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn);
+                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -362,8 +359,9 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
-            recordCache.add(
-                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            // Note that we don't yet support producing ONLY blocks, because we haven't integrated
+            // translators from block items to records for answering queries
+            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -427,9 +425,10 @@ public class HandleWorkflow {
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
+     * @param blockStreamConfig
      * @return the user dispatch
      */
-    private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
+    private Dispatch dispatchFor(@NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
         final var baseBuilder =
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
         return userTxn.newDispatch(
@@ -444,7 +443,8 @@ public class HandleWorkflow {
                 childDispatchFactory,
                 dispatcher,
                 networkUtilizationManager,
-                baseBuilder);
+                baseBuilder,
+                blockStreamConfig);
     }
 
     /**

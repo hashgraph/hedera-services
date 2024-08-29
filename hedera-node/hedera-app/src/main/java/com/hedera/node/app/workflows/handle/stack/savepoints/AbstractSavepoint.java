@@ -27,7 +27,6 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -124,7 +123,6 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         final var builder =
                 switch (streamMode) {
                     case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
-                    case BLOCKS -> new BlockStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {

@@ -152,29 +152,6 @@ public record UserTxn(
     }
 
     /**
-     * Returns whether the given state indicates this transaction is the first after an upgrade.
-     * @param state the Hedera state
-     * @return whether the given state indicates this transaction is the first after an upgrade
-     */
-    private static boolean isUpgradeBoundary(@NonNull final State state) {
-        final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
-                .get();
-        requireNonNull(platformState);
-        if (platformState.freezeTime() == null
-                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-            return false;
-        } else {
-            // Check the state directly here instead of going through BlockManager to allow us
-            // to manipulate this condition easily in embedded tests
-            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                    .get();
-            return !requireNonNull(blockInfo).migrationRecordsStreamed();
-        }
-    }
-
-    /**
      * Creates a new {@link Dispatch} instance for this user transaction in the given context.
      *
      * @param authorizer the authorizer to use
@@ -189,6 +166,7 @@ public record UserTxn(
      * @param dispatcher the transaction dispatcher
      * @param networkUtilizationManager the network utilization manager
      * @param baseBuilder the base record builder
+     * @param blockStreamConfig the block stream configuration
      * @return the new dispatch instance
      */
     public Dispatch newDispatch(
@@ -205,7 +183,8 @@ public record UserTxn(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
-            @NonNull final StreamBuilder baseBuilder) {
+            @NonNull final StreamBuilder baseBuilder,
+            @NonNull final BlockStreamConfig blockStreamConfig) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -247,10 +226,12 @@ public record UserTxn(
                 throttleAdvisor,
                 feeAccumulator);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
-        final var congestionMultiplier = feeManager.congestionMultiplierFor(
-                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
-        if (congestionMultiplier > 1) {
-            baseBuilder.congestionMultiplier(congestionMultiplier);
+        if (blockStreamConfig.streamBlocks()) {
+            final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                    txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+            if (congestionMultiplier > 1) {
+                baseBuilder.congestionMultiplier(congestionMultiplier);
+            }
         }
         return new RecordDispatch(
                 baseBuilder,
@@ -279,5 +260,28 @@ public record UserTxn(
      */
     public StreamBuilder baseBuilder() {
         return stack.getBaseBuilder(StreamBuilder.class);
+    }
+
+    /**
+     * Returns whether the given state indicates this transaction is the first after an upgrade.
+     * @param state the Hedera state
+     * @return whether the given state indicates this transaction is the first after an upgrade
+     */
+    private static boolean isUpgradeBoundary(@NonNull final State state) {
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        if (platformState.freezeTime() == null
+                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
+            return false;
+        } else {
+            // Check the state directly here instead of going through BlockManager to allow us
+            // to manipulate this condition easily in embedded tests
+            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
+                    .get();
+            return !requireNonNull(blockInfo).migrationRecordsStreamed();
+        }
     }
 }
