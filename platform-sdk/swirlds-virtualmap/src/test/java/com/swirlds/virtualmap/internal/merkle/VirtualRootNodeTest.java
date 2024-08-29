@@ -40,11 +40,14 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -100,11 +103,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @DisplayName("A new map with a datasource with a root hash reveals it")
     void mapWithExistingHashedDataHasNonNullRootHash() throws ExecutionException, InterruptedException {
         // The builder I will use with this map is unique in that each call to "build" returns THE SAME DATASOURCE.
-        final InMemoryDataSource<TestKey, TestValue> ds =
-                new InMemoryDataSource<>("mapWithExistingHashedDataHasNonNullRootHash");
-        final VirtualDataSourceBuilder<TestKey, TestValue> builder = new InMemoryBuilder();
+        final InMemoryDataSource ds = new InMemoryDataSource("mapWithExistingHashedDataHasNonNullRootHash");
+        final VirtualDataSourceBuilder builder = new InMemoryBuilder();
 
-        final VirtualRootNode<TestKey, TestValue> fcm = new VirtualRootNode<>(builder);
+        final VirtualRootNode<TestKey, TestValue> fcm =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
         fcm.put(A_KEY, APPLE);
@@ -117,7 +120,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(builder);
+        final VirtualRootNode<TestKey, TestValue> fcm2 =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
         fcm2.postInit(copy.getState());
         assertNotNull(fcm2.getChild(0), "child should not be null");
         assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");
@@ -210,8 +214,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
      * This node contains 100 entries, but only 88 of them are valid. The other 12 are deleted.
      */
     @Test
-    void testDeserializeFromFileOfVersion1() throws IOException, InterruptedException {
-        deserializeRootNodeAndVerify(getClass().getResourceAsStream("/virtualRootNode_ver1/rootNode.bin"));
+    void testDeserializeFromFileOfVersion2() throws IOException, InterruptedException {
+        deserializeRootNodeAndVerify(
+                getClass().getResourceAsStream("/virtualRootNode_ver2/rootNode.bin"),
+                ClassVersion.VERSION_2_KEYVALUE_SERIALIZERS);
     }
 
     /**
@@ -225,14 +231,14 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
 
         deserializeRootNodeAndVerify(
-                new FileInputStream(tempDir.resolve(fileName).toFile()));
+                new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
 
-    private void deserializeRootNodeAndVerify(InputStream resourceAsStream) throws IOException {
+    private void deserializeRootNodeAndVerify(InputStream resourceAsStream, int version) throws IOException {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
 
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
-            root.deserialize(input, tempDir, -1);
+            root.deserialize(input, tempDir, version);
             root.postInit(new DummyVirtualStateAccessor());
             for (int i = 0; i < 100; i++) {
                 if (i % 7 != 0) {
@@ -331,7 +337,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         paths.add(Path.of("asdf"));
         paths.add(null);
         for (final Path destination : paths) {
-            final VirtualMap<TestKey, TestValue> original = new VirtualMap<>("test", new InMemoryBuilder());
+            final VirtualMap<TestKey, TestValue> original =
+                    new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder());
             final VirtualMap<TestKey, TestValue> copy = original.copy();
 
             final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
@@ -506,7 +513,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(1, createRoot().getVersion());
+        assertEquals(2, createRoot().getVersion());
     }
 
     @Test

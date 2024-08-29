@@ -208,7 +208,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     }
                 }
             }
-            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
+            final var newRelation =
+                    autoAssociate(account.accountIdOrThrow(), token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

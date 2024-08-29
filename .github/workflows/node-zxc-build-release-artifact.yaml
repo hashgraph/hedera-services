@@ -59,7 +59,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
       gradle-version:
         description: "Gradle Version:"
         type: string
@@ -119,7 +119,7 @@ permissions:
 jobs:
   validate:
     name: Validate
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     outputs:
       branch-name: ${{ steps.parameters.outputs.branch-name }}
       branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
@@ -222,7 +222,7 @@ jobs:
 
   build-artifact:
     name: Build Artifact
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     needs:
       - validate
     steps:
@@ -415,7 +415,7 @@ jobs:
 
   local-node-images:
     name: Publish Local Node Images
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - validate
       - build-artifact
@@ -452,11 +452,13 @@ jobs:
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         with:
-          version: v0.15.1
+          version: v0.16.2
           driver-opts: network=host
-          buildkitd-config: /etc/docker/buildkitd.toml
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}
@@ -582,7 +584,7 @@ jobs:
 
   validate-production-image:
     name: Validate Production Image
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - gcp-production-image
       - jfr-production-image
@@ -691,7 +693,7 @@ jobs:
 
   publish:
     name: Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - validate
     if: ${{ inputs.release-profile != 'none' }}
@@ -865,7 +867,7 @@ jobs:
 
   send-notifications:
     name: Send Release Notifications
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - validate
       - local-node-images

@@ -316,7 +316,8 @@ class StateSigningTests {
         // Remove a node from the address book
         final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
-        signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        signedState.getState().getPlatformState().setAddressBook(updatedAddressBook);
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();

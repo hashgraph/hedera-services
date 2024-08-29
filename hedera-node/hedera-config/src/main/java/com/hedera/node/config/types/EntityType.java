@@ -24,5 +24,6 @@ public enum EntityType {
     SCHEDULE,
     TOKEN,
     TOKEN_ASSOCIATION,
-    TOPIC;
+    TOPIC,
+    AIRDROP
 }

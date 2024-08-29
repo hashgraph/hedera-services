@@ -18,11 +18,13 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
+import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
@@ -77,5 +79,21 @@ public final class EmbeddedVerbs {
      */
     public static ViewNodeOp viewNode(@NonNull final String name, @NonNull final Consumer<Node> observer) {
         return new ViewNodeOp(name, observer);
+    }
+
+    /***
+     * `ViewPendingAirdropOp` is an operation that allows the test author to view the pending airdrop of an account.
+     * @param tokenName
+     * @param senderName
+     * @param receiverName
+     * @param observer
+     * @return
+     */
+    public static ViewPendingAirdropOp viewAccountPendingAirdrop(
+            @NonNull final String tokenName,
+            @NonNull final String senderName,
+            @NonNull final String receiverName,
+            @NonNull final Consumer<AccountPendingAirdrop> observer) {
+        return new ViewPendingAirdropOp(tokenName, senderName, receiverName, observer);
     }
 }

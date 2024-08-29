@@ -16,7 +16,6 @@ state.mainClassNameOverride,                   com.hedera.services.ServicesMain
                                           #############################
 
 event.enableEventStreaming,                    false                        # differs from mainnet
-event.migrateEventHashing,                     false                        # temporary until expected 0.54
 
                                           #############################
                                           #          Metrics          #

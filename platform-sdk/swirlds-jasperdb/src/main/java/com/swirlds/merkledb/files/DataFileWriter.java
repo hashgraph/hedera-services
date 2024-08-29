@@ -22,7 +22,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.MappedByteBuffer;
@@ -32,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 /**
  * Writer for creating a data file. A data file contains a number of data items. Each data item can
@@ -44,10 +44,8 @@ import java.time.Instant;
  * written by DataFileMetadata.
  *
  * <p>Protobuf schema: see {@link DataFileReader} for details.
- *
- * @param <D> Data item type
  */
-public final class DataFileWriter<D> {
+public final class DataFileWriter {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 64;
@@ -68,8 +66,6 @@ public final class DataFileWriter<D> {
     private MappedByteBuffer writingHeaderMmap;
     private BufferedData writingHeaderPbjData;
 
-    /** Serializer for converting raw data to/from data items */
-    private final BaseSerializer<D> dataItemSerializer;
     /** The path to the data file we are writing */
     private final Path path;
     /** File metadata */
@@ -88,24 +84,20 @@ public final class DataFileWriter<D> {
      * @param filePrefix string prefix for all files, must not contain "_" chars
      * @param dataFileDir the path to directory to create the data file in
      * @param index the index number for this file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param creationTime the time stamp for the creation time for this file
      */
     public DataFileWriter(
             final String filePrefix,
             final Path dataFileDir,
             final int index,
-            final BaseSerializer<D> dataItemSerializer,
             final Instant creationTime,
             final int compactionLevel)
             throws IOException {
-        this.dataItemSerializer = dataItemSerializer;
         this.path = createDataFilePath(filePrefix, dataFileDir, index, creationTime, DataFileCommon.FILE_EXTENSION);
         metadata = new DataFileMetadata(
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationTime,
-                dataItemSerializer.getCurrentDataVersion(),
                 compactionLevel);
         Files.createFile(path);
         writeHeader();
@@ -162,31 +154,29 @@ public final class DataFileWriter<D> {
     }
 
     /**
-     * Write a data item copied from another file like during merge. If this writer doesn't support
-     * the provided raw data item type, this method should return null to indicate that the item
-     * needs to be fully deserialized and then serialized to the target file rather than copied as
-     * raw bytes.
+     * Store data item in file returning location it was stored at.
      *
-     * @param dataItemData a buffer containing the item's data
-     * @return New data location in this file where it was written
-     * @throws IllegalArgumentException If this writer doesn't support the given raw item bytes type
-     * @throws IOException If there was a problem writing the data item
+     * @param dataItem the data item to write
+     * @return the data location of written data in bytes
+     * @throws IOException if there was a problem appending data to file
      */
-    public synchronized long writeCopiedDataItem(final BufferedData dataItemData) throws IOException {
-        // capture the current write position for beginning of data item
+    public synchronized long storeDataItem(final BufferedData dataItem) throws IOException {
+        // find offset for the start of this new data item, we assume we always write data in a
+        // whole number of blocks
         final long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
-        final int size = Math.toIntExact(dataItemData.remaining());
+        // write serialized data
+        final int size = Math.toIntExact(dataItem.remaining());
         if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, size)) {
             moveWritingBuffer(byteOffset);
         }
         try {
-            ProtoWriterTools.writeDelimited(
-                    writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(dataItemData));
+            ProtoWriterTools.writeDelimited(writingPbjData, FIELD_DATAFILE_ITEMS, size, o -> o.writeBytes(dataItem));
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);
         }
+        // increment data item counter
         dataItemCount++;
         // return the offset where we wrote the data
         return DataFileCommon.dataLocation(metadata.getIndex(), byteOffset);
@@ -195,26 +185,23 @@ public final class DataFileWriter<D> {
     /**
      * Store data item in file returning location it was stored at.
      *
-     * @param dataItem the data item to write
+     * @param dataItemWriter the data item to write
+     * @param dataItemSize the data item size, in bytes
      * @return the data location of written data in bytes
      * @throws IOException if there was a problem appending data to file
      */
-    public synchronized long storeDataItem(final D dataItem) throws IOException {
+    public synchronized long storeDataItem(final Consumer<BufferedData> dataItemWriter, final int dataItemSize)
+            throws IOException {
         // find offset for the start of this new data item, we assume we always write data in a
         // whole number of blocks
         final long currentWritingMmapPos = writingPbjData.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
-        final int dataItemSize = dataItemSerializer.getSerializedSize(dataItem);
         if (writingPbjData.remaining() < ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize)) {
             moveWritingBuffer(byteOffset);
         }
         try {
-            ProtoWriterTools.writeDelimited(
-                    writingPbjData,
-                    FIELD_DATAFILE_ITEMS,
-                    dataItemSize,
-                    out -> dataItemSerializer.serialize(dataItem, out));
+            ProtoWriterTools.writeDelimited(writingPbjData, FIELD_DATAFILE_ITEMS, dataItemSize, dataItemWriter);
         } catch (final BufferOverflowException e) {
             // Buffer overflow here means the mapped buffer is smaller than even a single data item
             throw new IOException(DataFileCommon.ERROR_DATAITEM_TOO_LARGE, e);

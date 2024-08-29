@@ -42,7 +42,6 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.cre
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -70,20 +69,17 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
+import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,16 +108,16 @@ class DispatchProcessorTest {
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
     private static final TransactionInfo SYS_DEL_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_DELETE);
-    private static final TransactionInfo SYS_UNDEL_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE);
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_DELETE, null);
+    private static final TransactionInfo SYS_UNDEL_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE, null);
     private static final TransactionInfo CONTRACT_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
-    private static final TransactionInfo ETH_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION);
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
+    private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
+            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;
@@ -166,19 +162,7 @@ class DispatchProcessorTest {
     private RecordStreamBuilder recordBuilder;
 
     @Mock
-    private PlatformState platformState;
-
-    @Mock
     private FeeAccumulator feeAccumulator;
-
-    @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
-    private ThrottleServiceManager throttleServiceManager;
-
-    @Mock
-    private HandleWorkflowMetrics handleWorkflowMetrics;
 
     private DispatchProcessor subject;
 
@@ -210,7 +194,7 @@ class DispatchProcessorTest {
         verifyTrackedFeePayments();
         verify(feeAccumulator).chargeNetworkFee(CREATOR_ACCOUNT_ID, FEES.networkFee());
         verify(recordBuilder).status(INVALID_PAYER_SIGNATURE);
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -406,14 +390,14 @@ class DispatchProcessorTest {
     }
 
     @Test
-    void consGasExhaustedWaivesServiceFee() throws DispatchUsageManager.ThrottleException {
+    void consGasExhaustedWaivesServiceFee() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatchValidator.validationReportFor(dispatch)).willReturn(successReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         givenAuthorization(CONTRACT_TXN_INFO);
-        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+        doThrow(ThrottleException.newGasThrottleException())
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -429,7 +413,7 @@ class DispatchProcessorTest {
     }
 
     @Test
-    void consGasExhaustedForEthTxnDoesExtraWork() throws DispatchUsageManager.ThrottleException {
+    void consGasExhaustedForEthTxnDoesExtraWork() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -437,7 +421,7 @@ class DispatchProcessorTest {
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(ETH_TXN_INFO);
         givenAuthorization(ETH_TXN_INFO);
-        doThrow(new DispatchUsageManager.ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+        doThrow(ThrottleException.newGasThrottleException())
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -494,7 +478,7 @@ class DispatchProcessorTest {
         subject.processDispatch(dispatch);
 
         verifyUtilization();
-        verify(platformStateUpdates).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
+        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         assertFinished();
@@ -513,10 +497,10 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -531,9 +515,9 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
-        assertFinished();
+        assertFinished(IsRootStack.NO);
     }
 
     @Test
@@ -582,7 +566,6 @@ class DispatchProcessorTest {
         given(systemFileUpdates.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(recordBuilder.exchangeRate(ExchangeRateSet.DEFAULT)).willReturn(recordBuilder);
-        given(dispatch.platformState()).willReturn(platformState);
     }
 
     private void givenAuthorization() {
@@ -596,16 +579,29 @@ class DispatchProcessorTest {
                 .willReturn(UNNECESSARY);
     }
 
+    private enum IsRootStack {
+        YES,
+        NO
+    }
+
     private void assertFinished() {
+        assertFinished(IsRootStack.YES);
+    }
+
+    private void assertFinished(@NonNull final IsRootStack isRootStack) {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        verify(stack).commitFullStack();
+        if (isRootStack == IsRootStack.YES) {
+            verify(stack).commitTransaction(any());
+        } else {
+            verify(stack).commitFullStack();
+        }
     }
 
     private void verifyTrackedFeePayments() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.FEES_ONLY);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 
     private void verifyUtilization() {
-        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.USER_TRANSACTION);
+        verify(dispatchUsageManager).finalizeAndSaveUsage(dispatch);
     }
 }

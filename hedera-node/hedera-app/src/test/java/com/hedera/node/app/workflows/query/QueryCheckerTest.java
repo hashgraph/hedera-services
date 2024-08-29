@@ -137,7 +137,7 @@ class QueryCheckerTest extends AppTestBase {
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
-                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER);
+                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER, null);
 
         // when
         assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo)).doesNotThrowAnyException();
@@ -153,7 +153,7 @@ class QueryCheckerTest extends AppTestBase {
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
-                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CONSENSUS_CREATE_TOPIC);
+                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CONSENSUS_CREATE_TOPIC, null);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
@@ -171,7 +171,7 @@ class QueryCheckerTest extends AppTestBase {
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
-                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER);
+                transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER, null);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
                 .pureChecks(txBody);
@@ -502,7 +502,8 @@ class QueryCheckerTest extends AppTestBase {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        return new TransactionInfo(transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, CRYPTO_TRANSFER);
+        return new TransactionInfo(
+                transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, CRYPTO_TRANSFER, null);
     }
 
     private static AccountAmount send(AccountID accountID, long amount) {

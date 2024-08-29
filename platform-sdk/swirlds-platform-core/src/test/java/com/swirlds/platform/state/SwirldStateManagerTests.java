@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
@@ -27,9 +30,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,6 +76,14 @@ class SwirldStateManagerTests {
     }
 
     @Test
+    @DisplayName("Seal consensus round")
+    void sealConsensusRound() {
+        final var round = mock(Round.class);
+        swirldStateManager.sealConsensusRound(round);
+        verify(round).getRoundNum();
+    }
+
+    @Test
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
@@ -108,13 +119,13 @@ class SwirldStateManagerTests {
     }
 
     private static MerkleRoot newState() {
-        final MerkleStateRoot state = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
+        final MerkleStateRoot state =
+                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
 
-        final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
-        when(platformState.copy()).thenReturn(platformState);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+        when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
 
-        state.setPlatformState(platformState);
+        state.updatePlatformState(platformState);
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;

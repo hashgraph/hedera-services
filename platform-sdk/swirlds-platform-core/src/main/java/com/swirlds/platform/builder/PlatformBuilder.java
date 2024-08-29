@@ -30,9 +30,11 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
@@ -73,6 +75,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -128,6 +131,8 @@ public final class PlatformBuilder {
      */
     private AddressBook bootstrapAddressBook;
 
+    private Roster roster;
+
     /**
      * This node's cryptographic keys.
      */
@@ -136,7 +141,7 @@ public final class PlatformBuilder {
     /**
      * The path to the configuration file (i.e. the file with the address book).
      */
-    private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
+    private final Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
 
     /**
      * The wiring model to use for this platform.
@@ -191,13 +196,13 @@ public final class PlatformBuilder {
     /**
      * Constructor.
      *
-     * @param appName             the name of the application, currently used for deciding where to store states on
-     *                            disk
-     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the software version of the application
-     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
-     * @param snapshotStateReader a function to read an existing state snapshot, if exists
+     * @param appName               the name of the application, currently used for deciding where to store states on
+     *                              disk
+     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion       the software version of the application
+     * @param genesisStateBuilder   a supplier that will be called to create the genesis state, if necessary
+     * @param snapshotStateReader   a function to read an existing state snapshot, if exists
+     * @param selfId                the ID of this node
      */
     private PlatformBuilder(
             @NonNull final String appName,
@@ -345,7 +350,7 @@ public final class PlatformBuilder {
      *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
      * </ul>
      *
-     * @return
+     * @return this
      */
     @NonNull
     public PlatformBuilder withConsensusSnapshotOverrideCallback(
@@ -383,6 +388,20 @@ public final class PlatformBuilder {
     public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
         this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the roster to use for bootstrapping the system. If not provided then the roster is created from the
+     * bootstrap address book.
+     *
+     * @param roster the roster to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRoster(@NonNull final Roster roster) {
+        throwIfAlreadyUsed();
+        this.roster = Objects.requireNonNull(roster);
         return this;
     }
 
@@ -537,17 +556,17 @@ public final class PlatformBuilder {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            state.getPlatformState()
-                    .setAddressBook(
-                            addressBookInitializer.getCurrentAddressBook().copy());
+            final PlatformStateAccessor platformState = state.getPlatformState();
+            platformState.bulkUpdate(v -> {
+                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
 
-            state.getPlatformState()
-                    .setPreviousAddressBook(
-                            addressBookInitializer.getPreviousAddressBook() == null
-                                    ? null
-                                    : addressBookInitializer
-                                            .getPreviousAddressBook()
-                                            .copy());
+                v.setPreviousAddressBook(
+                        addressBookInitializer.getPreviousAddressBook() == null
+                                ? null
+                                : addressBookInitializer
+                                        .getPreviousAddressBook()
+                                        .copy());
+            });
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
@@ -555,6 +574,10 @@ public final class PlatformBuilder {
                 initialState.get().getState().getPlatformState().getAddressBook();
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+
+        if (roster == null) {
+            roster = createRoster(boostrapAddressBook);
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
