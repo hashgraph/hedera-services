@@ -18,10 +18,10 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -45,9 +45,11 @@ public interface BlockStreamManager extends BlockRecordInfo {
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
-     * @param state the mutable state of the network at the end of the round
+     *
+     * @param state    the mutable state of the network at the end of the round
+     * @param roundNum the number of the round that has just ended
      */
-    void endRound(@NonNull State state);
+    void endRound(@NonNull State state, final long roundNum);
 
     /**
      * Writes a block item to the stream.
@@ -57,7 +59,9 @@ public interface BlockStreamManager extends BlockRecordInfo {
     void writeItem(@NonNull BlockItem item);
 
     /**
-     * Writes the final block items for the freeze round to a new block.
+     * Completes the block proof for the given block with the given signature.
+     * @param blockNumber the number of the block to finish
+     * @param signature the signature to use in the block proof
      */
-    void writeFreezeRound(@NonNull State state, @NonNull Instant consensusNow);
+    void finishBlockProof(long blockNumber, @NonNull Bytes signature);
 }
