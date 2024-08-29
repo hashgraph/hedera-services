@@ -715,6 +715,22 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
+        @DisplayName("fungible token with fixed Hbar fee payed by treasury")
+        final Stream<DynamicTest> airdropFungibleWithFixedHbarCustomFeePayedByTreasury() {
+            return defaultHapiSpec(" sender should prepay hbar custom fee")
+                    .given()
+                    .when(tokenAirdrop(moving(1, TREASURY_AS_SENDER_TOKEN)
+                            .between(TREASURY_AS_SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(TREASURY_AS_SENDER)
+                            .signedBy(TREASURY_AS_SENDER)
+                            .via("transferTx"))
+                    .then(
+                            // custom fee should not be charged
+                            getAccountBalance(TREASURY_AS_SENDER).hasTokenBalance(DENOM_TOKEN, 0),
+                            validateChargedUsd("transferTx", 0.1, 10));
+        }
+
+        @HapiTest
         @DisplayName("NFT with 2 layers fixed Hts fee")
         @Order(2)
         final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
