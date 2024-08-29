@@ -20,6 +20,9 @@ import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOne
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.QUEUE_PUSH;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.SINGLETON_UPDATE;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.stateIdFor;
+import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,9 +31,12 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +50,18 @@ class BoundaryStateChangeListenerTest {
     @BeforeEach
     void setUp() {
         listener = new BoundaryStateChangeListener();
+    }
+
+    @Test
+    void targetTypesAreSingletonAndQueue() {
+        assertEquals(Set.of(SINGLETON, QUEUE), listener.stateTypes());
+    }
+
+    @Test
+    void understandsStateIds() {
+        final var service = BlockStreamService.NAME;
+        final var stateKey = V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+        assertEquals(stateIdFor(service, stateKey), listener.stateIdFor(service, stateKey));
     }
 
     @Test
