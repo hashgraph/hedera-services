@@ -17,16 +17,28 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
 testModuleInfo {
-    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base")
     requires("com.swirlds.common.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+}
+
+timingSensitiveModuleInfo {
+    requires("com.hedera.pbj.runtime")
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.merkledb")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.fchashmap")
+    requires("com.swirlds.merkle.test.fixtures")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.metrics.api")
     requires("com.swirlds.virtualmap")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

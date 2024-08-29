@@ -230,18 +230,6 @@ tasks.register<Test>("testRepeatable") {
     modularity.inferModulePath.set(false)
 }
 
-tasks.itest {
-    systemProperty("itests", System.getProperty("itests"))
-    systemProperty("junit.jupiter.execution.parallel.enabled", false)
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
-}
-
-tasks.eet {
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
-}
-
 tasks.shadowJar {
     archiveFileName.set("SuiteRunner.jar")
 
