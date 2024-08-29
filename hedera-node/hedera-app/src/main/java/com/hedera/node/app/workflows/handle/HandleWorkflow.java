@@ -301,14 +301,14 @@ public class HandleWorkflow {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
-                userTxn.stack().commitFullStack();
+                userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
-                    systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
+                    systemSetup.externalizeInitSideEffects(
+                            userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
-
                 final var streamsRecords = configProvider
                         .getConfiguration()
                         .getConfigData(BlockStreamConfig.class)
