@@ -6,6 +6,6 @@ release:
       - on: "2024-08-30"
         name: release/0.54
         initial-tag:
-          create: false
+          create: true
           name: v0.54.0-alpha.0
 
