@@ -25,6 +25,8 @@ import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,8 +53,7 @@ public class MerkleDbDataSourceHammerTest {
     @EnumSource(TestType.class)
     void closeWhileFlushingTest(final TestType testType) throws IOException, InterruptedException {
         final Path dbPath = testDirectory.resolve("merkledb-closeWhileFlushingTest-" + testType);
-        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
-                testType.dataType().createDataSource(dbPath, "vm", 1000, 0, false, false);
+        final MerkleDbDataSource dataSource = testType.dataType().createDataSource(dbPath, "vm", 1000, 0, false, false);
 
         final int count = 20;
         final List<VirtualKey> keys = new ArrayList<>(count);
@@ -77,6 +78,9 @@ public class MerkleDbDataSourceHammerTest {
         });
         closeThread.start();
 
+        final KeySerializer keySerializer = testType.dataType().getKeySerializer();
+        final ValueSerializer valueSerializer = testType.dataType().getValueSerializer();
+
         updateStarted.countDown();
         for (int i = 0; i < 10; i++) {
             final int k = i;
@@ -86,8 +90,8 @@ public class MerkleDbDataSourceHammerTest {
                         2 * count - 2,
                         IntStream.range(0, count).mapToObj(j -> new VirtualHashRecord(k + j, hash(k + j + 1))),
                         IntStream.range(count - 1, count)
-                                .mapToObj(
-                                        j -> new VirtualLeafRecord<>(k + j, keys.get(k), values.get((k + j) % count))),
+                                .mapToObj(j -> new VirtualLeafRecord<>(k + j, keys.get(k), values.get((k + j) % count)))
+                                .map(r -> r.toBytes(keySerializer, valueSerializer)),
                         Stream.empty(),
                         true);
             } catch (Exception z) {

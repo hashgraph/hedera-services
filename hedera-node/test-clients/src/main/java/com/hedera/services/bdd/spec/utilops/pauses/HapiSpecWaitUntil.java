@@ -16,6 +16,12 @@
 
 package com.hedera.services.bdd.spec.utilops.pauses;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -27,6 +33,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +45,7 @@ public class HapiSpecWaitUntil extends UtilOp {
     private long stakePeriodMins;
     private long targetTimeOffsetSecs;
     private long adhocPeriodMs;
+    private boolean backgroundTraffic = false;
     private WaitUntilTarget waitUntilTarget;
 
     enum WaitUntilTarget {
@@ -48,6 +57,11 @@ public class HapiSpecWaitUntil extends UtilOp {
     public HapiSpecWaitUntil(String timeOfDay) throws ParseException {
         timeMs = convertToEpochMillis(timeOfDay);
         waitUntilTarget = WaitUntilTarget.SPECIFIC_TIME;
+    }
+
+    public HapiSpecWaitUntil withBackgroundTraffic() {
+        backgroundTraffic = true;
+        return this;
     }
 
     public static HapiSpecWaitUntil untilStartOfNextAdhocPeriod(final long adhocPeriodMs) {
@@ -76,6 +90,20 @@ public class HapiSpecWaitUntil extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var now = spec.consensusTime();
+        final var done = new AtomicBoolean();
+        final CompletableFuture<Void> maybeTraffic = backgroundTraffic
+                ? CompletableFuture.runAsync(() -> {
+                    while (!done.get()) {
+                        allRunFor(
+                                spec,
+                                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+                                        .deferStatusResolution()
+                                        .noLogging()
+                                        .hasAnyStatusAtAll());
+                        doIfNotInterrupted(() -> spec.sleepConsensusTime(Duration.ofSeconds(1)));
+                    }
+                })
+                : CompletableFuture.completedFuture(null);
         if (waitUntilTarget == WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD) {
             final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
             final var currentPeriod = getPeriod(now, stakePeriodMillis);
@@ -91,6 +119,8 @@ public class HapiSpecWaitUntil extends UtilOp {
                 timeMs,
                 Instant.ofEpochMilli(timeMs).atZone(ZoneId.systemDefault()));
         spec.sleepConsensusTime(Duration.ofMillis(timeMs - now.toEpochMilli()));
+        done.set(true);
+        maybeTraffic.join();
         return false;
     }
 

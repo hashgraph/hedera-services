@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -74,7 +75,7 @@ class BlockImplUtilsTest {
     @MethodSource("stateIdsByName")
     void stateIdsByNameAsExpected(@NonNull final String stateName, @NonNull final StateIdentifier stateId) {
         final var parts = stateName.split("\\.");
-        assertEquals(stateId.protoOrdinal(), BlockImplUtils.stateIdFor(parts[0], parts[1]));
+        assertThat(BlockImplUtils.stateIdFor(parts[0], parts[1])).isEqualTo(stateId.protoOrdinal());
     }
 
     public static Stream<Arguments> stateIdsByName() {

@@ -89,22 +89,24 @@ public class NodeStakeUpdates {
         }
         if (shouldExport) {
             try {
-                // handle staking updates
-                stakingCalculator.updateNodes(tokenContext);
-                stack.commitFullStack();
-            } catch (final Exception e) {
-                // If anything goes wrong, we log the error and continue
-                logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
-                stack.rollbackFullStack();
-            }
-
-            try {
                 // Update the exchange rate
                 exchangeRateManager.updateMidnightRates(stack);
-                stack.commitFullStack();
+                stack.commitSystemStateChanges();
             } catch (final Exception e) {
                 // If anything goes wrong, we log the error and continue
                 logger.error("CATASTROPHIC failure updating midnight rates", e);
+                stack.rollbackFullStack();
+            }
+            try {
+                // handle staking updates
+                final var streamBuilder =
+                        stakingCalculator.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
+                if (streamBuilder != null) {
+                    stack.commitTransaction(streamBuilder);
+                }
+            } catch (final Exception e) {
+                // If anything goes wrong, we log the error and continue
+                logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
         }

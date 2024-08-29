@@ -46,7 +46,8 @@ public class RecordFinalizer {
 
     /**
      * Creates a record finalizer with the given dependencies.
-     * @param recordFinalizer the parent record finalizer
+     *
+     * @param recordFinalizer       the parent record finalizer
      */
     @Inject
     public RecordFinalizer(final FinalizeRecordHandler recordFinalizer) {

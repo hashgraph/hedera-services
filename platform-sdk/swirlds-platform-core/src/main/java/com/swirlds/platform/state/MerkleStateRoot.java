@@ -410,16 +410,30 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public MerkleNode migrate(final int version) {
+
         if (version < CURRENT_VERSION) {
-            final var zerothChild = getChild(0);
-            if (!(zerothChild instanceof PlatformState platformState)) {
-                throw new IllegalStateException("Expected a PlatformState as the first child");
+            PlatformState platformState = null;
+            int platformStateIndex = -1;
+            for (int i = 0; i < getNumberOfChildren(); i++) {
+                if (getChild(i) instanceof PlatformState ps) {
+                    platformState = ps;
+                    platformStateIndex = i;
+                    break;
+                }
             }
+            if (platformState == null) {
+                throw new IllegalStateException("Expected MerkleStateRoot to have PlatformState as a child");
+            }
+
             preV054PlatformState = platformState;
             logger.info(STARTUP.getMarker(), "Found pre-0.54 PlatformState, will migrate to State API singleton");
             INDEX_LOOKUP.clear();
             final List<MerkleNode> newChildren = new ArrayList<>();
-            for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
+            for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
+                // Skip the platform state, it will be added later
+                if (i == platformStateIndex) {
+                    continue;
+                }
                 final var child = getChild(i);
                 if (child != null) {
                     newChildren.add(child.copy());
