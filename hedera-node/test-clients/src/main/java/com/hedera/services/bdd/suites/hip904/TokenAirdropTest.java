@@ -558,27 +558,27 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("that is alias with 0 free maxAutoAssociations")
         final Stream<DynamicTest> airdropToAliasWithNoFreeSlots() {
-            final var validAlias = "validAlias";
+            final var validAliasWithNoFreeSlots = "validAliasWithNoFreeSlots";
             return defaultHapiSpec("should go in pending state")
-                    .given(newKeyNamed(validAlias))
+                    .given(newKeyNamed(validAliasWithNoFreeSlots))
                     .when(
-                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAlias))
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
-                                    .signedBy(OWNER, validAlias),
-                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)),
-                            cryptoUpdateAliased(validAlias)
+                                    .signedBy(OWNER, validAliasWithNoFreeSlots),
+                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasWithNoFreeSlots)),
+                            cryptoUpdateAliased(validAliasWithNoFreeSlots)
                                     .maxAutomaticAssociations(1)
-                                    .signedBy(validAlias, DEFAULT_PAYER))
+                                    .signedBy(validAliasWithNoFreeSlots, DEFAULT_PAYER))
                     .then(
-                            tokenAirdrop(moveFungibleTokensTo(validAlias))
+                            tokenAirdrop(moveFungibleTokensTo(validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
                                     .via("aliasAirdrop"),
                             getTxnRecord("aliasAirdrop")
                                     .hasPriority(recordWith()
                                             .pendingAirdrops(
-                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAlias)))),
-                            getAccountBalance(validAlias).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                            getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAliasWithNoFreeSlots)))),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
 
         @HapiTest
