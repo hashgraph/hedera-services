@@ -185,23 +185,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         return streamSequenceNumber;
     }
 
-    /**
-     * Since events are being migrated to protobuf, calculating the hash of an event will change. This method serializes
-     * the bytes that make up an event's hash prior to migration.
-     * @param out the stream to write the bytes to
-     */
-    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(out);
-
-        EventSerializationUtils.serializeLegacyHashBytes(
-                out,
-                new BasicSoftwareVersion(getSoftwareVersion().major()),
-                getEventCore(),
-                getSelfParent(),
-                getOtherParents(),
-                gossipEvent.eventTransaction());
-    }
-
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
 

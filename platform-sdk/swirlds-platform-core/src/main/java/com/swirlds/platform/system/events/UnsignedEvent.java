@@ -147,18 +147,6 @@ public class UnsignedEvent extends AbstractHashable {
     }
 
     /**
-     * Serialize the event for the purpose of creating a hash.
-     * Since events are being migrated to protobuf, calculating the hash of an event will change.
-     *
-     * @param out the stream to which this object is to be written
-     * @throws IOException if unsupported transaction types are encountered
-     */
-    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
-        EventSerializationUtils.serializeLegacyHashBytes(
-                out, softwareVersion, eventCore, selfParent, otherParents, eventTransactions);
-    }
-
-    /**
      * Serialize the event
      *
      * @param out the stream to which this object is to be written

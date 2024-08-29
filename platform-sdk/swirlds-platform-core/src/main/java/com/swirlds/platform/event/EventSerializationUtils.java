@@ -53,30 +53,6 @@ public final class EventSerializationUtils {
     private static final int STATE_SIGNATURE_VERSION = 3;
 
     /**
-     * Serialize a event for hashing to the output stream {@code out}.
-     *
-     * @param out the stream to which this object is to be written
-     * @param softwareVersion the software version
-     * @param eventCore the event core
-     * @param selfParent the self parent
-     * @param otherParents the other parents
-     * @param eventTransactions the event transactions
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    public static void serializeLegacyHashBytes(
-            @NonNull final SerializableDataOutputStream out,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final EventCore eventCore,
-            @NonNull final EventDescriptorWrapper selfParent,
-            @NonNull final List<EventDescriptorWrapper> otherParents,
-            @NonNull final List<EventTransaction> eventTransactions)
-            throws IOException {
-        out.writeLong(EVENT_CLASS_ID);
-        serializeEvent(out, softwareVersion, eventCore, selfParent, otherParents, eventTransactions);
-    }
-
-    /**
      * Serialize a event to the output stream {@code out}.
      *
      * @param out the stream to which this object is to be written
