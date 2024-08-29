@@ -2094,5 +2094,41 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     getAccountBalance(mutableContract2).hasTokenBalance(FUNGIBLE_TOKEN, 1),
                     getAccountBalance(mutableContract2).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
         }
+
+        @HapiTest
+        @DisplayName("when token is frozen")
+        final Stream<DynamicTest> whenTokenIsFrozen() {
+            final String ALICE = "alice";
+            var mutableContract = "PayReceivable";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(flattened(
+                    newKeyNamed("freezeKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    deployMutableContract(mutableContract, 2),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .freezeKey("freezeKey")
+                            .initialSupply(15L),
+                    tokenFreeze(FUNGIBLE_TOKEN_A, ALICE),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, mutableContract))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)));
+        }
+
+        @HapiTest
+        @DisplayName("when airdrop to not associated contract with no free associations - crypto transfer should fail")
+        final Stream<DynamicTest> airdropToNotAssociatedContractWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)));
+        }
     }
 }
