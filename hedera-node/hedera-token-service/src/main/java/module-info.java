@@ -3,11 +3,7 @@
  */
 module com.hedera.node.app.service.token {
     exports com.hedera.node.app.service.token;
-    exports com.hedera.node.app.service.token.api to
-            com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app,
-            com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.test.fixtures;
+    exports com.hedera.node.app.service.token.api;
     exports com.hedera.node.app.service.token.records to
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app,

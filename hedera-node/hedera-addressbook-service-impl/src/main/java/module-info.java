@@ -2,6 +2,7 @@ import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 
 module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.node.app.service.addressbook;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
@@ -10,7 +11,6 @@ module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.service.token;
     requires com.swirlds.platform.core;
     requires org.apache.logging.log4j;
     requires static transitive java.compiler;
