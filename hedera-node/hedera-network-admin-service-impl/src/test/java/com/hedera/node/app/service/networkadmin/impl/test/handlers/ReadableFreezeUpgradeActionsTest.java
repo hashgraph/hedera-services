@@ -54,7 +54,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -131,9 +130,6 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     private WritableFreezeStore writableFreezeStore;
 
-    @Mock
-    private HandleContext handleContext;
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -166,7 +162,6 @@ class ReadableFreezeUpgradeActionsTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        given(handleContext.configuration()).willReturn(configuration);
         given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
         given(configuration.getConfigData(NodesConfig.class)).willReturn(nodesConfig);
 
@@ -181,7 +176,7 @@ class ReadableFreezeUpgradeActionsTest {
         freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                handleContext, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -465,7 +460,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                handleContext, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);

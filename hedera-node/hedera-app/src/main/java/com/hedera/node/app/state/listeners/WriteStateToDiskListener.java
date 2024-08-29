@@ -81,7 +81,7 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
 
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
-                        configProvider,
+                        configProvider.getConfiguration(),
                         readableFreezeStore,
                         executor,
                         readableUpgradeFileStore,

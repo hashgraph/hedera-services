@@ -35,7 +35,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -71,9 +70,6 @@ class FreezeUpgradeActionsTest {
     @Mock
     private WritableFreezeStore freezeStore;
 
-    @Mock
-    private HandleContext handleContext;
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -100,7 +96,6 @@ class FreezeUpgradeActionsTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        given(handleContext.configuration()).willReturn(configuration);
         given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
 
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
@@ -108,7 +103,7 @@ class FreezeUpgradeActionsTest {
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                handleContext, freezeStore, freezeExectuor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, freezeStore, freezeExectuor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

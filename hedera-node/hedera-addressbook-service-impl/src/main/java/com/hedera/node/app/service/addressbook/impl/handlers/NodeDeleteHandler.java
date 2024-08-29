@@ -18,7 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnable;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnabled;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -94,7 +94,7 @@ public class NodeDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        checkDABEnable(feeContext);
+        checkDABEnabled(feeContext);
         final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         calculator.resetUsage();
         // The price of node delete should be increased based on number of signatures.

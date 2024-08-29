@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnable;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnabled;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -131,7 +131,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        checkDABEnable(feeContext);
+        checkDABEnabled(feeContext);
         final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         calculator.resetUsage();
         // The price of node update should be increased based on number of signatures.

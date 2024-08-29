@@ -33,11 +33,10 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -89,44 +88,21 @@ public class ReadableFreezeUpgradeActions {
     public static final String MARK = "✓";
 
     public ReadableFreezeUpgradeActions(
-            @NonNull final ConfigProvider configProvider,
+            @NonNull final Configuration configuration,
             @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        requireNonNull(configProvider, "ConfigProvider is required for freeze upgrade actions");
+        requireNonNull(configuration, "configuration is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
         requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
         requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
-        this.adminServiceConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
-        this.nodesConfig = configProvider.getConfiguration().getConfigData(NodesConfig.class);
-        this.freezeStore = freezeStore;
-        this.executor = executor;
-        this.upgradeFileStore = upgradeFileStore;
-        this.nodeStore = nodeStore;
-        this.stakingInfoStore = stakingInfoStore;
-    }
-
-    public ReadableFreezeUpgradeActions(
-            @NonNull final HandleContext context,
-            @NonNull final ReadableFreezeStore freezeStore,
-            @NonNull final Executor executor,
-            @NonNull final ReadableUpgradeFileStore upgradeFileStore,
-            @NonNull final ReadableNodeStore nodeStore,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        requireNonNull(context, "HandleContext is required for freeze upgrade actions");
-        requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
-        requireNonNull(executor, "Executor is required for freeze upgrade actions");
-        requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
-        requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
-        requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
-
-        this.adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
-        this.nodesConfig = context.configuration().getConfigData(NodesConfig.class);
+        this.adminServiceConfig = configuration.getConfigData(NetworkAdminConfig.class);
+        this.nodesConfig = configuration.getConfigData(NodesConfig.class);
         this.freezeStore = freezeStore;
         this.executor = executor;
         this.upgradeFileStore = upgradeFileStore;

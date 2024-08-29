@@ -74,7 +74,12 @@ public class ReconnectListener implements ReconnectCompleteListener {
         final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
         final var upgradeActions = new ReadableFreezeUpgradeActions(
-                configProvider, freezeStore, executor, upgradeFileStore, upgradeNodeStore, upgradeStakingInfoStore);
+                configProvider.getConfiguration(),
+                freezeStore,
+                executor,
+                upgradeFileStore,
+                upgradeNodeStore,
+                upgradeStakingInfoStore);
         try {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state

@@ -23,7 +23,7 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +39,7 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
     /**
      * Constructs a {@link FreezeUpgradeActions} instance
      *
-     * @param context the HandleContext
+     * @param configuration the configuration
      * @param freezeStore the freeze store
      * @param executor the executor
      * @param upgradeFileStore the upgrade file store
@@ -47,13 +47,13 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
      * @param stakingInfoStore the staking info store
      */
     public FreezeUpgradeActions(
-            @NonNull final HandleContext context,
+            @NonNull final Configuration configuration,
             @NonNull final WritableFreezeStore freezeStore,
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        super(context, freezeStore, executor, upgradeFileStore, nodeStore, stakingInfoStore);
+        super(configuration, freezeStore, executor, upgradeFileStore, nodeStore, stakingInfoStore);
         this.freezeStore = freezeStore;
     }
 

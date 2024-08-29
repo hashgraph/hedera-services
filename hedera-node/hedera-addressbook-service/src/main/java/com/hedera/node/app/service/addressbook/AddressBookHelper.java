@@ -125,7 +125,7 @@ public class AddressBookHelper {
      * check DAB enable flag
      * @param feeContext, the Fee context
      */
-    public static void checkDABEnable(@NonNull final FeeContext feeContext) {
+    public static void checkDABEnabled(@NonNull final FeeContext feeContext) {
         final var nodeConfig = requireNonNull(feeContext.configuration()).getConfigData(NodesConfig.class);
         validateTrue(nodeConfig.enableDAB(), NOT_SUPPORTED);
     }
