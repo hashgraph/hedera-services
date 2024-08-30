@@ -80,6 +80,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,7 +97,6 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
-
     private final NetworkInfo networkInfo;
     private final NodeStakeUpdates nodeStakeUpdates;
     private final Authorizer authorizer;
@@ -177,7 +177,7 @@ public class HandleWorkflow {
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
-        this.migrationStateChanges = requireNonNull(migrationStateChanges);
+        this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
     }
 
     /**
@@ -329,6 +329,7 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
+        final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -342,16 +343,12 @@ public class HandleWorkflow {
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
-                final var streamsRecords = configProvider
-                        .getConfiguration()
-                        .getConfigData(BlockStreamConfig.class)
-                        .streamRecords();
-                if (streamsRecords) {
+                if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn);
+                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -362,8 +359,14 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
-            recordCache.add(
-                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            // Note that we don't yet support producing ONLY blocks, because we haven't integrated
+            // translators from block items to records for answering queries
+            if (blockStreamConfig.streamRecords()) {
+                recordCache.add(
+                        userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
+            } else {
+                throw new IllegalStateException("Records must be produced directly without block item translators");
+            }
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -427,9 +430,10 @@ public class HandleWorkflow {
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
+     * @param blockStreamConfig
      * @return the user dispatch
      */
-    private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
+    private Dispatch dispatchFor(@NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
         final var baseBuilder =
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
         return userTxn.newDispatch(
@@ -444,7 +448,8 @@ public class HandleWorkflow {
                 childDispatchFactory,
                 dispatcher,
                 networkUtilizationManager,
-                baseBuilder);
+                baseBuilder,
+                blockStreamConfig);
     }
 
     /**

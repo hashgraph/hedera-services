@@ -570,7 +570,7 @@ class SavepointStackImplTest extends StateTestBase {
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
 
             // when
-            stack.commitFullStack();
+            stack.commitSystemStateChanges();
 
             // then
             final var newData = new HashMap<>(BASE_DATA);
@@ -594,7 +594,7 @@ class SavepointStackImplTest extends StateTestBase {
 
             // when
             stack.commit();
-            stack.commitFullStack();
+            stack.commitSystemStateChanges();
 
             // then
             final var newData = new HashMap<>(BASE_DATA);
@@ -618,7 +618,7 @@ class SavepointStackImplTest extends StateTestBase {
 
             // when
             stack.rollback();
-            stack.commitFullStack();
+            stack.commitSystemStateChanges();
 
             // then
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
@@ -632,13 +632,13 @@ class SavepointStackImplTest extends StateTestBase {
                     baseState, 3, 50, roundStateChangeListener, kvStateChangeListener, streamMode);
 
             // when
-            stack.commitFullStack();
+            stack.commitSystemStateChanges();
 
             // then
             assertThatThrownBy(stack::commit).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(stack::rollback).isInstanceOf(IllegalStateException.class);
             assertThat(stack.depth()).isOne();
-            assertThatCode(stack::commitFullStack).doesNotThrowAnyException();
+            assertThatCode(stack::commitSystemStateChanges).doesNotThrowAnyException();
             assertThatCode(stack::createSavepoint).doesNotThrowAnyException();
         }
 
@@ -653,7 +653,7 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(A_KEY, ACAI);
 
             // when
-            stack.commitFullStack();
+            stack.commitSystemStateChanges();
 
             // then
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));

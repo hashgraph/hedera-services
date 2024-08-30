@@ -21,6 +21,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -44,6 +45,8 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -52,8 +55,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -84,6 +85,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     // All this state is scoped to producing the block for the last-started round
     private long blockNumber;
+    // Set to the round number of the last round handled before entering a freeze period
+    private long freezeRoundNumber = -1;
     // FUTURE - initialize to the actual last block hash (this is only correct at genesis)
     private Bytes lastBlockHash = Bytes.wrap(new byte[48]);
     private Instant blockTimestamp;
@@ -100,6 +103,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
+     *
      * @param blockNumber the block number
      * @param proofBuilder the block proof builder
      * @param writer the block item writer
@@ -131,6 +135,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
+        // We will always close the block at the end of the freeze round, even if
+        // its number would not otherwise trigger a block closing
+        if (isFreezeRound(state, round)) {
+            freezeRoundNumber = round.getRoundNum();
+        }
         if (writer == null) {
             writer = writerSupplier.get();
             blockTimestamp = round.getConsensusTimestamp();
@@ -193,30 +202,36 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Simulate the completion of the block proof
             final long blockNumberToComplete = this.blockNumber;
             CompletableFuture.runAsync(
-                    () -> finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48])), executor);
+                    () -> {
+                        try {
+                            finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48]));
+                        } catch (Exception e) {
+                            log.error("Failed to finish proof for block {}", blockNumberToComplete, e);
+                        }
+                    },
+                    executor);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
+     * pending block proofs become available at the same time.
+     * @param blockNumber the number of the block to finish
+     * @param signature the signature to use in the block proof
+     */
     @Override
-    public void finishBlockProof(final long blockNumber, @NonNull final Bytes signature) {
+    public synchronized void finishBlockProof(final long blockNumber, @NonNull final Bytes signature) {
         requireNonNull(signature);
-        // FUTURE: TSS service will finish this proof when enough signatures are collected
-        if (pendingBlocks.isEmpty() || pendingBlocks.peek().blockNumber != blockNumber) {
-            log.error(
-                    "Block #{} did not match finished number #{}",
-                    Optional.ofNullable(pendingBlocks.peek())
-                            .map(PendingBlock::blockNumber)
-                            .map(Objects::toString)
-                            .orElse("N/A"),
-                    blockNumber);
-            return;
+        while (!pendingBlocks.isEmpty() && pendingBlocks.peek().blockNumber() <= blockNumber) {
+            final var block = pendingBlocks.poll();
+            // Note the actual proof for an earlier block number awaiting proof will be more complicated than this
+            final var proof = block.proofBuilder().blockSignature(signature).build();
+            block.writer()
+                    .writeItem(BlockItem.PROTOBUF.toBytes(
+                            BlockItem.newBuilder().blockProof(proof).build()))
+                    .closeBlock();
         }
-        final var block = pendingBlocks.poll();
-        final var proof = block.proofBuilder().blockSignature(signature).build();
-        block.writer()
-                .writeItem(BlockItem.PROTOBUF.toBytes(
-                        BlockItem.newBuilder().blockProof(proof).build()));
-        block.writer().closeBlock();
     }
 
     @Override
@@ -272,7 +287,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
-        return roundNumber % roundsPerBlock == 0;
+        return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
+    }
+
+    private boolean isFreezeRound(@NonNull final State state, @NonNull final Round round) {
+        final var platformState = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        return isInFreezePeriod(
+                round.getConsensusTimestamp(), platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }
 
     /**
@@ -431,6 +452,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         /**
          * Appends the given block hash to the trailing block hashes.
+         *
          * @param blockHash the block hash to append
          */
         void appendHash(@NonNull final Bytes blockHash) {
@@ -439,6 +461,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         /**
          * Returns the hash of the block with the given number, or null if it is not available.
+         *
          * @param blockNo the block number
          * @return the hash of the block with the given number, or null if it is not available
          */
@@ -449,6 +472,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         /**
          * Returns the trailing block hashes.
+         *
          * @return the trailing block hashes
          */
         Bytes blockHashes() {

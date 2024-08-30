@@ -25,7 +25,6 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgr
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -66,14 +65,18 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 notification.getSequence());
         final State state = notification.getState().cast();
         final var readableStoreFactory = new ReadableStoreFactory(state);
-        final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
         final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
         final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
         final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
         final var platformStateStore = readableStoreFactory.getStore(ReadablePlatformStateStore.class);
         final var upgradeActions = new ReadableFreezeUpgradeActions(
-                networkAdminConfig, freezeStore, executor, upgradeFileStore, upgradeNodeStore, upgradeStakingInfoStore);
+                configProvider.getConfiguration(),
+                freezeStore,
+                executor,
+                upgradeFileStore,
+                upgradeNodeStore,
+                upgradeStakingInfoStore);
         try {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state
