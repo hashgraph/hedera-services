@@ -29,7 +29,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
@@ -60,6 +59,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link State} at the time
@@ -67,6 +68,7 @@ import java.util.function.Consumer;
  * the stream builders created in the savepoint.
  */
 public class SavepointStackImpl implements HandleContext.SavepointStack, State {
+    private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
     private final State state;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
@@ -140,6 +142,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders to create
      * @param maxBuildersAfterUser the maximum number of following builders to create
+     * @param roundStateChangeListener the listener for the round state changes
+     * @param kvStateChangeListener the listener for the key-value state changes
+     * @param streamMode the stream mode
      */
     private SavepointStackImpl(
             @NonNull final State state,
@@ -481,7 +486,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             }
             switch (streamMode) {
                 case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
-                case BLOCKS -> requireNonNull(blockItems).addAll(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
                     records.add(pairedBuilder.recordStreamBuilder().build());

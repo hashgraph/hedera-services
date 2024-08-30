@@ -35,6 +35,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

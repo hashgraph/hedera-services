@@ -18,7 +18,7 @@ package com.swirlds.logging.api.internal.format;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.swirlds.logging.util.Throwables;
+import com.swirlds.logging.test.fixtures.util.Throwables;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;

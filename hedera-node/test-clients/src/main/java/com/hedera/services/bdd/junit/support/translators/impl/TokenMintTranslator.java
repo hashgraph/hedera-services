@@ -46,9 +46,9 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenMintOrThrow();
+                final var tokenId = op.tokenOrThrow();
                 final var numMints = op.metadata().size();
                 if (numMints > 0) {
-                    final var tokenId = op.tokenOrThrow();
                     final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
                     final var iter = remainingStateChanges.listIterator();
                     while (iter.hasNext()) {
@@ -64,6 +64,8 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                             if (mintedSerialNos.remove(serialNo)) {
                                 iter.remove();
                                 if (mintedSerialNos.isEmpty()) {
+                                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, numMints);
+                                    receiptBuilder.newTotalSupply(newTotalSupply);
                                     return;
                                 }
                             }
@@ -72,6 +74,10 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                     log.error(
                             "Not all mints had matching state changes found for successful mint with id {}",
                             parts.transactionIdOrThrow());
+                } else {
+                    final var amountMinted = op.amount();
+                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, amountMinted);
+                    receiptBuilder.newTotalSupply(newTotalSupply);
                 }
             }
         });

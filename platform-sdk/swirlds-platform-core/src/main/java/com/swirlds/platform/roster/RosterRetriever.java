@@ -62,7 +62,31 @@ public final class RosterRetriever {
      */
     @NonNull
     public static Roster retrieve(@NonNull final State state) {
-        final Bytes activeRosterHash = getActiveRosterHash(state);
+        final Roster roster = retrieve(state, getRound(state));
+        if (roster != null) {
+            return roster;
+        }
+
+        // Either rosters haven't been populated in the RosterState/Map yet,
+        // or the current round predates the introduction of rosters in the state.
+        // So use an AddressBook from the PlatformState to build a roster:
+        final ReadablePlatformStateStore readablePlatformStateStore =
+                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+        return buildRoster(readablePlatformStateStore.getAddressBook());
+    }
+
+    /**
+     * Retrieve an active Roster from the state for a given round.
+     * <p>
+     * This method first checks the RosterState/RosterMap entities,
+     * and if they contain a roster for the given round, then returns it.
+     * If there's not a roster defined for a given round, then null is returned.
+     *
+     * @return an active Roster for the given round of the state, or null
+     */
+    @Nullable
+    public static Roster retrieve(@NonNull final State state, final long round) {
+        final Bytes activeRosterHash = getActiveRosterHash(state, round);
         if (activeRosterHash != null) {
             final ReadableKVState<ProtoBytes, Roster> rosterMap =
                     state.getReadableStates(RosterStateId.NAME).get(RosterStateId.ROSTER_KEY);
@@ -73,23 +97,21 @@ public final class RosterRetriever {
             }
         }
 
-        final ReadablePlatformStateStore readablePlatformStateStore =
-                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        return buildRoster(readablePlatformStateStore.getAddressBook());
+        return null;
     }
 
     /**
-     * Retrieve a hash of the active roster for the current round of the state,
+     * Retrieve a hash of the active roster for a given round of the state,
      * or null if the roster is unknown for that round.
      * A roster may be unknown if the RosterState hasn't been populated yet,
-     * or the current round of the state predates the implementation of the Roster.
+     * or the given round of the state predates the implementation of the Roster.
      *
      * @param state a state
+     * @param round a round number
      * @return a Bytes object with the roster hash, or null
      */
     @Nullable
-    public static Bytes getActiveRosterHash(@NonNull final State state) {
-        final long round = getRound(state);
+    public static Bytes getActiveRosterHash(@NonNull final State state, final long round) {
         final ReadableSingletonState<RosterState> rosterState =
                 state.getReadableStates(RosterStateId.NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
