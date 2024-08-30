@@ -22,15 +22,13 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.AbstractSerializableHashable;
+import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -44,7 +42,6 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -55,7 +52,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class PlatformEvent extends AbstractSerializableHashable implements ConsensusEvent {
+public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -81,7 +78,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     /**
      * the software version of the node that created this event.
      */
-    private SoftwareVersion softwareVersion;
+    private final SoftwareVersion softwareVersion;
 
     /**
      * The sequence number of an event before it is added to the write queue.
@@ -119,9 +116,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * version right before the birth round migration.
      */
     private long birthRound;
-
-    @SuppressWarnings("unused") // needed for RuntimeConstructable
-    public PlatformEvent() {}
 
     /**
      * @param unsignedEvent   the hashed data for the event
@@ -197,37 +191,32 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         return streamSequenceNumber;
     }
 
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-
-        EventSerializationUtils.serializeEvent(
-                out,
-                softwareVersion,
-                getEventCore(),
-                getSelfParent(),
-                getOtherParents(),
-                gossipEvent.eventTransaction());
-        out.writeInt((int) gossipEvent.signature().length());
-        gossipEvent.signature().writeTo(out);
-    }
-
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        final UnsignedEvent unsignedEvent = UnsignedEvent.deserialize(in);
-        final Bytes signature = Bytes.wrap(in.readByteArray(SignatureType.RSA.signatureLength()));
-
-        this.gossipEvent =
-                new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions());
-        this.timeReceived = Instant.now();
-        this.senderId = null;
-        this.consensusData = NO_CONSENSUS;
-        if (gossipEvent.eventCore() != null) {
-            this.birthRound = gossipEvent.eventCore().birthRound();
-        }
-        transactions = gossipEvent.eventTransaction().stream()
-                .map(TransactionWrapper::new)
-                .toList();
-    }
+    //    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+    //
+    //        EventSerializationUtils.serializeSignedEvent(
+    //                out,
+    //                softwareVersion,
+    //                getEventCore(),
+    //                getSelfParent(),
+    //                getOtherParents(),
+    //                gossipEvent.eventTransaction(),
+    //                gossipEvent.signature());
+    //    }
+    //
+    //    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+    //        final PlatformEvent platformEvent = EventSerializationUtils.deserializePlatformEvent(in);
+    //
+    //        this.gossipEvent = platformEvent.gossipEvent;
+    //        this.timeReceived = Instant.now();
+    //        this.senderId = null;
+    //        this.consensusData = NO_CONSENSUS;
+    //        if (gossipEvent.eventCore() != null) {
+    //            this.birthRound = gossipEvent.eventCore().birthRound();
+    //        }
+    //        transactions = gossipEvent.eventTransaction().stream()
+    //                .map(TransactionWrapper::new)
+    //                .toList();
+    //    }
 
     /**
      * Get the hashed data for the event.
@@ -411,6 +400,10 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
     }
 
+    public List<EventTransaction> getEventTransactions() {
+        return gossipEvent.eventTransaction();
+    }
+
     /**
      * Set the consensus timestamp on the transaction wrappers for this event. This must be done after the consensus time is
      * set for this event.
@@ -453,20 +446,20 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return ClassVersion.BIRTH_ROUND;
-    }
-
-    @Override
-    public int getMinimumSupportedVersion() {
-        return ClassVersion.BIRTH_ROUND;
-    }
+    //    @Override
+    //    public long getClassId() {
+    //        return CLASS_ID;
+    //    }
+    //
+    //    @Override
+    //    public int getVersion() {
+    //        return ClassVersion.BIRTH_ROUND;
+    //    }
+    //
+    //    @Override
+    //    public int getMinimumSupportedVersion() {
+    //        return ClassVersion.BIRTH_ROUND;
+    //    }
 
     /**
      * Get the event descriptor for the self parent.

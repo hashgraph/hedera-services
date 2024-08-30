@@ -19,6 +19,7 @@ package com.swirlds.platform.test.fixtures.turtle.gossip;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -208,10 +209,10 @@ public class SimulatedNetwork {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteArrayOutputStream);
-            outputStream.writeSerializable(event, false);
+            EventSerializationUtils.serializePlatformEvent(outputStream, event);
             final SerializableDataInputStream inputStream =
                     new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
-            final PlatformEvent copy = inputStream.readSerializable(false, PlatformEvent::new);
+            final PlatformEvent copy = EventSerializationUtils.deserializePlatformEvent(inputStream);
             copy.setHash(event.getHash());
             return copy;
         } catch (final IOException e) {

@@ -21,6 +21,7 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -84,7 +85,7 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
             final long initialCount = counter.getCount();
 
             try {
-                final PlatformEvent candidate = stream.readSerializable(false, PlatformEvent::new);
+                final PlatformEvent candidate = EventSerializationUtils.deserializePlatformEvent(stream);
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }

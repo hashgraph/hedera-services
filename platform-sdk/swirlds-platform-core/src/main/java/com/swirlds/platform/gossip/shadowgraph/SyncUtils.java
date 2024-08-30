@@ -25,6 +25,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
@@ -205,7 +206,7 @@ public final class SyncUtils {
                     events.size());
             for (final PlatformEvent event : events) {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
-                connection.getDos().writeEventData(event);
+                EventSerializationUtils.serializePlatformEvent(connection.getDos(), event);
             }
             if (writeAborted.get()) {
                 logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", connection.getDescription());
@@ -283,7 +284,7 @@ public final class SyncUtils {
                             }
 
                             final PlatformEvent platformEvent =
-                                    connection.getDis().readEventData();
+                                    EventSerializationUtils.deserializePlatformEvent(connection.getDis());
 
                             platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());

@@ -23,6 +23,7 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -34,6 +35,8 @@ import com.swirlds.platform.system.events.UnsignedEvent.ClassVersion;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -53,7 +56,7 @@ public final class EventSerializationUtils {
     private static final int STATE_SIGNATURE_VERSION = 3;
 
     /**
-     * Serialize a event to the output stream {@code out}.
+     * Serialize a unsigned event to the output stream {@code out}.
      *
      * @param out the stream to which this object is to be written
      * @param softwareVersion the software version
@@ -64,7 +67,7 @@ public final class EventSerializationUtils {
      *
      * @throws IOException if an I/O error occurs
      */
-    public static void serializeEvent(
+    public static void serializeUnsignedEvent(
             @NonNull final SerializableDataOutputStream out,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventCore eventCore,
@@ -132,6 +135,45 @@ public final class EventSerializationUtils {
 
         out.writeLong(stateSignatureTransaction.round());
         out.writeInt(Integer.MIN_VALUE); // epochHash is always null
+    }
+
+    public static void serializePlatformEvent(
+            @NonNull final SerializableDataOutputStream out, @NonNull final PlatformEvent event) throws IOException {
+        serializeSignedEvent(
+                out,
+                event.getOldSoftwareVersion(),
+                event.getEventCore(),
+                event.getSelfParent(),
+                event.getOtherParents(),
+                event.getEventTransactions(),
+                event.getSignature());
+    }
+
+    /**
+     * Serialize a signed event to the output stream {@code out}.
+     *
+     * @param out the stream to which this object is to be written
+     * @param softwareVersion the software version
+     * @param eventCore the event core
+     * @param selfParent the self parent
+     * @param otherParents the other parents
+     * @param eventTransactions the event transactions
+     * @param signature the signature
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    public static void serializeSignedEvent(
+            @NonNull final SerializableDataOutputStream out,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final EventCore eventCore,
+            @NonNull final EventDescriptorWrapper selfParent,
+            @NonNull final List<EventDescriptorWrapper> otherParents,
+            @NonNull final List<EventTransaction> eventTransactions,
+            @NonNull final Bytes signature)
+            throws IOException {
+        serializeUnsignedEvent(out, softwareVersion, eventCore, selfParent, otherParents, eventTransactions);
+        out.writeInt((int) signature.length());
+        signature.writeTo(out);
     }
 
     /**
@@ -215,5 +257,41 @@ public final class EventSerializationUtils {
         final long round = in.readLong();
         in.readInt(); // epochHash is always null
         return new StateSignatureTransaction(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
+    }
+
+    /**
+     * Deserialize the event as {@link PlatformEvent}.
+     *
+     * @param in the stream from which this object is to be read
+     * @return the deserialized event
+     * @throws IOException if unsupported transaction types are encountered
+     */
+    @NonNull
+    public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in)
+            throws IOException {
+        final UnsignedEvent unsignedEvent = UnsignedEvent.deserialize(in);
+        final Bytes signature = Bytes.wrap(in.readByteArray(SignatureType.RSA.signatureLength()));
+
+        return new PlatformEvent(unsignedEvent, signature);
+    }
+
+    /**
+     * Serialize and then deserialize the given {@link PlatformEvent}.
+     *
+     * @param original the original event
+     * @return the deserialized event
+     * @throws IOException if an I/O error occurs
+     */
+    @NonNull
+    public static PlatformEvent serializeDeserializePlatformEvent(@NonNull final PlatformEvent original)
+            throws IOException {
+        try (ByteArrayOutputStream io = new ByteArrayOutputStream()) {
+            final SerializableDataOutputStream out = new SerializableDataOutputStream(io);
+            serializePlatformEvent(out, original);
+            out.flush();
+            final SerializableDataInputStream in =
+                    new SerializableDataInputStream(new ByteArrayInputStream(io.toByteArray()));
+            return deserializePlatformEvent(in);
+        }
     }
 }

@@ -154,7 +154,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @throws IOException if unsupported transaction types are encountered
      */
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        EventSerializationUtils.serializeEvent(
+        EventSerializationUtils.serializeUnsignedEvent(
                 out, softwareVersion, eventCore, selfParent, otherParents, eventTransactions);
     }
 

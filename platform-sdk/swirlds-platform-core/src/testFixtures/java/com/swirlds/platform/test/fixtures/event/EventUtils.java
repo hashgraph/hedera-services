@@ -20,6 +20,7 @@ import static java.lang.Integer.max;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,7 +52,7 @@ public final class EventUtils {
     public static byte[] serializePlatformEvent(@NonNull final PlatformEvent event) {
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
-            event.serialize(new SerializableDataOutputStream(stream));
+            EventSerializationUtils.serializePlatformEvent(new SerializableDataOutputStream(stream), event);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

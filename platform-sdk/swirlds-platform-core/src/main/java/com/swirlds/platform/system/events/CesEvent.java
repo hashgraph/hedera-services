@@ -30,6 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -91,7 +92,7 @@ public class CesEvent extends AbstractSerializableHashable
         Objects.requireNonNull(out);
         Objects.requireNonNull(platformEvent);
 
-        platformEvent.serialize(out);
+        EventSerializationUtils.serializePlatformEvent(out, platformEvent);
 
         // some fields used to be part of the stream but are no longer used
         // in order to maintain compatibility with older versions of the stream, we write a constant in their place
@@ -113,8 +114,7 @@ public class CesEvent extends AbstractSerializableHashable
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        this.platformEvent = new PlatformEvent();
-        this.platformEvent.deserialize(in, platformEvent.getVersion());
+        this.platformEvent = EventSerializationUtils.deserializePlatformEvent(in);
 
         in.readInt(); // ConsensusData.version
         in.readLong(); // ConsensusData.generation

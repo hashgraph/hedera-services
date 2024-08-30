@@ -19,6 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -97,7 +98,7 @@ public class PcesMutableFile {
             throw new IllegalStateException("Cannot write event " + event.getHash() + " with ancient indicator "
                     + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
-        out.writeSerializable(event, false);
+        EventSerializationUtils.serializePlatformEvent(out, event);
         highestAncientIdentifierInFile =
                 Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }
