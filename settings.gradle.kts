@@ -31,6 +31,11 @@ javaModules {
         group = "com.hedera.hashgraph"
     }
 
+    // The Hedera Cryptography modules
+    directory("hedera-cryptography") {
+        group = "com.hedera.cryptography"
+    }
+
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
