@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
-import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.METADATA_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -77,7 +76,7 @@ public class NumericValidationTest {
 
     @NonFungibleToken(
             numPreMints = 5,
-            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
+            keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
     static SpecNonFungibleToken nft;
 
     private static final String NEGATIVE_ONE = "FFFFFFFFFFFFFFFF";
