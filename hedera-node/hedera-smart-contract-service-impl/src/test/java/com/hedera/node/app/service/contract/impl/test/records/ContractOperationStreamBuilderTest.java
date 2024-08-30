@@ -44,13 +44,17 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 class ContractOperationStreamBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationStreamBuilder() {
+            @Override
+            public StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction) {
+                return this;
+            }
+
             @Override
             public int getNumAutoAssociations() {
                 return 0;
@@ -93,6 +97,11 @@ class ContractOperationStreamBuilderTest {
 
             @Override
             public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+                return this;
+            }
+
+            @Override
+            public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
                 return this;
             }
 
@@ -195,7 +204,7 @@ class ContractOperationStreamBuilderTest {
             }
 
             @Override
-            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NonNull final Instant now) {
                 return null;
             }
 
@@ -205,12 +214,12 @@ class ContractOperationStreamBuilderTest {
             }
 
             @Override
-            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NonNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
                 return null;
             }
         };

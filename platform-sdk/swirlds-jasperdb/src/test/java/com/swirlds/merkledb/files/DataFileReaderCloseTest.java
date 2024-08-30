@@ -18,14 +18,12 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
@@ -42,15 +40,13 @@ import org.junit.jupiter.api.Test;
 
 class DataFileReaderCloseTest {
 
-    private static DataFileCollection<long[]> collection;
-
-    private static final BaseSerializer<long[]> serializer = new TwoLongSerializer();
+    private static DataFileCollection collection;
 
     @BeforeAll
     static void setup() throws IOException {
         final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        collection = new DataFileCollection<>(dbConfig, dir, "store", serializer, null);
+        collection = new DataFileCollection(dbConfig, dir, "store", null);
     }
 
     @AfterAll
@@ -63,8 +59,17 @@ class DataFileReaderCloseTest {
         final int COUNT = 100;
         collection.startWriting();
         final LongList index = new LongListOffHeap();
+        index.updateValidRange(0, COUNT);
         for (int i = 0; i < COUNT; i++) {
-            index.put(i, collection.storeDataItem(new long[] {i, i + 1}));
+            final int fi = i;
+            index.put(
+                    i,
+                    collection.storeDataItem(
+                            o -> {
+                                o.writeLong(fi);
+                                o.writeLong(fi + 1);
+                            },
+                            2 * Long.BYTES));
         }
         //noinspection resource
         collection.endWriting(0, COUNT - 1);
@@ -76,9 +81,9 @@ class DataFileReaderCloseTest {
                 while (!Thread.currentThread().isInterrupted()) {
                     final int i = rand.nextInt(COUNT);
                     final long dataLocation = index.get(i);
-                    final long[] item = collection.readDataItem(dataLocation);
-                    Assertions.assertEquals(i, item[0]);
-                    Assertions.assertEquals(i + 1, item[1]);
+                    final BufferedData itemBytes = collection.readDataItem(dataLocation);
+                    Assertions.assertEquals(i, itemBytes.readLong());
+                    Assertions.assertEquals(i + 1, itemBytes.readLong());
                     readingThreadStarted.set(true);
                 }
             } catch (final ClosedByInterruptException e) {
@@ -99,9 +104,9 @@ class DataFileReaderCloseTest {
             Assertions.assertNull(exceptionOccurred.get(), "No IOException is expected");
         }
         for (int i = 0; i < COUNT; i++) {
-            final long[] item = collection.readDataItemUsingIndex(index, i);
-            Assertions.assertEquals(i, item[0]);
-            Assertions.assertEquals(i + 1, item[1]);
+            final BufferedData itemBytes = collection.readDataItemUsingIndex(index, i);
+            Assertions.assertEquals(i, itemBytes.readLong());
+            Assertions.assertEquals(i + 1, itemBytes.readLong());
         }
     }
 
@@ -111,24 +116,32 @@ class DataFileReaderCloseTest {
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
+            final int fi = i;
             try {
-                final DataFileWriter<long[]> writer =
-                        new DataFileWriter<>("test", tmpDir, i, serializer, Instant.now(), INITIAL_COMPACTION_LEVEL);
+                final DataFileWriter writer =
+                        new DataFileWriter("test", tmpDir, i, Instant.now(), INITIAL_COMPACTION_LEVEL);
                 filePath = writer.getPath();
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();
-                index.put(0, writer.storeDataItem(new long[] {i, i * 2 + 1}));
-                final DataFileReader<long[]> reader = new DataFileReader<>(dbConfig, filePath, serializer, metadata);
-                final int fi = i;
+                index.updateValidRange(0, i);
+                index.put(
+                        0,
+                        writer.storeDataItem(
+                                o -> {
+                                    o.writeLong(fi);
+                                    o.writeLong(fi * 2 + 1);
+                                },
+                                2 * Long.BYTES));
+                final DataFileReader reader = new DataFileReader(dbConfig, filePath, metadata);
                 // Check the item in parallel to finish writing
                 IntStream.of(0, 1).parallel().forEach(t -> {
                     try {
                         if (t == 1) {
                             writer.finishWriting();
                         } else {
-                            final long[] item = reader.readDataItem(index.get(0));
-                            Assertions.assertEquals(fi, item[0]);
-                            Assertions.assertEquals(fi * 2 + 1, item[1]);
+                            final BufferedData itemBytes = reader.readDataItem(index.get(0));
+                            Assertions.assertEquals(fi, itemBytes.readLong());
+                            Assertions.assertEquals(fi * 2 + 1, itemBytes.readLong());
                         }
                     } catch (final IOException e) {
                         throw new RuntimeException(e);
@@ -139,31 +152,6 @@ class DataFileReaderCloseTest {
                     Files.delete(filePath);
                 }
             }
-        }
-    }
-
-    private static class TwoLongSerializer implements BaseSerializer<long[]> {
-
-        @Override
-        public long getCurrentDataVersion() {
-            return 0;
-        }
-
-        @Override
-        public int getSerializedSize() {
-            return Long.BYTES * 2;
-        }
-
-        @Override
-        public void serialize(long[] data, WritableSequentialData out) {
-            assert data.length == 2;
-            out.writeLong(data[0]);
-            out.writeLong(data[1]);
-        }
-
-        @Override
-        public long[] deserialize(ReadableSequentialData in) {
-            return new long[] {in.readLong(), in.readLong()};
         }
     }
 }

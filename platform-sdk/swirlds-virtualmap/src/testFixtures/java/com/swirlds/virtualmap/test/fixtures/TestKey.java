@@ -47,6 +47,10 @@ public final class TestKey implements VirtualKey {
         return 1;
     }
 
+    long getKey() {
+        return k;
+    }
+
     void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }

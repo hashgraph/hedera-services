@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
@@ -113,7 +114,14 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer());
+                    synthTxn,
+                    CryptoCreateStreamBuilder.class,
+                    null,
+                    context.payer(),
+                    HandleContext.ConsensusThrottling.ON);
+            if (childRecordBuilder.status() == SUCCESS) {
+                childRecordBuilder.evmAddress(evmAddress);
+            }
 
             return childRecordBuilder.status();
         } catch (final HandleException e) {

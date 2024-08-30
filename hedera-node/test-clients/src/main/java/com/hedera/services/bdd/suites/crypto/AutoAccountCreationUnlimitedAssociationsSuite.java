@@ -303,7 +303,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     allRunFor(spec, completedAccount);
                 }),
                 getTxnRecord(HBAR_XFER)
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS)),
                 cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
                         .hasKnownStatus(SUCCESS)

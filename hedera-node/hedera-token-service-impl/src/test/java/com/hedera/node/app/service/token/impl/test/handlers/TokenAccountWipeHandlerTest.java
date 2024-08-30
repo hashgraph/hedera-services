@@ -82,11 +82,11 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -113,6 +113,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .getOrCreateConfig();
         recordBuilder = new TokenAccountWipeStreamBuilder() {
             private long newTotalSupply;
+
+            @Override
+            public StreamBuilder serializedTransaction(@Nullable Bytes serializedTransaction) {
+                return this;
+            }
 
             @Override
             public int getNumAutoAssociations() {
@@ -164,6 +169,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 return this;
             }
 
+            @Override
+            public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
+                return this;
+            }
+
             @NonNull
             @Override
             public TransactionBody transactionBody() {
@@ -204,7 +214,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NonNull final Instant now) {
                 return null;
             }
 
@@ -214,12 +224,12 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NonNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
                 return null;
             }
 

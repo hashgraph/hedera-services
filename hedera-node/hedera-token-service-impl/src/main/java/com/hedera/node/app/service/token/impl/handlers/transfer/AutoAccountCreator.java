@@ -83,13 +83,17 @@ public class AutoAccountCreator {
             syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, autoAssociations);
+            syntheticCreation = createZeroBalanceAccount(alias, key, autoAssociations);
         }
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
-                syntheticCreation.build(), CryptoCreateStreamBuilder.class, null, handleContext.payer());
+                syntheticCreation.build(),
+                CryptoCreateStreamBuilder.class,
+                null,
+                handleContext.payer(),
+                HandleContext.ConsensusThrottling.ON);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
@@ -104,16 +108,20 @@ public class AutoAccountCreator {
 
     /**
      * Create a transaction body for new hollow-account with the given alias.
+     *
      * @param alias alias of the account
      * @param balance initial balance of the account
      * @param maxAutoAssociations maxAutoAssociations of the account
+     * @param memo the memo to set on the transaction body
      * @return transaction body for new hollow-account
      */
     public TransactionBody.Builder createHollowAccount(
-            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
+            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations, @NonNull final String memo) {
+        requireNonNull(alias);
+        requireNonNull(memo);
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias);
-        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
+        return TransactionBody.newBuilder().memo(memo).cryptoCreateAccount(baseBuilder.build());
     }
 
     /**
@@ -131,15 +139,15 @@ public class AutoAccountCreator {
 
     /**
      * Create a transaction body for new account with the given alias, key, balance and maxAutoAssociations.
+     *
      * @param alias alias of the account
      * @param key key of the account
-     * @param balance initial balance of the account
      * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new account
      */
-    private TransactionBody.Builder createAccount(
-            @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
+    private TransactionBody.Builder createZeroBalanceAccount(
+            @NonNull final Bytes alias, @NonNull final Key key, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(0L, maxAutoAssociations);
         baseBuilder.key(key).alias(alias).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }

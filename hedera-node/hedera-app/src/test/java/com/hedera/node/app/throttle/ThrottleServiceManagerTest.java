@@ -114,8 +114,7 @@ class ThrottleServiceManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ThrottleServiceManager(
-                configProvider, throttleParser, ingestThrottle, backendThrottle, congestionMultipliers);
+        subject = new ThrottleServiceManager(throttleParser, ingestThrottle, backendThrottle, congestionMultipliers);
     }
 
     @Test

@@ -31,7 +31,7 @@ public record HevmBlockValues(long gasLimit, long blockNo, @NonNull Timestamp bl
 
     public static HevmBlockValues from(@NonNull final BlockRecordInfo blockRecordInfo, final long gasLimit) {
         requireNonNull(blockRecordInfo);
-        return new HevmBlockValues(gasLimit, blockRecordInfo.blockNo(), blockRecordInfo.currentBlockTimestamp());
+        return new HevmBlockValues(gasLimit, blockRecordInfo.blockNo(), blockRecordInfo.blockTimestamp());
     }
 
     public HevmBlockValues {

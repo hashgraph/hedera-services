@@ -60,6 +60,7 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateFungibleTokenCustomFees` function updates multiple `FixedHTSFees` for a given token.
 - Verify that the `updateFungibleTokenCustomFees` function updates `FixedHTSFee` with the same token as denominator.
 - Verify that the `updateFungibleTokenCustomFees` function updates `FractionalFee` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FractionalFee` for a given token with net of transfers enabled.
 - Verify that the `updateFungibleTokenCustomFees` function updates `FractionalFee` for a given token with `min` and `max` amounts.
 - Verify that the `updateFungibleTokenCustomFees` function updates multiple `FractionalFees` for a given token.
 - Verify that the `updateFungibleTokenCustomFees` function updates both `FixedHbarFees` and `FractionalFees` for a given token.
@@ -67,7 +68,6 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates multiple `RoyaltyFees` for a given nft.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHBARFee` for a given nft.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHTSFee` for a given nft.
-- Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHTSFee` with the same token as denominator.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates both `RoyaltyFee` `FixedHTSFee` for a given nft.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates `RoyaltyFee` with `HBAR` fallback for a given nft.
 - Verify that the `updateNonFungibleTokenCustomFees` function updates `RoyaltyFee` with `HTS` token fallback for a given nft.
@@ -89,3 +89,4 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON` when the provided `feeSchedule` tries to set `FixedHTSFee` with the same token as denominator.

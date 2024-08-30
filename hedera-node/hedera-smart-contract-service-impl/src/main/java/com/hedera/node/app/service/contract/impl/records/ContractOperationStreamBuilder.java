@@ -23,11 +23,11 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
-public interface ContractOperationStreamBuilder extends DeleteCapableTransactionRecordBuilder {
+public interface ContractOperationStreamBuilder extends DeleteCapableTransactionStreamBuilder {
     /**
      * Sets the transaction fee.
      *

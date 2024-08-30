@@ -27,6 +27,7 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -94,8 +95,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     public void commit() {
         assertNotFinished();
 
-        state.commit();
         commitBuilders();
+        state.commit();
         status = Status.FINISHED;
     }
 
@@ -122,8 +123,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         final var builder =
                 switch (streamMode) {
                     case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
-                    case BLOCKS -> throw new UnsupportedOperationException("Block stream not yet supported");
-                    case BOTH -> throw new UnsupportedOperationException("Paired stream not yet supported");
+                    case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING && !isBaseBuilder) {

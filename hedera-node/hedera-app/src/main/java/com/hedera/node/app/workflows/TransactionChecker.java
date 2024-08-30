@@ -145,14 +145,14 @@ public class TransactionChecker {
     @NonNull
     public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
         final var tx = parse(buffer);
-        return check(tx);
+        return check(tx, buffer);
     }
 
     /**
      * Parse the given {@link Bytes} into a transaction.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the
-     * transaction is parsed. A transaction can be checked with {@link #check(Transaction)}.
+     * transaction is parsed. A transaction can be checked with {@link #check(Transaction, Bytes)}.
      *
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link TransactionInfo} with the parsed and checked entities
@@ -199,12 +199,13 @@ public class TransactionChecker {
      * modules themselves).</p>
      *
      * @param tx the {@link Transaction} that needs to be checked
+     * @param serializedTx if set, the serialized transaction bytes to include in the {@link TransactionInfo}
      * @return an {@link TransactionInfo} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
-    public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
+    public TransactionInfo check(@NonNull final Transaction tx, @Nullable Bytes serializedTx) throws PreCheckException {
         // NOTE: Since we've already parsed the transaction, we assume that the
         // transaction was not too many bytes. This is a safe assumption because
         // the code that receives the transaction bytes and parses/ the transaction
@@ -243,7 +244,7 @@ public class TransactionChecker {
                 throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
             }
         }
-        return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality));
+        return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality, serializedTx));
     }
 
     public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) throws PreCheckException {

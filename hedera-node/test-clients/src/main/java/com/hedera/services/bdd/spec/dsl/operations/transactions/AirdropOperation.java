@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.jetbrains.annotations.NotNull;
 
 public class AirdropOperation extends AbstractSpecTransaction<AirdropOperation, HapiTokenAirdrop>
         implements SpecOperation {
@@ -140,7 +139,7 @@ public class AirdropOperation extends AbstractSpecTransaction<AirdropOperation, 
         return this;
     }
 
-    @NotNull
+    @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
         requireNonNull(spec);

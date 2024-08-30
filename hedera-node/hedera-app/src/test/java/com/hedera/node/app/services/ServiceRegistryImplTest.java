@@ -82,4 +82,16 @@ final class ServicesRegistryImplTest {
         assertThat(registrations.stream().map(r -> r.service().getServiceName()))
                 .containsExactly("A", "B", "C");
     }
+
+    @Test
+    void subRegistryContainsOnlyRequestedServices() {
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
+        registry.register(TestService.newBuilder().name("A").build());
+        registry.register(TestService.newBuilder().name("B").build());
+        registry.register(TestService.newBuilder().name("C").build());
+
+        final var subRegistry = registry.subRegistryFor("A", "C");
+        assertThat(subRegistry.registrations().stream().map(r -> r.service().getServiceName()))
+                .containsExactly("A", "C");
+    }
 }

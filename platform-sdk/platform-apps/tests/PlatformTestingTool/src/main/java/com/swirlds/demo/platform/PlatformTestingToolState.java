@@ -76,7 +76,6 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
-import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
 import com.swirlds.logging.legacy.payload.SoftwareVersionPayload;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
@@ -84,7 +83,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -97,6 +96,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -1070,7 +1070,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     /**
      * Handle the freeze transaction type.
      */
-    private void handleFreezeTransaction(final TestTransaction testTransaction, final PlatformState platformState) {
+    private void handleFreezeTransaction(
+            final TestTransaction testTransaction, final PlatformStateAccessor platformState) {
         final FreezeTransaction freezeTx = testTransaction.getFreezeTransaction();
         FreezeTransactionHandler.freeze(freezeTx, platformState);
     }
@@ -1092,7 +1093,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public synchronized void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1124,7 +1125,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void handleConsensusTransaction(
             final ConsensusEvent event,
             final ConsensusTransaction trans,
-            final PlatformState platformState,
+            final PlatformStateAccessor platformState,
             final long roundNum) {
         if (trans.isSystem()) {
             return;
@@ -1163,7 +1164,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final Instant timeCreated,
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformStateAccessor platformState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
@@ -1301,10 +1302,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         if (trigger == InitTrigger.RESTART) {
             rebuildExpectedMapFromState(Instant.EPOCH, true);
@@ -1334,11 +1334,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // initialize data structures used for FCQueue transaction records expiration
         initializeExpirationQueueAndAccountsSet();
-
-        logger.info(LOGM_DEMO_INFO, "Dual state received in init function {}", () -> new ApplicationDualStatePayload(
-                        platformState.getFreezeTime(), platformState.getLastFrozenTime())
-                .toString());
-
         logger.info(LOGM_STARTUP, () -> new SoftwareVersionPayload(
                         "Trigger and PreviousSoftwareVersion state received in init function",
                         trigger.toString(),

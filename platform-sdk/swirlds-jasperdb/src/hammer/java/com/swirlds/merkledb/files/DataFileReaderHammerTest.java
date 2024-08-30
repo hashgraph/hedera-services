@@ -18,12 +18,10 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -68,10 +66,8 @@ public class DataFileReaderHammerTest {
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        final DataFileMetadata metadata =
-                new DataFileMetadata(itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
-        final DataFileReader<byte[]> dataReader =
-                new DataFileReader<>(dbConfig, tempFile, new TestDataItemSerializer(itemSize), metadata);
+        final DataFileMetadata metadata = new DataFileMetadata(itemCount, 0, Instant.now(), INITIAL_COMPACTION_LEVEL);
+        final DataFileReader dataReader = new DataFileReader(dbConfig, tempFile, metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
         final AtomicReferenceArray<Thread> threads = new AtomicReferenceArray<>(readerThreads);
         final Future<?>[] jobs = new Future[readerThreads];
@@ -83,10 +79,10 @@ public class DataFileReaderHammerTest {
                     for (int j = 0; j < readIterations; j++) {
                         try {
                             final int start = rand.nextInt(itemCount) * itemSize;
-                            final byte[] data = dataReader.readDataItem(start);
+                            final BufferedData data = dataReader.readDataItem(start);
                             Assertions.assertNotNull(data);
                             for (int k = 0; k < itemSize; k++) {
-                                Assertions.assertEquals(k % 100, data[k]);
+                                Assertions.assertEquals(k % 100, data.getByte(k));
                             }
                         } catch (final ClosedByInterruptException e) {
                             Thread.interrupted(); // clear "interrupted" status and keep going
@@ -122,37 +118,6 @@ public class DataFileReaderHammerTest {
         for (int i = 0; i < readerThreads; i++) {
             Future<?> result = jobs[i];
             result.get();
-        }
-    }
-
-    private static class TestDataItemSerializer implements BaseSerializer<byte[]> {
-
-        private final int size;
-
-        public TestDataItemSerializer(final int size) {
-            this.size = size;
-        }
-
-        @Override
-        public long getCurrentDataVersion() {
-            return 0;
-        }
-
-        @Override
-        public int getSerializedSize() {
-            return size;
-        }
-
-        @Override
-        public void serialize(byte[] data, WritableSequentialData out) {
-            out.writeBytes(data);
-        }
-
-        @Override
-        public byte[] deserialize(ReadableSequentialData in) {
-            final byte[] r = new byte[size];
-            in.readBytes(r);
-            return r;
         }
     }
 }

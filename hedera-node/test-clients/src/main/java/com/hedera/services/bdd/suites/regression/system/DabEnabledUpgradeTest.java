@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.configVersionOf;
-import static java.lang.Integer.MAX_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -88,7 +87,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * the config version is still zero.
  */
 @Tag(UPGRADE)
-@Order(MAX_VALUE)
+@Order(Integer.MAX_VALUE - 2)
 @DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
 @OrderedInIsolation
@@ -112,7 +111,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         testLifecycle.doAdhoc(
                 ensureStakingActivated(),
                 touchBalanceOf(NODE0_STAKER, NODE1_STAKER, NODE2_STAKER, NODE3_STAKER),
-                waitUntilStartOfNextStakingPeriod(1),
+                waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                 given(() -> gossipCertificates = generateX509Certificates(1)));
     }
 
@@ -145,14 +144,14 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
         @HapiTest
         @Order(0)
-        @DisplayName("exports an address book without node1 and pays its staker no rewards")
+        @DisplayName("exports an address book without node1 and pays its stake no rewards")
         final Stream<DynamicTest> removedNodeTest() {
             return hapiTest(
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
                     upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
-                    waitUntilStartOfNextStakingPeriod(1),
+                    waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
         }
@@ -170,6 +169,31 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
     @Nested
     @Order(2)
+    @DisplayName("after removing last node 3")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class AfterRemovingNode3 {
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.doAdhoc(nodeDelete("3"));
+        }
+
+        @HapiTest
+        @Order(0)
+        @DisplayName("exports an address book without node 3 and pays its stake no rewards")
+        final Stream<DynamicTest> removedNodeTest() {
+            return hapiTest(
+                    prepareFakeUpgrade(),
+                    validateUpgradeAddressBooks(
+                            addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
+                    waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
+                    touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
+                    touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
+        }
+    }
+
+    @Nested
+    @Order(3)
     @DisplayName("after adding node4")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AfterAddingNode4 {

@@ -8,7 +8,7 @@ option java_multiple_files = true;
 message HashRecord {
 
     // Virtual node path
-    optional uint64 path = 1;
+    optional fixed64 path = 1;
 
     // Hash. Always DigestType.SHA_384 for now
     bytes hash = 2;

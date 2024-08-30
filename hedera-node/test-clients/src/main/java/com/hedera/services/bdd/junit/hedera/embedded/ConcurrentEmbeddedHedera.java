@@ -154,7 +154,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             })
                             .toList();
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
-                    hedera.handleWorkflow().handleRound(state, platformState, round);
+                    hedera.handleWorkflow().handleRound(state, round);
+                    hedera.onSealConsensusRound(round, state);
                     prehandledEvents.clear();
                 }
                 // Now drain all events that will go in the next round and pre-handle them
