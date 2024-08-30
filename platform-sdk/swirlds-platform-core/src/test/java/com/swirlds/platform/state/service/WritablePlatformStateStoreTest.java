@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
@@ -44,11 +45,14 @@ class WritablePlatformStateStoreTest {
 
     private WritablePlatformStateStore store;
 
+    private Randotron randotron;
+
     @BeforeEach
     void setUp() {
+        randotron = Randotron.create();
         SingletonNode<PlatformState> platformSingleton =
                 new SingletonNode<>(PlatformStateService.NAME, PLATFORM_STATE_KEY, 0, PlatformState.PROTOBUF, null);
-        platformSingleton.setValue(toPbjPlatformState(randomPlatformState()));
+        platformSingleton.setValue(toPbjPlatformState(randomPlatformState(randotron)));
 
         when(writableStates.<PlatformState>getSingleton(PLATFORM_STATE_KEY))
                 .thenReturn(new WritableSingletonStateImpl<>(PLATFORM_STATE_KEY, platformSingleton));
@@ -57,7 +61,7 @@ class WritablePlatformStateStoreTest {
 
     @Test
     void verifySetAllFrom() {
-        final var platformState = randomPlatformState();
+        final var platformState = randomPlatformState(randotron);
         store.setAllFrom(platformState);
         assertEquals(
                 platformState.getCreationSoftwareVersion().getPbjSemanticVersion(),
@@ -90,14 +94,14 @@ class WritablePlatformStateStoreTest {
 
     @Test
     void verifyAddressBook() {
-        final var addressBook = PbjConverterTest.randomAddressBook();
+        final var addressBook = PbjConverterTest.randomAddressBook(randotron);
         store.setAddressBook(addressBook);
         assertEquals(addressBook, store.getAddressBook());
     }
 
     @Test
     void verifyPreviousAddressBook() {
-        final var addressBook = PbjConverterTest.randomAddressBook();
+        final var addressBook = PbjConverterTest.randomAddressBook(randotron);
         store.setPreviousAddressBook(addressBook);
         assertEquals(addressBook, store.getPreviousAddressBook());
     }
@@ -132,7 +136,7 @@ class WritablePlatformStateStoreTest {
 
     @Test
     void verifySnapshot() {
-        final var platformState = randomPlatformState();
+        final var platformState = randomPlatformState(randotron);
         store.setSnapshot(platformState.getSnapshot());
         assertEquals(platformState.getSnapshot(), store.getSnapshot());
     }
