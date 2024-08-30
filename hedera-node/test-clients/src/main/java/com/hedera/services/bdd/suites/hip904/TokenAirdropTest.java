@@ -1442,14 +1442,10 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return hapiTest(
                     cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                    withOpContext((spec, opLog) -> {
-                        spec.registry()
-                                .saveTokenId(
-                                        FUNGIBLE_TOKEN_A,
-                                        TokenID.newBuilder()
-                                                .setTokenNum(5555555L)
-                                                .build());
-                    }),
+                    withOpContext((spec, opLog) -> spec.registry()
+                            .saveTokenId(
+                                    FUNGIBLE_TOKEN_A,
+                                    TokenID.newBuilder().setTokenNum(5555555L).build())),
                     tokenAirdrop(moving(50L, FUNGIBLE_TOKEN_A).between(ALICE, BOB))
                             .signedByPayerAnd(ALICE)
                             .hasKnownStatus(INVALID_TOKEN_ID));
@@ -1474,14 +1470,10 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .name(NON_FUNGIBLE_TOKEN_A)
                             .supplyKey(nftKey),
                     tokenAssociate(ALICE, NON_FUNGIBLE_TOKEN_A),
-                    withOpContext((spec, opLog) -> {
-                        spec.registry()
-                                .saveTokenId(
-                                        NON_FUNGIBLE_TOKEN_A,
-                                        TokenID.newBuilder()
-                                                .setTokenNum(5555555L)
-                                                .build());
-                    }),
+                    withOpContext((spec, opLog) -> spec.registry()
+                            .saveTokenId(
+                                    NON_FUNGIBLE_TOKEN_A,
+                                    TokenID.newBuilder().setTokenNum(5555555L).build())),
                     tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN_A, 1L)
                                     .between(ALICE, BOB))
                             .signedByPayerAnd(ALICE)
