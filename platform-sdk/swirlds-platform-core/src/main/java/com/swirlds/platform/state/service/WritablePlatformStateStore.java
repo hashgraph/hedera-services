@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.service;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjConsensusSnapshot;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
@@ -31,6 +32,7 @@ import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -243,8 +245,13 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
         update(stateBuilder.build());
     }
 
-    private void update(@NonNull final PlatformState stateBuilder) {
-        this.state.put(stateBuilder);
+    private void update(@NonNull final PlatformState platformState) {
+        this.state.put(platformState);
+        BootstrapUtils.logger.info(
+                STARTUP.getMarker(),
+                "Put platform state with software version {}",
+                platformState.creationSoftwareVersionOrThrow(),
+                new Exception());
         if (writableStates instanceof CommittableWritableStates committableWritableStates) {
             committableWritableStates.commit();
         }

@@ -559,7 +559,6 @@ public final class PlatformBuilder {
             final PlatformStateAccessor platformState = state.getPlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
-
                 v.setPreviousAddressBook(
                         addressBookInitializer.getPreviousAddressBook() == null
                                 ? null

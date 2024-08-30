@@ -84,7 +84,7 @@ public final class BootstrapUtils {
     /**
      * The logger for this class
      */
-    private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
+    public static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 
@@ -197,6 +197,13 @@ public final class BootstrapUtils {
                 : loadedSignedState.getState().getPlatformState().getCreationSoftwareVersion();
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
         final boolean softwareUpgrade;
+        logger.info(
+                STARTUP.getMarker(),
+                "Detecting upgrade from previous software version {} ({}), current version {} ({}).",
+                loadedSoftwareVersion,
+                System.identityHashCode(loadedSoftwareVersion),
+                appVersion,
+                System.identityHashCode(appVersion));
         if (versionComparison < 0) {
             throw new IllegalStateException(
                     "The current software version `" + appVersion + "` is prior to the software version `"
@@ -210,10 +217,7 @@ public final class BootstrapUtils {
                     appVersion);
         } else {
             softwareUpgrade = false;
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Not upgrading software, current software is version {}.",
-                    loadedSoftwareVersion);
+            logger.info(STARTUP.getMarker(), "Not upgrading software, current software is version {}.", appVersion);
         }
         return softwareUpgrade;
     }
