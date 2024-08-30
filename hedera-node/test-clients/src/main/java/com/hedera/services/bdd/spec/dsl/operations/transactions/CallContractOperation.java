@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 
 /**
  * Represents a call to a smart contract.
@@ -39,6 +40,7 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     private final Object[] parameters;
     private long gas = DEFAULT_GAS;
     private long sendValue;
+    private Consumer<Object[]> resultObserver;
 
     public CallContractOperation(
             @NonNull final SpecContract target, @NonNull final String function, @NonNull final Object... parameters) {
@@ -54,6 +56,7 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
         final var op = contractCall(
                         target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters))
                 .sending(sendValue)
+                .exposingResultTo(resultObserver)
                 .gas(gas);
         maybeAssertions().ifPresent(a -> a.accept(op));
         return op;
@@ -76,6 +79,11 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
      */
     public CallContractOperation sending(final long value) {
         this.sendValue = value;
+        return this;
+    }
+
+    public CallContractOperation exposingResultTo(final Consumer<Object[]> observer) {
+        this.resultObserver = observer;
         return this;
     }
 

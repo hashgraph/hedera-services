@@ -1122,14 +1122,258 @@ public class CreatePrecompileSuite {
     @Contract(contract = "CreateTokenVTwo", creationGas = 1_000_000L)
     static SpecContract createTokenV2;
 
+    @Contract(contract = "TokenInfoContract", creationGas = 1_000_000L)
+    static SpecContract tokenInfoContract;
+
     @HapiTest
     final Stream<DynamicTest> createTokenV2HappyPath() {
-        return hapiTest(
-                createTokenV2
-                        .call("createTokenWithMetadata")
-                        .sending(2000 * ONE_HBAR)
-                        .gas(1_000_000L)
-                        .andAssert(txn -> txn.via("asd")),
-                getTxnRecord("asd").logged());
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createTokenWithMetadata")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createToken")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenV2WithKeyHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createTokenWithMetadataAndKey")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenV2WithCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createTokenWithMetadataAndCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenWithCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createTokenWithCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createTokenV2WithKeyAndyCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createTokenWithMetadataAndKeyAndCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNft")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftWithMetaHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNftWithMetadata")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftWithMetaAndKeyHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNftWithMetaAndKey")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(5_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftWithCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNftWithCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftWithMetaAndCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNftWithMetadataAndCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNftWithMetaAndKeyAndCustomFeesHappyPath() {
+        final AtomicReference<Address> newToken = new AtomicReference<>();
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var create = createTokenV2
+                    .call("createNftWithMetaAndKeyAndCustomFees")
+                    .sending(2000 * ONE_HBAR)
+                    .gas(1_000_000L)
+                    .exposingResultTo(res -> newToken.set((Address) res[0]));
+            allRunFor(spec, create);
+            // TODO: Re-enable this once we have the view calls for token info with metadata
+            //            final var getInfo = tokenInfoContract.call(
+            //                    "getInformationForToken",
+            //                    newToken.get())
+            //                    .gas(100_000L)
+            //                    .andAssert(txn ->
+            // txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED).via("getInfo").logged());
+            //            allRunFor(spec, getInfo);
+        }));
     }
 }
