@@ -49,11 +49,8 @@ javaModules {
         module("hedera-evm-impl") { group = "com.hedera.evm"}
 
         // Configure 'artifact' for projects where the folder does not correspond to the artifact name
-        module("cli-clients") { artifact = "services-cli" }
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
-        module("hedera-addressbook-service") { artifact = "app-service-addressbook" }
-        module("hedera-addressbook-service-impl") { artifact = "app-service-addressbook-impl" }
         module("hedera-app") { artifact = "app" }
         module("hedera-app-spi") { artifact = "app-spi" }
         module("hedera-config") { artifact = "config" }
