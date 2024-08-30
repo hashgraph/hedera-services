@@ -104,7 +104,6 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
-    requires com.hedera.evm;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;
