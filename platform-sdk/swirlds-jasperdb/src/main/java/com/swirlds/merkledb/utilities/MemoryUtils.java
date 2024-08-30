@@ -16,10 +16,12 @@
 
 package com.swirlds.merkledb.utilities;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.util.Objects;
 import sun.misc.Unsafe;
 
 public class MemoryUtils {
@@ -48,33 +50,47 @@ public class MemoryUtils {
         }
     }
 
-    public static void closeMmapBuffer(final MappedByteBuffer buffer) {
-        assert buffer != null;
+    /**
+     * Releases the mapped byte buffer.
+     *
+     * @param buffer the buffer to release, must not be null
+     */
+    public static void closeMmapBuffer(@NonNull final MappedByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
         UNSAFE.invokeCleaner(buffer);
     }
 
-    public static void closeDirectByteBuffer(final ByteBuffer buffer) {
-        assert buffer != null;
+    /**
+     * Releases the direct byte buffer.
+     *
+     * @param buffer the buffer to release, must not be null, must be direct
+     */
+    public static void closeDirectByteBuffer(@NonNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Byte buffer is not direct");
+        }
         UNSAFE.invokeCleaner(buffer);
     }
 
-    public static long getLongVolatile(final ByteBuffer buffer, final long offset) {
+    public static long getLongVolatile(@NonNull final ByteBuffer buffer, final long offset) {
         final long address = bufferAddress(buffer);
         return UNSAFE.getLongVolatile(null, address + offset);
     }
 
-    public static void putLongVolatile(final ByteBuffer buffer, final long offset, final long value) {
+    public static void putLongVolatile(@NonNull final ByteBuffer buffer, final long offset, final long value) {
         final long address = bufferAddress(buffer);
         UNSAFE.putLongVolatile(null, address + offset, value);
     }
 
     public static boolean compareAndSwapLong(
-            final ByteBuffer buffer, final long offset, final long expected, final long value) {
+            @NonNull final ByteBuffer buffer, final long offset, final long expected, final long value) {
         final long address = bufferAddress(buffer);
         return UNSAFE.compareAndSwapLong(null, address + offset, expected, value);
     }
 
-    public static void setMemory(final ByteBuffer buffer, final long offset, final long len, final byte value) {
+    public static void setMemory(
+            @NonNull final ByteBuffer buffer, final long offset, final long len, final byte value) {
         final long address = bufferAddress(buffer);
         UNSAFE.setMemory(address + offset, len, value);
     }
@@ -85,7 +101,8 @@ public class MemoryUtils {
      * @param buffer that wraps the underlying storage.
      * @return the memory address at which the buffer storage begins.
      */
-    private static long bufferAddress(final Buffer buffer) {
+    private static long bufferAddress(@NonNull final Buffer buffer) {
+        Objects.requireNonNull(buffer);
         if (!buffer.isDirect()) {
             throw new IllegalArgumentException("buffer.isDirect() must be true");
         }
