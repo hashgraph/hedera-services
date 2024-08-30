@@ -346,18 +346,18 @@ This module provides cryptography primitives to create Public Keys, Private Keys
 A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
 For example, two different configurations might consist of a `BLS_12_381` curve using `G₁` of the pairing to generate public key elements or `G₂` for the same purpose.
 
-###### `PairingPrivateKey`
+###### `EcPrivateKey`
 
 A private key generated using the pairings API. It is a Random `FieldElement` out of a 32 bytes seed.
 This class provides the following operations:
 - create a public key: It is the scalar multiplication of the private key and the `generator` `GroupElement` of the `Group` configured in the `SignatureSchema` for public keys.
 - sign a message: It is the scalar multiplication of the private key element, and the `hashToGroup` `GroupElement` from the message, of the `Group` configured in the `SignatureSchema` for signatures.
 
-###### `PairingPublicKey`
+###### `EcPublicKey`
 
 A public key generated using the pairings API. Under the hood it is a `GroupElement` meaning that is a point in the selected curve.
 
-###### `PairingSignature`
+###### `EcSignature`
 
 A signature generated with the private key that can be verified with the public key. Under the hood it is a `GroupElement` meaning that is a point in the selected curve.
 - verify against a public key and the original signed message: This operation uses the pairings operation and verifies that:
