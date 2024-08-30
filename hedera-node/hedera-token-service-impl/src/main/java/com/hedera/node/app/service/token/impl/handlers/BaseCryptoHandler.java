@@ -37,7 +37,7 @@ public class BaseCryptoHandler {
     }
 
     /**
-     * Checks that an accountId represents one of the staking accounts
+     * Checks that an accountId represents one of the staking accounts.
      * @param configuration the configuration
      * @param accountID    the accountID to check
      * @return {@code true} if the accountID represents one of the staking accounts, {@code false} otherwise
@@ -50,7 +50,7 @@ public class BaseCryptoHandler {
     }
 
     /**
-     * Checks if the accountID has an account number or alias
+     * Checks if the accountID has an account number or alias.
      * @param accountID   the accountID to check
      * @return {@code true} if the accountID has an account number or alias, {@code false} otherwise
      */

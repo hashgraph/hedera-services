@@ -62,7 +62,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
      *
      * @param id given id for the schedule
      *
-     * @return The Schedule corresponding to the id provided, or null if there is no such schedule.
+     * @return The Schedule corresponding to the id provided, or null if there is no such schedule
      */
     @Override
     @Nullable

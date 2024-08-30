@@ -32,7 +32,7 @@ public interface ReadableAirdropStore {
      * @param airdropId given airdrop id
      * @return {@link AccountPendingAirdrop} object if successfully fetched or {@code null} if the airdrop doesn't exist
      */
-    AccountPendingAirdrop get(@NonNull final PendingAirdropId airdropId);
+    AccountPendingAirdrop get(@NonNull PendingAirdropId airdropId);
 
     /**
      * Returns whether a given PendingAirdropId exists in state.
@@ -40,7 +40,7 @@ public interface ReadableAirdropStore {
      * @param airdropId - the id of the airdrop
      * @return true if the airdrop exists, false otherwise
      */
-    boolean exists(@NonNull final PendingAirdropId airdropId);
+    boolean exists(@NonNull PendingAirdropId airdropId);
 
     /**
      * Returns the number of entities in the pending airdrops state.

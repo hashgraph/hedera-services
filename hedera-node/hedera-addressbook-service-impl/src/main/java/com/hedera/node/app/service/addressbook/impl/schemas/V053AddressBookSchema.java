@@ -51,7 +51,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * General schema for the addressbook service
+ * General schema for the addressbook service.
  * {@code V052AddressBookSchema} is used for migrating the address book on Version 0.52.0
  */
 public class V053AddressBookSchema extends Schema {

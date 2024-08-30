@@ -95,11 +95,12 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
      *
      * @param fileID the file id
      */
-    @SuppressWarnings({"StatementWithEmptyBody"})
+    @SuppressWarnings("StatementWithEmptyBody")
     public void resetFileContents(@NonNull final FileID fileID) {
         final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
-        while (upgradeState.removeIf(TRUE_PREDICATE) != null)
-            ;
+        while (upgradeState.removeIf(TRUE_PREDICATE) != null) {
+            // no-op
+        }
     }
 
     private static class TruePredicate implements Predicate<ProtoBytes> {

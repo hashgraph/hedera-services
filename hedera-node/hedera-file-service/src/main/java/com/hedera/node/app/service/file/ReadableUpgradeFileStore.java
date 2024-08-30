@@ -49,15 +49,15 @@ public interface ReadableUpgradeFileStore {
     /**
      * Retrieves but does not remove the element at the head of the queue, or returns null if the queue is empty.
      *
-     * @return The element at the head of the queue, or null if the queue is empty.
+     * @return The element at the head of the queue, or null if the queue is empty
      */
     @Nullable
-    File peek(final FileID fileID);
+    File peek(FileID fileID);
 
     /**
      * Gets the full contents of the file from state.
-     * @return The full contents of the file.
-     * @throws IOException if the file cannot be read.
+     * @return The full contents of the file
+     * @throws IOException if the file cannot be read
      */
-    Bytes getFull(final FileID fileID) throws IOException;
+    Bytes getFull(FileID fileID) throws IOException;
 }
