@@ -91,7 +91,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final long INITIAL_BALANCE = 1000L;
     private static final String CIVILIAN = "somebody";
     private static final String SPONSOR = "autoCreateSponsor";
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
     private static final String HBAR_XFER = "hbarXfer";
     private static final String FT_XFER = "ftXfer";
     private static final String NFT_XFER = "nftXfer";

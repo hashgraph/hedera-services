@@ -161,9 +161,9 @@ public class AutoAccountCreationSuite {
     private static final String SPONSOR = "autoCreateSponsor";
     public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 39418863L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
+    private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
+    private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 39_376_619L;
     private static final long EXPECTED_ASSOCIATION_FEE = 41666666L;
 
     public static final String CRYPTO_TRANSFER_RECEIVER = "cryptoTransferReceiver";
