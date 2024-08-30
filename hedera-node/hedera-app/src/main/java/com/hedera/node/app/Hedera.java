@@ -115,6 +115,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -249,6 +250,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     private final Supplier<MerkleStateRoot> stateRootSupplier;
 
+    /**
+     * The action to take, if any, when a consensus round is sealed.
+     */
+    private final BiConsumer<Round, State> onSealConsensusRound;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -286,7 +292,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         """,
                 HEDERA);
         bootstrapConfigProvider = new BootstrapConfigProviderImpl();
-        final Configuration bootstrapConfig = bootstrapConfigProvider.getConfiguration();
+        final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         version = getNodeStartupVersion(bootstrapConfig);
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
@@ -329,6 +335,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             final Supplier<MerkleStateRoot> baseSupplier =
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), versionFactory);
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
+            onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(MerkleStateRoot.class, stateRootSupplier));
@@ -686,7 +693,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
         requireNonNull(state);
         requireNonNull(round);
-        // FUTURE - daggerApp.blockStreamManager().endRound(state, round.getRoundNum());
+        onSealConsensusRound.accept(round, state);
     }
 
     /*==================================================================================================================
@@ -871,6 +878,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         root.registerCommitListener(boundaryStateChangeListener);
         root.registerCommitListener(kvStateChangeListener);
         return root;
+    }
+
+    private void manageBlockEndRound(@NonNull final Round round, @NonNull final State state) {
+        daggerApp.blockStreamManager().endRound(state, round.getRoundNum());
     }
 
     /**
