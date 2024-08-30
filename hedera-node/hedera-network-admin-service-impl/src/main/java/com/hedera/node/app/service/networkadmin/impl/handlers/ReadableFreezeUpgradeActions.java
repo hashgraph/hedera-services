@@ -270,11 +270,11 @@ public class ReadableFreezeUpgradeActions {
             if (!FileUtils.isDirectory(artifactsDir)) {
                 FileUtils.forceMkdir(artifactsDir);
             }
+            FileUtils.cleanDirectory(artifactsDir);
             if (!FileUtils.isDirectory(keysDir)) {
                 FileUtils.forceMkdir(keysDir);
             }
-            FileUtils.cleanDirectory(artifactsDir);
-            if (!keysLoc.startsWith(artifactsLoc)) FileUtils.cleanDirectory(keysDir);
+            FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null && nodesConfig.enableDAB()) {
