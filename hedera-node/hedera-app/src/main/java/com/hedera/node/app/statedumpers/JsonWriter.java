@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class JsonWriter {
@@ -25,6 +26,17 @@ public class JsonWriter {
 
         try {
             writer.writeValue(new File(filePath), map);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void write(List<?> list, String filePath) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+
+        try {
+            writer.writeValue(new File(filePath), list);
         } catch (IOException e) {
             e.printStackTrace();
         }

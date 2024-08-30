@@ -673,6 +673,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * called.
      */
     public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state) {
+        dumpModChildrenFrom(state, MOD_POST_EVENT_STREAM_REPLAY, Set.of(MerkleStateChild.ACCOUNTS));
         daggerApp.workingStateAccessor().setState(state);
         daggerApp.handleWorkflow().handleRound(state, round);
     }

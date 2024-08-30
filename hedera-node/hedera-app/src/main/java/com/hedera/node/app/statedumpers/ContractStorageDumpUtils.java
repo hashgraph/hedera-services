@@ -102,14 +102,4 @@ public class ContractStorageDumpUtils {
         return answer;
     }
 
-    public record Contracts(
-            @NonNull Collection</*@NonNull*/ BBMContract> contracts,
-            @NonNull Collection<Integer> deletedContracts,
-            int registeredContractsCount) {}
-
-    public enum Validity {
-        ACTIVE,
-        DELETED
-    }
-
 }

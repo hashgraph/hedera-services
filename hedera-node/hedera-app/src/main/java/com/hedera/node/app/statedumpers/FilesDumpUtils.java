@@ -19,11 +19,7 @@ package com.hedera.node.app.statedumpers;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.statedumpers.legacy.HFileMeta;
-import com.hedera.node.app.statedumpers.legacy.JKey;
-import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;

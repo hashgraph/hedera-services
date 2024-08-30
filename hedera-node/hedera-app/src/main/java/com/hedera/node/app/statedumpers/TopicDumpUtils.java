@@ -16,16 +16,10 @@
 
 package com.hedera.node.app.statedumpers;
 
-import static com.hedera.node.app.statedumpers.utils.LegacyTypeUtils.fromPbjKey;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.statedumpers.legacy.EntityId;
-import com.hedera.node.app.statedumpers.legacy.JKey;
-import com.hedera.node.app.statedumpers.topics.BBMTopic;
-import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;

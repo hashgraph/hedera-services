@@ -18,13 +18,21 @@ package com.hedera.node.app.statedumpers;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -41,7 +49,18 @@ public class AccountDumpUtils {
             @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
             @NonNull final DumpCheckpoint checkpoint, final JsonWriter jsonWriter) {
         final var accountArr = gatherAccounts(accounts);
-        jsonWriter.write(accountArr, path.toString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Bytes.class, new BytesSerializer());
+        mapper.registerModule(module);
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        try {
+            writer.writeValue(path.toFile(), accountArr);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         System.out.printf("Accounts with size %d dumped at checkpoint %s%n", accountArr.length, checkpoint.name());
     }
 

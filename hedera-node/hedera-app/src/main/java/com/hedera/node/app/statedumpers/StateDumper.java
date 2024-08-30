@@ -104,20 +104,20 @@ import java.util.Set;
  * A utility class for dumping the state of the {@link MerkleStateRoot} to a directory.
  */
 public class StateDumper {
-    private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
-    private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
-    private static final String SEMANTIC_FILES = "files.txt";
-    private static final String SEMANTIC_ACCOUNTS = "accounts.txt";
-    private static final String SEMANTIC_CONTRACT_BYTECODES = "contractBytecodes.txt";
-    private static final String SEMANTIC_TOPICS = "topics.txt";
-    private static final String SEMANTIC_SCHEDULED_TRANSACTIONS = "scheduledTransactions.txt";
-    private static final String SEMANTIC_TOKEN_TYPE = "tokenTypes.txt";
+    private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.json";
+    private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.json";
+    private static final String SEMANTIC_FILES = "files.json";
+    private static final String SEMANTIC_ACCOUNTS = "accounts.json";
+    private static final String SEMANTIC_CONTRACT_BYTECODES = "contractBytecodes.json";
+    private static final String SEMANTIC_TOPICS = "topics.json";
+    private static final String SEMANTIC_SCHEDULED_TRANSACTIONS = "scheduledTransactions.json";
+    private static final String SEMANTIC_TOKEN_TYPE = "tokenTypes.json";
 
-    private static final String SEMANTIC_BLOCK = "blockInfo.txt";
-    private static final String SEMANTIC_STAKING_INFO = "stakingInfo.txt";
-    private static final String SEMANTIC_STAKING_REWARDS = "stakingRewards.txt";
-    private static final String SEMANTIC_TXN_RECORD_QUEUE = "transactionRecords.txt";
-    private static final String SEMANTIC_CONGESTION = "congestion.txt";
+    private static final String SEMANTIC_BLOCK = "blockInfo.json";
+    private static final String SEMANTIC_STAKING_INFO = "stakingInfo.json";
+    private static final String SEMANTIC_STAKING_REWARDS = "stakingRewards.json";
+    private static final String SEMANTIC_TXN_RECORD_QUEUE = "transactionRecords.json";
+    private static final String SEMANTIC_CONGESTION = "congestion.json";
 
     public static void dumpModChildrenFrom(
             @NonNull final State state,
