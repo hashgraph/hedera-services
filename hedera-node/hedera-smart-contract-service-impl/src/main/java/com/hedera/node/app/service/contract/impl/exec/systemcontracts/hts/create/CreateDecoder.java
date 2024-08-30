@@ -374,7 +374,7 @@ public class CreateDecoder {
             @NonNull final AccountID senderId,
             @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.decodeCall(encoded);
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithMetadataAndCustomFees(
                 call.get(HEDERA_TOKEN),
                 call.get(NFT_FIXED_FEE),
