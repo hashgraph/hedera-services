@@ -196,14 +196,14 @@ class EventDeduplicatorTests {
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
-                final GossipEvent gossipEvent = submittedEvents
-                        .get(random.nextInt(submittedEvents.size()))
-                        .getGossipEvent();
-                final PlatformEvent duplicateEvent = new PlatformEvent(new GossipEvent.Builder()
-                        .eventCore(gossipEvent.eventCore())
-                        .signature(randomSignatureBytes(random)) // randomize the signature
-                        .eventTransaction(gossipEvent.eventTransaction())
-                        .build());
+                final PlatformEvent platformEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
+                final PlatformEvent duplicateEvent = new PlatformEvent(
+                        platformEvent.getOldSoftwareVersion(),
+                        new GossipEvent.Builder()
+                                .eventCore(platformEvent.getGossipEvent().eventCore())
+                                .signature(randomSignatureBytes(random)) // randomize the signature
+                                .eventTransaction(platformEvent.getGossipEvent().eventTransaction())
+                                .build());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient) {

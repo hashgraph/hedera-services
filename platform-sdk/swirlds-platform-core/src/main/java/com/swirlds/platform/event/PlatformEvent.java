@@ -33,7 +33,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventCoreUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -77,6 +77,11 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     private EventDescriptorWrapper descriptor;
 
     private Instant timeReceived;
+
+    /**
+     * the software version of the node that created this event.
+     */
+    private SoftwareVersion softwareVersion;
 
     /**
      * The sequence number of an event before it is added to the write queue.
@@ -123,8 +128,10 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
-        this(new GossipEvent(
-                unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions()));
+        this(
+                unsignedEvent.getSoftwareVersion(),
+                new GossipEvent(
+                        unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions()));
     }
 
     /**
@@ -132,14 +139,17 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final Bytes signature) {
-        this(new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions()));
+        this(
+                unsignedEvent.getSoftwareVersion(),
+                new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions()));
     }
 
     /**
      * @param gossipEvent the gossip event
      */
-    public PlatformEvent(final GossipEvent gossipEvent) {
-        this.gossipEvent = gossipEvent;
+    public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
+        this.gossipEvent = Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null");
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
@@ -158,7 +168,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
+        final PlatformEvent platformEvent = new PlatformEvent(softwareVersion, gossipEvent);
         platformEvent.setHash(getHash());
         return platformEvent;
     }
@@ -192,7 +202,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
 
         EventSerializationUtils.serializeEvent(
                 out,
-                new BasicSoftwareVersion(getSoftwareVersion().major()),
+                softwareVersion,
                 getEventCore(),
                 getSelfParent(),
                 getOtherParents(),
@@ -270,10 +280,13 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        if (getEventCore().version() != null) {
-            return getEventCore().version();
-        }
-        throw new IllegalStateException("Software version not set");
+        return softwareVersion.getPbjSemanticVersion();
+    }
+
+    @NonNull
+    @Deprecated(forRemoval = true)
+    public SoftwareVersion getOldSoftwareVersion() {
+        return softwareVersion;
     }
 
     /**
