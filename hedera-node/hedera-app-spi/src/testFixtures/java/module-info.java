@@ -3,6 +3,7 @@ module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures.state;
     exports com.hedera.node.app.spi.fixtures.workflows;
     exports com.hedera.node.app.spi.fixtures.util;
+    exports com.hedera.node.app.spi.fixtures.info;
 
     requires transitive com.hedera.node.app.service.token; // TMP until FakePreHandleContext can be removed
     requires transitive com.hedera.node.app.spi;

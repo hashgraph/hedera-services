@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -34,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
@@ -48,6 +51,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
@@ -193,5 +197,17 @@ public class NodeDeleteTest {
                         .signedBy("payer", "wrongKey")
                         .hasPrecheck(BUSY),
                 nodeDelete(nodeName));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.enableDAB"})
+    @DisplayName("DAB enable test")
+    final Stream<DynamicTest> checkDABEnable() throws CertificateEncodingException {
+        final String nodeName = "mytestnode";
+
+        return hapiTest(
+                nodeCreate(nodeName)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                overriding("nodes.enableDAB", "false"),
+                nodeDelete(nodeName).hasPrecheck(NOT_SUPPORTED));
     }
 }

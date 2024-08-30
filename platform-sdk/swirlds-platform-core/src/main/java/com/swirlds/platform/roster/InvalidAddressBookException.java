@@ -17,7 +17,7 @@
 package com.swirlds.platform.roster;
 
 /**
- * An exception thrown by the RosterValidator when a given Roster is invalid.
+ * An exception thrown by the RosterRetriever.buildRoster() when a given AddressBook is invalid.
  */
 public class InvalidAddressBookException extends RuntimeException {
     /**

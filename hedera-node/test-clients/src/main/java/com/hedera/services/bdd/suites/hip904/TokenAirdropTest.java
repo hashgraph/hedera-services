@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -58,6 +59,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -99,6 +101,7 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.EmbeddedReason;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -110,6 +113,7 @@ import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -129,9 +133,16 @@ public class TokenAirdropTest extends TokenAirdropBase {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         lifecycle.overrideInClass(Map.of(
-                "tokens.airdrops.enabled", "true",
-                "tokens.airdrops.claim.enabled", "true",
-                "entities.unlimitedAutoAssociationsEnabled", "true"));
+                "tokens.airdrops.enabled", "false",
+                "tokens.airdrops.claim.enabled", "false",
+                "entities.unlimitedAutoAssociationsEnabled", "false"));
+        // create some entities with disabled airdrops
+        lifecycle.doAdhoc(setUpEntitiesPreHIP904());
+        // enable airdrops
+        lifecycle.doAdhoc(
+                overriding("tokens.airdrops.enabled", "true"),
+                overriding("tokens.airdrops.claim.enabled", "true"),
+                overriding("entities.unlimitedAutoAssociationsEnabled", "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
 
@@ -336,6 +347,116 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         validateChargedUsd("second airdrop", 0.1, 1));
             }
 
+            // AIRDROP_17
+            @HapiTest
+            final Stream<DynamicTest> transferMultipleFtAndNftToEOAWithNoFreeAutoAssociationsAccountResultsInPending() {
+                final String NFT_FOR_MULTIPLE_PENDING_TRANSFER = "nftForMultiplePendingTransfer";
+                final String FT_FOR_MULTIPLE_PENDING_TRANSFER = "ftForMultiplePendingTransfer";
+                var nftSupplyKeyForMultipleTransfers = "nftSupplyKeyForMultipleTransfer";
+                return defaultHapiSpec("Send multiple FT and NFT from EOA to Account without free Auto-Associations")
+                        .given(
+                                tokenCreate(FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .treasury(OWNER)
+                                        .tokenType(FUNGIBLE_COMMON)
+                                        .initialSupply(1000L),
+                                newKeyNamed(nftSupplyKeyForMultipleTransfers),
+                                tokenCreate(NFT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .treasury(OWNER)
+                                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                                        .initialSupply(0L)
+                                        .name(NFT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .supplyKey(nftSupplyKeyForMultipleTransfers),
+                                mintToken(
+                                        NFT_FOR_MULTIPLE_PENDING_TRANSFER,
+                                        IntStream.range(0, 10)
+                                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                                .toList()))
+                        .when(
+                                tokenAirdrop(
+                                                moving(10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                                movingUnique(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 1L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("first airdrop"),
+                                tokenAirdrop(
+                                                moving(10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                                movingUnique(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 2L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("second airdrop"))
+                        .then(
+                                getTxnRecord("first airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))
+                                                .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
+                                                                NFT_FOR_MULTIPLE_PENDING_TRANSFER, 1L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                getTxnRecord("second airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                20, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))
+                                                .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
+                                                                NFT_FOR_MULTIPLE_PENDING_TRANSFER, 2L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                // assert account balances
+                                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance(FT_FOR_MULTIPLE_PENDING_TRANSFER, 0)
+                                        .hasTokenBalance(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 0),
+                                getAccountBalance(OWNER)
+                                        .hasTokenBalance(FT_FOR_MULTIPLE_PENDING_TRANSFER, 1000)
+                                        .hasTokenBalance(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 10L),
+                                validateChargedUsd("first airdrop", 0.2, 10),
+                                validateChargedUsd("second airdrop", 0.15, 10));
+            }
+
+            // AIRDROP_21
+            @HapiTest
+            final Stream<DynamicTest>
+                    transferOneFTTwiceFromEOAWithOneFTInBalanceToAccountWithNoFreeAutoAssociationsResultsInPendingAggregated() {
+                var sender = "sender";
+                return defaultHapiSpec(
+                                "Send one FT from EOA with only One FT in balance twice to Account without free Auto-Associations")
+                        .given(
+                                cryptoCreate(sender).maxAutomaticTokenAssociations(-1),
+                                cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
+                                        .payingWith(OWNER))
+                        .when(
+                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(sender)
+                                        .signedBy(sender)
+                                        .via("first airdrop"),
+                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(sender)
+                                        .signedBy(sender)
+                                        .via("second airdrop"))
+                        .then(
+                                getTxnRecord("first airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                1, FUNGIBLE_TOKEN)
+                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                getTxnRecord("second airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                2, FUNGIBLE_TOKEN)
+                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                // assert account balances
+                                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance(sender).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                                validateChargedUsd("first airdrop", 0.1, 10),
+                                validateChargedUsd("second airdrop", 0.05, 10));
+            }
+
             @HapiTest
             @DisplayName("with multiple tokens")
             final Stream<DynamicTest> tokenAirdropMultipleTokens() {
@@ -431,27 +552,28 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("that is alias with 0 free maxAutoAssociations")
         final Stream<DynamicTest> airdropToAliasWithNoFreeSlots() {
-            final var validAlias = "validAlias";
+            final var validAliasWithNoFreeSlots = "validAliasWithNoFreeSlots";
             return defaultHapiSpec("should go in pending state")
-                    .given(newKeyNamed(validAlias))
+                    .given(newKeyNamed(validAliasWithNoFreeSlots))
                     .when(
-                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAlias))
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L)
+                                            .between(OWNER, validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
-                                    .signedBy(OWNER, validAlias),
-                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)),
-                            cryptoUpdateAliased(validAlias)
+                                    .signedBy(OWNER, validAliasWithNoFreeSlots),
+                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasWithNoFreeSlots)),
+                            cryptoUpdateAliased(validAliasWithNoFreeSlots)
                                     .maxAutomaticAssociations(1)
-                                    .signedBy(validAlias, DEFAULT_PAYER))
+                                    .signedBy(validAliasWithNoFreeSlots, DEFAULT_PAYER))
                     .then(
-                            tokenAirdrop(moveFungibleTokensTo(validAlias))
+                            tokenAirdrop(moveFungibleTokensTo(validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
                                     .via("aliasAirdrop"),
                             getTxnRecord("aliasAirdrop")
                                     .hasPriority(recordWith()
-                                            .pendingAirdrops(
-                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAlias)))),
-                            getAccountBalance(validAlias).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                            getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moveFungibleTokensTo(validAliasWithNoFreeSlots)))),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
 
         @HapiTest
@@ -1001,6 +1123,35 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                             // Any new auto-creation needs to explicitly associate token. So it will be $0.1
                             validateChargedUsd("evmAddressReceiver", 0.1, 1));
+        }
+
+        // AIRDROP_19
+        @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
+        final Stream<DynamicTest>
+                airdropNFTToNonExistingEvmAddressWithoutAutoAssociationsResultingInPendingAirdropToHollowAccount() {
+            final var validAliasForAirdrop = "validAliasForAirdrop";
+            return defaultHapiSpec(
+                            "Send one NFT from EOA to EVM address without auto-associations resulting in the creation of Hollow account and pending airdrop")
+                    .given()
+                    .when(tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L).between(OWNER, validAliasForAirdrop))
+                            .payingWith(OWNER)
+                            .signedBy(OWNER)
+                            .via("EVM address NFT airdrop"))
+                    .then(
+                            getTxnRecord("EVM address NFT airdrop")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(
+                                                    includingNftPendingAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                                            .between(OWNER, validAliasForAirdrop)))),
+                            // assert hollow account
+                            getAliasedAccountInfo(validAliasForAirdrop)
+                                    .isHollow()
+                                    .hasAlreadyUsedAutomaticAssociations(0)
+                                    .hasMaxAutomaticAssociations(0)
+                                    .hasNoTokenRelationship(NON_FUNGIBLE_TOKEN),
+                            // assert owner account balance
+                            getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 15L),
+                            validateChargedUsd("EVM address NFT airdrop", 0.1, 10));
         }
 
         @HapiTest
