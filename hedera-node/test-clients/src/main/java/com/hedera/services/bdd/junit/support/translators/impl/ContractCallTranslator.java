@@ -36,7 +36,8 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(
-                parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> Optional.ofNullable(
+                parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) ->
+                        Optional.ofNullable(
                                 parts.transactionOutput())
                         .map(TransactionOutput::contractCallOrThrow)
                         .ifPresent(callContractOutput -> {
@@ -44,6 +45,7 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             recordBuilder.contractCallResult(result);
                             receiptBuilder.contractID(result.contractID());
                             sidecarRecords.addAll(callContractOutput.sidecars());
-                        }));
+                        })
+        );
     }
 }
