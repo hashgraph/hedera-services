@@ -197,13 +197,6 @@ public final class BootstrapUtils {
                 : loadedSignedState.getState().getPlatformState().getCreationSoftwareVersion();
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
         final boolean softwareUpgrade;
-        logger.info(
-                STARTUP.getMarker(),
-                "Detecting upgrade from previous software version {} ({}), current version {} ({}).",
-                loadedSoftwareVersion,
-                System.identityHashCode(loadedSoftwareVersion),
-                appVersion,
-                System.identityHashCode(appVersion));
         if (versionComparison < 0) {
             throw new IllegalStateException(
                     "The current software version `" + appVersion + "` is prior to the software version `"
