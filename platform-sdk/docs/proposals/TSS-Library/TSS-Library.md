@@ -353,18 +353,18 @@ This provides Public Keys, Private Keys, and Signatures and operations to produc
 A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
 For example, two different configurations might consist of a `BLS_12_381` curve using `G₁` of the pairing to generate public key elements or `G₂` for the same purpose.
 
-###### `EcPrivateKey`
+###### `PairingsPrivateKey`
 
 A private key generated using the pairings API. It is a Random `FieldElement` out of a 32 bytes seed.
 This class provides the following operations:
 - create a public key: It is the scalar multiplication of the private key and the `generator` `GroupElement` of the `Group` configured in the `SignatureSchema` for public keys.
 - sign a message: It is the scalar multiplication of the private key element, and the `hashToGroup` `GroupElement` from the message, of the `Group` configured in the `SignatureSchema` for signatures.
 
-###### `EcPublicKey`
+###### `PairingsPublicKey`
 
 A public key generated using the pairings API. Under the hood it is a `GroupElement` meaning that is a point in the selected curve.
 
-###### `EcSignature`
+###### `PairingsSignature`
 
 A signature generated with the private key that can be verified with the public key. Under the hood it is a `GroupElement` meaning that is a point in the selected curve.
 - verify against a public key and the original signed message: This operation uses the pairings operation and verifies that:
@@ -448,11 +448,25 @@ Represents a share in the system. It contains public information that can be use
 
 ###### `TssShareSignature`
 
+Represents a signature created from a TSSPrivateShare.
+
 ###### `TssParticipantDirectory`
+
+This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares.
 
 ###### `TssService`
 
-Class that implements all the TSS operations.
+Class that implements all the TSS operations allowing:
+* Generate TSSMessages out of a random PrivateShare
+* Generate TSSMessages out of a list of PrivateShares
+* Verify TSSMessages out of a ParticipantDirectory
+* Obtain PrivateShares out of TssMessages for each owned share
+* Aggregate PrivateShares</li>
+* Obtain PublicShares out of TssMessages for each share</li>
+* Aggregate PublicShares</li>
+* sign Messages</li>
+* verify Signatures</li>
+* Aggregate Signatures</li>
 
 ##### Usage
 
