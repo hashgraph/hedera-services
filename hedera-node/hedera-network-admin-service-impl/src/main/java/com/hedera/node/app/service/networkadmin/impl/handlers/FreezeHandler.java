@@ -44,7 +44,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -152,7 +151,6 @@ public class FreezeHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txn = context.body();
-        final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
         final StoreFactory storeFactory = context.storeFactory();
         final ReadableUpgradeFileStore upgradeFileStore = storeFactory.readableStore(ReadableUpgradeFileStore.class);
         final ReadableNodeStore nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
@@ -167,7 +165,7 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(
-                adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                context.configuration(), freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {

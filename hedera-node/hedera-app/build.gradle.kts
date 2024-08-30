@@ -17,8 +17,9 @@
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.benchmark")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-itest")
 }
 
 description = "Hedera Application - Implementation"

@@ -19,6 +19,7 @@ package com.swirlds.platform.test.fixtures.state;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -44,7 +45,9 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
@@ -86,7 +89,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     }
 
     @Override
-    public void initPlatformState(@NonNull final State state) {
+    public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
@@ -113,6 +116,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         given(mockMigrationContext.newStates()).willReturn(writableStates);
         schema.migrate(mockMigrationContext);
         ((CommittableWritableStates) writableStates).commit();
+        return Collections.emptyList();
     }
 
     @Override

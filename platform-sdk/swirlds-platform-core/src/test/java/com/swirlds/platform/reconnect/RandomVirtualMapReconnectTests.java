@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
@@ -46,7 +45,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -170,7 +168,6 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Random Operations Reconnect Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void randomOperationsReconnectTest(final RandomOperationsConfig config) throws Exception {
         final Random random = getRandomPrintSeed();
 

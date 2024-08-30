@@ -339,6 +339,7 @@ public record HederaEvmTransactionResult(
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .errorMessage(errorMessage)
+                .contractID(recipientId)
                 .signerNonce(signerNonce);
     }
 

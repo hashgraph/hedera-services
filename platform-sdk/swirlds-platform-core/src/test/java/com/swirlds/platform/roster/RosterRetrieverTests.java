@@ -107,6 +107,42 @@ public class RosterRetrieverTests {
                             .build()))
             .build();
 
+    private static final Roster ROSTER_FROM_ADDRESS_BOOK = Roster.newBuilder()
+            .rosters(List.of(
+                    RosterEntry.newBuilder()
+                            .nodeId(1L)
+                            .weight(1L)
+                            .gossipCaCertificate(getCertBytes(CERTIFICATE_1))
+                            .gossipEndpoint(List.of(
+                                    ServiceEndpoint.newBuilder()
+                                            .domainName("external1.com")
+                                            .port(111)
+                                            .build(),
+                                    ServiceEndpoint.newBuilder()
+                                            .ipAddressV4(Bytes.wrap(new byte[] {(byte) 192, (byte) 168, 0, 1}))
+                                            .port(222)
+                                            .build()))
+                            .build(),
+                    RosterEntry.newBuilder()
+                            .nodeId(2L)
+                            .weight(111L)
+                            .gossipCaCertificate(getCertBytes(CERTIFICATE_2))
+                            .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 55, 66}))
+                                    .port(222)
+                                    .build()))
+                            .build(),
+                    RosterEntry.newBuilder()
+                            .nodeId(3L)
+                            .weight(3L)
+                            .gossipCaCertificate(getCertBytes(CERTIFICATE_3))
+                            .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
+                                    .domainName("external3.com")
+                                    .port(111)
+                                    .build()))
+                            .build()))
+            .build();
+
     @Mock
     private State state;
 
@@ -197,9 +233,8 @@ public class RosterRetrieverTests {
 
     @ParameterizedTest
     @MethodSource("provideArgumentsForGetActiveRosterHash")
-    void testGetActiveRosterHash(final long round, final Bytes activeRosterHash) {
-        doReturn(round).when(consensusSnapshot).round();
-        assertEquals(activeRosterHash, RosterRetriever.getActiveRosterHash(state));
+    void testGetActiveRosterHashForRound(final long round, final Bytes activeRosterHash) {
+        assertEquals(activeRosterHash, RosterRetriever.getActiveRosterHash(state, round));
     }
 
     @Test
@@ -209,7 +244,7 @@ public class RosterRetrieverTests {
 
     private static Stream<Arguments> provideArgumentsForRetrieveParametrized() {
         return Stream.of(
-                // Arguments.of(554L, null),
+                Arguments.of(554L, ROSTER_FROM_ADDRESS_BOOK),
                 Arguments.of(555L, ROSTER_555),
                 Arguments.of(556L, ROSTER_555),
                 Arguments.of(665L, ROSTER_555),
@@ -227,54 +262,37 @@ public class RosterRetrieverTests {
         assertEquals(roster, RosterRetriever.retrieve(state));
     }
 
+    private static Stream<Arguments> provideArgumentsForRetrieveForRound() {
+        return Stream.of(
+                Arguments.of(554L, null),
+                Arguments.of(555L, ROSTER_555),
+                Arguments.of(556L, ROSTER_555),
+                Arguments.of(665L, ROSTER_555),
+                Arguments.of(666L, ROSTER_666),
+                Arguments.of(667L, ROSTER_666),
+                Arguments.of(776L, ROSTER_666),
+                Arguments.of(777L, ROSTER_777),
+                Arguments.of(778L, ROSTER_777));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForRetrieveForRound")
+    void testRetrieveForRound(final long round, final Roster roster) {
+        assertEquals(roster, RosterRetriever.retrieve(state, round));
+    }
+
     @Test
     void testRetrieveAddressBook() {
-        Roster expected = Roster.newBuilder()
-                .rosters(List.of(
-                        RosterEntry.newBuilder()
-                                .nodeId(1L)
-                                .weight(1L)
-                                .gossipCaCertificate(getCertBytes(CERTIFICATE_1))
-                                .gossipEndpoint(List.of(
-                                        ServiceEndpoint.newBuilder()
-                                                .domainName("external1.com")
-                                                .port(111)
-                                                .build(),
-                                        ServiceEndpoint.newBuilder()
-                                                .ipAddressV4(Bytes.wrap(new byte[] {(byte) 192, (byte) 168, 0, 1}))
-                                                .port(222)
-                                                .build()))
-                                .build(),
-                        RosterEntry.newBuilder()
-                                .nodeId(2L)
-                                .weight(111L)
-                                .gossipCaCertificate(getCertBytes(CERTIFICATE_2))
-                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
-                                        .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 55, 66}))
-                                        .port(222)
-                                        .build()))
-                                .build(),
-                        RosterEntry.newBuilder()
-                                .nodeId(3L)
-                                .weight(3L)
-                                .gossipCaCertificate(getCertBytes(CERTIFICATE_3))
-                                .gossipEndpoint(List.of(ServiceEndpoint.newBuilder()
-                                        .domainName("external3.com")
-                                        .port(111)
-                                        .build()))
-                                .build()))
-                .build();
-
         // First try a very old round for which there's not a roster
         doReturn(554L).when(consensusSnapshot).round();
-        assertEquals(expected, RosterRetriever.retrieve(state));
+        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieve(state));
 
         // Then try a newer round, but remove the roster from the RosterMap
         doReturn(666L).when(consensusSnapshot).round();
         doReturn(null)
                 .when(rosterMap)
                 .get(eq(ProtoBytes.newBuilder().value(HASH_666).build()));
-        assertEquals(expected, RosterRetriever.retrieve(state));
+        assertEquals(ROSTER_FROM_ADDRESS_BOOK, RosterRetriever.retrieve(state));
     }
 
     private static X509Certificate randomX509Certificate() {
