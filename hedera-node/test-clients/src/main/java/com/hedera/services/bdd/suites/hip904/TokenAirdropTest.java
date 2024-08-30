@@ -17,7 +17,9 @@
 package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -25,10 +27,12 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -45,6 +49,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -58,14 +63,20 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.setExpectedCreate2Address;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.TransferWithCustomFixedFees.htsFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -99,6 +110,7 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.EmbeddedReason;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -108,8 +120,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -2250,6 +2264,65 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
                             .payingWith(OWNER)
                             .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)));
+        }
+
+        @HapiTest
+        @LeakyHapiTest(
+                requirement = PROPERTY_OVERRIDES,
+                overrides = {"entities.unlimitedAutoAssociationsEnabled"})
+        @DisplayName("airdrop NFT to hollow account remains when we deploy a contract on it's address")
+        final Stream<DynamicTest> nftToHollowAccountRemainsOnCreate2() {
+            final var contract = "Create2Factory";
+            final var adminKey = "adminKey";
+            final var salt = BigInteger.valueOf(42);
+            final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+            final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+            final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+            return hapiTest(flattened(
+                    // turning this off so when we create the contract it's with maxAutoAssociation value of 0
+                    overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
+                    newKeyNamed(adminKey),
+                    uploadInitCode(contract),
+                    contractCreate(contract)
+                            .payingWith(GENESIS)
+                            .adminKey(adminKey)
+                            .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+
+                    // GET BYTECODE OF THE CREATE2 CONTRACT
+                    sourcing(() -> contractCallLocal(
+                                    contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                            .exposingTypedResultsTo(results -> {
+                                final var tcInitcode = (byte[]) results[0];
+                                testContractInitcode.set(tcInitcode);
+                            })
+                            .payingWith(GENESIS)
+                            .nodePayment(ONE_HBAR)),
+
+                    // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
+                    sourcing(() ->
+                            setExpectedCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
+
+                    // Creating the hollow account
+                    newKeyNamed(expectedCreate2Address.toString()),
+                    cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER),
+
+                    // Making the first airdrop to the hollow account
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 11)
+                                    .between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER),
+
+                    // deploy create2
+                    sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                            .payingWith(GENESIS)
+                            .gas(4_000_000L)
+                            .sending(1_234L)),
+
+                    // Making the same airdrop to the contract and verifying that there is an existing airdrop
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 11)
+                                    .between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(PENDING_NFT_AIRDROP_ALREADY_EXISTS)));
         }
     }
 }
