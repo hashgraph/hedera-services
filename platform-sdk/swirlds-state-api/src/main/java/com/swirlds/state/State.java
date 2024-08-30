@@ -95,6 +95,7 @@ public interface State extends FastCopyable, Hashable {
     /***
      * {$inheritDoc}
      */
+    @Override
     default void setHash(@NonNull Hash hash) {
         throw new UnsupportedOperationException();
     }
