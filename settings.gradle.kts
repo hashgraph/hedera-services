@@ -31,10 +31,16 @@ javaModules {
         group = "com.hedera.hashgraph"
     }
 
+    // The Hedera Cryptography modules
+    directory("hedera-cryptography") {
+        group = "com.hedera.cryptography"
+    }
+
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
         module("swirlds-jasperdb") { artifact = "swirlds-merkledb" }
+        module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
@@ -92,7 +98,7 @@ javaModules {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.53.0"
+val hapiProtoVersion = "0.54.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions

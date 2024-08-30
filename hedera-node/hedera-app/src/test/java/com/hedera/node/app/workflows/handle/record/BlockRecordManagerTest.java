@@ -36,6 +36,7 @@ import com.google.common.jimfs.Jimfs;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -73,6 +74,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -93,6 +95,9 @@ final class BlockRecordManagerTest extends AppTestBase {
 
     private BlockRecordFormat blockRecordFormat;
     private BlockRecordWriterFactory blockRecordWriterFactory;
+
+    @Mock
+    private BlockStreamManagerImpl blockStreamManager;
 
     @BeforeEach
     void setUpEach() throws Exception {
@@ -189,7 +194,7 @@ final class BlockRecordManagerTest extends AppTestBase {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
-            assertThat(blockRecordManager.currentBlockTimestamp()).isNotNull();
+            assertThat(blockRecordManager.blockTimestamp()).isNotNull();
             assertThat(blockRecordManager.blockNo()).isEqualTo(blockRecordManager.lastBlockNo() + 1);
             // write a blocks & record files
             int transactionCount = 0;
@@ -305,13 +310,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                         if (runningHashNMinus3 != null) {
                             // check running hash N - 3
                             assertThat(runningHashNMinus3.toHex())
-                                    .isEqualTo(blockRecordManager
-                                            .getNMinus3RunningHash()
-                                            .toHex());
+                                    .isEqualTo(blockRecordManager.prngSeed().toHex());
                         } else {
                             // check empty as well
-                            assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isEqualTo(Bytes.EMPTY);
+                            assertThat(blockRecordManager.prngSeed()).isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;

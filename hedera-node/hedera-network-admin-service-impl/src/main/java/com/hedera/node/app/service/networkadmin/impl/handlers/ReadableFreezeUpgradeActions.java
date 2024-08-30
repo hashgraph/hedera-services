@@ -35,7 +35,9 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -64,6 +66,7 @@ public class ReadableFreezeUpgradeActions {
             com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
 
     private final NetworkAdminConfig adminServiceConfig;
+    private final NodesConfig nodesConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
 
@@ -86,20 +89,21 @@ public class ReadableFreezeUpgradeActions {
     public static final String MARK = "✓";
 
     public ReadableFreezeUpgradeActions(
-            @NonNull final NetworkAdminConfig adminServiceConfig,
+            @NonNull final Configuration configuration,
             @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        requireNonNull(adminServiceConfig, "Admin service config is required for freeze upgrade actions");
+        requireNonNull(configuration, "configuration is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
         requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
         requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
-        this.adminServiceConfig = adminServiceConfig;
+        this.adminServiceConfig = configuration.getConfigData(NetworkAdminConfig.class);
+        this.nodesConfig = configuration.getConfigData(NodesConfig.class);
         this.freezeStore = freezeStore;
         this.executor = executor;
         this.upgradeFileStore = upgradeFileStore;
@@ -265,7 +269,7 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(artifactsDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (nodes != null) {
+            if (nodes != null && nodesConfig.enableDAB()) {
                 generateConfigPem(artifactsLoc, nodes, nextNodeId);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }

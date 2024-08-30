@@ -129,7 +129,7 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
@@ -186,7 +186,7 @@ class UtilPrngHandlerTest {
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(randomNumber));
+        given(blockRecordInfo.prngSeed()).willReturn(hashWithIntAtStart(randomNumber));
 
         // When we handle the transaction
         subject.handle(handleContext);
@@ -232,7 +232,7 @@ class UtilPrngHandlerTest {
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(rand));
+        given(blockRecordInfo.prngSeed()).willReturn(hashWithIntAtStart(rand));
 
         // When we handle the transaction
         subject.handle(handleContext);
@@ -246,7 +246,7 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
@@ -268,7 +268,7 @@ class UtilPrngHandlerTest {
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
@@ -291,7 +291,7 @@ class UtilPrngHandlerTest {
     void nullHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(null);
+        given(blockRecordInfo.prngSeed()).willReturn(null);
 
         subject.handle(handleContext);
 
@@ -303,7 +303,7 @@ class UtilPrngHandlerTest {
     void emptyHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(Bytes.EMPTY);
+        given(blockRecordInfo.prngSeed()).willReturn(Bytes.EMPTY);
 
         subject.handle(handleContext);
 

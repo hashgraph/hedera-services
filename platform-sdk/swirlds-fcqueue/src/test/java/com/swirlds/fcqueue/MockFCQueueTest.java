@@ -17,7 +17,6 @@
 package com.swirlds.fcqueue;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestComponentTags.FCQUEUE;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -389,7 +388,6 @@ class MockFCQueueTest {
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
     @DisplayName("Mock Hash Test 7")
-    @Tag(TIME_CONSUMING)
     void hashTest7(final int queueSize, final Supplier<FCQueue<FCInt>> supplier) {
         final FCQueue<FCInt> fcq = new FCQueue<>();
         final FCQueue<FCInt> mfcq = supplier.get();
@@ -565,7 +563,6 @@ class MockFCQueueTest {
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
     @DisplayName("Mock multithread Hash Test 1")
-    @Tag(TIME_CONSUMING)
     void multithreadHashTest(int writeThreadsNum, final Supplier<FCQueue<FCInt>> supplier) {
         final int QUEUE_SIZE = 10_000;
 
@@ -784,7 +781,6 @@ class MockFCQueueTest {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
-    @Tag(TIME_CONSUMING)
     @DisplayName("toArray Test")
     void toArrayTest(final int targetSize, final Supplier<FCQueue<FCInt>> supplier) {
         final FCQueue<FCInt> fcq = supplier.get();

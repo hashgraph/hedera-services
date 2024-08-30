@@ -76,6 +76,7 @@ public class BaseTranslator {
     private Instant userTimestamp;
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
     private final Set<TokenAssociation> knownAssociations = new HashSet<>();
@@ -150,6 +151,25 @@ public class BaseTranslator {
         });
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Initializes the total supply of the given token.
+     * @param tokenId the token to initialize
+     * @param totalSupply the total supply to set
+     */
+    public void initTotalSupply(@NonNull final TokenID tokenId, final long totalSupply) {
+        totalSupplies.put(tokenId, totalSupply);
+    }
+
+    /**
+     * Adjusts the total supply of the given token by the given amount and returns the new total supply.
+     * @param tokenId the token to adjust
+     * @param adjustment the amount to adjust by
+     * @return the new total supply
+     */
+    public long newTotalSupply(@NonNull final TokenID tokenId, final long adjustment) {
+        return totalSupplies.merge(tokenId, adjustment, Long::sum);
     }
 
     /**

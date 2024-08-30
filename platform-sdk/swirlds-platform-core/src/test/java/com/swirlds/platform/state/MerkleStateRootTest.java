@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
@@ -98,8 +99,8 @@ class MerkleStateRootTest extends MerkleTestBase {
 
     private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
-        public void initPlatformState(@NonNull final State state) {
-            FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+            return FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         }
 
         @Override
@@ -856,6 +857,10 @@ class MerkleStateRootTest extends MerkleTestBase {
         void setUp() {
             given(kvListener.stateTypes()).willReturn(EnumSet.of(MAP));
             given(nonKvListener.stateTypes()).willReturn(EnumSet.of(QUEUE, SINGLETON));
+            given(kvListener.stateIdFor(FIRST_SERVICE, FRUIT_STATE_KEY)).willReturn(FRUIT_STATE_ID);
+            given(kvListener.stateIdFor(FIRST_SERVICE, ANIMAL_STATE_KEY)).willReturn(ANIMAL_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, COUNTRY_STATE_KEY)).willReturn(COUNTRY_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, STEAM_STATE_KEY)).willReturn(STEAM_STATE_ID);
 
             setupAnimalMerkleMap();
             setupFruitVirtualMap();
@@ -894,13 +899,13 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             ((CommittableWritableStates) states).commit();
 
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), E_KEY, EGGPLANT);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), C_KEY);
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), A_KEY, AARDVARK);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), C_KEY);
-            verify(nonKvListener).singletonUpdateChange(computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY), ESTONIA);
-            verify(nonKvListener).queuePushChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY), BIOLOGY);
-            verify(nonKvListener).queuePopChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY));
+            verify(kvListener).mapUpdateChange(FRUIT_STATE_ID, E_KEY, EGGPLANT);
+            verify(kvListener).mapDeleteChange(FRUIT_STATE_ID, C_KEY);
+            verify(kvListener).mapUpdateChange(ANIMAL_STATE_ID, A_KEY, AARDVARK);
+            verify(kvListener).mapDeleteChange(ANIMAL_STATE_ID, C_KEY);
+            verify(nonKvListener).singletonUpdateChange(COUNTRY_STATE_ID, ESTONIA);
+            verify(nonKvListener).queuePushChange(STEAM_STATE_ID, BIOLOGY);
+            verify(nonKvListener).queuePopChange(STEAM_STATE_ID);
 
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(nonKvListener);

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
@@ -316,7 +315,6 @@ public class EventEmitterTests {
     @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Shuffled Emitter Equivalence")
     public void shuffledEmitterEquivalence(final boolean birthRoundAsAncientThreshold) {
         final int numberOfEvents = 100;
