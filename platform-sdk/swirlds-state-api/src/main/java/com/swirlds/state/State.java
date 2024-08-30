@@ -18,7 +18,6 @@ package com.swirlds.state;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -32,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface State extends FastCopyable, Hashable {
+public interface State extends FastCopyable {
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
@@ -75,35 +74,26 @@ public interface State extends FastCopyable, Hashable {
         throw new UnsupportedOperationException();
     }
 
-    /***
-     * {$inheritDoc}
+    /**
+     * {@inheritDoc}
      */
     @Override
     default State copy() {
         throw new UnsupportedOperationException();
     }
 
-    /***
-     * {$inheritDoc}
+    /**
+     * Returns a calculated hash of the state.
      */
     @Nullable
-    @Override
     default Hash getHash() {
-        throw new UnsupportedOperationException();
-    }
-
-    /***
-     * {$inheritDoc}
-     */
-    @Override
-    default void setHash(@NonNull Hash hash) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Hashes the state on demand if it is not already hashed. If the state is already hashed, this method is a no-op.
      */
-    default void calculateHash() {
+    default void computeHash() {
         throw new UnsupportedOperationException();
     }
 }
