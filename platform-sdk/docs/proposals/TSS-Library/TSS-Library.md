@@ -171,7 +171,6 @@ We will provide a library `hedera-common-nativesupport` that will help load and 
 The low-level details of the build logic for this to work are outside the scope of this proposal.
 A high overview is mentioned for the benefit of readers.
 
-
 In multilanguage projects, Rust code will be placed in a structure such as:
 
 ```
@@ -310,7 +309,7 @@ The module will include Java and Rust code that will be compiled for all support
 * Generator 5.
 * G1 generator: (1, 2)
 * G2 generator: (10857046999023057135944570762232829481370756359578518086990519993285655852781,  11559732032986387107991004021392285783925812861821192530917403151452391805634,
- 8495653923123431417604973247489272438418190587263600148770280649306958101930, 4082367875863433681332203403145435568316851327593401208105741076214120093531)
+8495653923123431417604973247489272438418190587263600148770280649306958101930, 4082367875863433681332203403145435568316851327593401208105741076214120093531)
 
 It is defined by two groups `AltBn128Group1` and `AltBn128Group2`.
 - Serialized forms of elements from `AltBn128Group1` (`AltBn128Group1Element`) are 64 bytes byte arrays in little endian format, separated in 32 bytes for `x` and 32 for `y`.
@@ -319,9 +318,10 @@ It is defined by two groups `AltBn128Group1` and `AltBn128Group2`.
 This library will not have a public api as it is intended to be used only as runtime dependency.
 
 ###### Encoding:
-`FieldElements` scalars are encoded as 32 byte little-endian numbers. 
+
+`FieldElements` scalars are encoded as 32 byte little-endian numbers.
 Curve points are encoded as two components (x, y) that differs in size for each group of the curve.
-Group 1 `GroupElements` have the form (X, Y) each 32 little-endian bytes numbers. 
+Group 1 `GroupElements` have the form (X, Y) each 32 little-endian bytes numbers.
 Group 2 `GroupElements` have the form (X₁, X₂, Y₁, Y₂) each 32 little-endian bytes numbers.
 
 The point at infinity in all cases is stored a 32-bytes 0 value in each component.
@@ -390,6 +390,7 @@ return { c1, c2 }
 ```
 
 ##### Serialization Note
+
 Consumers of this library should not need the `pairings-api` in compile time, it should only be a runtime dependency.
 There is no use for them to understand the elements inside as points on the curve.
 To decouple the keys and signatures from the api, internal structure of the signatures and the keys should be stored in byte arrays or a serializable structure.
@@ -397,23 +398,23 @@ To decouple the keys and signatures from the api, internal structure of the sign
 Two possibilities :
 1. **Use arkworks-based serialization mechanism**
 
-    This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components.
-    Given that we have the guarantee to be canonical, and that we do not plan for internal java consumers to need to operate with the individual values.
-    Pros:
-       - decouples the serialization mechanism from the pairings internal structure and allows to switch curves with 0 impact on the consumers
-       - It allows consumers that have no access or cannot use serialization libraries such as protobuf
-       - Simple and reduced effort, low infra support needed.
-    Cons
-       - It is coupled to arkworks serialization mecanism
-       - The communication needs to happen verbally or through documents and there is no technical interface we can share.
+        This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components.
+        Given that we have the guarantee to be canonical, and that we do not plan for internal java consumers to need to operate with the individual values.
+        Pros:
+           - decouples the serialization mechanism from the pairings internal structure and allows to switch curves with 0 impact on the consumers
+           - It allows consumers that have no access or cannot use serialization libraries such as protobuf
+           - Simple and reduced effort, low infra support needed.
+        Cons
+           - It is coupled to arkworks serialization mecanism
+           - The communication needs to happen verbally or through documents and there is no technical interface we can share.
 
 2. **Use Protobuf serialization**
-   This serialization mechanism consist on generating a structure that represents the internal representation of PublicKey, PrivateKey, Signature in a defined protobuf schema. 
+   This serialization mechanism consist on generating a structure that represents the internal representation of PublicKey, PrivateKey, Signature in a defined protobuf schema.
    We would need to extract the information from the pairings api implementation and produce a protobuf object to expose.
    Pros:
    - Allows to share a schema to know how to interpret the curve
    - Any client that can use protobuf can interpret our elements
-   Cons
+     Cons
    - Only clients that can use protobuf can interpret signatures, and public keys
    - By producing a structure for the internals of the pairings api, new curves would need new structures.
 
@@ -424,24 +425,37 @@ Two possibilities :
 This library implements the Groth21 TSS-specific operations.
 
 ##### Public Interface
+
 ###### `TssMessage`
+
 A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share.
 It includes auxiliary information used to validate its correctness and assemble an aggregate public key, i.e., a commitment to a secret share polynomial and a NIZK proof.
+
 ###### `TssShareId`
-A deterministic unique, contiguous starting from 1 identifier for each existent share. 
-    a) are unique per share,
-    b) non-0, and 
-    c) can be used as input for the polynomial (They are from the same field of the selected curve)
+
+A deterministic unique, contiguous starting from 1 identifier for each existent share.
+a) are unique per share,
+b) non-0, and
+c) can be used as input for the polynomial (They are from the same field of the selected curve)
+
 ###### `TssPrivateShare`
- Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also a ECPrivateKey.
+
+Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also a ECPrivateKey.
+
 ###### `TssPublicShare`
- Represents a share in the system. It contains public information that can be used to validate each signature. It is also a ECPublicKey
+
+Represents a share in the system. It contains public information that can be used to validate each signature. It is also a ECPublicKey
+
 ###### `TssShareSignature`
+
 ###### `TssParticipantDirectory`
+
 ###### `TssService`
- Class that implements all the TSS operations.
+
+Class that implements all the TSS operations.
 
 ##### Usage
+
 ###### Input
 
 * Participant's persistent EC Private key (Private to each participant)
@@ -450,8 +464,6 @@ A deterministic unique, contiguous starting from 1 identifier for each existent 
 * A threshold value externally provided:`e.g: t = 5`
 * All participants' persistent EC public keys (Public)
 * A predefined `SignatureSchema` (Public / Constant for all the network)
-
-
 
 ###### 0. Bootstrap
 
@@ -505,27 +517,28 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 //Creates a TssMessage out of a randomly generated share
 TssMessage message = service.generateTssMessage(participantDirectory);
 ```
+
 **Implementation details**
 Internally the process of creating a TssMessage consist of
 
 a. Generation of the shares
-    In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random ECPrivateKey.
-    After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map.
-    The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
-    `Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
-    Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
-    Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key.
-    The TssMessage will contain all the encrypted values for all shares.
-    ![img.svg](img.svg)
+In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random ECPrivateKey.
+After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map.
+The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
+`Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
+Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
+Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key.
+The TssMessage will contain all the encrypted values for all shares.
+![img.svg](img.svg)
 
 b. Generation of the Polynomial Commitment
-    We include a Feldman commitment to the polynomial as a mechanism to detect forms of bad dealing.
-    For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ ` (g multiplied by polynomial coefficient `a₍ᵢ₎` )
+We include a Feldman commitment to the polynomial as a mechanism to detect forms of bad dealing.
+For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ ` (g multiplied by polynomial coefficient `a₍ᵢ₎` )
 
 c. Generation of the NIZKs proofs
-   Generate a NIZK proof that these commitments and the encrypted shares correspond to a valid sharing of the secret according to the polynomial.
+Generate a NIZK proof that these commitments and the encrypted shares correspond to a valid sharing of the secret according to the polynomial.
 
-###### Acting as dealers of `TssMessage`s (_outside the scope of the library_) 
+###### Acting as dealers of `TssMessage`s (_outside the scope of the library_)
 
 Using an established channel, each participant will broadcast a single message to be received by all participants
 while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library.
@@ -574,15 +587,18 @@ Also, we will extract a `PublicShare` for each `ShareId`: `sidᵢ` in the direct
 The PublicShare for share `s` is computed by evaluating each polynomial commitment in the common set of messages at `sidᵢ` and then aggregating the results.
 
 ###### 4. Sign and aggregate/validate signatures
+
 At this point, the participant executing the scheme can start signing, sharing signatures, and validating individual signatures produced by other parties in the scheme.
 Using each `privateShares` owned by the participant, a message can be signed, producing a `TssShareSignature`
 a. Perform signing
+
 ```java
-//Given   
+//Given
 byte[] message = getMessageToSign();
 //Then
 List<TssShareSignature> signatures = service.sign(privateShares, message);
 ```
+
 Again, it is outside the scope of this library the action of distributing or collecting other's participants signatures.
 
 Multiple `TssShareSignature` can be aggregated to create an aggregate `EcSignature`. An aggregate `PairingSignature` can be validated against the LedgerId (public key)  if
@@ -644,13 +660,11 @@ The main difference with the genesis stage is that every participant generates a
 
 Once finished, the list of `SecretShare`s will be updated but the previously generated aggregate public key remains the same.
 
-
 ##### Security Considerations
 
 As long as an adversary Participant knows fewer than a threshold number of decryption keys, they cannot recover enough information to start forging threshold signatures.
 Adversarial participants may learn the shares of the participants whose keys they have compromised, but more is needed to recover the secret.
 For security, adversarial parties might choose low or zero entropy values for protocol inputs such as shareIds, but here will still be sufficient entropy in the overall protocol from honest nodes.
-
 
 #### Hedera Common Native Support
 
