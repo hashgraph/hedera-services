@@ -63,6 +63,7 @@ public class TokenAirdropBase {
     protected static final String ASSOCIATED_RECEIVER = "associatedReceiver";
     // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
+    protected static final String FUNGIBLE_TOKEN2 = "fungibleToken2";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     protected static final String FUNGIBLE_FREEZE_KEY = "fungibleTokenFreeze";
     protected static final String NFT_FOR_CONTRACT_TESTS = "nonFungibleTokens";
@@ -123,6 +124,10 @@ public class TokenAirdropBase {
                         .tokenType(FUNGIBLE_COMMON)
                         .freezeKey(FUNGIBLE_FREEZE_KEY)
                         .initialSupply(1000L),
+                tokenCreate(FUNGIBLE_TOKEN2)
+                        .treasury(OWNER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L),
                 tokenCreate("dummy").treasury(OWNER).tokenType(FUNGIBLE_COMMON).initialSupply(100L),
                 newKeyNamed(nftSupplyKey),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -149,7 +154,12 @@ public class TokenAirdropBase {
                         .supplyKey(nftSupplyKey),
                 mintToken(
                         NFT_FOR_CONTRACT_TESTS,
-                        IntStream.range(1, 10)
+                        IntStream.range(0, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
+                mintToken(
+                        NFT_FOR_CONTRACT_TESTS,
+                        IntStream.range(10, 20)
                                 .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
                                 .toList()),
                 // all kind of receivers
@@ -283,16 +293,20 @@ public class TokenAirdropBase {
     protected static SpecOperation[] setUpEntitiesPreHIP904() {
         final var validAlias = "validAlias";
         final var aliasTwo = "alias2.0";
+        final var validAliasForAirdrop = "validAliasForAirdrop";
         final var sponsor = "sponsor";
         final var t = new ArrayList<SpecOperation>(List.of(
                 // create hollow account with 0 auto associations
                 cryptoCreate(sponsor).balance(ONE_HUNDRED_HBARS),
                 newKeyNamed(validAlias).shape(SECP_256K1_SHAPE),
-                newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE)));
+                newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE),
+                newKeyNamed(validAliasForAirdrop).shape(SECP_256K1_SHAPE)));
         t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
         t.addAll(Arrays.stream(createHollowAccountFrom(aliasTwo)).toList());
+        t.addAll(Arrays.stream(createHollowAccountFrom(validAliasForAirdrop)).toList());
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, aliasTwo)));
+        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasForAirdrop)));
         return t.toArray(new SpecOperation[0]);
     }
 

@@ -17,7 +17,9 @@
 package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -25,10 +27,13 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -45,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -58,14 +64,20 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.setExpectedCreate2Address;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.TransferWithCustomFixedFees.htsFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -99,6 +111,7 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.EmbeddedReason;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -108,8 +121,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -129,9 +145,16 @@ public class TokenAirdropTest extends TokenAirdropBase {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
         lifecycle.overrideInClass(Map.of(
-                "tokens.airdrops.enabled", "true",
-                "tokens.airdrops.claim.enabled", "true",
-                "entities.unlimitedAutoAssociationsEnabled", "true"));
+                "tokens.airdrops.enabled", "false",
+                "tokens.airdrops.claim.enabled", "false",
+                "entities.unlimitedAutoAssociationsEnabled", "false"));
+        // create some entities with disabled airdrops
+        lifecycle.doAdhoc(setUpEntitiesPreHIP904());
+        // enable airdrops
+        lifecycle.doAdhoc(
+                overriding("tokens.airdrops.enabled", "true"),
+                overriding("tokens.airdrops.claim.enabled", "true"),
+                overriding("entities.unlimitedAutoAssociationsEnabled", "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
 
@@ -336,6 +359,116 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         validateChargedUsd("second airdrop", 0.1, 1));
             }
 
+            // AIRDROP_17
+            @HapiTest
+            final Stream<DynamicTest> transferMultipleFtAndNftToEOAWithNoFreeAutoAssociationsAccountResultsInPending() {
+                final String NFT_FOR_MULTIPLE_PENDING_TRANSFER = "nftForMultiplePendingTransfer";
+                final String FT_FOR_MULTIPLE_PENDING_TRANSFER = "ftForMultiplePendingTransfer";
+                var nftSupplyKeyForMultipleTransfers = "nftSupplyKeyForMultipleTransfer";
+                return defaultHapiSpec("Send multiple FT and NFT from EOA to Account without free Auto-Associations")
+                        .given(
+                                tokenCreate(FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .treasury(OWNER)
+                                        .tokenType(FUNGIBLE_COMMON)
+                                        .initialSupply(1000L),
+                                newKeyNamed(nftSupplyKeyForMultipleTransfers),
+                                tokenCreate(NFT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .treasury(OWNER)
+                                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                                        .initialSupply(0L)
+                                        .name(NFT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                        .supplyKey(nftSupplyKeyForMultipleTransfers),
+                                mintToken(
+                                        NFT_FOR_MULTIPLE_PENDING_TRANSFER,
+                                        IntStream.range(0, 10)
+                                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                                .toList()))
+                        .when(
+                                tokenAirdrop(
+                                                moving(10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                                movingUnique(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 1L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("first airdrop"),
+                                tokenAirdrop(
+                                                moving(10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                                movingUnique(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 2L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(OWNER)
+                                        .signedBy(OWNER)
+                                        .via("second airdrop"))
+                        .then(
+                                getTxnRecord("first airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                10, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))
+                                                .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
+                                                                NFT_FOR_MULTIPLE_PENDING_TRANSFER, 1L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                getTxnRecord("second airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                20, FT_FOR_MULTIPLE_PENDING_TRANSFER)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))
+                                                .pendingAirdrops(includingNftPendingAirdrop(movingUnique(
+                                                                NFT_FOR_MULTIPLE_PENDING_TRANSFER, 2L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                // assert account balances
+                                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance(FT_FOR_MULTIPLE_PENDING_TRANSFER, 0)
+                                        .hasTokenBalance(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 0),
+                                getAccountBalance(OWNER)
+                                        .hasTokenBalance(FT_FOR_MULTIPLE_PENDING_TRANSFER, 1000)
+                                        .hasTokenBalance(NFT_FOR_MULTIPLE_PENDING_TRANSFER, 10L),
+                                validateChargedUsd("first airdrop", 0.2, 10),
+                                validateChargedUsd("second airdrop", 0.15, 10));
+            }
+
+            // AIRDROP_21
+            @HapiTest
+            final Stream<DynamicTest>
+                    transferOneFTTwiceFromEOAWithOneFTInBalanceToAccountWithNoFreeAutoAssociationsResultsInPendingAggregated() {
+                var sender = "sender";
+                return defaultHapiSpec(
+                                "Send one FT from EOA with only One FT in balance twice to Account without free Auto-Associations")
+                        .given(
+                                cryptoCreate(sender).maxAutomaticTokenAssociations(-1),
+                                cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, sender))
+                                        .payingWith(OWNER))
+                        .when(
+                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(sender)
+                                        .signedBy(sender)
+                                        .via("first airdrop"),
+                                tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+                                                .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(sender)
+                                        .signedBy(sender)
+                                        .via("second airdrop"))
+                        .then(
+                                getTxnRecord("first airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                1, FUNGIBLE_TOKEN)
+                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                getTxnRecord("second airdrop")
+                                        .hasPriority(recordWith()
+                                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(
+                                                                2, FUNGIBLE_TOKEN)
+                                                        .between(sender, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)))),
+                                // assert account balances
+                                getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                        .hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                                getAccountBalance(sender).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                                validateChargedUsd("first airdrop", 0.1, 10),
+                                validateChargedUsd("second airdrop", 0.05, 10));
+            }
+
             @HapiTest
             @DisplayName("with multiple tokens")
             final Stream<DynamicTest> tokenAirdropMultipleTokens() {
@@ -431,27 +564,28 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("that is alias with 0 free maxAutoAssociations")
         final Stream<DynamicTest> airdropToAliasWithNoFreeSlots() {
-            final var validAlias = "validAlias";
+            final var validAliasWithNoFreeSlots = "validAliasWithNoFreeSlots";
             return defaultHapiSpec("should go in pending state")
-                    .given(newKeyNamed(validAlias))
+                    .given(newKeyNamed(validAliasWithNoFreeSlots))
                     .when(
-                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L).between(OWNER, validAlias))
+                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 10L)
+                                            .between(OWNER, validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
-                                    .signedBy(OWNER, validAlias),
-                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)),
-                            cryptoUpdateAliased(validAlias)
+                                    .signedBy(OWNER, validAliasWithNoFreeSlots),
+                            withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasWithNoFreeSlots)),
+                            cryptoUpdateAliased(validAliasWithNoFreeSlots)
                                     .maxAutomaticAssociations(1)
-                                    .signedBy(validAlias, DEFAULT_PAYER))
+                                    .signedBy(validAliasWithNoFreeSlots, DEFAULT_PAYER))
                     .then(
-                            tokenAirdrop(moveFungibleTokensTo(validAlias))
+                            tokenAirdrop(moveFungibleTokensTo(validAliasWithNoFreeSlots))
                                     .payingWith(OWNER)
                                     .via("aliasAirdrop"),
                             getTxnRecord("aliasAirdrop")
                                     .hasPriority(recordWith()
-                                            .pendingAirdrops(
-                                                    includingFungiblePendingAirdrop(moveFungibleTokensTo(validAlias)))),
-                            getAccountBalance(validAlias).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                            getAccountBalance(validAlias).hasTokenBalance(FUNGIBLE_TOKEN, 0));
+                                            .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                    moveFungibleTokensTo(validAliasWithNoFreeSlots)))),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                            getAccountBalance(validAliasWithNoFreeSlots).hasTokenBalance(FUNGIBLE_TOKEN, 0));
         }
 
         @HapiTest
@@ -1001,6 +1135,33 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             getAliasedAccountBalance(evmAddress).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                             // Any new auto-creation needs to explicitly associate token. So it will be $0.1
                             validateChargedUsd("evmAddressReceiver", 0.1, 1));
+        }
+
+        // AIRDROP_19
+        @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
+        final Stream<DynamicTest>
+                airdropNFTToNonExistingEvmAddressWithoutAutoAssociationsResultingInPendingAirdropToHollowAccount() {
+            final var validAliasForAirdrop = "validAliasForAirdrop";
+            return defaultHapiSpec(
+                            "Send one NFT from EOA to EVM address without auto-associations resulting in the creation of Hollow account and pending airdrop")
+                    .given()
+                    .when(tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L).between(OWNER, validAliasForAirdrop))
+                            .payingWith(OWNER)
+                            .signedBy(OWNER)
+                            .via("EVM address NFT airdrop"))
+                    .then(
+                            getTxnRecord("EVM address NFT airdrop")
+                                    .hasPriority(recordWith()
+                                            .pendingAirdrops(
+                                                    includingNftPendingAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 7L)
+                                                            .between(OWNER, validAliasForAirdrop)))),
+                            // assert hollow account
+                            getAliasedAccountInfo(validAliasForAirdrop)
+                                    .isHollow()
+                                    .hasAlreadyUsedAutomaticAssociations(0)
+                                    .hasMaxAutomaticAssociations(0)
+                                    .hasNoTokenRelationship(NON_FUNGIBLE_TOKEN),
+                            validateChargedUsd("EVM address NFT airdrop", 0.1, 10));
         }
 
         @HapiTest
@@ -1875,7 +2036,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     .given()
                     .when()
                     .then(
-                            tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 6L)
+                            tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 10L)
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
                             cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
@@ -2086,6 +2247,229 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @DisplayName("empty transfer list should fail")
         final Stream<DynamicTest> emptyTransferListFails() {
             return hapiTest(tokenAirdrop().payingWith(OWNER).hasPrecheckFrom(EMPTY_TOKEN_TRANSFER_BODY));
+        }
+
+        @HapiTest
+        @DisplayName("FT with free associations")
+        final Stream<DynamicTest> ftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 1),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with free associations")
+        final Stream<DynamicTest> nftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 1),
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 4).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("FT with zero free associations")
+        final Stream<DynamicTest> ftWithZeroFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with zero free associations")
+        final Stream<DynamicTest> nftWithZeroFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 5).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT with no free associations")
+        final Stream<DynamicTest> ftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    // Create a contract with a free associations
+                    deployMutableContract(mutableContract, 1),
+                    // Take the free association and verify that the user received them
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN2).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN2, 1),
+                    // Try airdropping the two tokens again and verify that when there are not more free associations
+                    // we create an airdrop instead of crypto transfer
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("NFT with no free associations")
+        final Stream<DynamicTest> nftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    // Create a contract with a free associations
+                    deployMutableContract(mutableContract, 1),
+                    // Take the free association and verify that the user received them
+                    tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 11).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                    // Try airdropping the two tokens again and verify that when there are not more free associations
+                    // we create an airdrop instead of crypto transfer
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 6).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with free associations")
+        final Stream<DynamicTest> ftAndNftWithFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 2),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 7).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with no free associations")
+        final Stream<DynamicTest> ftAndNftWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 8).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 0)));
+        }
+
+        @HapiTest
+        @DisplayName("FT and NFT with free associations")
+        final Stream<DynamicTest> ftAndNftWithFreeAssociationsForMultipleContracts() {
+            var mutableContract = "PayReceivable";
+            var mutableContract2 = "PayReceivable2";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 2),
+                    deployMutableContract(mutableContract2, 2),
+                    tokenAirdrop(
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 9).between(OWNER, mutableContract),
+                                    moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract2),
+                                    movingUnique(NFT_FOR_CONTRACT_TESTS, 10).between(OWNER, mutableContract2))
+                            .payingWith(OWNER),
+                    getAccountBalance(mutableContract).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1),
+                    getAccountBalance(mutableContract2).hasTokenBalance(FUNGIBLE_TOKEN, 1),
+                    getAccountBalance(mutableContract2).hasTokenBalance(NFT_FOR_CONTRACT_TESTS, 1)));
+        }
+
+        @HapiTest
+        @DisplayName("when token is frozen")
+        final Stream<DynamicTest> whenTokenIsFrozen() {
+            final String ALICE = "alice";
+            var mutableContract = "PayReceivable";
+            final String FUNGIBLE_TOKEN_A = "fungibleTokenA";
+            return hapiTest(flattened(
+                    newKeyNamed("freezeKey"),
+                    cryptoCreate(ALICE).balance(ONE_HBAR),
+                    deployMutableContract(mutableContract, 2),
+                    tokenCreate(FUNGIBLE_TOKEN_A)
+                            .treasury(ALICE)
+                            .tokenType(FUNGIBLE_COMMON)
+                            .freezeKey("freezeKey")
+                            .initialSupply(15L),
+                    tokenFreeze(FUNGIBLE_TOKEN_A, ALICE),
+                    tokenAssociate(mutableContract, FUNGIBLE_TOKEN_A),
+                    tokenAirdrop(moving(10, FUNGIBLE_TOKEN_A).between(ALICE, mutableContract))
+                            .payingWith(ALICE)
+                            .signedByPayerAnd(ALICE)
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)));
+        }
+
+        @HapiTest
+        @DisplayName("when airdrop to not associated contract with no free associations - crypto transfer should fail")
+        final Stream<DynamicTest> airdropToNotAssociatedContractWithNoFreeAssociations() {
+            var mutableContract = "PayReceivable";
+            return hapiTest(flattened(
+                    deployMutableContract(mutableContract, 0),
+                    tokenAirdrop(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER),
+                    cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, mutableContract))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)));
+        }
+
+        @HapiTest
+        @LeakyHapiTest(
+                requirement = PROPERTY_OVERRIDES,
+                overrides = {"entities.unlimitedAutoAssociationsEnabled"})
+        @DisplayName("airdrop NFT to hollow account remains when we deploy a contract on it's address")
+        final Stream<DynamicTest> nftToHollowAccountRemainsOnCreate2() {
+            final var contract = "Create2Factory";
+            final var adminKey = "adminKey";
+            final var salt = BigInteger.valueOf(42);
+            final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+            final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+            final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+            return hapiTest(flattened(
+                    // turning this off so when we create the contract it's with maxAutoAssociation value of 0
+                    overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
+                    newKeyNamed(adminKey),
+                    uploadInitCode(contract),
+                    contractCreate(contract)
+                            .payingWith(GENESIS)
+                            .adminKey(adminKey)
+                            .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+
+                    // GET BYTECODE OF THE CREATE2 CONTRACT
+                    sourcing(() -> contractCallLocal(
+                                    contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                            .exposingTypedResultsTo(results -> {
+                                final var tcInitcode = (byte[]) results[0];
+                                testContractInitcode.set(tcInitcode);
+                            })
+                            .payingWith(GENESIS)
+                            .nodePayment(ONE_HBAR)),
+
+                    // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
+                    sourcing(() ->
+                            setExpectedCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
+
+                    // Creating the hollow account
+                    newKeyNamed(expectedCreate2Address.toString()),
+                    cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER),
+
+                    // Making the first airdrop to the hollow account
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 11)
+                                    .between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER),
+
+                    // deploy create2
+                    sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                            .payingWith(GENESIS)
+                            .gas(4_000_000L)
+                            .sending(1_234L)),
+
+                    // Making the same airdrop to the contract and verifying that there is an existing airdrop
+                    tokenAirdrop(movingUnique(NFT_FOR_CONTRACT_TESTS, 11)
+                                    .between(OWNER, expectedCreate2Address.toString()))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(PENDING_NFT_AIRDROP_ALREADY_EXISTS)));
         }
     }
 }

@@ -82,7 +82,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
 
     /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
-     * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
+     * be called by the code that created the {@link WritableQueueStateBase} instance or owns it. Don't
      * cast and commit unless you own the instance!
      */
     public final void commit() {
@@ -103,7 +103,6 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
             addToDataSource(addedElement);
             listeners.forEach(l -> l.queuePushChange(addedElement));
         }
-
         reset();
     }
 
