@@ -80,7 +80,7 @@ public class AutoAccountCreator {
                 ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
                 : requiredAutoAssociations;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
+            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations, "");
         } else {
             final var key = asKeyFromAlias(alias);
             syntheticCreation = createZeroBalanceAccount(alias, key, autoAssociations);

@@ -66,7 +66,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -1298,8 +1297,7 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                     .has(accountWith()
                             .hasEmptyKey()
                             .expectedBalanceWithChargedUsd(0L, 0, 0)
-                            .autoRenew(THREE_MONTHS_IN_SECONDS)
-                            .memo(LAZY_MEMO));
+                            .autoRenew(THREE_MONTHS_IN_SECONDS));
             allRunFor(spec, op1, op2);
             updateSpecFor(spec, hollowAcnt);
         });

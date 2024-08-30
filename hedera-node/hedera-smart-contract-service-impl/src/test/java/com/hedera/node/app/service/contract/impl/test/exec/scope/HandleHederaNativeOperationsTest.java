@@ -178,7 +178,6 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatching() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
-                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
@@ -191,7 +190,7 @@ class HandleHederaNativeOperationsTest {
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
-        given(cryptoCreateRecordBuilder.memo(LAZY_CREATION_MEMO)).willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder).willReturn(cryptoCreateRecordBuilder);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);
         assertEquals(OK, status);
@@ -201,7 +200,6 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatchingDoesNotThrowErrors() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
-                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
