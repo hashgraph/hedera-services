@@ -103,6 +103,9 @@ public class AutoAccountCreator {
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
+        if (isAliasEVMAddress) {
+            childRecord.evmAddress(alias);
+        }
 
         // Since we succeeded, we can now look up the account ID of the created account. This really should always
         // work, since the child transaction succeeded. If it did not work for some reason, we have a bug in our

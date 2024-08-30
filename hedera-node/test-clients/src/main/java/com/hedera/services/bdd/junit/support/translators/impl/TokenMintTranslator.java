@@ -50,6 +50,7 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                 final var numMints = op.metadata().size();
                 if (numMints > 0) {
                     final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
+                    receiptBuilder.serialNumbers(List.copyOf(mintedSerialNos));
                     final var iter = remainingStateChanges.listIterator();
                     while (iter.hasNext()) {
                         final var stateChange = iter.next();

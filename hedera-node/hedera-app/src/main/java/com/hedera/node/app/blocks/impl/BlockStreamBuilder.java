@@ -184,6 +184,16 @@ public class BlockStreamBuilder
     private long transactionFee;
     // If non-null, a contract function result
     private ContractFunctionResult contractFunctionResult;
+
+    private enum ContractOpType {
+        CREATE,
+        CALL,
+        ETH_TBD,
+        ETH_CREATE,
+        ETH_CALL,
+    }
+
+    private ContractOpType contractOpType = null;
     // If true, the contract function result is a call result; otherwise, a create result
     private boolean isCreateResult;
 
@@ -201,8 +211,6 @@ public class BlockStreamBuilder
     private final ExternalizedRecordCustomizer customizer;
 
     private TokenID tokenID;
-    private TokenType tokenType;
-    private Bytes ethereumHash;
     private boolean createsOrDeletesSchedule;
     private TransactionID scheduledTransactionId;
 
@@ -384,7 +392,11 @@ public class BlockStreamBuilder
         this.contractFunctionResult = contractCallResult;
         if (contractCallResult != null) {
             ensureOutputBuilder();
-            isCreateResult = false;
+            if (contractOpType != ContractOpType.ETH_TBD) {
+                contractOpType = ContractOpType.CALL;
+            } else {
+                contractOpType = ContractOpType.ETH_CALL;
+            }
         }
         return this;
     }
@@ -395,7 +407,11 @@ public class BlockStreamBuilder
         this.contractFunctionResult = contractCreateResult;
         if (contractCreateResult != null) {
             ensureOutputBuilder();
-            isCreateResult = true;
+            if (contractOpType != ContractOpType.ETH_TBD) {
+                contractOpType = ContractOpType.CREATE;
+            } else {
+                contractOpType = ContractOpType.ETH_CREATE;
+            }
         }
         return this;
     }
@@ -430,7 +446,6 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder tokenType(final @NonNull TokenType tokenType) {
-        this.tokenType = requireNonNull(tokenType);
         return this;
     }
 
@@ -468,7 +483,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
-        this.ethereumHash = requireNonNull(ethereumHash);
+        contractOpType = ContractOpType.ETH_CALL;
         ensureOutputBuilder();
         return this;
     }
@@ -789,21 +804,24 @@ public class BlockStreamBuilder
         }
         if (contractFunctionResult != null) {
             final var sidecars = getSidecars();
-            if (ethereumHash != null) {
-                transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
-                        .ethereumHash(ethereumHash)
-                        .sidecars(sidecars)
-                        .build());
-            } else if (!isCreateResult) {
-                transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
-                        .contractCallResult(contractFunctionResult)
-                        .sidecars(sidecars)
-                        .build());
-            } else {
-                transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
+            switch (requireNonNull(contractOpType)) {
+                case CREATE -> transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
                         .contractCreateResult(contractFunctionResult)
                         .sidecars(sidecars)
                         .build());
+                case CALL -> transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
+                        .contractCallResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+                case ETH_CALL -> transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
+                        .ethereumCallResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+                case ETH_CREATE -> transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
+                        .ethereumCreateResult(contractFunctionResult)
+                        .sidecars(sidecars)
+                        .build());
+                case ETH_TBD -> throw new IllegalStateException("EthereumTransaction result not set");
             }
         } else if (createsOrDeletesSchedule && scheduledTransactionId != null) {
             transactionOutputBuilder.createSchedule(CreateScheduleOutput.newBuilder()

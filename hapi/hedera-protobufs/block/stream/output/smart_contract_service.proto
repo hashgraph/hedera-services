@@ -132,10 +132,21 @@ message EthereumOutput {
      */
     repeated proto.TransactionSidecarRecord sidecars = 1;
 
-    /**
-     * An ethereum hash value.
-     * <p>
-     * This SHALL be a keccak256 hash of the ethereumData.
-     */
-    bytes ethereum_hash = 2;
+    oneof eth_result {
+        /**
+         * A result for an Ethereum Transaction executed as a call.
+         * <p>
+         * This field SHALL contain all of the data produced by the contract
+         * call transaction as well as basic accounting results.
+         */
+        proto.ContractFunctionResult ethereum_call_result = 2;
+
+        /**
+         * A result for an Ethereum Transaction executed as a create.
+         * <p>
+         * This field SHALL contain all of the data produced by the contract
+         * create transaction as well as basic accounting results.
+         */
+        proto.ContractFunctionResult ethereum_create_result = 3;
+    }
 }
