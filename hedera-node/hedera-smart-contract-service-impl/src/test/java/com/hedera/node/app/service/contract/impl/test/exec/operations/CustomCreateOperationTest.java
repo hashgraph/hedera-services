@@ -26,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import java.lang.reflect.Field;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
@@ -40,6 +39,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.TxValues;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -49,7 +49,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
     private static final Address EXPECTED_CREATE1_ADDRESS = Address.contractAddress(RECIEVER_ADDRESS, NONCE - 1);
 
     @Mock
-    private HederaEvmWorldUpdater updater;
+    private WorldUpdater updater;
 
     @Mock
     private TxValues txValues;
