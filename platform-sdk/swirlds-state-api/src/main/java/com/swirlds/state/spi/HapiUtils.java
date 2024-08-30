@@ -61,7 +61,6 @@ public final class HapiUtils {
             try {
                 return Integer.parseInt(s);
             } catch (NumberFormatException ignore) {
-                ignore.printStackTrace();
                 return 0;
             }
         }
