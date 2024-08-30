@@ -138,8 +138,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
             final var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
 
-            // Charge gas for aborted ContractCall transactions
-            if (hevmTransaction.isContractCall() && contractsConfig.chargeGasOnPreEvmException()) {
+            // Charge gas for aborted transactions if no fee has been collected
+            if (!rootProxyWorldUpdater.feeCollected() && contractsConfig.chargeGasOnPreEvmException()) {
                 gasCharging.chargeGasForAbortedTransaction(
                         requireNonNull(senderId), hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
             }
@@ -153,10 +153,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
             var result = HederaEvmTransactionResult.fromAborted(senderId, recipientId, e.getStatus());
 
-            if (context.body().hasEthereumTransaction()) {
-                if (sender != null) {
-                    result = result.withSignerNonce(sender.getNonce());
-                }
+            if (context.body().hasEthereumTransaction() && sender != null) {
+                result = result.withSignerNonce(sender.getNonce());
             }
 
             return CallOutcome.fromResultsWithoutSidecars(

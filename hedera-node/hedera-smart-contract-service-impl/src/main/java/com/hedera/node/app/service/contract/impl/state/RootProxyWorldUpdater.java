@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.node.app.spi.workflows.ResourceExhaustedException.validateResource;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -54,6 +55,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private boolean committed = false;
     private List<ContractID> createdContractIds;
     private List<ContractNonceInfo> updatedContractNonces = Collections.emptyList();
+    private boolean feeCollected = false;
 
     @Inject
     public RootProxyWorldUpdater(
@@ -174,5 +176,19 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
                 enhancement.operations().chargeStorageRent(sizeChange.contractID(), rentInTinybars, true);
             }
         }
+    }
+
+    /*
+     ** Overriding this method to set the flag that tracks if fees have been collected.
+     ** The flag helps to determine if a fee has already been collected for an aborted transaction.
+     */
+    @Override
+    public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        super.collectFee(payerId, amount);
+        feeCollected = true;
+    }
+
+    public boolean feeCollected() {
+        return feeCollected;
     }
 }
