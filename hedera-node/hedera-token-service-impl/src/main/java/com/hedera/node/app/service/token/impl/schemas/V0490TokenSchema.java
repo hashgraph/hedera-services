@@ -212,7 +212,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         long curAccountId = 1; // Start with the first account ID
         long totalAccounts = accounts.size();
         do {
-            Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
+            final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
                 totalAccounts--;
