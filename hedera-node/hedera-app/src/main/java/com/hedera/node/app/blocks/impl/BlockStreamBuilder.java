@@ -767,13 +767,14 @@ public class BlockStreamBuilder
 
         newTotalSupply = 0L;
         transactionFee = 0L;
-        contractFunctionResult = null;
-        // Note that internal contract creations are removed instead of reversed
         transactionResultBuilder.scheduleRef((ScheduleID) null);
         transactionResultBuilder.automaticTokenAssociations(emptyList());
         transactionResultBuilder.congestionPricingMultiplier(0);
 
-        transactionOutputBuilder = null;
+        // Contract results are not side effects, we don't want to null them out
+        if (contractFunctionResult == null) {
+            transactionOutputBuilder = null;
+        }
     }
 
     @NonNull

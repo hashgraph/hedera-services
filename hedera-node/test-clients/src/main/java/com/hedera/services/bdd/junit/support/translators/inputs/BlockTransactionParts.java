@@ -155,15 +155,6 @@ public record BlockTransactionParts(
     }
 
     /**
-     * Returns the output of the transaction.
-     * @return the output
-     * @throws NullPointerException if the output is not present
-     */
-    public TransactionOutput outputOrThrow() {
-        return requireNonNull(transactionOutput);
-    }
-
-    /**
      * Constructs a new {@link BlockTransactionParts} that includes an output.
      * @param transactionParts the parts of the transaction
      * @param transactionResult the result of processing the transaction
@@ -191,6 +182,22 @@ public record BlockTransactionParts(
         requireNonNull(transactionParts);
         requireNonNull(transactionResult);
         return new BlockTransactionParts(transactionParts, transactionResult, null);
+    }
+
+    /**
+     * Returns the output of the transaction.
+     * @return the output
+     * @throws NullPointerException if the output is not present
+     */
+    public TransactionOutput outputOrThrow() {
+        return requireNonNull(transactionOutput);
+    }
+
+    /**
+     * Returns whether the transaction has an output.
+     */
+    public boolean hasOutput() {
+        return transactionOutput != null;
     }
 
     /**

@@ -34,7 +34,7 @@ public class CryptoUpdateTranslator implements BlockTransactionPartsTranslator {
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().cryptoUpdateAccountOrThrow();
                 final var targetId = op.accountIDToUpdateOrThrow();

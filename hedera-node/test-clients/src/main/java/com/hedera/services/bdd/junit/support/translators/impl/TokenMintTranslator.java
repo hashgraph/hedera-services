@@ -43,7 +43,7 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenMintOrThrow();
                 final var tokenId = op.tokenOrThrow();

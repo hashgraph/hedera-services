@@ -34,8 +34,6 @@ public class CryptoTransferTranslator implements BlockTransactionPartsTranslator
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(
-                parts,
-                (receiptBuilder, recordBuilder, involvedTokenId) ->
-                        recordBuilder.assessedCustomFees(parts.assessedCustomFees()));
+                parts, (receiptBuilder, recordBuilder) -> recordBuilder.assessedCustomFees(parts.assessedCustomFees()));
     }
 }

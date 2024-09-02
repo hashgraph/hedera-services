@@ -47,7 +47,7 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             Optional.ofNullable(parts.transactionOutput())
                     .map(TransactionOutput::contractCreateOrThrow)
                     .ifPresent(createContractOutput -> {
@@ -72,9 +72,11 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                         }
                     }
                 }
-                log.error(
-                        "No matching state change found for successful contract create with id {}",
-                        parts.transactionIdOrThrow());
+                // If we reach here, we didn't find the created contract in the remaining state changes
+                // so it must have been an existing hollow account finalized as a contract
+                final var op = parts.body().contractCreateInstanceOrThrow();
+                final var selfAdminId = op.adminKeyOrThrow().contractIDOrThrow();
+                receiptBuilder.contractID(selfAdminId);
             }
         });
     }

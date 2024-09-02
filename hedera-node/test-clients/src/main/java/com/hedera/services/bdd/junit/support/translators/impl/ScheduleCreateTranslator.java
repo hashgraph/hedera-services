@@ -44,7 +44,7 @@ public class ScheduleCreateTranslator implements BlockTransactionPartsTranslator
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var createdNum = baseTranslator.nextCreatedNum(SCHEDULE);
                 final var iter = remainingStateChanges.listIterator();

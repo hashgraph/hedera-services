@@ -35,7 +35,7 @@ public class TokenDissociateTranslator implements BlockTransactionPartsTranslato
             @NonNull final BlockTransactionParts parts,
             @NonNull BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenDissociateOrThrow();
                 final var accountId = op.accountOrThrow();

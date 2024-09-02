@@ -41,7 +41,7 @@ public class EthereumTransactionTranslator implements BlockTransactionPartsTrans
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             final var op = parts.body().ethereumTransactionOrThrow();
             final var ethTxData = populateEthTxData(op.ethereumData().toByteArray());
             if (ethTxData != null) {

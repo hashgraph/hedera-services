@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.streams.CallOperationType.OP_DELEGATECALL;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
@@ -27,7 +29,6 @@ import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
-import static com.hedera.services.bdd.junit.support.translators.impl.TranslatorUtils.addSyntheticResultIfExpected;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -38,18 +39,13 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.streams.ContractAction;
-import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.types.EntityType;
@@ -69,8 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,7 +85,6 @@ public class BaseTranslator {
     private BlockTransactionalUnit unit;
 
     private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
-    private final List<ContractAction> contractActions = new ArrayList<>();
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
@@ -105,9 +98,7 @@ public class BaseTranslator {
     @FunctionalInterface
     public interface Spec {
         void accept(
-                @NonNull TransactionReceipt.Builder receiptBuilder,
-                @NonNull TransactionRecord.Builder recordBuilder,
-                @NonNull Consumer<TokenID> involvedTokenId);
+                @NonNull TransactionReceipt.Builder receiptBuilder, @NonNull TransactionRecord.Builder recordBuilder);
     }
 
     /**
@@ -148,13 +139,8 @@ public class BaseTranslator {
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
         sidecarRecords.clear();
-        contractActions.clear();
         scheduleRef = null;
         scanUnit(unit);
-        sidecarRecords.stream()
-                .map(sidecar -> sidecar.actionsOrElse(ContractActions.DEFAULT))
-                .map(ContractActions::contractActions)
-                .forEach(contractActions::addAll);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
             list.clear();
@@ -191,62 +177,6 @@ public class BaseTranslator {
      */
     public void trackDissociation(@NonNull final TokenID tokenID, @NonNull final AccountID accountID) {
         knownAssociations.add(new TokenAssociation(tokenID, accountID));
-    }
-
-    /**
-     * Returns the next synthetic call result for a system contract call.
-     *
-     * @return the next synthetic call result
-     */
-    public ContractFunctionResult nextSyntheticCallResult() {
-        int i = 0;
-        ContractFunctionResult result = null;
-        for (int n = contractActions.size(); i < n; i++) {
-            final var action = contractActions.get(i);
-            if (isSystem(action.recipientContractOrElse(ContractID.DEFAULT))) {
-                final var builder = ContractFunctionResult.newBuilder()
-                        .contractID(action.recipientContractOrThrow())
-                        .amount(action.value())
-                        .functionParameters(action.input())
-                        .gas(action.gas())
-                        .gasUsed(action.gasUsed());
-                switch (action.resultData().kind()) {
-                    case UNSET -> throw new IllegalStateException("No result data in synthetic call");
-                    case OUTPUT -> builder.contractCallResult(action.outputOrThrow());
-                    case REVERT_REASON -> builder.errorMessage(
-                            action.revertReasonOrThrow().asUtf8String());
-                    case ERROR -> builder.errorMessage(action.errorOrThrow().asUtf8String());
-                }
-                int j = i;
-                for (; j >= 0 && contractActions.get(j).callOperationType() == OP_DELEGATECALL; j--) {
-                    // Skip all these, DELEGATECALL does not change sender address
-                }
-                final var senderAction = contractActions.get(j);
-                switch (senderAction.caller().kind()) {
-                    case UNSET -> throw new IllegalStateException("No caller in synthetic call");
-                    case CALLING_ACCOUNT -> builder.senderId(senderAction.callingAccountOrThrow());
-                    case CALLING_CONTRACT -> builder.senderId(AccountID.newBuilder()
-                            .accountNum(senderAction.callingContractOrThrow().contractNumOrThrow())
-                            .build());
-                }
-                result = builder.build();
-                break;
-            }
-        }
-        if (result != null) {
-            contractActions.remove(i);
-            return result;
-        } else {
-            throw new IllegalStateException("No more synthetic call results available - " + contractActions);
-        }
-    }
-
-    private static final long HTS_SYSTEM_CONTRACT_NUM = 0x167;
-    private static final long HAS_SYSTEM_CONTRACT_NUM = 0x16a;
-
-    private boolean isSystem(@NonNull final ContractID contractID) {
-        final long num = contractID.contractNumOrThrow();
-        return num == HTS_SYSTEM_CONTRACT_NUM || num == HAS_SYSTEM_CONTRACT_NUM;
     }
 
     /**
@@ -351,10 +281,19 @@ public class BaseTranslator {
             // auto-account creations are always preceding dispatches and so get exchange rates
             receiptBuilder.exchangeRate(activeRates);
         }
-        final AtomicReference<TokenType> tokenType = new AtomicReference<>();
-        final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
-        spec.accept(receiptBuilder, recordBuilder, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
-        addSyntheticResultIfExpected(this, parts, recordBuilder);
+        spec.accept(receiptBuilder, recordBuilder);
+        if (!isContractOp(parts) && parts.hasOutput() && parts.outputOrThrow().hasContractCall()) {
+            try {
+                final var output = parts.outputOrThrow().contractCallOrThrow();
+                recordBuilder.contractCallResult(output.contractCallResultOrThrow());
+            } catch (Exception e) {
+                log.error(
+                        "Failed to add synthetic call result to transaction record for {} - output was {}",
+                        parts.body(),
+                        parts.outputOrThrow(),
+                        e);
+            }
+        }
         if (parts.transactionIdOrThrow().scheduled()) {
             try {
                 recordBuilder.scheduleRef(scheduleRefOrThrow());
@@ -370,17 +309,7 @@ public class BaseTranslator {
                 parts.transactionParts().wrapper(),
                 recordBuilder.receipt(receiptBuilder.build()).build(),
                 sidecarRecords,
-                new SingleTransactionRecord.TransactionOutputs(tokenType.get()));
-    }
-
-    /**
-     * Determines if the given parts are following the user timestamp.
-     *
-     * @param parts the parts to check
-     * @return true if the parts are following the user timestamp
-     */
-    public boolean isFollowingChild(@NonNull final BlockTransactionParts parts) {
-        return asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
+                new SingleTransactionRecord.TransactionOutputs(null));
     }
 
     /**
@@ -433,10 +362,8 @@ public class BaseTranslator {
                                 .add(num);
                     }
                     scheduleRef = key.scheduleIdKeyOrThrow();
-                } else if (key.hasContractIdKey() || key.hasAccountIdKey()) {
-                    final var num = key.hasContractIdKey()
-                            ? key.contractIdKeyOrThrow().contractNumOrThrow()
-                            : key.accountIdKeyOrThrow().accountNumOrThrow();
+                } else if (key.hasAccountIdKey()) {
+                    final var num = key.accountIdKeyOrThrow().accountNumOrThrow();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
                                 .computeIfAbsent(ACCOUNT, ignore -> new LinkedList<>())
@@ -455,11 +382,6 @@ public class BaseTranslator {
             if (parts.transactionIdOrThrow().nonce() == 0
                     && !parts.transactionIdOrThrow().scheduled()) {
                 userTimestamp = asInstant(parts.consensusTimestamp());
-                if (parts.transactionIdOrThrow()
-                        .transactionValidStartOrThrow()
-                        .equals(new Timestamp(1725025158L, 5096))) {
-                    log.info("User timestamp set to {} for {} ({})", userTimestamp, parts.body(), parts.status());
-                }
             }
             switch (parts.functionality()) {
                 case TOKEN_MINT -> {
@@ -496,5 +418,10 @@ public class BaseTranslator {
         } catch (ParseException e) {
             throw new IllegalStateException("Rates file updated with unparseable contents", e);
         }
+    }
+
+    private static boolean isContractOp(@NonNull final BlockTransactionParts parts) {
+        final var function = parts.functionality();
+        return function == CONTRACT_CALL || function == CONTRACT_CREATE || function == ETHEREUM_TRANSACTION;
     }
 }

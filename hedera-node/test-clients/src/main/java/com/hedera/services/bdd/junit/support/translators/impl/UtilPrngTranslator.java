@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_BYTES;
-import static com.hedera.hapi.block.stream.output.UtilPrngOutput.EntropyOneOfType.PRNG_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -34,7 +32,7 @@ public class UtilPrngTranslator implements BlockTransactionPartsTranslator {
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS && parts.transactionOutput() != null) {
                 final var output = parts.outputOrThrow();
                 if (output.hasUtilPrng()) {
