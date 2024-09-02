@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip906;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPrivateKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPrivateKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
