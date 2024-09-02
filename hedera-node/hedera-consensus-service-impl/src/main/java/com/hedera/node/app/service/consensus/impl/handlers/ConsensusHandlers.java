@@ -39,6 +39,11 @@ public class ConsensusHandlers {
 
     /**
      * Constructor for ConsensusHandlers
+     * @param consensusCreateTopicHandler   the handler for create topic
+     * @param consensusDeleteTopicHandler   the handler for delete topic
+     * @param consensusGetTopicInfoHandler  the handler for topic info
+     * @param consensusSubmitMessageHandler the handler for message submit
+     * @param consensusUpdateTopicHandler   the handler for update topic
      */
     @Inject
     public ConsensusHandlers(
