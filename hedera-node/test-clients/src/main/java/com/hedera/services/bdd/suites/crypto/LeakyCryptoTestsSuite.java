@@ -793,7 +793,7 @@ public class LeakyCryptoTestsSuite {
                                                                 .setCallingAccount(senderAccountIdReference.get())
                                                                 .setRecipientAccount(lazyAccountIdReference.get())
                                                                 .setGas(629_000L)
-                                                                .setGasUsed(555_112L)
+                                                                .setGasUsed(554_517L)
                                                                 .setValue(FIVE_HBARS)
                                                                 .setOutput(EMPTY)
                                                                 .build())));

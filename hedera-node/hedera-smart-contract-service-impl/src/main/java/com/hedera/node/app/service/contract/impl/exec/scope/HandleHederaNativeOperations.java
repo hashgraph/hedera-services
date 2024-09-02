@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static java.util.Objects.requireNonNull;
 
@@ -109,7 +108,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
-                .memo(LAZY_CREATION_MEMO)
                 .build();
 
         // Note the use of the null "verification assistant" callback; we don't want any
@@ -121,7 +119,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                     null,
                     context.payer(),
                     HandleContext.ConsensusThrottling.ON);
-            childRecordBuilder.memo(LAZY_CREATION_MEMO);
             if (childRecordBuilder.status() == SUCCESS) {
                 childRecordBuilder.evmAddress(evmAddress);
             }
