@@ -162,7 +162,7 @@ public class GasCalculationIntegrityTest {
                 updateRates(rates.hBarEquiv, rates.centEquiv),
                 numericContract
                         .call("approve", fungibleToken, alice, BigInteger.TWO)
-                        .gas(1500_877L)
+                        .gas(742_877L)
                         .via("approveTxn")
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
                 restoreOriginalRates(),
@@ -435,12 +435,9 @@ public class GasCalculationIntegrityTest {
     }
 
     private static HapiFileUpdate updateRates(final int hBarEquiv, final int centEquiv) {
-        return fileUpdate(EXCHANGE_RATES).contents(spec -> {
-            ByteString newRates =
-                    spec.ratesProvider().rateSetWith(hBarEquiv, centEquiv).toByteString();
-            spec.registry().saveBytes("rates", newRates);
-            return newRates;
-        });
+        return fileUpdate(EXCHANGE_RATES)
+                .contents(spec ->
+                        spec.ratesProvider().rateSetWith(hBarEquiv, centEquiv).toByteString());
     }
 
     private static CustomSpecAssert restoreOriginalRates() {
