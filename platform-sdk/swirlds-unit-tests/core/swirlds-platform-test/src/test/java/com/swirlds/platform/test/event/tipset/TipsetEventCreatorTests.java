@@ -158,10 +158,10 @@ class TipsetEventCreatorTests {
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
-        final EventImpl selfParent = events.get(newEvent.getSelfParentHash());
+        final EventImpl selfParent = events.get(newEvent.getWrappers().getSelfParentHash());
         final long selfParentGeneration =
                 selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
-        final EventImpl otherParent = events.get(newEvent.getOtherParentHash());
+        final EventImpl otherParent = events.get(newEvent.getWrappers().getOtherParentHash());
         final long otherParentGeneration =
                 otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
@@ -172,7 +172,7 @@ class TipsetEventCreatorTests {
                     // comparing to self
                     continue;
                 }
-                Assertions.assertNotEquals(event.getCreatorId(), newEvent.getCreatorId());
+                Assertions.assertNotEquals(event.getCreatorId().id(), newEvent.getEventCore().creatorNodeId());
             }
         }
 
@@ -248,10 +248,10 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final UnsignedEvent event) {
 
-        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
+        eventCreators.get(new NodeId(event.getEventCore().creatorNodeId())).tipsetTracker.addEvent(event.getDescriptor(), event.getWrappers().getAllParents());
 
-        final EventImpl selfParent = events.get(event.getSelfParentHash());
-        final EventImpl otherParent = events.get(event.getOtherParentHash());
+        final EventImpl selfParent = events.get(event.getWrappers().getSelfParentHash());
+        final EventImpl otherParent = events.get(event.getWrappers().getOtherParentHash());
 
         final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
@@ -624,8 +624,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().creator();
+                if (event.getWrappers().hasOtherParent()) {
+                    otherId = event.getWrappers().getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -721,8 +721,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().creator();
+                if (event.getWrappers().hasOtherParent()) {
+                    otherId = event.getWrappers().getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -905,8 +905,8 @@ class TipsetEventCreatorTests {
         // but has not been updated in the current snapshot.
 
         final NodeId otherParentId;
-        if (eventA2.hasOtherParent()) {
-            otherParentId = eventA2.getOtherParents().getFirst().creator();
+        if (eventA2.getWrappers().hasOtherParent()) {
+            otherParentId = eventA2.getWrappers().getOtherParents().getFirst().creator();
         } else {
             otherParentId = null;
         }
@@ -1093,10 +1093,10 @@ class TipsetEventCreatorTests {
                 }
 
                 if (eventIndex == 0) {
-                    final long birthRound = event.getBirthRound();
+                    final long birthRound = event.getEventCore().birthRound();
                     assertEquals(ROUND_FIRST, birthRound);
                 } else {
-                    final long birthRound = event.getBirthRound();
+                    final long birthRound = event.getEventCore().birthRound();
                     if (useBirthRoundForAncient) {
                         assertEquals(pendingConsensusRound, birthRound);
                     } else {

@@ -31,7 +31,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
-import com.swirlds.platform.system.events.UnsignedEvent.ClassVersion;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,12 +47,11 @@ public final class EventSerializationUtils {
         // Utility class
     }
 
-    private static final long EVENT_CLASS_ID = 0x21c2620e9b6a2243L;
-
     private static final long APPLICATION_TRANSACTION_CLASS_ID = 0x9ff79186f4c4db97L;
     private static final int APPLICATION_TRANSACTION_VERSION = 1;
     private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
     private static final int STATE_SIGNATURE_VERSION = 3;
+    private static final int UNSIGNED_EVENT_VERSION = 4;
 
     /**
      * Serialize a unsigned event to the output stream {@code out}.
@@ -71,11 +69,11 @@ public final class EventSerializationUtils {
             @NonNull final SerializableDataOutputStream out,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventCore eventCore,
-            @NonNull final EventDescriptorWrapper selfParent,
+            @Nullable final EventDescriptorWrapper selfParent,
             @NonNull final List<EventDescriptorWrapper> otherParents,
             @NonNull final List<EventTransaction> eventTransactions)
             throws IOException {
-        out.writeInt(ClassVersion.BIRTH_ROUND);
+        out.writeInt(UNSIGNED_EVENT_VERSION);
         out.writeSerializable(softwareVersion, true);
         out.writeInt(NodeId.ClassVersion.ORIGINAL);
         out.writeLong(eventCore.creatorNodeId());
@@ -166,7 +164,7 @@ public final class EventSerializationUtils {
             @NonNull final SerializableDataOutputStream out,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventCore eventCore,
-            @NonNull final EventDescriptorWrapper selfParent,
+            @Nullable final EventDescriptorWrapper selfParent,
             @NonNull final List<EventDescriptorWrapper> otherParents,
             @NonNull final List<EventTransaction> eventTransactions,
             @NonNull final Bytes signature)
@@ -187,7 +185,7 @@ public final class EventSerializationUtils {
     public static UnsignedEvent deserializeUnsignedEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
         final int version = in.readInt();
-        if (version != ClassVersion.BIRTH_ROUND) {
+        if (version != UNSIGNED_EVENT_VERSION) {
             throw new IOException("Unsupported version: " + version);
         }
 
@@ -269,8 +267,8 @@ public final class EventSerializationUtils {
     @NonNull
     public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
-        final UnsignedEvent unsignedEvent = UnsignedEvent.deserialize(in);
-        final Bytes signature = Bytes.wrap(in.readByteArray(SignatureType.RSA.signatureLength()));
+        final UnsignedEvent unsignedEvent = EventSerializationUtils.deserializeUnsignedEvent(in);
+        final byte [] signature = in.readByteArray(SignatureType.RSA.signatureLength());
 
         return new PlatformEvent(unsignedEvent, signature);
     }

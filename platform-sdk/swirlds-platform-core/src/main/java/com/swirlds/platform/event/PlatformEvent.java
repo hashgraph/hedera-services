@@ -121,18 +121,10 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @param unsignedEvent   the hashed data for the event
      * @param signature the signature for the event
      */
-    public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) { // TODO remove
-        this(unsignedEvent, Bytes.wrap(signature));
-    }
-
-    /**
-     * @param unsignedEvent   the hashed data for the event
-     * @param signature the signature for the event
-     */
-    public PlatformEvent(final UnsignedEvent unsignedEvent, final Bytes signature) {
+    public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
         this(
                 unsignedEvent.getSoftwareVersion(),
-                new GossipEvent(unsignedEvent.getEventCore(), signature, unsignedEvent.getEventTransactions()));
+                new GossipEvent(unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions()));
         setHash(unsignedEvent.getHash());
     }
 
