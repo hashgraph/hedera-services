@@ -561,9 +561,6 @@ public class TokenInfoHTSSuite {
                                                             .withStatus(SUCCESS)
                                                             .withTokenInfo(getTokenInfoStructForNonFungibleTokenV2(
                                                                     spec,
-                                                                    NON_FUNGIBLE_TOKEN_NAME,
-                                                                    NON_FUNGIBLE_SYMBOL,
-                                                                    MEMO,
                                                                     spec.registry()
                                                                             .getAccountID(TOKEN_TREASURY),
                                                                     getTokenKeyFromSpec(spec, TokenKeyType.ADMIN_KEY),
@@ -1858,34 +1855,30 @@ public class TokenInfoHTSSuite {
             final Key adminKey,
             final long expirySecond,
             final ByteString ledgerId) {
-        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-
-        return TokenInfo.newBuilder()
-                .setLedgerId(ledgerId)
-                .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
-                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
-                .setAutoRenewAccount(autoRenewAccount)
-                .setAutoRenewPeriod(Duration.newBuilder()
-                        .setSeconds(THREE_MONTHS_IN_SECONDS)
-                        .build())
-                .setSymbol(symbol)
-                .setName(tokenName)
-                .setMemo(memo)
-                .setTreasury(treasury)
-                .setTotalSupply(1L)
-                .setMaxSupply(10L)
-                .addAllCustomFees(getCustomFeeForNFT(spec))
-                .setAdminKey(adminKey)
-                .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
-                .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
-                .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
-                .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
-                .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
-                .build();
+        return buildTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, null, false);
     }
 
     private TokenInfo getTokenInfoStructForNonFungibleTokenV2(
+            final HapiSpec spec,
+            final AccountID treasury,
+            final Key adminKey,
+            final long expirySecond,
+            final ByteString ledgerId) {
+        final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
+        return buildTokenInfo(
+                spec,
+                TokenInfoHTSSuite.NON_FUNGIBLE_TOKEN_NAME,
+                TokenInfoHTSSuite.NON_FUNGIBLE_SYMBOL,
+                TokenInfoHTSSuite.MEMO,
+                treasury,
+                adminKey,
+                expirySecond,
+                ledgerId,
+                meta,
+                true);
+    }
+
+    private TokenInfo buildTokenInfo(
             final HapiSpec spec,
             final String tokenName,
             final String symbol,
@@ -1893,11 +1886,12 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            final ByteString ledgerId) {
+            final ByteString ledgerId,
+            final ByteString metadata,
+            final boolean includeMetadataKey) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
-        final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
 
-        return TokenInfo.newBuilder()
+        TokenInfo.Builder builder = TokenInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
                 .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
@@ -1913,15 +1907,22 @@ public class TokenInfoHTSSuite {
                 .setMaxSupply(10L)
                 .addAllCustomFees(getCustomFeeForNFT(spec))
                 .setAdminKey(adminKey)
-                .setMetadata(meta)
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
-                .setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY))
-                .build();
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
+
+        if (metadata != null) {
+            builder.setMetadata(metadata);
+        }
+
+        if (includeMetadataKey) {
+            builder.setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY));
+        }
+
+        return builder.build();
     }
 
     @NonNull
