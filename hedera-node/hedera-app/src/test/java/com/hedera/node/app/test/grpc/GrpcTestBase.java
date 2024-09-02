@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package grpc;
+package com.hedera.node.app.test.grpc;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
