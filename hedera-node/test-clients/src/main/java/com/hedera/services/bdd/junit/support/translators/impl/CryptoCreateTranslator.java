@@ -45,7 +45,7 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
                 final var iter = remainingStateChanges.listIterator();

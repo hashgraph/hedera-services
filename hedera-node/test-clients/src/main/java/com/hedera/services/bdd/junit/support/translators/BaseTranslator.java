@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.streams.CallOperationType.OP_DELEGATECALL;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
@@ -27,18 +27,29 @@ import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
+import static com.hedera.services.bdd.junit.support.translators.impl.TranslatorUtils.addSyntheticResultIfExpected;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.output.CallContractOutput;
+import com.hedera.hapi.block.stream.output.CreateContractOutput;
+import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.streams.ContractAction;
+import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.types.EntityType;
@@ -56,6 +67,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -71,17 +83,21 @@ public class BaseTranslator {
 
     private static final Set<String> AUTO_CREATION_MEMOS = Set.of(LAZY_MEMO, AUTO_MEMO);
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
+
     private long highestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
     private Instant userTimestamp;
+    private ScheduleID scheduleRef;
+    private BlockTransactionalUnit unit;
+
+    private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
+    private final List<ContractAction> contractActions = new ArrayList<>();
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
     private final Set<TokenAssociation> knownAssociations = new HashSet<>();
-    private final Set<TokenAssociation> pendingAssociations = new HashSet<>();
-    private final Set<TokenAssociation> pendingDissociations = new HashSet<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -91,12 +107,12 @@ public class BaseTranslator {
         void accept(
                 @NonNull TransactionReceipt.Builder receiptBuilder,
                 @NonNull TransactionRecord.Builder recordBuilder,
-                @NonNull List<TransactionSidecarRecord> sidecarRecords,
                 @NonNull Consumer<TokenID> involvedTokenId);
     }
 
     /**
      * Scans a block for genesis information and returns true if found.
+     *
      * @param block the block to scan
      * @return true if genesis information was found
      */
@@ -127,14 +143,18 @@ public class BaseTranslator {
      * @param unit the unit to prepare for
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
-        knownAssociations.addAll(pendingAssociations);
-        knownAssociations.removeAll(pendingDissociations);
-        pendingAssociations.clear();
-        pendingDissociations.clear();
+        this.unit = unit;
         numMints.clear();
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
+        sidecarRecords.clear();
+        contractActions.clear();
+        scheduleRef = null;
         scanUnit(unit);
+        sidecarRecords.stream()
+                .map(sidecar -> sidecar.actionsOrElse(ContractActions.DEFAULT))
+                .map(ContractActions::contractActions)
+                .forEach(contractActions::addAll);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
             list.clear();
@@ -154,7 +174,84 @@ public class BaseTranslator {
     }
 
     /**
+     * Tracks the association of a token with an account.
+     *
+     * @param tokenID the token to track
+     * @param accountID the account to track
+     */
+    public void trackAssociation(@NonNull final TokenID tokenID, @NonNull final AccountID accountID) {
+        knownAssociations.add(new TokenAssociation(tokenID, accountID));
+    }
+
+    /**
+     * Tracks the dissociation of a token from an account.
+     *
+     * @param tokenID the token to track
+     * @param accountID the account to track
+     */
+    public void trackDissociation(@NonNull final TokenID tokenID, @NonNull final AccountID accountID) {
+        knownAssociations.add(new TokenAssociation(tokenID, accountID));
+    }
+
+    /**
+     * Returns the next synthetic call result for a system contract call.
+     *
+     * @return the next synthetic call result
+     */
+    public ContractFunctionResult nextSyntheticCallResult() {
+        int i = 0;
+        ContractFunctionResult result = null;
+        for (int n = contractActions.size(); i < n; i++) {
+            final var action = contractActions.get(i);
+            if (isSystem(action.recipientContractOrElse(ContractID.DEFAULT))) {
+                final var builder = ContractFunctionResult.newBuilder()
+                        .contractID(action.recipientContractOrThrow())
+                        .amount(action.value())
+                        .functionParameters(action.input())
+                        .gas(action.gas())
+                        .gasUsed(action.gasUsed());
+                switch (action.resultData().kind()) {
+                    case UNSET -> throw new IllegalStateException("No result data in synthetic call");
+                    case OUTPUT -> builder.contractCallResult(action.outputOrThrow());
+                    case REVERT_REASON -> builder.errorMessage(
+                            action.revertReasonOrThrow().asUtf8String());
+                    case ERROR -> builder.errorMessage(action.errorOrThrow().asUtf8String());
+                }
+                int j = i;
+                for (; j >= 0 && contractActions.get(j).callOperationType() == OP_DELEGATECALL; j--) {
+                    // Skip all these, DELEGATECALL does not change sender address
+                }
+                final var senderAction = contractActions.get(j);
+                switch (senderAction.caller().kind()) {
+                    case UNSET -> throw new IllegalStateException("No caller in synthetic call");
+                    case CALLING_ACCOUNT -> builder.senderId(senderAction.callingAccountOrThrow());
+                    case CALLING_CONTRACT -> builder.senderId(AccountID.newBuilder()
+                            .accountNum(senderAction.callingContractOrThrow().contractNumOrThrow())
+                            .build());
+                }
+                result = builder.build();
+                break;
+            }
+        }
+        if (result != null) {
+            contractActions.remove(i);
+            return result;
+        } else {
+            throw new IllegalStateException("No more synthetic call results available - " + contractActions);
+        }
+    }
+
+    private static final long HTS_SYSTEM_CONTRACT_NUM = 0x167;
+    private static final long HAS_SYSTEM_CONTRACT_NUM = 0x16a;
+
+    private boolean isSystem(@NonNull final ContractID contractID) {
+        final long num = contractID.contractNumOrThrow();
+        return num == HTS_SYSTEM_CONTRACT_NUM || num == HAS_SYSTEM_CONTRACT_NUM;
+    }
+
+    /**
      * Initializes the total supply of the given token.
+     *
      * @param tokenId the token to initialize
      * @param totalSupply the total supply to set
      */
@@ -164,6 +261,7 @@ public class BaseTranslator {
 
     /**
      * Adjusts the total supply of the given token by the given amount and returns the new total supply.
+     *
      * @param tokenId the token to adjust
      * @param adjustment the amount to adjust by
      * @return the new total supply
@@ -175,6 +273,7 @@ public class BaseTranslator {
     /**
      * Determines if the given token was already associated with the given account before the ongoing
      * transactional unit being translated into records.
+     *
      * @param tokenId the token to query
      * @param accountId the account to query
      * @return true if the token was already associated with the account
@@ -187,6 +286,7 @@ public class BaseTranslator {
 
     /**
      * Provides the next {@code n} serial numbers that were minted for the given token in the transactional unit.
+     *
      * @param tokenId the token to query
      * @param n the number of serial numbers to provide
      * @return the next {@code n} serial numbers that were minted for the token
@@ -208,6 +308,7 @@ public class BaseTranslator {
 
     /**
      * Provides the next created entity number of the given type in the ongoing transactional unit.
+     *
      * @param type the type of entity
      * @return the next created entity number
      */
@@ -222,6 +323,7 @@ public class BaseTranslator {
 
     /**
      * Given a {@link BlockTransactionParts} and a {@link Spec}, translates the implied {@link SingleTransactionRecord}.
+     *
      * @param parts the parts of the transaction
      * @param spec the specification of the transaction record
      * @return the translated record
@@ -241,7 +343,7 @@ public class BaseTranslator {
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
         final boolean followsUserRecord = asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
-        if (followsUserRecord) {
+        if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
         if (!followsUserRecord || AUTO_CREATION_MEMOS.contains(parts.memo())) {
@@ -251,12 +353,43 @@ public class BaseTranslator {
         }
         final AtomicReference<TokenType> tokenType = new AtomicReference<>();
         final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
-        spec.accept(receiptBuilder, recordBuilder, sidecarRecords, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
+        spec.accept(receiptBuilder, recordBuilder, tokenId -> tokenType.set(tokenTypes.get(tokenId)));
+        addSyntheticResultIfExpected(this, parts, recordBuilder);
+        if (parts.transactionIdOrThrow().scheduled()) {
+            try {
+                recordBuilder.scheduleRef(scheduleRefOrThrow());
+            } catch (Exception e) {
+                log.error(
+                        "Failed to add schedule ref to transaction record for {} - state changes were {}",
+                        parts.body(),
+                        unit.stateChanges(),
+                        e);
+            }
+        }
         return new SingleTransactionRecord(
                 parts.transactionParts().wrapper(),
                 recordBuilder.receipt(receiptBuilder.build()).build(),
                 sidecarRecords,
                 new SingleTransactionRecord.TransactionOutputs(tokenType.get()));
+    }
+
+    /**
+     * Determines if the given parts are following the user timestamp.
+     *
+     * @param parts the parts to check
+     * @return true if the parts are following the user timestamp
+     */
+    public boolean isFollowingChild(@NonNull final BlockTransactionParts parts) {
+        return asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
+    }
+
+    /**
+     * Returns the modified schedule id for the ongoing transactional unit.
+     *
+     * @return the modified schedule id
+     */
+    public @NonNull ScheduleID scheduleRefOrThrow() {
+        return requireNonNull(scheduleRef);
     }
 
     private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
@@ -299,6 +432,7 @@ public class BaseTranslator {
                                 .computeIfAbsent(SCHEDULE, ignore -> new LinkedList<>())
                                 .add(num);
                     }
+                    scheduleRef = key.scheduleIdKeyOrThrow();
                 } else if (key.hasContractIdKey() || key.hasAccountIdKey()) {
                     final var num = key.hasContractIdKey()
                             ? key.contractIdKeyOrThrow().contractNumOrThrow()
@@ -314,30 +448,42 @@ public class BaseTranslator {
                     highestPutSerialNos
                             .computeIfAbsent(tokenId, ignore -> new LinkedList<>())
                             .add(nftId.serialNumber());
-                } else if (key.hasTokenRelationshipKey()) {
-                    pendingAssociations.add(key.tokenRelationshipKeyOrThrow());
-                    pendingDissociations.remove(key.tokenRelationshipKeyOrThrow());
-                }
-            } else if (stateChange.hasMapDelete()) {
-                final var mapDelete = stateChange.mapDeleteOrThrow();
-                final var key = mapDelete.keyOrThrow();
-                if (key.hasTokenRelationshipKey()) {
-                    pendingAssociations.remove(key.tokenRelationshipKeyOrThrow());
-                    pendingDissociations.add(key.tokenRelationshipKeyOrThrow());
                 }
             }
         });
         unit.blockTransactionParts().forEach(parts -> {
-            if (parts.transactionIdOrThrow().nonce() == 0) {
+            if (parts.transactionIdOrThrow().nonce() == 0
+                    && !parts.transactionIdOrThrow().scheduled()) {
                 userTimestamp = asInstant(parts.consensusTimestamp());
-            }
-            if (parts.status() == SUCCESS && parts.functionality() == TOKEN_MINT) {
-                final var op = parts.body().tokenMintOrThrow();
-                final var numMetadata = op.metadata().size();
-                if (numMetadata > 0) {
-                    final var tokenId = op.tokenOrThrow();
-                    numMints.merge(tokenId, numMetadata, Integer::sum);
+                if (parts.transactionIdOrThrow()
+                        .transactionValidStartOrThrow()
+                        .equals(new Timestamp(1725025158L, 5096))) {
+                    log.info("User timestamp set to {} for {} ({})", userTimestamp, parts.body(), parts.status());
                 }
+            }
+            switch (parts.functionality()) {
+                case TOKEN_MINT -> {
+                    if (parts.status() == SUCCESS) {
+                        final var op = parts.body().tokenMintOrThrow();
+                        final var numMetadata = op.metadata().size();
+                        if (numMetadata > 0) {
+                            final var tokenId = op.tokenOrThrow();
+                            numMints.merge(tokenId, numMetadata, Integer::sum);
+                        }
+                    }
+                }
+                case CONTRACT_CALL -> Optional.ofNullable(parts.transactionOutput())
+                        .map(TransactionOutput::contractCall)
+                        .map(CallContractOutput::sidecars)
+                        .ifPresent(sidecarRecords::addAll);
+                case CONTRACT_CREATE -> Optional.ofNullable(parts.transactionOutput())
+                        .map(TransactionOutput::contractCreate)
+                        .map(CreateContractOutput::sidecars)
+                        .ifPresent(sidecarRecords::addAll);
+                case ETHEREUM_TRANSACTION -> Optional.ofNullable(parts.transactionOutput())
+                        .map(TransactionOutput::ethereumCall)
+                        .map(EthereumOutput::sidecars)
+                        .ifPresent(sidecarRecords::addAll);
             }
         });
     }

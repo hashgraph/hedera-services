@@ -47,14 +47,12 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             Optional.ofNullable(parts.transactionOutput())
                     .map(TransactionOutput::contractCreateOrThrow)
                     .ifPresent(createContractOutput -> {
                         final var result = createContractOutput.contractCreateResultOrThrow();
                         recordBuilder.contractCreateResult(result);
-                        receiptBuilder.contractID(result.contractID());
-                        sidecarRecords.addAll(createContractOutput.sidecars());
                     });
             if (parts.status() == SUCCESS) {
                 final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);

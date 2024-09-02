@@ -44,7 +44,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Translates a valid attempt into an appropriate {@link AbstractCall} subclass, giving the {@link Call}
  * everything it will need to execute.
  */
-public class HasCallAttempt extends AbstractCallAttempt {
+public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
     public static final Function REDIRECT_FOR_ACCOUNT = new Function("redirectForAccount(address,bytes)");
 
     @Nullable
@@ -62,7 +62,7 @@ public class HasCallAttempt extends AbstractCallAttempt {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final List<CallTranslator> callTranslators,
+            @NonNull final List<CallTranslator<HasCallAttempt>> callTranslators,
             final boolean isStaticCall) {
         super(
                 input,
@@ -78,10 +78,15 @@ public class HasCallAttempt extends AbstractCallAttempt {
                 isStaticCall,
                 REDIRECT_FOR_ACCOUNT);
         if (isRedirect()) {
-            this.redirectAccount = linkedAccount(redirectAddress);
+            this.redirectAccount = linkedAccount(requireNonNull(redirectAddress));
         } else {
             this.redirectAccount = null;
         }
+    }
+
+    @Override
+    protected HasCallAttempt self() {
+        return this;
     }
 
     /**

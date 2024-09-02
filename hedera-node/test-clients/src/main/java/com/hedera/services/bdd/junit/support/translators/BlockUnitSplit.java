@@ -125,9 +125,11 @@ public class BlockUnitSplit {
         if (unitTxnId == null) {
             return true;
         }
-        return !nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
-                || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                        .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT));
+        // Scheduled transactions never begin a new transactional unit in the current system
+        return !nextId.scheduled()
+                && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
+                        || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
+                                .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
     }
 
     private void completeAndAdd(

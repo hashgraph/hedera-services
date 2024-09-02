@@ -95,6 +95,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -135,24 +136,26 @@ public class BlockStreamBuilder
                 CryptoUpdateStreamBuilder,
                 NodeCreateStreamBuilder,
                 TokenAirdropStreamBuilder {
+    private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
+            Comparator.<TokenAssociation>comparingLong(a -> a.tokenIdOrThrow().tokenNum())
+                    .thenComparingLong(a -> a.accountIdOrThrow().accountNumOrThrow());
+
     // base transaction data
     private Transaction transaction;
 
     @Nullable
     private Bytes serializedTransaction;
 
-    private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
     // change when removable records appear "between" this record and the parent record
     private Instant consensusNow;
-    private Instant parentConsensus;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private boolean hasAssessedCustomFees = false;
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
-    private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
-    private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+    private final List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
+    private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private TransferList transferList = TransferList.DEFAULT;
@@ -165,9 +168,10 @@ public class BlockStreamBuilder
     // If non-null, a builder to be used to set the transaction output
     private TransactionOutput.Builder transactionOutputBuilder = null;
     // Sidecar data, booleans are the migration flag
-    private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
-    private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
-    private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
+    private final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges =
+            new LinkedList<>();
+    private final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
+    private final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
 
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
@@ -193,9 +197,8 @@ public class BlockStreamBuilder
         ETH_CALL,
     }
 
+    // The type of contract operation that was performed
     private ContractOpType contractOpType = null;
-    // If true, the contract function result is a call result; otherwise, a create result
-    private boolean isCreateResult;
 
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
@@ -203,7 +206,7 @@ public class BlockStreamBuilder
     // Category of the record
     private final HandleContext.TransactionCategory category;
 
-    private List<StateChange> stateChanges = new ArrayList<>();
+    private final List<StateChange> stateChanges = new ArrayList<>();
 
     // Used to customize the externalized form of a dispatched child transaction, right before
     // its record stream item is built; lets the contract service externalize certain dispatched
@@ -281,7 +284,6 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
-        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
         transactionResultBuilder.parentConsensusTimestamp(Timestamp.newBuilder()
                 .seconds(parentConsensus.getEpochSecond())
                 .nanos(parentConsensus.getNano())
@@ -316,7 +318,6 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
-        this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
         return this;
     }
 
@@ -340,7 +341,6 @@ public class BlockStreamBuilder
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
         this.transaction = StreamBuilder.transactionWith(body);
-        this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
 
@@ -483,7 +483,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
-        contractOpType = ContractOpType.ETH_CALL;
+        contractOpType = ContractOpType.ETH_TBD;
         ensureOutputBuilder();
         return this;
     }
@@ -744,16 +744,6 @@ public class BlockStreamBuilder
         return inProgressBody();
     }
 
-    private TransactionBody inProgressBody() {
-        try {
-            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                    transaction.signedTransactionBytes().toReadableSequentialData());
-            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
-        } catch (Exception e) {
-            throw new IllegalStateException("Record being built for unparseable transaction", e);
-        }
-    }
-
     @NonNull
     @Override
     public List<AccountAmount> getPaidStakingRewards() {
@@ -789,12 +779,23 @@ public class BlockStreamBuilder
     @NonNull
     private BlockItem getTransactionResultBlockItem() {
         if (!automaticTokenAssociations.isEmpty()) {
+            automaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
             transactionResultBuilder.automaticTokenAssociations(automaticTokenAssociations);
         }
         return BlockItem.newBuilder()
                 .transactionResult(
                         transactionResultBuilder.transferList(transferList).build())
                 .build();
+    }
+
+    private TransactionBody inProgressBody() {
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+        } catch (Exception e) {
+            throw new IllegalStateException("Record being built for unparseable transaction", e);
+        }
     }
 
     @Nullable
@@ -867,7 +868,6 @@ public class BlockStreamBuilder
     private Bytes getSerializedTransaction() {
         if (customizer != null) {
             transaction = customizer.apply(transaction);
-            transactionBytes = transaction.signedTransactionBytes();
             return Transaction.PROTOBUF.toBytes(transaction);
         }
         return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);

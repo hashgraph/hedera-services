@@ -26,6 +26,7 @@ import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTr
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Set;
 
 public class TokenBurnTranslator implements BlockTransactionPartsTranslator {
     @Override
@@ -36,11 +37,12 @@ public class TokenBurnTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenBurnOrThrow();
                 final var tokenId = op.tokenOrThrow();
-                final var numSerialsBurned = op.serialNumbers().size();
+                final var serialsBurned = Set.copyOf(op.serialNumbers());
+                final var numSerialsBurned = serialsBurned.size();
                 final long newTotalSupply;
                 if (numSerialsBurned > 0) {
                     newTotalSupply = baseTranslator.newTotalSupply(tokenId, -numSerialsBurned);

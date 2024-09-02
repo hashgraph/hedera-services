@@ -42,7 +42,7 @@ public class ContractDeleteTranslator implements BlockTransactionPartsTranslator
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var targetId =
                         parts.body().contractDeleteInstanceOrThrow().contractIDOrThrow();

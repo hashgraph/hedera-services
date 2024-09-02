@@ -140,7 +140,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
         stakingValidator = new StakingValidator();
-        subject = new CryptoUpdateHandler(waivers, stakingValidator);
+        subject = new CryptoUpdateHandler(waivers);
     }
 
     @Test

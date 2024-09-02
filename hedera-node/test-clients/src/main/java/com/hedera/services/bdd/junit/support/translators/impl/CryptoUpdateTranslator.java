@@ -19,50 +19,48 @@ package com.hedera.services.bdd.junit.support.translators.impl;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/**
- * Translates a consensus submit message into a {@link SingleTransactionRecord}.
- */
-public class SubmitMessageTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(SubmitMessageTranslator.class);
-
-    // For explanation about this constant value, see
-    // https://github.com/hashgraph/hedera-protobufs/blob/pbj-storage-spec-review/block/stream/output/consensus_service.proto#L6
-    private static final long RUNNING_HASH_VERSION = 3L;
-
+public class CryptoUpdateTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
             @NonNull final BlockTransactionParts parts,
-            @NonNull BaseTranslator baseTranslator,
+            @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
-                receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
+                final var op = parts.body().cryptoUpdateAccountOrThrow();
+                final var targetId = op.accountIDToUpdateOrThrow();
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
                     if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().valueOrThrow().hasTopicValue()) {
-                        final var topic =
-                                stateChange.mapUpdateOrThrow().valueOrThrow().topicValueOrThrow();
-                        receiptBuilder.topicSequenceNumber(topic.sequenceNumber());
-                        receiptBuilder.topicRunningHash(topic.runningHash());
-                        iter.remove();
-                        return;
+                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
+                        final var account =
+                                stateChange.mapUpdateOrThrow().valueOrThrow().accountValueOrThrow();
+                        if (matches(targetId, account)) {
+                            iter.remove();
+                            receiptBuilder.accountID(account.accountIdOrThrow());
+                            return;
+                        }
                     }
                 }
-                log.error(
-                        "No topic state change found for successful submit message with id {}",
-                        parts.transactionIdOrThrow());
             }
         });
+    }
+
+    private boolean matches(@NonNull final AccountID accountId, @NonNull final Account account) {
+        return switch (accountId.account().kind()) {
+            case UNSET -> throw new IllegalStateException("Account ID has no kind");
+            case ACCOUNT_NUM -> account.accountIdOrThrow().equals(accountId);
+            case ALIAS -> account.alias().equals(accountId.aliasOrThrow());
+        };
     }
 }

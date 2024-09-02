@@ -33,7 +33,7 @@ public class ContractUpdateTranslator implements BlockTransactionPartsTranslator
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
@@ -45,7 +45,7 @@ public class ContractUpdateTranslator implements BlockTransactionPartsTranslator
                         if (account.smartContract()) {
                             iter.remove();
                             final var contractId = ContractID.newBuilder()
-                                    .contractNum(account.accountIdOrThrow().accountNum())
+                                    .contractNum(account.accountIdOrThrow().accountNumOrThrow())
                                     .build();
                             receiptBuilder.contractID(contractId);
                             return;

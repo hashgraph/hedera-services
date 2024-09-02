@@ -25,15 +25,17 @@ import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Translates a token mint transaction into a {@link SingleTransactionRecord}.
+ * Defines a translator for a token wipe transaction into a {@link SingleTransactionRecord}.
  */
-public class TokenMintTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(TokenMintTranslator.class);
+public class TokenWipeTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(TokenWipeTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
@@ -45,27 +47,26 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, involvedTokenId) -> {
             if (parts.status() == SUCCESS) {
-                final var op = parts.body().tokenMintOrThrow();
+                final var op = parts.body().tokenWipeOrThrow();
                 final var tokenId = op.tokenOrThrow();
-                final var numMints = op.metadata().size();
-                if (numMints > 0) {
-                    final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
-                    receiptBuilder.serialNumbers(List.copyOf(mintedSerialNos));
+                final var wipedSerialNos = new ArrayList<>(Set.copyOf(op.serialNumbers()));
+                final var numSerials = wipedSerialNos.size();
+                if (numSerials > 0) {
                     final var iter = remainingStateChanges.listIterator();
                     while (iter.hasNext()) {
                         final var stateChange = iter.next();
-                        if (stateChange.hasMapUpdate()
-                                && stateChange.mapUpdateOrThrow().keyOrThrow().hasNftIdKey()) {
+                        if (stateChange.hasMapDelete()
+                                && stateChange.mapDeleteOrThrow().keyOrThrow().hasNftIdKey()) {
                             final var nftId =
-                                    stateChange.mapUpdateOrThrow().keyOrThrow().nftIdKeyOrThrow();
+                                    stateChange.mapDeleteOrThrow().keyOrThrow().nftIdKeyOrThrow();
                             if (!nftId.tokenIdOrThrow().equals(tokenId)) {
                                 continue;
                             }
                             final var serialNo = nftId.serialNumber();
-                            if (mintedSerialNos.remove(serialNo)) {
+                            if (wipedSerialNos.remove(serialNo)) {
                                 iter.remove();
-                                if (mintedSerialNos.isEmpty()) {
-                                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, numMints);
+                                if (wipedSerialNos.isEmpty()) {
+                                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, -numSerials);
                                     receiptBuilder.newTotalSupply(newTotalSupply);
                                     return;
                                 }
@@ -73,11 +74,12 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                         }
                     }
                     log.error(
-                            "Not all mints had matching state changes found for successful mint with id {}",
-                            parts.transactionIdOrThrow());
+                            "Wiped serials {} did not have matching state changes for successful wipe {}",
+                            wipedSerialNos,
+                            parts.body());
                 } else {
-                    final var amountMinted = op.amount();
-                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, amountMinted);
+                    final var amountWiped = op.amount();
+                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, -amountWiped);
                     receiptBuilder.newTotalSupply(newTotalSupply);
                 }
             }
