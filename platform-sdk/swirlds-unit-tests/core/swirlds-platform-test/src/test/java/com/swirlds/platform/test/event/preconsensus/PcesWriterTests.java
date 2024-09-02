@@ -39,6 +39,7 @@ import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -63,6 +64,7 @@ import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -756,6 +758,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Flush request test")
     void flushRequestTest(@NonNull final AncientMode ancientMode) throws IOException {
+        final Randotron r = Randotron.create();
         final PlatformContext platformContext = buildContext(ancientMode);
         final PcesFileManager fileManager =
                 new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), selfId, 0);
@@ -765,8 +768,8 @@ class PcesWriterTests {
 
         final List<PlatformEvent> events = new ArrayList<>();
         for (long i = 0; i < 9; i++) {
-            final PlatformEvent event = mock(PlatformEvent.class);
-            when(event.getStreamSequenceNumber()).thenReturn(i);
+            final PlatformEvent event = new TestingEventBuilder(r).build();
+            event.setStreamSequenceNumber(i);
             events.add(event);
         }
 
