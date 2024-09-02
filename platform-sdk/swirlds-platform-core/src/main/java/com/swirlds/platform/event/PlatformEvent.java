@@ -468,7 +468,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @Nullable
     public EventDescriptorWrapper getSelfParent() {
-        if (!getEventCore().parents().isEmpty()) {
+        if (!getEventCore().parents().isEmpty() && getEventCore().parents().getFirst().creatorNodeId() == getEventCore().creatorNodeId()) {
             return new EventDescriptorWrapper(getEventCore().parents().getFirst());
         }
         return null;
@@ -481,12 +481,17 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @NonNull
     public List<EventDescriptorWrapper> getOtherParents() {
-        if (getEventCore().parents().size() > 1) {
+        if(getEventCore().parents().isEmpty()){
+            return Collections.emptyList();
+        }
+        if (getEventCore().parents().getFirst().creatorNodeId() == getEventCore().creatorNodeId()) {
             return getEventCore().parents().subList(1, getEventCore().parents().size()).stream()
                     .map(EventDescriptorWrapper::new)
                     .toList();
         }
-        return Collections.emptyList();
+        return getEventCore().parents().stream()
+                .map(EventDescriptorWrapper::new)
+                .toList();
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
