@@ -125,6 +125,15 @@ public class CreateDecoder {
         return bodyFor(tokenCreateWrapper);
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_WITH_METADATA} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @param senderId the sender account ID
+     * @param nativeOperations the native operations
+     * @param addressIdConverter the address ID converter
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateFungibleTokenWithMetadata(
             @NonNull final byte[] encoded,
             @NonNull final AccountID senderId,
@@ -141,6 +150,7 @@ public class CreateDecoder {
                 addressIdConverter);
         return bodyForWithMeta(tokenCreateWrapper);
     }
+
     /**
      * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1} into a synthetic {@link TransactionBody}.
      *
@@ -223,6 +233,15 @@ public class CreateDecoder {
         return bodyFor(tokenCreateWrapper);
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @param senderId the sender account ID
+     * @param nativeOperations the native operations
+     * @param addressIdConverter the address ID converter
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateFungibleTokenWithMetadataAndCustomFees(
             @NonNull final byte[] encoded,
             @NonNull final AccountID senderId,
@@ -292,6 +311,15 @@ public class CreateDecoder {
         return bodyFor(tokenCreateWrapper);
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @param senderId the sender account ID
+     * @param nativeOperations the native operations
+     * @param addressIdConverter the address ID converter
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateNonFungibleWithMetadata(
             @NonNull final byte[] encoded,
             @NonNull final AccountID senderId,
@@ -369,6 +397,15 @@ public class CreateDecoder {
         return bodyFor(tokenCreateWrapper);
     }
 
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @param senderId the sender account ID
+     * @param nativeOperations the native operations
+     * @param addressIdConverter the address ID converter
+     * @return the synthetic transaction body
+     */
     public TransactionBody decodeCreateNonFungibleWithMetadataAndCustomFees(
             @NonNull final byte[] encoded,
             @NonNull final AccountID senderId,
