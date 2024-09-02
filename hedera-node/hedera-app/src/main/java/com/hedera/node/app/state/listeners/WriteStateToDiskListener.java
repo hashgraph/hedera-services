@@ -25,7 +25,6 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgr
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
@@ -66,7 +65,7 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     }
 
     @Override
-    public void notify(final StateWriteToDiskCompleteNotification notification) {
+    public void notify(@NonNull final StateWriteToDiskCompleteNotification notification) {
         if (notification.isFreezeState()) {
             log.info(
                     "StateWriteToDiskCompleteNotification Received : Freeze State Finished. "
@@ -80,11 +79,9 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
                 final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
                 final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-                final var networkAdminConfig =
-                        configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
 
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
-                        networkAdminConfig,
+                        configProvider.getConfiguration(),
                         readableFreezeStore,
                         executor,
                         readableUpgradeFileStore,
@@ -92,6 +89,8 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                         readableStakingInfoStore);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
+            } catch (Exception e) {
+                log.error("Error while responding to freeze state notification", e);
             }
         }
     }

@@ -47,7 +47,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -135,7 +134,7 @@ public class ServicesMain implements SwirldMain {
      *     and the working directory <i>settings.txt</i>, providing the same
      *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
-     *     {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
+     *     {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleStateRoot} instance that delegates the call back to our
      *     Hedera instance.)</li>
      *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
@@ -190,7 +189,6 @@ public class ServicesMain implements SwirldMain {
         // Add additional configuration to the platform
         final Configuration configuration = buildConfiguration();
         platformBuilder.withConfiguration(configuration);
-
         platformBuilder.withCryptography(CryptographyFactory.create());
         platformBuilder.withTime(Time.getCurrent());
 

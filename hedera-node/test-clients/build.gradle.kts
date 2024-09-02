@@ -28,6 +28,8 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
+
 sourceSets {
     create("rcdiff")
     create("yahcli")
@@ -43,6 +45,7 @@ tasks.register<JavaExec>("runTestClient") {
 
 val prCheckTags =
     mapOf(
+        "hapiTestAdhoc" to "ADHOC",
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
         "hapiTestRestart" to "RESTART|UPGRADE",
@@ -53,6 +56,7 @@ val prCheckTags =
     )
 val prCheckStartPorts =
     mapOf(
+        "hapiTestAdhoc" to "25000",
         "hapiTestCrypto" to "26000",
         "hapiTestToken" to "27000",
         "hapiTestRestart" to "28000",
@@ -224,18 +228,6 @@ tasks.register<Test>("testRepeatable") {
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
-}
-
-tasks.itest {
-    systemProperty("itests", System.getProperty("itests"))
-    systemProperty("junit.jupiter.execution.parallel.enabled", false)
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
-}
-
-tasks.eet {
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.shadowJar {

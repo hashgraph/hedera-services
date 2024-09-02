@@ -31,10 +31,15 @@ javaModules {
         group = "com.hedera.hashgraph"
     }
 
+    // The Hedera Cryptography modules
+    directory("hedera-cryptography") {
+        group = "com.hedera.cryptography"
+    }
+
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
-        module("swirlds-jasperdb") { artifact = "swirlds-merkledb" }
+        module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
@@ -43,12 +48,7 @@ javaModules {
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
 
-        // EVM has its own group
-        module("hedera-evm") { group = "com.hedera.evm"}
-        module("hedera-evm-impl") { group = "com.hedera.evm"}
-
         // Configure 'artifact' for projects where the folder does not correspond to the artifact name
-        module("cli-clients") { artifact = "services-cli" }
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
         module("hedera-addressbook-service") { artifact = "app-service-addressbook" }
@@ -92,7 +92,7 @@ javaModules {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.53.0"
+val hapiProtoVersion = "0.54.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -101,6 +101,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.9")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
     }
 }

@@ -20,6 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -77,7 +80,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new RecordStreamBuilder().status(SUCCESS);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
                 });
 
         refreshWritableStores();
@@ -393,7 +396,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(fungibleTokenIDB, payerId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new RecordStreamBuilder().status(SUCCESS);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
                 });
         givenDifferentTxn(body, payerId);
 

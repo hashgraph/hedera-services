@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag("LOG_VALIDATION")
-@Order(Integer.MAX_VALUE)
+// Ordered to come after any other HapiTest that runs in a PR check
+@Order(Integer.MAX_VALUE - 1)
 public class LogValidationTest {
     private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
 

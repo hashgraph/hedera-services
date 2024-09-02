@@ -100,7 +100,7 @@ class QueryHederaOperationsTest {
     void delegatesEntropyToBlockRecordInfo() {
         final var pretendEntropy = Bytes.fromHex("0123456789");
         given(context.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(pretendEntropy);
+        given(blockRecordInfo.prngSeed()).willReturn(pretendEntropy);
         assertSame(pretendEntropy, subject.entropy());
     }
 

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;

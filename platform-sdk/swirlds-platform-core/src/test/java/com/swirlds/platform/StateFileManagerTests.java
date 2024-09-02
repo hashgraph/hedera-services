@@ -35,7 +35,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.StateCommonConfig_;
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -50,8 +49,6 @@ import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
@@ -65,6 +62,8 @@ import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -100,9 +99,8 @@ class StateFileManagerTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach

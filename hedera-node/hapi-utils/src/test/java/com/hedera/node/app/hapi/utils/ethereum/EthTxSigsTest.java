@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.CHAINID_TESTNET;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TINYBARS_2_IN_WEIBARS;
@@ -25,7 +26,6 @@ import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.ZERO_BYTES;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

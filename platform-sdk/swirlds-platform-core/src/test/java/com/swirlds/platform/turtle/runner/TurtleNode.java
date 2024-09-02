@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -109,6 +111,7 @@ public class TurtleNode {
                 .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withBootstrapAddressBook(addressBook)
+                .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(privateKeys);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();

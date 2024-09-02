@@ -18,7 +18,7 @@ package com.swirlds.demo.migration.virtual;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 
 /**
  * A self serializable supplier for AccountVirtualMapValue.

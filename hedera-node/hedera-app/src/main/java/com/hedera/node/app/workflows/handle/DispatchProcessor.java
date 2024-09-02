@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
@@ -116,7 +117,11 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
-        dispatch.stack().commitFullStack();
+        if (dispatch.txnCategory() == USER) {
+            dispatch.stack().commitTransaction(dispatch.recordBuilder());
+        } else {
+            dispatch.stack().commitFullStack();
+        }
     }
 
     /**
@@ -135,8 +140,8 @@ public class DispatchProcessor {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
-            // Only user transactions can trigger system updates in the current system
-            if (dispatch.txnCategory() == USER) {
+            // Only user or preceding transactions can trigger system updates in the current system
+            if (dispatch.txnCategory() == USER || dispatch.txnCategory() == PRECEDING) {
                 handleSystemUpdates(dispatch);
             }
         } catch (HandleException e) {
@@ -170,13 +175,13 @@ public class DispatchProcessor {
         final var fileUpdateResult = systemFileUpdates.handleTxBody(
                 dispatch.stack(), dispatch.txnInfo().txBody());
 
+        // In case we just changed the exchange rates via 0.0.112 update, reset them now
         dispatch.recordBuilder()
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .status(fileUpdateResult);
 
         // Notify if platform state was updated
-        platformStateUpdates.handleTxBody(
-                dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
+        platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody());
     }
 
     /**
