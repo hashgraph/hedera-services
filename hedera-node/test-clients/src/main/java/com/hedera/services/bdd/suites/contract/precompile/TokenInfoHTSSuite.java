@@ -100,7 +100,6 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -1683,17 +1682,6 @@ public class TokenInfoHTSSuite {
                 .build();
     }
 
-    private TokenNftInfo getEmptyNft() {
-        return TokenNftInfo.newBuilder()
-                .setLedgerId(ByteString.empty())
-                .setNftID(NftID.getDefaultInstance())
-                .setAccountID(AccountID.getDefaultInstance())
-                .setCreationTime(Timestamp.newBuilder().build())
-                .setMetadata(ByteString.empty())
-                .setSpenderId(AccountID.getDefaultInstance())
-                .build();
-    }
-
     private TokenInfo getTokenInfoStructForFungibleToken(
             final HapiSpec spec,
             final String tokenName,
@@ -1703,32 +1691,8 @@ public class TokenInfoHTSSuite {
             final Key adminKey,
             final long expirySecond,
             ByteString ledgerId) {
-        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
-        final ArrayList<CustomFee> customFees = getExpectedCustomFees(spec);
-
-        return TokenInfo.newBuilder()
-                .setLedgerId(ledgerId)
-                .setSupplyTypeValue(TokenSupplyType.FINITE_VALUE)
-                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
-                .setAutoRenewAccount(autoRenewAccount)
-                .setAutoRenewPeriod(Duration.newBuilder()
-                        .setSeconds(THREE_MONTHS_IN_SECONDS)
-                        .build())
-                .setSymbol(symbol)
-                .setName(tokenName)
-                .setMemo(memo)
-                .setTreasury(treasury)
-                .setTotalSupply(500L)
-                .setMaxSupply(MAX_SUPPLY)
-                .addAllCustomFees(customFees)
-                .setAdminKey(adminKey)
-                .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
-                .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
-                .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
-                .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
-                .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId)
                 .build();
     }
 
@@ -1741,10 +1705,27 @@ public class TokenInfoHTSSuite {
             final Key adminKey,
             final long expirySecond,
             ByteString ledgerId) {
-        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
+
         final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
 
-        final ArrayList<CustomFee> customFees = getExpectedCustomFees(spec);
+        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId)
+                .setMetadata(meta)
+                .setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY))
+                .build();
+    }
+
+    private TokenInfo.Builder buildBaseTokenInfo(
+            final HapiSpec spec,
+            final String tokenName,
+            final String symbol,
+            final String memo,
+            final AccountID treasury,
+            final Key adminKey,
+            final long expirySecond,
+            ByteString ledgerId) {
+
+        final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
+        final var customFees = getExpectedCustomFees(spec);
 
         return TokenInfo.newBuilder()
                 .setLedgerId(ledgerId)
@@ -1762,48 +1743,12 @@ public class TokenInfoHTSSuite {
                 .setMaxSupply(MAX_SUPPLY)
                 .addAllCustomFees(customFees)
                 .setAdminKey(adminKey)
-                .setMetadata(meta)
                 .setKycKey(getTokenKeyFromSpec(spec, TokenKeyType.KYC_KEY))
                 .setFreezeKey(getTokenKeyFromSpec(spec, TokenKeyType.FREEZE_KEY))
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
-                .setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY))
-                .build();
-    }
-
-    private TokenInfo getTokenInfoStructForEmptyFungibleToken(
-            final String tokenName,
-            final String symbol,
-            final String memo,
-            final AccountID treasury,
-            final long expirySecond,
-            ByteString ledgerId) {
-
-        final ArrayList<CustomFee> customFees = new ArrayList<>();
-
-        return TokenInfo.newBuilder()
-                .setLedgerId(ledgerId)
-                .setSupplyTypeValue(0)
-                .setExpiry(Timestamp.newBuilder().setSeconds(expirySecond))
-                .setAutoRenewAccount(AccountID.getDefaultInstance())
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(0).build())
-                .setSymbol(symbol)
-                .setName(tokenName)
-                .setMemo(memo)
-                .setTreasury(treasury)
-                .setTotalSupply(0)
-                .setMaxSupply(0)
-                .addAllCustomFees(customFees)
-                .setAdminKey(Key.newBuilder().build())
-                .setKycKey(Key.newBuilder().build())
-                .setFreezeKey(Key.newBuilder().build())
-                .setWipeKey(Key.newBuilder().build())
-                .setSupplyKey(Key.newBuilder().build())
-                .setFeeScheduleKey(Key.newBuilder().build())
-                .setPauseKey(Key.newBuilder().build())
-                .build();
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
     }
 
     @NonNull
@@ -1970,9 +1915,5 @@ public class TokenInfoHTSSuite {
         }
 
         return keyBuilder.build();
-    }
-
-    private ByteString fromString(final String value) {
-        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 }
