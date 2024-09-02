@@ -170,8 +170,6 @@ public class HollowAccountCompletions {
                 // verifications when doing hollow account finalization
                 final var recordBuilder = context.dispatchPrecedingTransaction(
                         syntheticUpdateTxn, CryptoUpdateStreamBuilder.class, null, context.payer());
-                // For some reason update accountId is set only for the hollow account finalization's and not
-                // for top level crypto update transactions. So we set it here.
                 recordBuilder.accountID(hollowAccount.accountIdOrThrow());
             }
         }

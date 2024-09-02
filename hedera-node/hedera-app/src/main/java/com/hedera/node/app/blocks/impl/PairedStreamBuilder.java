@@ -135,7 +135,7 @@ public class PairedStreamBuilder
     }
 
     @Override
-    public PairedStreamBuilder transaction(@NonNull Transaction transaction) {
+    public @NonNull PairedStreamBuilder transaction(@NonNull final Transaction transaction) {
         recordStreamBuilder.transaction(transaction);
         blockStreamBuilder.transaction(transaction);
         return this;

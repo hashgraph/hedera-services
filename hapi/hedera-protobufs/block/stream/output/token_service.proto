@@ -34,6 +34,9 @@ option java_package = "com.hedera.hapi.block.stream.output.protoc";
 // <<<pbj.java_package = "com.hedera.hapi.block.stream.output">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
+import "custom_fees.proto";
+import "transaction_record.proto";
+
 /**
  * Block Stream data for a `createToken` transaction.
  *
@@ -161,3 +164,31 @@ message UnpauseTokenOutput {}
  * the original transaction.
  */
 message UpdateTokenNftsOutput {}
+
+/**
+ * Block Stream data for a `tokenAirdrop` transaction.
+ *
+ * This message SHALL NOT duplicate information already contained in
+ * the original transaction.
+ */
+message TokenAirdropOutput {
+  /**
+   * Custom fees assessed during a TokenAirdrop.
+   * <p>
+   * These fees SHALL be present in the full transfer list for the transaction.
+   */
+  repeated proto.AssessedCustomFee assessed_custom_fees = 1;
+
+  /**
+   * A list of pending token airdrops.
+   * Each pending airdrop represents a single requested transfer from a
+   * sending account to a recipient account. These pending transfers are
+   * issued unilaterally by the sending account, and MUST be claimed by the
+   * recipient account before the transfer MAY complete.
+   * A sender MAY cancel a pending airdrop before it is claimed.
+   * An airdrop transaction SHALL emit a pending airdrop when the recipient has no
+   * available automatic association slots available or when the recipient
+   * has set `receiver_sig_required`.
+   */
+  repeated proto.PendingAirdropRecord new_pending_airdrops = 2;
+}

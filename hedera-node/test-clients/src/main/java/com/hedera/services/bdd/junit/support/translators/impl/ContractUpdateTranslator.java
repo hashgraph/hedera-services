@@ -27,6 +27,9 @@ import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransaction
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * A translator for contract update transactions.
+ */
 public class ContractUpdateTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
