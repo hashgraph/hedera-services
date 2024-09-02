@@ -121,10 +121,8 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @param unsignedEvent   the hashed data for the event
      * @param signature the signature for the event
      */
-    public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {//TODO remove
-        this(
-                unsignedEvent,
-                Bytes.wrap(signature));
+    public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) { // TODO remove
+        this(unsignedEvent, Bytes.wrap(signature));
     }
 
     /**
@@ -468,7 +466,9 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @Nullable
     public EventDescriptorWrapper getSelfParent() {
-        if (!getEventCore().parents().isEmpty() && getEventCore().parents().getFirst().creatorNodeId() == getEventCore().creatorNodeId()) {
+        if (!getEventCore().parents().isEmpty()
+                && getEventCore().parents().getFirst().creatorNodeId()
+                        == getEventCore().creatorNodeId()) {
             return new EventDescriptorWrapper(getEventCore().parents().getFirst());
         }
         return null;
@@ -481,10 +481,11 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @NonNull
     public List<EventDescriptorWrapper> getOtherParents() {
-        if(getEventCore().parents().isEmpty()){
+        if (getEventCore().parents().isEmpty()) {
             return Collections.emptyList();
         }
-        if (getEventCore().parents().getFirst().creatorNodeId() == getEventCore().creatorNodeId()) {
+        if (getEventCore().parents().getFirst().creatorNodeId()
+                == getEventCore().creatorNodeId()) {
             return getEventCore().parents().subList(1, getEventCore().parents().size()).stream()
                     .map(EventDescriptorWrapper::new)
                     .toList();
@@ -555,8 +556,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         }
 
         final PlatformEvent that = (PlatformEvent) o;
-        return Objects.equals(gossipEvent, that.gossipEvent)
-                && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(gossipEvent, that.gossipEvent) && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
