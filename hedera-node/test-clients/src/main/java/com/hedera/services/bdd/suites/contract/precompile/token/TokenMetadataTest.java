@@ -35,10 +35,12 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.Key;
 import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecKey;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import java.util.concurrent.atomic.AtomicReference;
@@ -68,6 +70,9 @@ public class TokenMetadataTest {
             keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY, METADATA_KEY})
     static SpecNonFungibleToken nft;
 
+    @Key()
+    SpecKey key;
+
     @BeforeAll
     static void beforeAll(final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
@@ -92,7 +97,7 @@ public class TokenMetadataTest {
     @HapiTest
     public Stream<DynamicTest> testUpdateTokenKeys() {
         return hapiTest(contractTarget
-                .call("updateTokenKeys", nft, alice.getED25519KeyBytes())
+                .call("updateTokenKeys", nft, alice.getED25519KeyBytes(), contractTarget)
                 .gas(1_000_000L)
                 .payingWith(alice)
                 .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));

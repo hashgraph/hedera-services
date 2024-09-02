@@ -282,6 +282,11 @@
         "internalType": "bytes",
         "name": "ed25519",
         "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
       }
     ],
     "name": "updateTokenKeys",

@@ -241,9 +241,9 @@ contract CreateTokenVTwo is HederaTokenService, KeyHelper, FeeHelper {
         }
     }
 
-    function updateTokenKeys(address token, bytes memory ed25519) public {
+    function updateTokenKeys(address token, bytes memory ed25519, address contractID) public {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.METADATA, KeyValueType.ED25519, ed25519); //metadata 7
+        keys[0] = getSingleKey(KeyType.METADATA, KeyValueType.CONTRACT_ID, contractID); //metadata 7
 
         (int256 responseCode) = HederaTokenService.updateTokenKeys(token, keys);
         require(responseCode == HederaResponseCodes.SUCCESS);
