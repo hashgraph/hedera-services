@@ -57,7 +57,6 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -581,22 +580,24 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple[] buildTokenKeysTuples(final Tuple... additionalKeys) {
-        final List<Tuple> tokenKeys = new ArrayList<>();
+        final int existingKeysLength = TokenKeyType.values().length;
+        final int additionalKeysLength = additionalKeys.length;
+        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length + additionalKeysLength];
 
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), tokenInfo.getAdminKey()));
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), tokenInfo.getKycKey()));
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), tokenInfo.getFreezeKey()));
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), tokenInfo.getWipeKey()));
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), tokenInfo.getSupplyKey()));
-        tokenKeys.add(
-                getKeyTuple(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), tokenInfo.getFeeScheduleKey()));
-        tokenKeys.add(getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), tokenInfo.getPauseKey()));
+        tokenKeys[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), tokenInfo.getAdminKey());
+        tokenKeys[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), tokenInfo.getKycKey());
+        tokenKeys[2] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), tokenInfo.getFreezeKey());
+        tokenKeys[3] = getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), tokenInfo.getWipeKey());
+        tokenKeys[4] = getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), tokenInfo.getSupplyKey());
+        tokenKeys[5] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), tokenInfo.getFeeScheduleKey());
+        tokenKeys[6] = getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), tokenInfo.getPauseKey());
 
         if (additionalKeys.length > 0) {
-            tokenKeys.addAll(Arrays.asList(additionalKeys));
+            System.arraycopy(additionalKeys, 0, tokenKeys, existingKeysLength, additionalKeysLength);
         }
 
-        return tokenKeys.toArray(new Tuple[0]);
+        return tokenKeys;
     }
 
     private static Tuple getKeyTuple(final BigInteger keyType, final Key key) {
