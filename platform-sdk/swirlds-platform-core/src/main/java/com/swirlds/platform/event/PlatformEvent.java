@@ -550,7 +550,8 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         }
 
         final PlatformEvent that = (PlatformEvent) o;
-        return Objects.equals(getEventCore(), that.getEventCore()) && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(gossipEvent, that.gossipEvent)
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
