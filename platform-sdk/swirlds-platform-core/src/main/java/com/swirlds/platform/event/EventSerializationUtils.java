@@ -267,6 +267,7 @@ public final class EventSerializationUtils {
     @NonNull
     public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
+        //TODO PCES will probably fail because event version is not being read
         final UnsignedEvent unsignedEvent = EventSerializationUtils.deserializeUnsignedEvent(in);
         final byte [] signature = in.readByteArray(SignatureType.RSA.signatureLength());
 
