@@ -95,8 +95,8 @@ public class V0540BlockStreamSchema extends Schema {
                 final RunningHashes runningHashes =
                         (RunningHashes) requireNonNull(ctx.sharedValues().get(SHARED_RUNNING_HASHES));
                 state.put(BlockStreamInfo.newBuilder()
-                        //                        .blockTime(blockInfo.firstConsTimeOfLastBlock())
-                        //                        .blockNumber(blockInfo.lastBlockNumber())
+                        .blockTime(blockInfo.firstConsTimeOfLastBlock())
+                        .blockNumber(blockInfo.lastBlockNumber())
                         .trailingBlockHashes(blockInfo.blockHashes())
                         .trailingOutputHashes(appendedHashes(runningHashes))
                         .build());

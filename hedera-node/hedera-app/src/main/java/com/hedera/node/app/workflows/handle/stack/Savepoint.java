@@ -71,5 +71,5 @@ public interface Savepoint extends BuilderSink {
             @NonNull HandleContext.TransactionCategory txnCategory,
             @NonNull ExternalizedRecordCustomizer customizer,
             boolean isBaseBuilder,
-            @NonNull final StreamMode streamMode);
+            @NonNull StreamMode streamMode);
 }

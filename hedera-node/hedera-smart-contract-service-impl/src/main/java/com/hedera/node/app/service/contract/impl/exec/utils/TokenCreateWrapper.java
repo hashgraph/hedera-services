@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -26,7 +26,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;

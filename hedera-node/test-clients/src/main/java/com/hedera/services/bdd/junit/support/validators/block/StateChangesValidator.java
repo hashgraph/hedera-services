@@ -18,11 +18,13 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
@@ -143,16 +145,18 @@ public class StateChangesValidator implements BlockStreamValidator {
     private MerkleStateRoot state;
 
     public static void main(String[] args) {
+        final var node0Dir = Paths.get("hedera-node/test-clients")
+                .resolve(workingDirFor(0, "hapi"))
+                .toAbsolutePath()
+                .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "a1d57e05d0607f76d13bc2ed31c40585adc294927e767df1f3443f065cc7a3348d3e0c4dd5581e6922c718e16b787231"),
-                Paths.get(
-                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/output/swirlds.log"),
-                Paths.get(
-                        "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/config.txt"));
-        final var input =
-                "/Users/michaeltinker/AlsoDev/hedera-services/hedera-node/test-clients/build/hapi-test/node0/data/block-streams/block-0.0.3/";
-        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(Paths.get(input));
+                        "8fcceb3f724d5b765d96c9e27cbf20ac6a158eb5f06b8c5f71c3369ef5a0f1a6a01f6500dc3c464795cfa9fd5837dec8"),
+                node0Dir.resolve("output/swirlds.log"),
+                node0Dir.resolve("config.txt"),
+                node0Dir.resolve("data/config/application.properties"));
+        final var blocks =
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
         validator.validateBlocks(blocks);
     }
 
@@ -194,10 +198,12 @@ public class StateChangesValidator implements BlockStreamValidator {
             final var genesisConfigTxt = Files.createTempFile(Paths.get("."), "config", ".txt");
             Files.writeString(genesisConfigTxt, subProcessNetwork.genesisConfigTxt());
             genesisConfigTxt.toFile().deleteOnExit();
+            final var node0 = subProcessNetwork.getRequiredNode(byNodeId(0));
             return new StateChangesValidator(
                     rootHash,
-                    subProcessNetwork.getRequiredNode(byNodeId(0)).getExternalPath(SWIRLDS_LOG),
-                    genesisConfigTxt);
+                    node0.getExternalPath(SWIRLDS_LOG),
+                    genesisConfigTxt,
+                    node0.getExternalPath(APPLICATION_PROPERTIES));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -206,10 +212,16 @@ public class StateChangesValidator implements BlockStreamValidator {
     public StateChangesValidator(
             @NonNull final Bytes expectedRootHash,
             @NonNull final Path pathToNode0SwirldsLog,
-            @NonNull final Path pathToAddressBook) {
+            @NonNull final Path pathToAddressBook,
+            @NonNull final Path pathToOverrideProperties) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
+        // Ensure the bootstrap config sees our blockStream.streamMode=BOTH override
+        // and registers the BlockStreamService schemas
+        System.setProperty(
+                "hedera.app.properties.path",
+                pathToOverrideProperties.toAbsolutePath().toString());
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
         registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
@@ -608,8 +620,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final ServicesRegistryImpl servicesRegistry) {
         return new MerkleStateLifecycles() {
             @Override
-            public void initPlatformState(@NonNull final State state) {
-                serviceMigrator.doMigrations(
+            public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+                return serviceMigrator.doMigrations(
                         state,
                         servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
                         serviceMigrator.creationVersionOf(state),

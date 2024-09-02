@@ -21,11 +21,11 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fr
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
