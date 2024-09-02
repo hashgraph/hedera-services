@@ -33,17 +33,30 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FIXED_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorAndCustomConfig;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_V1_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_V2_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_V3_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_WITH_FEES_V1_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_WITH_FEES_V2_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_WITH_FEES_V3_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_WITH_META_AND_FEES_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_WITH_META_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_V1_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_V2_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_V3_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_WITH_FEES_V1_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_WITH_FEES_V2_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_WITH_FEES_V3_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_WITH_META_AND_FEES_TUPLE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_NON_FUNGIBLE_WITH_META_TUPLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -56,7 +69,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
-import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -309,21 +321,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenV1() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(5L));
-        byte[] inputBytes =
-                Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V1.encodeCall(tuple)).toArray();
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V1.encodeCall(CREATE_FUNGIBLE_V1_TUPLE))
+                .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -336,21 +335,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenV2() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                BigInteger.valueOf(10L),
-                5L);
-        byte[] inputBytes =
-                Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V2.encodeCall(tuple)).toArray();
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V2.encodeCall(CREATE_FUNGIBLE_V2_TUPLE))
+                .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -363,21 +349,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenV3() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                10L,
-                5);
-        byte[] inputBytes =
-                Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V3.encodeCall(tuple)).toArray();
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_V3.encodeCall(CREATE_FUNGIBLE_V3_TUPLE))
+                .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -390,21 +363,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenWithMeta() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L),
-                        "metadata".getBytes()),
-                10L,
-                5);
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_WITH_METADATA.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(
+                        CREATE_FUNGIBLE_TOKEN_WITH_METADATA.encodeCall(CREATE_FUNGIBLE_WITH_META_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -417,22 +377,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenWithCustomFeesV1() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(5L),
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.encodeCall(CREATE_FUNGIBLE_WITH_FEES_V1_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -446,22 +392,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenWithCustomFeesV2() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                BigInteger.valueOf(10L),
-                5L,
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.encodeCall(CREATE_FUNGIBLE_WITH_FEES_V2_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -475,22 +407,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenWithCustomFeesV3() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                10L,
-                5,
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(
+                        CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.encodeCall(CREATE_FUNGIBLE_WITH_FEES_V3_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -504,23 +422,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateTokenWithMetaAndCustomFees() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L),
-                        "metadata".getBytes()),
-                10L,
-                5,
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES.encodeCall(
+                        CREATE_FUNGIBLE_WITH_META_AND_FEES_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -533,17 +436,7 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftV1() {
-        Tuple tuple = new Tuple(Tuple.of(
-                "name",
-                "symbol",
-                NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                "memo",
-                true,
-                0L,
-                false,
-                new Tuple[] {},
-                Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)));
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V1.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V1.encodeCall(CREATE_NON_FUNGIBLE_V1_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -557,17 +450,7 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftV2() {
-        Tuple tuple = new Tuple(Tuple.of(
-                "name",
-                "symbol",
-                NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                "memo",
-                true,
-                1000L,
-                false,
-                new Tuple[] {},
-                Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)));
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V2.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V2.encodeCall(CREATE_NON_FUNGIBLE_V2_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -581,17 +464,7 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftV3() {
-        Tuple tuple = new Tuple(Tuple.of(
-                "name",
-                "symbol",
-                NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                "memo",
-                true,
-                1000L,
-                false,
-                new Tuple[] {},
-                Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)));
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V3.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_V3.encodeCall(CREATE_NON_FUNGIBLE_V3_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -605,18 +478,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftWithMeta() {
-        Tuple tuple = new Tuple(Tuple.of(
-                "name",
-                "symbol",
-                NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                "memo",
-                true,
-                1000L,
-                false,
-                new Tuple[] {},
-                Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L),
-                "metadata".getBytes()));
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(
+                        CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA.encodeCall(CREATE_NON_FUNGIBLE_WITH_META_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -629,20 +492,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftWithCustomFeesV1() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.encodeCall(
+                        CREATE_NON_FUNGIBLE_WITH_FEES_V1_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -656,20 +507,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftWithCustomFeesV2() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.encodeCall(
+                        CREATE_NON_FUNGIBLE_WITH_FEES_V2_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -683,20 +522,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftWithCustomFeesV3() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L)),
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.encodeCall(
+                        CREATE_NON_FUNGIBLE_WITH_FEES_V3_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
@@ -710,22 +537,8 @@ public class CreateTranslatorTest extends CallTestBase {
 
     @Test
     void callFromCreateNftWithMetaAndCustomFees() {
-        Tuple tuple = new Tuple(
-                Tuple.of(
-                        "name",
-                        "symbol",
-                        NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
-                        "memo",
-                        true,
-                        1000L,
-                        false,
-                        new Tuple[] {},
-                        Tuple.of(0L, NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L),
-                        "metadata".getBytes()),
-                EXPECTED_FIXED_CUSTOM_FEES.toArray(Tuple[]::new),
-                new Tuple[] {});
-        byte[] inputBytes = Bytes.wrapByteBuffer(
-                        CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES.encodeCall(
+                        CREATE_NON_FUNGIBLE_WITH_META_AND_FEES_TUPLE))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(mockEnhancement());
