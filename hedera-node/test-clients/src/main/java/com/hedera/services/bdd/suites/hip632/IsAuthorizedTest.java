@@ -664,7 +664,6 @@ public class IsAuthorizedTest {
                     }));
             final var hapiSpec = testCase.status() == SUCCESS
                     ? throughWhen.then(getTxnRecord(recordName)
-                            .logged()
                             .hasPriority(recordWith()
                                     .status(SUCCESS)
                                     .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
