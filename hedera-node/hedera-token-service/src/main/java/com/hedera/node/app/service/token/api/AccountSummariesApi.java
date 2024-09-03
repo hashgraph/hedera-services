@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.epochSecondAtStartOfPeriod;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.estimatePendingReward;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
@@ -41,7 +40,7 @@ import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -171,7 +170,7 @@ public interface AccountSummariesApi {
             final var keyBytes = key.ecdsaSecp256k1().toByteArray();
             if (keyBytes.length == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 final var evmAddress = addressRecovery.apply(keyBytes);
-                if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
+                if (evmAddress != null && evmAddress.length == EVM_ADDRESS_SIZE) {
                     return evmAddress;
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the

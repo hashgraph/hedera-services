@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
@@ -37,11 +36,10 @@ import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 public record EthTxSigs(byte[] publicKey, byte[] address) {
 
     public static EthTxSigs extractSignatures(EthTxData ethTx) {
-        byte[] message = calculateSignableMessage(ethTx);
-        var pubKey = extractSig(ethTx.recId(), ethTx.r(), ethTx.s(), message);
-        byte[] address = recoverAddressFromPubKey(pubKey);
-        byte[] compressedKey = recoverCompressedPubKey(pubKey);
-
+        final var message = calculateSignableMessage(ethTx);
+        final var pubKey = extractSig(ethTx.recId(), ethTx.r(), ethTx.s(), message);
+        final var address = recoverAddressFromPubKey(pubKey);
+        final var compressedKey = recoverCompressedPubKey(pubKey);
         return new EthTxSigs(compressedKey, address);
     }
 
