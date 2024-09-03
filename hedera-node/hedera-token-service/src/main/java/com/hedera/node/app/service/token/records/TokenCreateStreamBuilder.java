@@ -38,7 +38,7 @@ public interface TokenCreateStreamBuilder extends TokenBaseStreamBuilder {
     TokenCreateStreamBuilder tokenID(@NonNull TokenID tokenID);
 
     /**
-     * Gets the token ID of the token created
+     * Gets the token ID of the token created.
      * @return the token ID of the token created
      */
     TokenID tokenID();
@@ -49,5 +49,5 @@ public interface TokenCreateStreamBuilder extends TokenBaseStreamBuilder {
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    TokenCreateStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenCreateStreamBuilder addAutomaticTokenAssociation(@NonNull TokenAssociation tokenAssociation);
 }

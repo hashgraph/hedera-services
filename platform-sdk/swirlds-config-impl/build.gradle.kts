@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.feature.benchmark")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }

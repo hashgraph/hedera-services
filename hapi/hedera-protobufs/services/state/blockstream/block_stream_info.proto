@@ -37,7 +37,12 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A message stored in state to maintain block stream parameters.
+ * A message stored in state to maintain block stream parameters.<br/>
+ * Nodes use this information for three purposes.
+ * 1. To maintain hash chain continuity at restart and reconnect boundaries.
+ * 1. To store historical hashes for implementation of the EVM `BLOCKHASH`
+ *    and `PREVRANDAO` opcodes.
+ * 1. To track the amount of consensus time that has passed between blocks.
  *
  * This value MUST be updated for every block.<br/>
  * This value MUST be transmitted in the "state changes" section of
@@ -48,36 +53,43 @@ option java_multiple_files = true;
 message BlockStreamInfo {
     /**
      * A block number.<br/>
-     * This is the block number of the last completed block.
+     * This is the current block number.
      */
-    uint64 last_block_number = 1;
+    uint64 block_number = 1;
 
     /**
-     * A block hash value.<br/>
-     * This is the hash of the last completed block.
-     */
-    bytes last_block_hash = 2;
-
-    /**
-     * A consensus time for the last completed block.
-     * This is used to determine if this block was the first across an
+     * A consensus time for the current block.<br/>
+     * This is the consensus time of the first round in the current block,
+     * and is used to determine if this block was the first across an
      * important boundary in consensus time, such as UTC midnight.
      * This may also be used to purge entities expiring between the last
      * block time and this time.
      */
-    proto.Timestamp last_block_time = 3;
+    proto.Timestamp block_time = 2;
 
     /**
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
-     * is used as a seed value for a pseudo-random number generator.
+     * is used as a seed value for a pseudo-random number generator.<br/>
+     * This is also requiried to implement the EVM `PREVRANDAO` opcode.
+     * This MUST contain at least 256 bits of entropy.
      */
-    bytes trailing_output_hashes = 4;
+    bytes trailing_output_hashes = 3;
 
     /**
      * A concatenation of hash values.<br/>
-     * This combines the last 256 trailing block hashes, and is required to
-     * support the EVM `BLOCKHASH` opcode.
+     * This field combines up to 256 trailing block hashes.
+     * <p>
+     * If this message is for block number N, then the earliest available
+     * hash SHALL be for block number N-256.<br/>
+     * The latest available hash SHALL be for block N-1.<br/>
+     * This is REQUIRED to implement the EVM `BLOCKHASH` opcode.
+     * <p>
+     * <h5>Field Length</h5>
+     * Each hash value SHALL be the trailing 265 bits of a SHA2-384 hash.<br/>
+     * The length of this field SHALL be an integer multiple of 32 bytes.<br/>
+     * This field SHALL be at least 32 bytes.<br/>
+     * The maximum length of this field SHALL be 8192 bytes.
      */
-    bytes trailing_block_hashes = 5;
+    bytes trailing_block_hashes = 4;
 }

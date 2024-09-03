@@ -197,7 +197,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
      * @param rejections The list of TokenReferences representing the rejections to process.
      * @param context The HandleContext providing the current handling context.
      * @param rejectingAccount The Account rejecting its tokens.
-     * @return A List of TokenTransferLists representing the transfers for the rejected tokens to the treasuries.
+     * @return A List of TokenTransferLists representing the transfers for the rejected tokens to the treasuries
      */
     private List<TokenTransferList> processRejectionsForTransfer(
             @NonNull final List<TokenReference> rejections,

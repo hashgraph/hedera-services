@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,7 +61,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -163,7 +161,6 @@ class MapValueSerializableTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     void mapValueFCQSerializeAndDeserialize() {
         final FCMFamily fcmFamily = new FCMFamily(true);
         final MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> fcqMap = fcmFamily.getAccountFCQMap();
@@ -212,7 +209,6 @@ class MapValueSerializableTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     void mapValueFCQCompareGFMtoGet() { // getForModify vs get version
         final FCMFamily fcmFamily = new FCMFamily(true);
         final MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> fcqMapGFM = fcmFamily.getAccountFCQMap();

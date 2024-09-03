@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface FeeStreamBuilder {
     /**
      * Gets the current value of the transaction fee in this builder.
-     * @return The current transaction fee value.
+     * @return The current transaction fee value
      */
     long transactionFee();
 
@@ -36,5 +36,5 @@ public interface FeeStreamBuilder {
      * @return the builder
      */
     @NonNull
-    FeeStreamBuilder transactionFee(final long transactionFee);
+    FeeStreamBuilder transactionFee(long transactionFee);
 }

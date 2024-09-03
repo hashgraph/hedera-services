@@ -19,6 +19,7 @@ package com.hedera.node.app.records.impl;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -28,7 +29,6 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -79,6 +79,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * time.
      */
     private final BlockRecordStreamProducer streamFileProducer;
+
     /**
      * A {@link BlockInfo} of the most recently completed block. This is actually available in state, but there
      * is no reason for us to read it from state every time we need it, we can just recompute and cache this every
@@ -128,8 +129,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
         // thrown here, then startup of the node will fail. This is the intended behavior. We MUST be able to produce
         // record streams, or there really is no point to running the node!
-        final var runningHashState =
-                states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY);
+        final var runningHashState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var lastRunningHashes = runningHashState.get();
         assert lastRunningHashes != null : "Cannot be null, because this state is created at genesis";
         this.streamFileProducer.initRunningHash(lastRunningHashes);
@@ -270,16 +270,16 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var currentRunningHash = streamFileProducer.getRunningHash();
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var runningHashesState =
-                states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY);
+        final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
-        runningHashesState.put(new RunningHashes(
+        final var runningHashes = new RunningHashes(
                 currentRunningHash,
                 existingRunningHashes.nMinus1RunningHash(),
                 existingRunningHashes.nMinus2RunningHash(),
-                existingRunningHashes.nMinus3RunningHash()));
+                existingRunningHashes.nMinus3RunningHash());
+        runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
 
@@ -289,45 +289,40 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         }
     }
 
-    // ========================================================================================================
-    // Running Hash Getter Methods
+    public long lastBlockNo() {
+        return lastBlockInfo.lastBlockNumber();
+    }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
+    public Instant firstConsTimeOfLastBlock() {
+        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    }
+
     public Bytes getRunningHash() {
         return streamFileProducer.getRunningHash();
     }
 
+    @Nullable
+    public Bytes lastBlockHash() {
+        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
+    }
+
+    // ========================================================================================================
+    // Running Hash Getter Methods
     /**
      * {@inheritDoc}
      */
     @Nullable
     @Override
-    public Bytes getNMinus3RunningHash() {
+    public Bytes prngSeed() {
         return streamFileProducer.getNMinus3RunningHash();
     }
 
     // ========================================================================================================
     // BlockRecordInfo Implementation
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public long lastBlockNo() {
-        return lastBlockInfo.lastBlockNumber();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Instant firstConsTimeOfLastBlock() {
-        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    public long blockNo() {
+        return lastBlockInfo.lastBlockNumber() + 1;
     }
 
     /**
@@ -343,17 +338,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     }
 
     @Override
-    public @NonNull Timestamp currentBlockTimestamp() {
+    public @NonNull Timestamp blockTimestamp() {
         return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Bytes lastBlockHash() {
-        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
     /**

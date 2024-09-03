@@ -35,7 +35,9 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -64,6 +66,7 @@ public class ReadableFreezeUpgradeActions {
             com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
 
     private final NetworkAdminConfig adminServiceConfig;
+    private final NodesConfig nodesConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
 
@@ -86,20 +89,21 @@ public class ReadableFreezeUpgradeActions {
     public static final String MARK = "✓";
 
     public ReadableFreezeUpgradeActions(
-            @NonNull final NetworkAdminConfig adminServiceConfig,
+            @NonNull final Configuration configuration,
             @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        requireNonNull(adminServiceConfig, "Admin service config is required for freeze upgrade actions");
+        requireNonNull(configuration, "configuration is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
         requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
         requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
-        this.adminServiceConfig = adminServiceConfig;
+        this.adminServiceConfig = configuration.getConfigData(NetworkAdminConfig.class);
+        this.nodesConfig = configuration.getConfigData(NodesConfig.class);
         this.freezeStore = freezeStore;
         this.executor = executor;
         this.upgradeFileStore = upgradeFileStore;
@@ -222,7 +226,9 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(marker);
 
         final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
+        final Path keysLoc = getAbsolutePath(adminServiceConfig.keysPath());
         requireNonNull(artifactsLoc);
+        requireNonNull(keysLoc);
         final long size = archiveData.length();
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -231,7 +237,7 @@ public class ReadableFreezeUpgradeActions {
         final var nextNodeId = getNextNodeID(nodeStore);
         return runAsync(
                 () -> extractAndReplaceArtifacts(
-                        artifactsLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
+                        artifactsLoc, keysLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
                 executor);
     }
 
@@ -250,6 +256,7 @@ public class ReadableFreezeUpgradeActions {
 
     private void extractAndReplaceArtifacts(
             @NonNull final Path artifactsLoc,
+            @NonNull final Path keysLoc,
             @NonNull final Bytes archiveData,
             final long size,
             @NonNull final String desc,
@@ -259,14 +266,19 @@ public class ReadableFreezeUpgradeActions {
             long nextNodeId) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
+            final var keysDir = keysLoc.toFile();
             if (!FileUtils.isDirectory(artifactsDir)) {
                 FileUtils.forceMkdir(artifactsDir);
             }
             FileUtils.cleanDirectory(artifactsDir);
+            if (!FileUtils.isDirectory(keysDir)) {
+                FileUtils.forceMkdir(keysDir);
+            }
+            FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (nodes != null) {
-                generateConfigPem(artifactsLoc, nodes, nextNodeId);
+            if (nodes != null && nodesConfig.enableDAB()) {
+                generateConfigPem(artifactsLoc, keysLoc, nodes, nextNodeId);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -280,8 +292,12 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void generateConfigPem(
-            @NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes, long nextNodeId) {
+            @NonNull final Path artifactsLoc,
+            @NonNull final Path keysLoc,
+            @NonNull final List<ActiveNode> activeNodes,
+            long nextNodeId) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
+        requireNonNull(keysLoc, "Cannot generate pem files without a valid keys location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
 
@@ -292,7 +308,7 @@ public class ReadableFreezeUpgradeActions {
 
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
-            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, keysLoc));
             bw.write("nextNodeId, " + nextNodeId);
             bw.flush();
         } catch (final IOException e) {
@@ -301,17 +317,17 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void writeConfigLineAndPem(
-            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
+            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path keysLoc) {
         requireNonNull(activeNode);
         requireNonNull(bw);
-        requireNonNull(pathToWrite);
+        requireNonNull(keysLoc);
 
         var line = new StringBuilder();
         int weight = 0;
         final var node = activeNode.node();
         final var name = "node" + (node.nodeId() + 1);
         final var alias = nameToAlias(name);
-        final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
+        final var pemFile = keysLoc.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
 
