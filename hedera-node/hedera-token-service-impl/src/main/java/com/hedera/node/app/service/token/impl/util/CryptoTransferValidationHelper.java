@@ -39,6 +39,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class CryptoTransferValidationHelper {
 
+    private CryptoTransferValidationHelper() {
+        throw new IllegalStateException("Utility class");
+    }
+
     public static void checkSender(
             final AccountID senderId,
             final NftTransfer nftTransfer,

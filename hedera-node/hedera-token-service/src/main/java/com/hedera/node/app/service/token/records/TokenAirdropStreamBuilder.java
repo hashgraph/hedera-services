@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface TokenAirdropStreamBuilder extends CryptoTransferStreamBuilder {
     /**
-     * Adds to the pending airdrop record list
+     * Adds to the pending airdrop record list.
      *
      * @param pendingAirdropRecord pending airdrop record
      * @return the builder

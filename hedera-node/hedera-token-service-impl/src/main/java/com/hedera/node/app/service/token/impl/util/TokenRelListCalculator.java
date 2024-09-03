@@ -45,7 +45,7 @@ public class TokenRelListCalculator {
     private final ReadableTokenRelationStore tokenRelStore;
 
     /**
-     * Constructs a new {@link TokenRelListCalculator} object
+     * Constructs a new {@link TokenRelListCalculator} object.
      * @param tokenRelStore the token relation store to use for fetching token relations
      */
     public TokenRelListCalculator(@NonNull final ReadableTokenRelationStore tokenRelStore) {
@@ -107,7 +107,8 @@ public class TokenRelListCalculator {
      *
      * @param account the account to remove the token relations from
      * @param tokenRelsToDelete the token relations to remove
-     * @return new objects that represent the updated account and token relations, as well as the token relations to delete.
+     * @return new objects that represent the updated account and token relations, as well as the token relations
+     * to delete
      * @throws IllegalArgumentException if any of the token relations don't have the same {@link AccountID} as the given account object
      */
     @NonNull
@@ -189,7 +190,7 @@ public class TokenRelListCalculator {
 
     /**
      * Getter method that prioritizes current updates to token relations, and falls back to other
-     * sources if no updates for that token relation yet exist
+     * sources if no updates for that token relation yet exist.
      *
      * @param updatedTokenRels the collection of token relations that have been updated from their
      *                         original state. Passed in as a map of Token ID -> Token Relation for

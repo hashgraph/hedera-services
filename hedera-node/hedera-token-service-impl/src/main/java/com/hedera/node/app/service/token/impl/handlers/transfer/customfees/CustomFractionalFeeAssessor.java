@@ -44,8 +44,9 @@ import javax.inject.Singleton;
  * All fractional fees, that are not netOfTransfers will manipulate the given transaction body.
  * If netOfTransfers flag is set to false, the custom fee si reclaimed from the credits in
  * given transaction body.
- * If netOfTransfers flag is set to true the sender will pay the custom fees.Else the receivers will pay custom fees This means that the fee will be charged from the sender account. This is done to avoid
- * manipulate the given transaction
+ * If netOfTransfers flag is set to true the sender will pay the custom fees, else the receivers will pay custom fees.
+ * This means that the fee will be charged from the sender account. This is done to avoid
+ * manipulation of the given transaction.
  */
 @Singleton
 public class CustomFractionalFeeAssessor {
@@ -146,7 +147,7 @@ public class CustomFractionalFeeAssessor {
 
     /**
      * For a given input token transfers from transaction body, if the fractional fee has to be
-     * adjusted from credits, adjusts the given transaction body with the adjustments
+     * adjusted from credits, adjusts the given transaction body with the adjustments.
      *
      * @param mutableInputTokenAdjustments the input token adjustments from given transaction body
      * @param denom the token id
@@ -195,7 +196,7 @@ public class CustomFractionalFeeAssessor {
     }
 
     /**
-     * Calculates the amount owned to be paid as fractional custom fee
+     * Calculates the amount owned to be paid as fractional custom fee.
      * @param givenUnits  units transferred in the transaction
      * @param fractionalFee the fractional fee
      * @return the amount owned to be paid as fractional custom fee

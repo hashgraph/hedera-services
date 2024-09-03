@@ -40,7 +40,7 @@ public interface NodeStakeUpdateStreamBuilder extends StreamBuilder {
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateStreamBuilder transaction(@NonNull final Transaction transaction);
+    NodeStakeUpdateStreamBuilder transaction(@NonNull Transaction transaction);
 
     /**
      * Sets the record's memo.
@@ -49,5 +49,5 @@ public interface NodeStakeUpdateStreamBuilder extends StreamBuilder {
      * @return the builder
      */
     @NonNull
-    NodeStakeUpdateStreamBuilder memo(@NonNull final String memo);
+    NodeStakeUpdateStreamBuilder memo(@NonNull String memo);
 }

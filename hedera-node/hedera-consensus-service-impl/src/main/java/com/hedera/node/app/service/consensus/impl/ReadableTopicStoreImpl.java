@@ -64,7 +64,7 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     public long sizeOfState() {
         return topicState.size();
