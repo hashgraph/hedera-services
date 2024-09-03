@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package signatures;
+package com.hedera.node.app.test.signatures;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -19,7 +19,6 @@ plugins {
     id("com.hedera.gradle.services-publish")
     id("com.hedera.gradle.feature.benchmark")
     id("com.hedera.gradle.feature.test-fixtures")
-    id("com.hedera.gradle.feature.test-itest")
 }
 
 description = "Hedera Application - Implementation"
@@ -41,15 +40,16 @@ mainModuleInfo {
 
 testModuleInfo {
     requires("com.fasterxml.jackson.databind")
+    requires("com.google.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.google.jimfs")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
     requires("headlong")
     requires("org.assertj.core")
+    requires("org.bouncycastle.provider")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
@@ -58,32 +58,6 @@ testModuleInfo {
     requires("uk.org.webcompere.systemstubs.core")
     requires("uk.org.webcompere.systemstubs.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
-}
-
-itestModuleInfo {
-    requires("com.hedera.node.app")
-    requires("com.hedera.node.app.spi")
-    requires("com.hedera.node.app.spi.test.fixtures")
-    requires("com.hedera.node.config")
-    requires("com.hedera.node.config.test.fixtures")
-    requires("com.github.spotbugs.annotations")
-    requires("com.hedera.pbj.runtime")
-    requires("com.swirlds.common")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.state.api")
-    requires("com.swirlds.state.api.test.fixtures")
-    requires("com.hedera.node.hapi")
-    requires("com.swirlds.metrics.api")
-    requires("io.grpc")
-    requires("io.grpc.netty")
-    requires("io.grpc.stub")
-    requires("org.apache.logging.log4j")
-    requires("org.assertj.core")
-    requires("org.bouncycastle.provider")
-    requires("org.junit.jupiter.api")
-    requires("org.junit.jupiter.params")
-    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
-    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 jmhModuleInfo {
@@ -95,10 +69,6 @@ jmhModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("jmh.core")
-}
-
-tasks.withType<Test> {
-    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
 
 // Add all the libs dependencies into the jar manifest!
