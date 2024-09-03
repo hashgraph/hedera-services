@@ -25,6 +25,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.utilities.HashTools;
+import com.swirlds.merkledb.utilities.MemoryUtils;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * this amounts to a lot of wasted space. This implementation assumes a homogenous set of hashes and omits serializing
  * the hash type, only storing the hash bytes themselves.
  *
- * This class improves upon the memory usage of a simple hash array. In this class, each hash is stored as
+ * <p>This class improves upon the memory usage of a simple hash array. In this class, each hash is stored as
  * exactly the number of hash bytes (48 for an SHA-384 hash). An array of hash objects would include java object
  * overhead, amounting to about a 2x overhead.
  *
@@ -53,7 +54,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * = 100 bytes, or over 2x overhead.
  * </pre>
  */
-@SuppressWarnings("unused")
 public final class HashListByteBuffer implements HashList, OffHeapUser {
     /**
      * The version number for format of current data files
@@ -196,6 +196,11 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
     public void close() throws IOException {
         maxIndexThatCanBeStored.set(0);
         numberOfHashesStored.set(0);
+        if (offHeap) {
+            for (final ByteBuffer directBuffer : data) {
+                MemoryUtils.closeDirectByteBuffer(directBuffer);
+            }
+        }
         data.clear();
     }
 

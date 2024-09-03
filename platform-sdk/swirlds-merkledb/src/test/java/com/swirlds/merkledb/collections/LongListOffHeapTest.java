@@ -26,13 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
@@ -67,16 +65,6 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Test
-    void addressRequiresIndirectBuffer() {
-        final ByteBuffer heapBuffer = ByteBuffer.allocate(32);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> LongListOffHeap.address(heapBuffer),
-                "Only indirect buffers can be used with LongListOffHeap");
-    }
-
-    @Test
-    @Order(5)
     void testCustomNumberOfLongs() throws IOException {
         try (final LongListOffHeap list =
                 createFullyParameterizedLongListWith(DEFAULT_NUM_LONGS_PER_CHUNK, getSampleSize())) {
