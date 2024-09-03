@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -1175,5 +1176,11 @@ public class RecordStreamBuilder
     @NonNull
     public TransactionCategory category() {
         return category;
+    }
+
+    @Override
+    public StreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
+        // No-op
+        return this;
     }
 }

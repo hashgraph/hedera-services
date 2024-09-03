@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
@@ -138,6 +139,13 @@ public class PairedStreamBuilder
     public @NonNull PairedStreamBuilder transaction(@NonNull final Transaction transaction) {
         recordStreamBuilder.transaction(transaction);
         blockStreamBuilder.transaction(transaction);
+        return this;
+    }
+
+    @Override
+    public StreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
+        recordStreamBuilder.functionality(functionality);
+        blockStreamBuilder.functionality(functionality);
         return this;
     }
 

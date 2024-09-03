@@ -41,7 +41,9 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                         .ifPresent(callContractOutput -> {
                             final var result = callContractOutput.contractCallResultOrThrow();
                             recordBuilder.contractCallResult(result);
-                            receiptBuilder.contractID(result.contractID());
+                            if (parts.transactionIdOrThrow().nonce() == 0) {
+                                receiptBuilder.contractID(result.contractID());
+                            }
                         }));
     }
 }

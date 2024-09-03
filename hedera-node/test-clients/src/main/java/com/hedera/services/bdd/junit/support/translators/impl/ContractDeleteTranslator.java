@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -54,26 +53,16 @@ public class ContractDeleteTranslator implements BlockTransactionPartsTranslator
                         final var account =
                                 stateChange.mapUpdateOrThrow().valueOrThrow().accountValueOrThrow();
                         if (account.deleted()) {
-                            var isTarget = false;
-                            final long accountNum = account.accountIdOrThrow().accountNumOrThrow();
-                            switch (targetId.contract().kind()) {
-                                case UNSET -> throw new IllegalStateException("Contract kind should be set");
-                                case CONTRACT_NUM -> isTarget = accountNum == targetId.contractNumOrThrow();
-                                case EVM_ADDRESS -> isTarget =
-                                        targetId.evmAddressOrThrow().equals(extractEvmAddress(account.alias()));
-                            }
-                            if (isTarget) {
-                                receiptBuilder.contractID(ContractID.newBuilder()
-                                        .contractNum(accountNum)
-                                        .build());
-                                iter.remove();
-                                return;
-                            }
+                            receiptBuilder.contractID(ContractID.newBuilder()
+                                    .contractNum(account.accountIdOrThrow().accountNumOrThrow())
+                                    .build());
+                            iter.remove();
+                            return;
                         }
                     }
                 }
                 log.error(
-                        "No matching state change found for successful crypto delete with id {}",
+                        "No matching state change found for successful contract delete with id {}",
                         parts.transactionIdOrThrow());
             }
         });

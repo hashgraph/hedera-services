@@ -49,7 +49,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -75,7 +74,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import java.util.concurrent.atomic.AtomicLong;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -84,6 +82,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAccountWipeHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_4680 = BaseCryptoHandler.asAccount(4680);
     private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
@@ -92,6 +91,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
+
+    @Mock
     private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
@@ -101,16 +102,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        final AtomicLong newTotalSupply = new AtomicLong(0);
-        recordBuilder = mock(TokenAccountWipeStreamBuilder.class);
-        lenient().when(recordBuilder.newTotalSupply(anyLong())).thenAnswer(invocation -> {
-            newTotalSupply.set((Long) invocation.getArguments()[0]);
-            return recordBuilder;
-        });
-        lenient().when(recordBuilder.getNewTotalSupply()).thenAnswer(invocation -> newTotalSupply.get());
-        lenient().when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
-        lenient().when(recordBuilder.transaction()).thenReturn(Transaction.DEFAULT);
-        lenient().when(recordBuilder.status()).thenReturn(OK);
     }
 
     @Nested

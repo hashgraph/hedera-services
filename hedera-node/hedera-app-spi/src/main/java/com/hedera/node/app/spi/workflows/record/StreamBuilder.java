@@ -65,9 +65,7 @@ public interface StreamBuilder {
      * @param functionality the functionality
      * @return this builder
      */
-    default StreamBuilder functionality(@NonNull HederaFunctionality functionality) {
-        return this;
-    }
+    StreamBuilder functionality(@NonNull HederaFunctionality functionality);
 
     /**
      * Sets the serialized bytes for the transaction; if known, we can avoid re-serializing the transaction.

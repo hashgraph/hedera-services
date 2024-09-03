@@ -45,6 +45,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
@@ -65,7 +66,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -121,7 +122,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
-    private StakingValidator stakingValidator;
+    @Mock
+    private HandleContext.SavepointStack stack;
+
+    @Mock
+    private CryptoUpdateStreamBuilder streamBuilder;
+
     private final long updateAccountNum = 32132L;
     private final AccountID updateAccountId =
             AccountID.newBuilder().accountNum(updateAccountNum).build();
@@ -138,8 +144,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
+        lenient().when(handleContext.savepointStack()).thenReturn(stack);
+        lenient().when(stack.getBaseBuilder(CryptoUpdateStreamBuilder.class)).thenReturn(streamBuilder);
 
-        stakingValidator = new StakingValidator();
         subject = new CryptoUpdateHandler(waivers);
     }
 

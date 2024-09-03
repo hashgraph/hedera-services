@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -100,11 +102,14 @@ public class BlockUnitSplit {
                         if (pendingParts.areComplete()) {
                             unitParts.add(pendingParts.toBlockTransactionParts());
                         }
-                        if (beginsNewUnit(txnId, unitTxnId) && !unitParts.isEmpty()) {
+                        final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts);
+                        if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
                             completeAndAdd(units, unitParts, unitStateChanges);
                         }
                         pendingParts.clear();
-                        unitTxnId = txnId;
+                        if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+                            unitTxnId = txnId;
+                        }
                         pendingParts.parts = nextParts;
                     }
                 }
@@ -121,15 +126,35 @@ public class BlockUnitSplit {
         return units;
     }
 
-    private boolean beginsNewUnit(@NonNull final TransactionID nextId, @Nullable final TransactionID unitTxnId) {
+    private TxnIdType classifyTxnId(
+            @NonNull final TransactionID nextId,
+            @Nullable final TransactionID unitTxnId,
+            @NonNull final TransactionParts parts) {
         if (unitTxnId == null) {
-            return true;
+            return TxnIdType.NEW_UNIT_BY_ID;
         }
         // Scheduled transactions never begin a new transactional unit in the current system
-        return !nextId.scheduled()
+        final var answer = !nextId.scheduled()
                 && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
                         || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
                                 .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
+        if (!isAutoSysFileMgmtTxn(parts)) {
+            return answer ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
+        } else {
+            return TxnIdType.AUTO_SYSFILE_MGMT_ID;
+        }
+    }
+
+    private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
+        return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
+                && (parts.transactionIdOrThrow().nonce() > 0
+                        || parts.transactionIdOrThrow().accountIDOrThrow().accountNumOrThrow() == 50L);
+    }
+
+    private enum TxnIdType {
+        AUTO_SYSFILE_MGMT_ID,
+        SAME_UNIT_BY_ID,
+        NEW_UNIT_BY_ID,
     }
 
     private void completeAndAdd(

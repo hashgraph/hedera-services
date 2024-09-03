@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static java.util.Objects.requireNonNull;
 
@@ -44,7 +45,7 @@ public class EthereumTransactionTranslator implements BlockTransactionPartsTrans
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             final var op = parts.body().ethereumTransactionOrThrow();
             final var ethTxData = populateEthTxData(op.ethereumData().toByteArray());
-            if (ethTxData != null) {
+            if (ethTxData != null && parts.status() != INVALID_FILE_ID) {
                 recordBuilder.ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
             }
             Optional.ofNullable(parts.transactionOutput())

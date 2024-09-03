@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
@@ -30,6 +32,7 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.TokenAirdropOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
@@ -37,6 +40,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -200,6 +204,9 @@ public class BlockStreamBuilder
     // The type of contract operation that was performed
     private ContractOpType contractOpType = null;
 
+    @Nullable
+    private HederaFunctionality functionality;
+
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
 
@@ -229,6 +236,12 @@ public class BlockStreamBuilder
     @Override
     public StreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
         this.stateChanges.addAll(stateChanges);
+        return this;
+    }
+
+    @Override
+    public BlockStreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
+        this.functionality = requireNonNull(functionality);
         return this;
     }
 
@@ -453,6 +466,7 @@ public class BlockStreamBuilder
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
         requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
+        ensureOutputBuilder();
         return this;
     }
 
@@ -833,10 +847,12 @@ public class BlockStreamBuilder
             transactionOutputBuilder.signSchedule(SignScheduleOutput.newBuilder()
                     .scheduledTransactionId(scheduledTransactionId)
                     .build());
-        } else if (hasAssessedCustomFees) {
+        } else if (functionality == CRYPTO_TRANSFER && hasAssessedCustomFees) {
             transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
                     .assessedCustomFees(assessedCustomFees)
                     .build());
+        } else if (functionality == TOKEN_AIRDROP && (hasAssessedCustomFees || !pendingAirdropRecords.isEmpty())) {
+            transactionOutputBuilder.tokenAirdrop(new TokenAirdropOutput(assessedCustomFees, pendingAirdropRecords));
         }
         return transactionOutputBuilder.build();
     }
