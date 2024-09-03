@@ -204,6 +204,7 @@ class EventDeduplicatorTests {
                                 .signature(randomSignatureBytes(random)) // randomize the signature
                                 .eventTransaction(platformEvent.getGossipEvent().eventTransaction())
                                 .build());
+                duplicateEvent.setHash(platformEvent.getHash());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient) {
