@@ -28,7 +28,7 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -75,7 +75,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
+        merkleTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
     }
 
     @Nested
@@ -92,7 +92,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
@@ -120,7 +120,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             merkleTree,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             null,
                             networkInfo,
                             mock(Metrics.class)))
@@ -134,7 +134,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             merkleTree,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
                             null,
                             mock(Metrics.class)))
@@ -145,7 +145,13 @@ class DependencyMigrationTest extends MerkleTestBase {
         void metricsRequired() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, servicesRegistry, null, CURRENT_VERSION, VERSIONED_CONFIG, networkInfo, null))
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
+                            VERSIONED_CONFIG,
+                            networkInfo,
+                            null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -181,7 +187,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 merkleTree,
                 servicesRegistry,
                 null,
-                SemanticVersion.newBuilder().major(2).build(),
+                new ServicesSoftwareVersion(
+                        SemanticVersion.newBuilder().major(2).build()),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -286,7 +293,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 merkleTree,
                 servicesRegistry,
                 null,
-                SemanticVersion.newBuilder().major(1).build(),
+                new ServicesSoftwareVersion(
+                        SemanticVersion.newBuilder().major(1).build()),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));

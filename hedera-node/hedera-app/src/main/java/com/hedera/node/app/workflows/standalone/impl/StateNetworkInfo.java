@@ -25,10 +25,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.ParseException;
@@ -155,10 +153,7 @@ public class StateNetworkInfo implements NetworkInfo {
      */
     private static SelfNodeInfo mockSelfNodeInfo(@NonNull final Configuration config) {
         final var versionConfig = config.getConfigData(VersionConfig.class);
-        final var version = new HederaSoftwareVersion(
-                versionConfig.hapiVersion(),
-                versionConfig.servicesVersion(),
-                config.getConfigData(HederaConfig.class).configVersion());
-        return new SelfNodeInfoImpl(0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, version, "");
+        return new SelfNodeInfoImpl(
+                0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, versionConfig.hapiVersion(), "");
     }
 }
