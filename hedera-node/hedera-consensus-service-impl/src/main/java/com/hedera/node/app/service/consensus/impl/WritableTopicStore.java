@@ -84,7 +84,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     public long sizeOfState() {
         return topicState().size();

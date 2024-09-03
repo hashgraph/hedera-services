@@ -33,8 +33,8 @@ public class ScheduleVerificationAssistant implements VerificationAssistant {
     /**
      * Create a new schedule verification assistant.
      *
-     * @param preValidatedKeys a <strong>modifiable</strong> {@link Set<Key>} of primitive keys previously verified.
-     * @param failedPrimitiveKeys an empty and <strong>modifiable</strong> {@link Set<Key>} to receive a list of
+     * @param preValidatedKeys a <strong>modifiable</strong> {@code Set<Key>} of primitive keys previously verified.
+     * @param failedPrimitiveKeys an empty and <strong>modifiable</strong> {@code Set<Key>} to receive a list of
      *   primitive keys that are still unverified.
      */
     public ScheduleVerificationAssistant(final Set<Key> preValidatedKeys, Set<Key> failedPrimitiveKeys) {

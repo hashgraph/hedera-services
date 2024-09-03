@@ -185,7 +185,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param accountStore account store
      * @param tokenRelStore token relation store
      * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
-     * @param recordBuilder
+     * @param recordBuilder record builder
      */
     private void associateAccounts(
             final HandleContext context,

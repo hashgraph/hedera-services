@@ -42,7 +42,7 @@ import java.util.Map;
  * Adjusts the hbar balances and token allowances for the accounts involved in the transfer.
  */
 public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferStep {
-    final CryptoTransferTransactionBody op;
+    private final CryptoTransferTransactionBody op;
     private final AccountID topLevelPayer;
 
     /**
