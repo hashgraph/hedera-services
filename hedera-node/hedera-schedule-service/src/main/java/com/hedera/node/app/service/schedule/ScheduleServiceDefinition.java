@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Transactions and queries for the Schedule Service
+ * Transactions and queries for the Schedule Service.
  */
 @SuppressWarnings("java:S6548")
 public final class ScheduleServiceDefinition implements RpcServiceDefinition {
@@ -54,7 +54,7 @@ public final class ScheduleServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the base path for the Schedule Service
+     * Returns the base path for the Schedule Service.
      *
      * @return the base path
      */
@@ -65,7 +65,7 @@ public final class ScheduleServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the set of methods supported by the Schedule Service
+     * Returns the set of methods supported by the Schedule Service.
      *
      * @return the methods
      */

@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class manages calculations of staking rewards
+ * This class manages calculations of staking rewards.
  */
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {

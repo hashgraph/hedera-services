@@ -18,10 +18,10 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;

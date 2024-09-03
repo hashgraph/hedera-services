@@ -175,9 +175,9 @@ public class AddressBookValidator {
     }
 
     /**
-     *  Validate the Bytes is a real X509Certificate bytes.
+     * Validate the Bytes is a real X509Certificate bytes.
      * @param certBytes the Bytes to validate
-     * @throws PreCheckException
+     * @throws PreCheckException if the certificate is invalid
      */
     public static void validateX509Certificate(@NonNull Bytes certBytes) throws PreCheckException {
         try {

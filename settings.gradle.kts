@@ -39,7 +39,6 @@ javaModules {
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
-        module("swirlds-jasperdb") { artifact = "swirlds-merkledb" }
         module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
@@ -49,12 +48,7 @@ javaModules {
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
 
-        // EVM has its own group
-        module("hedera-evm") { group = "com.hedera.evm"}
-        module("hedera-evm-impl") { group = "com.hedera.evm"}
-
         // Configure 'artifact' for projects where the folder does not correspond to the artifact name
-        module("cli-clients") { artifact = "services-cli" }
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
         module("hedera-addressbook-service") { artifact = "app-service-addressbook" }

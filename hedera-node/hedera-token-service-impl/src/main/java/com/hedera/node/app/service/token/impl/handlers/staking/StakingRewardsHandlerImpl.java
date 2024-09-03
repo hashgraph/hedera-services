@@ -250,18 +250,17 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @Nullable Set<AccountID> specialRewardReceivers,
             @NonNull final Account account,
             @NonNull final WritableAccountStore accountStore) {
-        if (specialRewardReceivers == null) {
-            // Always trigger a reward situation for the new stakee when they are
-            // gaining an indirect staker, even if it doesn't change their total stake
-            specialRewardReceivers = new LinkedHashSet<>();
-        }
+        // Always trigger a reward situation for the new stakee when they are
+        // gaining an indirect staker, even if it doesn't change their total stake
+        var updatedSpecialRewardReceivers =
+                (specialRewardReceivers == null ? new LinkedHashSet<AccountID>() : specialRewardReceivers);
         final var stakedAccountId = account.stakedAccountId();
         final var stakedAccount = accountStore.getOriginalValue(stakedAccountId);
         // if the special reward receiver account is not staked to a node, it will not need to receive reward
         if (stakedAccount != null && stakedAccount.hasStakedNodeId()) {
-            specialRewardReceivers.add(stakedAccountId);
+            updatedSpecialRewardReceivers.add(stakedAccountId);
         }
-        return specialRewardReceivers;
+        return updatedSpecialRewardReceivers;
     }
 
     /**
@@ -402,8 +401,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
             // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
-            if (modifiedStakedNodeId != SENTINEL_NODE_ID)
+            if (modifiedStakedNodeId != SENTINEL_NODE_ID) {
                 stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
+            }
         }
     }
 

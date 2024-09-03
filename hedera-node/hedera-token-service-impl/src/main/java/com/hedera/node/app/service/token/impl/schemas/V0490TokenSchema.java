@@ -209,15 +209,15 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     public long getTotalBalanceOfAllAccounts(
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
-        long i = 1; // Start with the first account ID
+        long curAccountId = 1; // Start with the first account ID
         long totalAccounts = accounts.size();
         do {
-            Account account = accounts.get(asAccountId(i, hederaConfig));
+            final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
                 totalAccounts--;
             }
-            i++;
+            curAccountId++;
         } while (totalAccounts > 0);
         return totalBalance;
     }
