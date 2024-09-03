@@ -514,7 +514,14 @@ public final class PlatformBuilder {
         }
 
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, metrics, cryptography, time, executorFactory, fileSystemManager, recycleBin);
+                configuration,
+                metrics,
+                cryptography,
+                time,
+                executorFactory,
+                fileSystemManager,
+                recycleBin,
+                merkleCryptography);
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
