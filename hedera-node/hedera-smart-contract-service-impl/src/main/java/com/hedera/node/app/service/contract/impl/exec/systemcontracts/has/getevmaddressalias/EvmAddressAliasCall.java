@@ -51,8 +51,6 @@ public class EvmAddressAliasCall extends AbstractCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        // Prepare the short-circuit error status returns
-
         final var explicitAddress = explicitFromHeadlong(address);
 
         // If the address is not a long zero then return fail
