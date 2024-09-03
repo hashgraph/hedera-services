@@ -89,6 +89,7 @@ import org.apache.logging.log4j.Logger;
 public class TokenAirdropHandler extends TransferExecutor implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(TokenAirdropHandler.class);
     private final TokenAirdropValidator validator;
+
     /**
      * Default constructor for injection.
      */
@@ -290,7 +291,8 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
      * @param context             the {@link HandleContext} for the transaction
      * @param pendingAirdropsSize the number of pending airdrops created
      * @param numUnlimitedAssociationTransfers the number of unlimited association transfers
-     * @param existingPendingAirdropsCount the number of pending airdrops that doesn't need to be charged for associations
+     * @param existingPendingAirdropsCount
+     *  the number of pending airdrops that doesn't need to be charged for associations
      */
     private void chargeAirdropFee(
             final @NonNull HandleContext context,
@@ -433,7 +435,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
 
     /**
      *  Create new {@link AccountPendingAirdrop} and if the sender has already existing pending airdrops
-     *  link them together and update the account store and the pending airdrop store with the new values
+     *  link them together and update the account store and the pending airdrop store with the new values.
      */
     private void updateNewPendingAirdrop(
             @NonNull final Account senderAccount,

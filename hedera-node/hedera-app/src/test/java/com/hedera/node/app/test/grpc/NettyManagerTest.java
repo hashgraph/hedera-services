@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package grpc;
+package com.hedera.node.app.test.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

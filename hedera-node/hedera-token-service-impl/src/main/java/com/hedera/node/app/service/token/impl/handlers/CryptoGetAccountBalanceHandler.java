@@ -163,7 +163,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     /**
-     * Calculate TokenBalance of an Account
+     * Calculate TokenBalance of an Account.
      *
      * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
      * @param account the account to be calculated from

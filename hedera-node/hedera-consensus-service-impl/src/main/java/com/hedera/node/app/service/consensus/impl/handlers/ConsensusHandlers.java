@@ -22,7 +22,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Class to hold all the consensus handlers
+ * Class to hold all the consensus handlers.
  */
 @Singleton
 public class ConsensusHandlers {
@@ -38,7 +38,7 @@ public class ConsensusHandlers {
     private final ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
 
     /**
-     * Constructor for ConsensusHandlers
+     * Constructor for ConsensusHandlers.
      * @param consensusCreateTopicHandler   the handler for create topic
      * @param consensusDeleteTopicHandler   the handler for delete topic
      * @param consensusGetTopicInfoHandler  the handler for topic info
@@ -65,7 +65,7 @@ public class ConsensusHandlers {
     }
 
     /**
-     * Get the consensusCreateTopicHandler
+     * Get the consensusCreateTopicHandler.
      *
      * @return the consensusCreateTopicHandler
      */
@@ -74,7 +74,7 @@ public class ConsensusHandlers {
     }
 
     /**
-     * Get the consensusDeleteTopicHandler
+     * Get the consensusDeleteTopicHandler.
      *
      * @return the consensusDeleteTopicHandler
      */
@@ -83,7 +83,7 @@ public class ConsensusHandlers {
     }
 
     /**
-     * Get the consensusGetTopicInfoHandler
+     * Get the consensusGetTopicInfoHandler.
      *
      * @return the consensusGetTopicInfoHandler
      */
@@ -92,7 +92,7 @@ public class ConsensusHandlers {
     }
 
     /**
-     * Get the consensusSubmitMessageHandler
+     * Get the consensusSubmitMessageHandler.
      *
      * @return the consensusSubmitMessageHandler
      */
@@ -101,7 +101,7 @@ public class ConsensusHandlers {
     }
 
     /**
-     * Get the consensusUpdateTopicHandler
+     * Get the consensusUpdateTopicHandler.
      *
      * @return the consensusUpdateTopicHandler
      */
