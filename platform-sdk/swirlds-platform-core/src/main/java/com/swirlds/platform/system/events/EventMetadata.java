@@ -1,36 +1,22 @@
 package com.swirlds.platform.system.events;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.TransactionWrapper;
-import java.time.Instant;
-import java.util.List;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
-import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
-import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class EventDataWrappers {
+public class EventMetadata extends AbstractHashable {
     /**
      * the software version of the node that created this event.
      */
@@ -53,6 +39,8 @@ public class EventDataWrappers {
 
     /** a combined list of all parents, selfParent + otherParents */
     private final List<EventDescriptorWrapper> allParents;
+
+    private final long generation;
 
     /**
      * creation time, as claimed by its creator
@@ -79,7 +67,7 @@ public class EventDataWrappers {
      * @param timeCreated     creation time, as claimed by its creator
      * @param transactions    list of transactions included in this event instance
      */
-    public EventDataWrappers(
+    public EventMetadata(
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptorWrapper selfParent,
@@ -94,17 +82,32 @@ public class EventDataWrappers {
             Objects.requireNonNull(otherParents, "The otherParents must not be null");
             otherParents.forEach(Objects::requireNonNull);
             this.otherParents = otherParents;
-            this.allParents = createAllParentsList();
+            this.allParents = selfParent == null
+                    ? otherParents
+                    : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
+            this.generation = 1 + allParents.stream().mapToLong(d->d.eventDescriptor().generation()).max().orElse(EventConstants.GENERATION_UNDEFINED);
             this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
-
             this.transactions = Objects.requireNonNull(transactions, "transactions must not be null").stream().map(TransactionWrapper::new).toList();
     }
 
-    @NonNull
-    private List<EventDescriptorWrapper> createAllParentsList() {
-        return selfParent == null
-                ? otherParents
-                : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
+    public EventMetadata(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
+        Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
+        this.creatorId = new NodeId(gossipEvent.eventCore().creatorNodeId());
+        this.allParents = gossipEvent.eventCore().parents().stream().map(EventDescriptorWrapper::new).toList();
+        if (!allParents.isEmpty()
+                && allParents.getFirst().creator().equals(creatorId)) {
+            // this event has a self parent
+            this.selfParent = allParents.getFirst();
+            this.otherParents = allParents.subList(1, allParents.size());
+        }else {
+            // this event does not have a self parent
+            this.selfParent = null;
+            this.otherParents = allParents;
+        }
+        this.generation = 1 + allParents.stream().mapToLong(d->d.eventDescriptor().generation()).max().orElse(EventConstants.GENERATION_UNDEFINED);
+        this.timeCreated = HapiUtils.asInstant(Objects.requireNonNull(gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null"));
+        this.transactions = Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream().map(TransactionWrapper::new).toList();
     }
 
     /**
@@ -204,5 +207,30 @@ public class EventDataWrappers {
     @NonNull
     public List<TransactionWrapper> getTransactions() {
         return transactions;
+    }
+
+    public long getGeneration() {
+        return generation;
+    }
+
+    /**
+     * Get the event descriptor for this event, creating one if it hasn't yet been created. If called more than once
+     * then return the same instance.
+     *
+     * @return an event descriptor for this event
+     * @throws IllegalStateException if called prior to this event being hashed
+     */
+    @NonNull
+    public EventDescriptorWrapper getDescriptor(final long birthRound) {
+        if (descriptor == null) {
+            if (getHash() == null) {
+                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
+            }
+
+            descriptor = new EventDescriptorWrapper(new EventDescriptor(
+                    getHash().getBytes(), creatorId.id(), birthRound, getGeneration()));
+        }
+
+        return descriptor;
     }
 }

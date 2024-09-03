@@ -35,6 +35,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventCoreUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.system.events.EventMetadata;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -67,18 +68,11 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     }
 
     /** The gossip event */
-    private GossipEvent gossipEvent;
-    /** List of wrapped transaction */
-    private List<TransactionWrapper> transactions;
-    /** Self descriptor */
-    private EventDescriptorWrapper descriptor;
+    private final GossipEvent gossipEvent;
+
+    private final EventMetadata metadata;
 
     private Instant timeReceived;
-
-    /**
-     * the software version of the node that created this event.
-     */
-    private final SoftwareVersion softwareVersion;
 
     /**
      * The sequence number of an event before it is added to the write queue.
@@ -122,27 +116,28 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
-        this(
-                unsignedEvent.getSoftwareVersion(),
-                new GossipEvent(unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions()));
-        setHash(unsignedEvent.getHash());
+        this.gossipEvent = new GossipEvent(unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions());
+        this.metadata = unsignedEvent.getMetadata();
+
+        this.timeReceived = Instant.now();
+        this.senderId = null;
+        this.consensusData = NO_CONSENSUS;
+        Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
+        this.birthRound = gossipEvent.eventCore().birthRound();
     }
 
     /**
      * @param gossipEvent the gossip event
      */
     public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
-        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.gossipEvent = Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null");
+        this.metadata = new EventMetadata(Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent);
+
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
-        if (gossipEvent.eventCore() != null) {
-            this.birthRound = gossipEvent.eventCore().birthRound();
-        }
-        transactions = gossipEvent.eventTransaction().stream()
-                .map(TransactionWrapper::new)
-                .toList();
+        Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
+        this.birthRound = gossipEvent.eventCore().birthRound();
     }
 
     /**
@@ -152,7 +147,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        final PlatformEvent platformEvent = new PlatformEvent(softwareVersion, gossipEvent);
+        final PlatformEvent platformEvent = new PlatformEvent(metadata.getSoftwareVersion(), gossipEvent);
         platformEvent.setHash(getHash());
         return platformEvent;
     }
@@ -230,42 +225,29 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @return the descriptor for the event
      */
     public EventDescriptorWrapper getDescriptor() {
-        if (descriptor == null) {
-            if (getHash() == null) {
-                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
-            }
-
-            descriptor = new EventDescriptorWrapper(new EventDescriptor(
-                    getHash().getBytes(), getEventCore().creatorNodeId(), getBirthRound(), getGeneration()));
-        }
-
-        return descriptor;
+        return metadata.getDescriptor(getBirthRound());
     }
 
     @Override
     public Iterator<Transaction> transactionIterator() {
-        return new TypedIterator<>(transactions.iterator());
+        return new TypedIterator<>(metadata.getTransactions().iterator());
     }
 
     @Override
     public Instant getTimeCreated() {
-        if (gossipEvent.eventCore() != null && gossipEvent.eventCore().timeCreated() != null) {
-            return CommonUtils.pbjTimestampToInstant(gossipEvent.eventCore().timeCreated());
-        }
-
-        return null;
+        return metadata.getTimeCreated();
     }
 
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        return softwareVersion.getPbjSemanticVersion();
+        return metadata.getSoftwareVersion().getPbjSemanticVersion();
     }
 
     @NonNull
     @Deprecated(forRemoval = true)
     public SoftwareVersion getOldSoftwareVersion() {
-        return softwareVersion;
+        return metadata.getSoftwareVersion();
     }
 
     /**
@@ -280,7 +262,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     @NonNull
     @Override
     public NodeId getCreatorId() {
-        return new NodeId(getEventCore().creatorNodeId());
+        return metadata.getCreatorId();
     }
 
     /**
@@ -289,7 +271,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @return the generation of the event
      */
     public long getGeneration() {
-        return EventCoreUtils.getGeneration(getEventCore());
+        return metadata.getGeneration();
     }
 
     /**
@@ -305,7 +287,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @return the number of transactions this event contains
      */
     public int getTransactionCount() {
-        return transactions.size();
+        return metadata.getTransactions().size();
     }
 
     /**
@@ -363,7 +345,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
 
     @Override
     public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
-        return new TypedIterator<>(transactions.iterator());
+        return new TypedIterator<>(metadata.getTransactions().iterator());
     }
 
     /**
@@ -403,13 +385,13 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
             throw new IllegalStateException("Consensus data must be set");
         }
 
-        for (int i = 0; i < transactions.size(); i++) {
-            transactions.get(i).setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
+        for (int i = 0; i < metadata.getTransactions().size(); i++) {
+            metadata.getTransactions().get(i).setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
         }
     }
 
     public List<TransactionWrapper> getTransactions() {
-        return transactions;
+        return metadata.getTransactions();
     }
 
     /**
@@ -436,21 +418,6 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
-    //    @Override
-    //    public long getClassId() {
-    //        return CLASS_ID;
-    //    }
-    //
-    //    @Override
-    //    public int getVersion() {
-    //        return ClassVersion.BIRTH_ROUND;
-    //    }
-    //
-    //    @Override
-    //    public int getMinimumSupportedVersion() {
-    //        return ClassVersion.BIRTH_ROUND;
-    //    }
-
     /**
      * Get the event descriptor for the self parent.
      *
@@ -458,12 +425,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @Nullable
     public EventDescriptorWrapper getSelfParent() {
-        if (!getEventCore().parents().isEmpty()
-                && getEventCore().parents().getFirst().creatorNodeId()
-                        == getEventCore().creatorNodeId()) {
-            return new EventDescriptorWrapper(getEventCore().parents().getFirst());
-        }
-        return null;
+        return metadata.getSelfParent();
     }
 
     /**
@@ -473,30 +435,13 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     @NonNull
     public List<EventDescriptorWrapper> getOtherParents() {
-        if (getEventCore().parents().isEmpty()) {
-            return Collections.emptyList();
-        }
-        if (getEventCore().parents().getFirst().creatorNodeId()
-                == getEventCore().creatorNodeId()) {
-            return getEventCore().parents().subList(1, getEventCore().parents().size()).stream()
-                    .map(EventDescriptorWrapper::new)
-                    .toList();
-        }
-        return getEventCore().parents().stream()
-                .map(EventDescriptorWrapper::new)
-                .toList();
+        return metadata.getOtherParents();
     }
 
     /** @return a list of all parents, self parent (if any), + all other parents */
     @NonNull
     public List<EventDescriptorWrapper> getAllParents() {
-        if (gossipEvent.eventCore() == null) {
-            return Collections.emptyList();
-        }
-
-        return getEventCore().parents().stream()
-                .map(EventDescriptorWrapper::new)
-                .toList();
+        return metadata.getAllParents();
     }
 
     @Override

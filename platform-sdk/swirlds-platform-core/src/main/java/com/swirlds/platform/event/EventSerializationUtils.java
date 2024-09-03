@@ -52,6 +52,7 @@ public final class EventSerializationUtils {
     private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
     private static final int STATE_SIGNATURE_VERSION = 3;
     private static final int UNSIGNED_EVENT_VERSION = 4;
+    private static final int PLATFORM_EVENT_VERSION = 3;
 
     /**
      * Serialize a unsigned event to the output stream {@code out}.
@@ -137,6 +138,7 @@ public final class EventSerializationUtils {
 
     public static void serializePlatformEvent(
             @NonNull final SerializableDataOutputStream out, @NonNull final PlatformEvent event) throws IOException {
+        out.writeInt(PLATFORM_EVENT_VERSION);
         serializeSignedEvent(
                 out,
                 event.getOldSoftwareVersion(),
@@ -267,7 +269,10 @@ public final class EventSerializationUtils {
     @NonNull
     public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
-        //TODO PCES will probably fail because event version is not being read
+        final int eventVersion = in.readInt();
+        if (eventVersion != PLATFORM_EVENT_VERSION) {
+            throw new IOException("Unsupported event version: " + eventVersion);
+        }
         final UnsignedEvent unsignedEvent = EventSerializationUtils.deserializeUnsignedEvent(in);
         final byte [] signature = in.readByteArray(SignatureType.RSA.signatureLength());
 

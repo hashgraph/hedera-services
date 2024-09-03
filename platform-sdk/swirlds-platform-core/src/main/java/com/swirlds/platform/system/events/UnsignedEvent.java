@@ -22,6 +22,8 @@ import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.AbstractHashable;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
@@ -38,7 +40,7 @@ import java.util.Objects;
  * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
  * data is additional and does not affect the hash.
  */
-public class UnsignedEvent extends AbstractHashable {
+public class UnsignedEvent implements Hashable {
     /**
      * The core event data.
      */
@@ -49,12 +51,7 @@ public class UnsignedEvent extends AbstractHashable {
      */
     private final List<EventTransaction> eventTransactions;
 
-    /**
-     * The event descriptor for this event. Is not itself hashed.
-     */
-    private EventDescriptorWrapper descriptor;
-
-    private final EventDataWrappers wrappers;
+    private final EventMetadata metadata;
 
     /**
      * Create a UnsignedEvent object
@@ -77,19 +74,19 @@ public class UnsignedEvent extends AbstractHashable {
             @NonNull final List<EventTransaction> transactions) {
         Objects.requireNonNull(transactions, "The transactions must not be null");
         this.eventTransactions = Objects.requireNonNull(transactions, "transactions must not be null");
-        this.wrappers = new EventDataWrappers(softwareVersion, creatorId, selfParent, otherParents, timeCreated, transactions);
+        this.metadata = new EventMetadata(softwareVersion, creatorId, selfParent, otherParents, timeCreated, transactions);
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
                 HapiUtils.asTimestamp(timeCreated),
-                this.wrappers.getAllParents().stream()
+                this.metadata.getAllParents().stream()
                         .map(EventDescriptorWrapper::eventDescriptor)
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
     }
 
-    public EventDataWrappers getWrappers() {
-        return wrappers;
+    public EventMetadata getMetadata() {
+        return metadata;
     }
 
     /**
@@ -99,12 +96,12 @@ public class UnsignedEvent extends AbstractHashable {
      */
     @NonNull
     public SoftwareVersion getSoftwareVersion() {//TODO remove this method
-        return wrappers.getSoftwareVersion();
+        return metadata.getSoftwareVersion();
     }
 
     @NonNull
     public Instant getTimeCreated() {
-        return wrappers.getTimeCreated();
+        return metadata.getTimeCreated();
     }
 
     /**
@@ -112,11 +109,7 @@ public class UnsignedEvent extends AbstractHashable {
      */
     @NonNull
     public List<TransactionWrapper> getTransactions() {
-        return wrappers.getTransactions();
-    }
-
-    public long getGeneration() {
-        return 1 + eventCore.parents().stream().mapToLong(EventDescriptor::generation).max().orElse(EventConstants.GENERATION_UNDEFINED);
+        return metadata.getTransactions();
     }
 
     /**
@@ -128,16 +121,7 @@ public class UnsignedEvent extends AbstractHashable {
      */
     @NonNull
     public EventDescriptorWrapper getDescriptor() {
-        if (descriptor == null) {
-            if (getHash() == null) {
-                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
-            }
-
-            descriptor = new EventDescriptorWrapper(new EventDescriptor(
-                    getHash().getBytes(), getEventCore().creatorNodeId(), getEventCore().birthRound(), getGeneration()));
-        }
-
-        return descriptor;
+        return metadata.getDescriptor(eventCore.birthRound());
     }
 
     /**
@@ -158,6 +142,16 @@ public class UnsignedEvent extends AbstractHashable {
     @NonNull
     public List<EventTransaction> getEventTransactions() {
         return eventTransactions;
+    }
+
+    @Override
+    public @Nullable Hash getHash() {
+        return metadata.getHash();
+    }
+
+    @Override
+    public void setHash(final Hash hash) {
+        metadata.setHash(hash);
     }
 
     @Override
