@@ -21,11 +21,9 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLog
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
@@ -33,7 +31,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.EventCoreUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.EventMetadata;
 import com.swirlds.platform.system.events.UnsignedEvent;
@@ -44,7 +41,6 @@ import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -116,7 +112,8 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      * @param signature the signature for the event
      */
     public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
-        this.gossipEvent = new GossipEvent(unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions());
+        this.gossipEvent = new GossipEvent(
+                unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions());
         this.metadata = unsignedEvent.getMetadata();
 
         this.timeReceived = Instant.now();
@@ -131,7 +128,8 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
      */
     public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
         this.gossipEvent = Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null");
-        this.metadata = new EventMetadata(Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent);
+        this.metadata = new EventMetadata(
+                Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent);
 
         this.timeReceived = Instant.now();
         this.senderId = null;

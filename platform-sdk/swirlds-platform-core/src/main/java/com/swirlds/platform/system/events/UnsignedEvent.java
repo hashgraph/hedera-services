@@ -17,11 +17,9 @@
 package com.swirlds.platform.system.events;
 
 import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.platform.NodeId;
@@ -74,7 +72,8 @@ public class UnsignedEvent implements Hashable {
             @NonNull final List<EventTransaction> transactions) {
         Objects.requireNonNull(transactions, "The transactions must not be null");
         this.eventTransactions = Objects.requireNonNull(transactions, "transactions must not be null");
-        this.metadata = new EventMetadata(softwareVersion, creatorId, selfParent, otherParents, timeCreated, transactions);
+        this.metadata =
+                new EventMetadata(softwareVersion, creatorId, selfParent, otherParents, timeCreated, transactions);
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
@@ -95,7 +94,7 @@ public class UnsignedEvent implements Hashable {
      * @return the software version of the node that created this event
      */
     @NonNull
-    public SoftwareVersion getSoftwareVersion() {//TODO remove this method
+    public SoftwareVersion getSoftwareVersion() { // TODO remove this method
         return metadata.getSoftwareVersion();
     }
 
@@ -166,15 +165,12 @@ public class UnsignedEvent implements Hashable {
 
         final UnsignedEvent that = (UnsignedEvent) o;
 
-        return (Objects.equals(eventCore, that.eventCore))
-                && Objects.equals(eventTransactions, that.eventTransactions);
+        return (Objects.equals(eventCore, that.eventCore)) && Objects.equals(eventTransactions, that.eventTransactions);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                eventCore,
-                eventTransactions);
+        return Objects.hash(eventCore, eventTransactions);
     }
 
     @Override

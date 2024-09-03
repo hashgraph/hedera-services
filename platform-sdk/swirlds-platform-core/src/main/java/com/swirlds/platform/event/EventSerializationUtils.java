@@ -274,7 +274,7 @@ public final class EventSerializationUtils {
             throw new IOException("Unsupported event version: " + eventVersion);
         }
         final UnsignedEvent unsignedEvent = EventSerializationUtils.deserializeUnsignedEvent(in);
-        final byte [] signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
 
         return new PlatformEvent(unsignedEvent, signature);
     }

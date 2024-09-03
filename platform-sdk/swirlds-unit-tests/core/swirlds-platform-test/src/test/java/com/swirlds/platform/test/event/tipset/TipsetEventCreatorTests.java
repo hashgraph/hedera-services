@@ -172,7 +172,8 @@ class TipsetEventCreatorTests {
                     // comparing to self
                     continue;
                 }
-                Assertions.assertNotEquals(event.getCreatorId().id(), newEvent.getEventCore().creatorNodeId());
+                Assertions.assertNotEquals(
+                        event.getCreatorId().id(), newEvent.getEventCore().creatorNodeId());
             }
         }
 
@@ -248,7 +249,10 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final UnsignedEvent event) {
 
-        eventCreators.get(new NodeId(event.getEventCore().creatorNodeId())).tipsetTracker.addEvent(event.getDescriptor(), event.getMetadata().getAllParents());
+        eventCreators
+                .get(new NodeId(event.getEventCore().creatorNodeId()))
+                .tipsetTracker
+                .addEvent(event.getDescriptor(), event.getMetadata().getAllParents());
 
         final EventImpl selfParent = events.get(event.getMetadata().getSelfParentHash());
         final EventImpl otherParent = events.get(event.getMetadata().getOtherParentHash());

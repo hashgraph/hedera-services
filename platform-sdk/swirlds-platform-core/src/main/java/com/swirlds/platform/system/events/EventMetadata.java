@@ -1,7 +1,23 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.system.events;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.AbstractHashable;
@@ -56,7 +72,6 @@ public class EventMetadata extends AbstractHashable {
      */
     private EventDescriptorWrapper descriptor;
 
-
     /**
      * Create a EventDataWrappers object
      *
@@ -75,39 +90,54 @@ public class EventMetadata extends AbstractHashable {
             @NonNull final Instant timeCreated,
             @NonNull final List<EventTransaction> transactions) {
 
-            Objects.requireNonNull(transactions, "The transactions must not be null");
-            this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
-            this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
-            this.selfParent = selfParent;
-            Objects.requireNonNull(otherParents, "The otherParents must not be null");
-            otherParents.forEach(Objects::requireNonNull);
-            this.otherParents = otherParents;
-            this.allParents = selfParent == null
-                    ? otherParents
-                    : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
-            this.generation = 1 + allParents.stream().mapToLong(d->d.eventDescriptor().generation()).max().orElse(EventConstants.GENERATION_UNDEFINED);
-            this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
-            this.transactions = Objects.requireNonNull(transactions, "transactions must not be null").stream().map(TransactionWrapper::new).toList();
+        Objects.requireNonNull(transactions, "The transactions must not be null");
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
+        this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
+        this.selfParent = selfParent;
+        Objects.requireNonNull(otherParents, "The otherParents must not be null");
+        otherParents.forEach(Objects::requireNonNull);
+        this.otherParents = otherParents;
+        this.allParents = selfParent == null
+                ? otherParents
+                : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
+        this.generation = 1
+                + allParents.stream()
+                        .mapToLong(d -> d.eventDescriptor().generation())
+                        .max()
+                        .orElse(EventConstants.GENERATION_UNDEFINED);
+        this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
+        this.transactions = Objects.requireNonNull(transactions, "transactions must not be null").stream()
+                .map(TransactionWrapper::new)
+                .toList();
     }
 
     public EventMetadata(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
         this.creatorId = new NodeId(gossipEvent.eventCore().creatorNodeId());
-        this.allParents = gossipEvent.eventCore().parents().stream().map(EventDescriptorWrapper::new).toList();
-        if (!allParents.isEmpty()
-                && allParents.getFirst().creator().equals(creatorId)) {
+        this.allParents = gossipEvent.eventCore().parents().stream()
+                .map(EventDescriptorWrapper::new)
+                .toList();
+        if (!allParents.isEmpty() && allParents.getFirst().creator().equals(creatorId)) {
             // this event has a self parent
             this.selfParent = allParents.getFirst();
             this.otherParents = allParents.subList(1, allParents.size());
-        }else {
+        } else {
             // this event does not have a self parent
             this.selfParent = null;
             this.otherParents = allParents;
         }
-        this.generation = 1 + allParents.stream().mapToLong(d->d.eventDescriptor().generation()).max().orElse(EventConstants.GENERATION_UNDEFINED);
-        this.timeCreated = HapiUtils.asInstant(Objects.requireNonNull(gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null"));
-        this.transactions = Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream().map(TransactionWrapper::new).toList();
+        this.generation = 1
+                + allParents.stream()
+                        .mapToLong(d -> d.eventDescriptor().generation())
+                        .max()
+                        .orElse(EventConstants.GENERATION_UNDEFINED);
+        this.timeCreated = HapiUtils.asInstant(
+                Objects.requireNonNull(gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null"));
+        this.transactions =
+                Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream()
+                        .map(TransactionWrapper::new)
+                        .toList();
     }
 
     /**
@@ -227,8 +257,8 @@ public class EventMetadata extends AbstractHashable {
                 throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
             }
 
-            descriptor = new EventDescriptorWrapper(new EventDescriptor(
-                    getHash().getBytes(), creatorId.id(), birthRound, getGeneration()));
+            descriptor = new EventDescriptorWrapper(
+                    new EventDescriptor(getHash().getBytes(), creatorId.id(), birthRound, getGeneration()));
         }
 
         return descriptor;
