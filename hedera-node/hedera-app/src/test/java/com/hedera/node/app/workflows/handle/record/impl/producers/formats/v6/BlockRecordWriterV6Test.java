@@ -101,7 +101,7 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", compress)
                 .build();
         config = app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
-        hapiVersion = app.softwareVersion().getHapiVersion();
+        hapiVersion = app.hapiVersion();
         writer = new BlockRecordWriterV6(config, selfNodeInfo, SIGNER, fileSystem);
         final var ext = compress ? ".rcd.gz" : ".rcd";
         final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
@@ -217,7 +217,7 @@ final class BlockRecordWriterV6Test extends AppTestBase {
             // Given a configuration and a pre-existing record directory
             app = appBuilder.build();
             config = app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
-            hapiVersion = app.softwareVersion().getHapiVersion();
+            hapiVersion = app.hapiVersion();
             final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
             Files.createDirectories(recordDir);
 

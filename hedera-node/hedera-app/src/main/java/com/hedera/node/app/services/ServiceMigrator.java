@@ -20,6 +20,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,8 +48,8 @@ public interface ServiceMigrator {
     List<StateChanges.Builder> doMigrations(
             @NonNull State state,
             @NonNull ServicesRegistry servicesRegistry,
-            @Nullable SemanticVersion previousVersion,
-            @NonNull SemanticVersion currentVersion,
+            @Nullable SoftwareVersion previousVersion,
+            @NonNull SoftwareVersion currentVersion,
             @NonNull Configuration config,
             @NonNull NetworkInfo networkInfo,
             @NonNull Metrics metrics);
