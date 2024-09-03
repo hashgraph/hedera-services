@@ -93,7 +93,7 @@ public final class UnzipUtility {
                     }
                     log.info(" - Extracted update file {}", filePath);
                 } else {
-                    if (!fileOrDir.mkdirs()) {
+                    if (!fileOrDir.exists() && !fileOrDir.mkdirs()) {
                         throw new IOException("Unable to create assets sub-directory: " + fileOrDir);
                     }
                     log.info(" - Created assets sub-directory {}", fileOrDir);
