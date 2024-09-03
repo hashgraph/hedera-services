@@ -580,9 +580,10 @@ public class HTSPrecompileResult implements ContractCallResult {
     }
 
     private Tuple[] buildTokenKeysTuples(final Tuple... additionalKeys) {
-        final int existingKeysLength = TokenKeyType.values().length;
+        // -1 for the additional key for METADATA
+        final int existingKeysLength = TokenKeyType.values().length - 1;
         final int additionalKeysLength = additionalKeys.length;
-        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length + additionalKeysLength];
+        final Tuple[] tokenKeys = new Tuple[existingKeysLength + additionalKeysLength];
 
         tokenKeys[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), tokenInfo.getAdminKey());
         tokenKeys[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), tokenInfo.getKycKey());
