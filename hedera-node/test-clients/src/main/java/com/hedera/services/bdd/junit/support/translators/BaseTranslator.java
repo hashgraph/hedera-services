@@ -40,7 +40,6 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -64,9 +63,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -294,15 +291,15 @@ public class BaseTranslator {
             receiptBuilder.exchangeRate(activeRates);
         }
         spec.accept(receiptBuilder, recordBuilder);
-        if (!isContractOp(parts) && parts.hasOutput() && parts.outputOrThrow().hasContractCall()) {
+        if (!isContractOp(parts) && parts.hasContractOutput()) {
             try {
-                final var output = parts.outputOrThrow().contractCallOrThrow();
+                final var output = parts.contractOutputOrThrow();
                 recordBuilder.contractCallResult(output.contractCallResultOrThrow());
             } catch (Exception e) {
                 log.error(
-                        "Failed to add synthetic call result to transaction record for {} - output was {}",
+                        "Failed to add synthetic call result to transaction record for {} - outputs were {}",
                         parts.body(),
-                        parts.outputOrThrow(),
+                        parts.transactionOutputs(),
                         e);
             }
         }
@@ -334,19 +331,6 @@ public class BaseTranslator {
     }
 
     private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
-        final var firstParts = unit.blockTransactionParts().getFirst();
-        if (firstParts
-                .transactionIdOrThrow()
-                .transactionValidStartOrThrow()
-                .equals(new Timestamp(1725375940L, 14890))) {
-            log.info("---- HIGHEST KNOWN NUM ----");
-            log.info(" -> {}", highestKnownEntityNum);
-            log.info("---- PARTS ----");
-            for (final var parts : unit.blockTransactionParts()) {
-                log.info("({}) {}", parts.status(), parts.body());
-            }
-            log.info("---- STATE CHANGES ----\n{}", unit.stateChanges());
-        }
         unit.stateChanges().forEach(stateChange -> {
             if (stateChange.hasMapUpdate()) {
                 final var mapUpdate = stateChange.mapUpdateOrThrow();
@@ -403,25 +387,10 @@ public class BaseTranslator {
                 }
             }
         });
-        final var alwaysLog = new AtomicBoolean(false);
         unit.blockTransactionParts().forEach(parts -> {
             if (parts.transactionIdOrThrow().nonce() == 0
                     && !parts.transactionIdOrThrow().scheduled()) {
                 userTimestamp = asInstant(parts.consensusTimestamp());
-                if (alwaysLog.get()
-                        || parts.transactionIdOrThrow()
-                                .transactionValidStartOrThrow()
-                                .equals(new Timestamp(1725375940L, 14890))) {
-                    log.info("Set user timestamp to {} via {}", parts.consensusTimestamp(), parts.body());
-                    if (!alwaysLog.get()) {
-                        log.info(
-                                "All functions in this unit: {}",
-                                unit.blockTransactionParts().stream()
-                                        .map(BlockTransactionParts::functionality)
-                                        .toList());
-                    }
-                    alwaysLog.set(true);
-                }
             }
             switch (parts.functionality()) {
                 case TOKEN_MINT -> {
@@ -434,15 +403,15 @@ public class BaseTranslator {
                         }
                     }
                 }
-                case CONTRACT_CALL -> Optional.ofNullable(parts.transactionOutput())
+                case CONTRACT_CALL -> parts.outputIfPresent(TransactionOutput.TransactionOneOfType.CONTRACT_CALL)
                         .map(TransactionOutput::contractCall)
                         .map(CallContractOutput::sidecars)
                         .ifPresent(sidecarRecords::addAll);
-                case CONTRACT_CREATE -> Optional.ofNullable(parts.transactionOutput())
+                case CONTRACT_CREATE -> parts.outputIfPresent(TransactionOutput.TransactionOneOfType.CONTRACT_CREATE)
                         .map(TransactionOutput::contractCreate)
                         .map(CreateContractOutput::sidecars)
                         .ifPresent(sidecarRecords::addAll);
-                case ETHEREUM_TRANSACTION -> Optional.ofNullable(parts.transactionOutput())
+                case ETHEREUM_TRANSACTION -> parts.outputIfPresent(TransactionOutput.TransactionOneOfType.ETHEREUM_CALL)
                         .map(TransactionOutput::ethereumCall)
                         .map(EthereumOutput::sidecars)
                         .ifPresent(sidecarRecords::addAll);

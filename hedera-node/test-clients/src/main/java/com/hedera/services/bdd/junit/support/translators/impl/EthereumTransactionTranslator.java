@@ -16,24 +16,27 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.TransactionOutput;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * Translates a ethereum transaction into a {@link SingleTransactionRecord}.
  */
 public class EthereumTransactionTranslator implements BlockTransactionPartsTranslator {
+    private static final Set<ResponseCodeEnum> ABORT_STATUSES = EnumSet.of(INSUFFICIENT_TX_FEE);
+
     @Override
     public SingleTransactionRecord translate(
             @NonNull final BlockTransactionParts parts,
@@ -43,14 +46,10 @@ public class EthereumTransactionTranslator implements BlockTransactionPartsTrans
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
-            final var op = parts.body().ethereumTransactionOrThrow();
-            final var ethTxData = populateEthTxData(op.ethereumData().toByteArray());
-            if (ethTxData != null && parts.status() != INVALID_FILE_ID) {
-                recordBuilder.ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
-            }
-            Optional.ofNullable(parts.transactionOutput())
-                    .flatMap(output -> Optional.ofNullable(output.ethereumCall()))
+            parts.outputIfPresent(TransactionOutput.TransactionOneOfType.ETHEREUM_CALL)
+                    .map(TransactionOutput::ethereumCallOrThrow)
                     .ifPresent(ethTxOutput -> {
+                        recordBuilder.ethereumHash(ethTxOutput.ethereumHash());
                         final var result =
                                 switch (ethTxOutput.ethResult().kind()) {
                                     case UNSET -> throw new IllegalStateException("Missing result kind");
@@ -65,7 +64,9 @@ public class EthereumTransactionTranslator implements BlockTransactionPartsTrans
                                         yield createResult;
                                     }
                                 };
-                        receiptBuilder.contractID(result.contractID());
+                        if (result.gasUsed() > 0L) {
+                            receiptBuilder.contractID(result.contractID());
+                        }
                     });
         });
     }

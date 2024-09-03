@@ -27,7 +27,6 @@ import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTr
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Translates a schedule sign transaction into a {@link SingleTransactionRecord}.
@@ -43,7 +42,7 @@ public class ScheduleSignTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
-                Optional.ofNullable(parts.transactionOutput())
+                parts.outputIfPresent(TransactionOutput.TransactionOneOfType.SIGN_SCHEDULE)
                         .map(TransactionOutput::signScheduleOrThrow)
                         .ifPresent(signScheduleOutput -> receiptBuilder.scheduledTransactionID(
                                 signScheduleOutput.scheduledTransactionIdOrThrow()));

@@ -29,7 +29,6 @@ import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTr
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +47,7 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
-            Optional.ofNullable(parts.transactionOutput())
+            parts.outputIfPresent(TransactionOutput.TransactionOneOfType.CONTRACT_CREATE)
                     .map(TransactionOutput::contractCreateOrThrow)
                     .ifPresent(createContractOutput -> {
                         final var result = createContractOutput.contractCreateResultOrThrow();

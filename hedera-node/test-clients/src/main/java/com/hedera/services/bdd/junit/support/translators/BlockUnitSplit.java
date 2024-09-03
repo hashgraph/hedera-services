@@ -51,7 +51,7 @@ public class BlockUnitSplit {
         private TransactionResult result;
 
         @Nullable
-        private TransactionOutput output;
+        private List<TransactionOutput> outputs;
 
         /**
          * Clears the pending parts.
@@ -59,7 +59,7 @@ public class BlockUnitSplit {
         void clear() {
             parts = null;
             result = null;
-            output = null;
+            outputs = null;
         }
 
         /**
@@ -71,12 +71,19 @@ public class BlockUnitSplit {
             return parts != null && result != null;
         }
 
+        void addOutput(@NonNull final TransactionOutput output) {
+            if (outputs == null) {
+                outputs = new ArrayList<>();
+            }
+            outputs.add(output);
+        }
+
         BlockTransactionParts toBlockTransactionParts() {
             requireNonNull(parts);
             requireNonNull(result);
-            return output == null
+            return outputs == null
                     ? BlockTransactionParts.sansOutput(parts, result)
-                    : BlockTransactionParts.withOutput(parts, result, output);
+                    : BlockTransactionParts.withOutputs(parts, result, outputs.toArray(TransactionOutput[]::new));
         }
     }
 
@@ -114,7 +121,7 @@ public class BlockUnitSplit {
                     }
                 }
                 case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
-                case TRANSACTION_OUTPUT -> pendingParts.output = item.transactionOutputOrThrow();
+                case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
                 case STATE_CHANGES -> unitStateChanges.addAll(
                         item.stateChangesOrThrow().stateChanges());
             }

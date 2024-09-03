@@ -36,8 +36,8 @@ public class TokenAirdropTranslator implements BlockTransactionPartsTranslator {
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
-            if (parts.status() == SUCCESS && parts.hasOutput()) {
-                final var output = parts.outputOrThrow().tokenAirdropOrThrow();
+            if (parts.status() == SUCCESS && parts.hasOutputs()) {
+                final var output = parts.tokenAirdropOutputOrThrow();
                 recordBuilder.assessedCustomFees(output.assessedCustomFees());
                 recordBuilder.newPendingAirdrops(output.newPendingAirdrops());
             }

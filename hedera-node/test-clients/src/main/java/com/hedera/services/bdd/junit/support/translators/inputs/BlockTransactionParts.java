@@ -20,7 +20,10 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.CallContractOutput;
+import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
+import com.hedera.hapi.block.stream.output.TokenAirdropOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -38,18 +41,20 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Groups the block items used to represent a single logical HAPI transaction, which itself may be part of a larger
  * transactional unit with parent/child relationships.
  * @param transactionParts the parts of the transaction
  * @param transactionResult the result of processing the transaction
- * @param transactionOutput the output of processing the transaction
+ * @param transactionOutputs the output of processing the transaction
  */
 public record BlockTransactionParts(
         @NonNull TransactionParts transactionParts,
         @NonNull TransactionResult transactionResult,
-        @Nullable TransactionOutput transactionOutput) {
+        @Nullable TransactionOutput... transactionOutputs) {
 
     /**
      * Returns the status of the transaction.
@@ -158,17 +163,17 @@ public record BlockTransactionParts(
      * Constructs a new {@link BlockTransactionParts} that includes an output.
      * @param transactionParts the parts of the transaction
      * @param transactionResult the result of processing the transaction
-     * @param transactionOutput the output of processing the transaction
+     * @param transactionOutputs the outputs of processing the transaction
      * @return the constructed object
      */
-    public static BlockTransactionParts withOutput(
+    public static BlockTransactionParts withOutputs(
             @NonNull final TransactionParts transactionParts,
             @NonNull final TransactionResult transactionResult,
-            @NonNull final TransactionOutput transactionOutput) {
+            @NonNull final TransactionOutput... transactionOutputs) {
         requireNonNull(transactionParts);
         requireNonNull(transactionResult);
-        requireNonNull(transactionOutput);
-        return new BlockTransactionParts(transactionParts, transactionResult, transactionOutput);
+        requireNonNull(transactionOutputs);
+        return new BlockTransactionParts(transactionParts, transactionResult, transactionOutputs);
     }
 
     /**
@@ -181,23 +186,71 @@ public record BlockTransactionParts(
             @NonNull final TransactionParts transactionParts, @NonNull final TransactionResult transactionResult) {
         requireNonNull(transactionParts);
         requireNonNull(transactionResult);
-        return new BlockTransactionParts(transactionParts, transactionResult, null);
-    }
-
-    /**
-     * Returns the output of the transaction.
-     * @return the output
-     * @throws NullPointerException if the output is not present
-     */
-    public TransactionOutput outputOrThrow() {
-        return requireNonNull(transactionOutput);
+        return new BlockTransactionParts(transactionParts, transactionResult);
     }
 
     /**
      * Returns whether the transaction has an output.
      */
-    public boolean hasOutput() {
-        return transactionOutput != null;
+    public boolean hasOutputs() {
+        return transactionOutputs != null;
+    }
+
+    /**
+     * Returns whether the transaction has an output.
+     */
+    public boolean hasContractOutput() {
+        return transactionOutputs != null && Stream.of(transactionOutputs).anyMatch(TransactionOutput::hasContractCall);
+    }
+
+    /**
+     * Returns a contract call output or throws if it is not present.
+     */
+    public CallContractOutput contractOutputOrThrow() {
+        requireNonNull(transactionOutputs);
+        return Stream.of(transactionOutputs)
+                .filter(TransactionOutput::hasContractCall)
+                .findAny()
+                .map(TransactionOutput::contractCallOrThrow)
+                .orElseThrow();
+    }
+
+    /**
+     * Returns a create schedule output or throws if it is not present.
+     */
+    public CreateScheduleOutput createScheduleOutputOrThrow() {
+        requireNonNull(transactionOutputs);
+        return Stream.of(transactionOutputs)
+                .filter(TransactionOutput::hasCreateSchedule)
+                .findAny()
+                .map(TransactionOutput::createScheduleOrThrow)
+                .orElseThrow();
+    }
+
+    /**
+     * Returns a token airdrop output or throws if it is not present.
+     */
+    public TokenAirdropOutput tokenAirdropOutputOrThrow() {
+        requireNonNull(transactionOutputs);
+        return Stream.of(transactionOutputs)
+                .filter(TransactionOutput::hasTokenAirdrop)
+                .findAny()
+                .map(TransactionOutput::tokenAirdropOrThrow)
+                .orElseThrow();
+    }
+
+    /**
+     * Returns the {@link TransactionOutput} of the given kind if it is present.
+     * @param kind the kind of output
+     * @return the output if present
+     */
+    public Optional<TransactionOutput> outputIfPresent(@NonNull final TransactionOutput.TransactionOneOfType kind) {
+        if (transactionOutputs == null) {
+            return Optional.empty();
+        }
+        return Stream.of(transactionOutputs)
+                .filter(output -> output.transaction().kind() == kind)
+                .findAny();
     }
 
     /**
@@ -205,10 +258,9 @@ public record BlockTransactionParts(
      * @return the assessed custom fees
      */
     public List<AssessedCustomFee> assessedCustomFees() {
-        return transactionOutput == null
-                ? emptyList()
-                : transactionOutput
-                        .cryptoTransferOrElse(CryptoTransferOutput.DEFAULT)
-                        .assessedCustomFees();
+        return outputIfPresent(TransactionOutput.TransactionOneOfType.CRYPTO_TRANSFER)
+                .map(TransactionOutput::cryptoTransferOrThrow)
+                .map(CryptoTransferOutput::assessedCustomFees)
+                .orElse(emptyList());
     }
 }

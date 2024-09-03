@@ -24,7 +24,6 @@ import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTr
 import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Translates a contract call transaction into a {@link SingleTransactionRecord}.
@@ -35,15 +34,15 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(
-                parts, (receiptBuilder, recordBuilder) -> Optional.ofNullable(parts.transactionOutput())
-                        .map(TransactionOutput::contractCallOrThrow)
-                        .ifPresent(callContractOutput -> {
-                            final var result = callContractOutput.contractCallResultOrThrow();
-                            recordBuilder.contractCallResult(result);
-                            if (parts.transactionIdOrThrow().nonce() == 0) {
-                                receiptBuilder.contractID(result.contractID());
-                            }
-                        }));
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> parts.outputIfPresent(
+                        TransactionOutput.TransactionOneOfType.CONTRACT_CALL)
+                .map(TransactionOutput::contractCallOrThrow)
+                .ifPresent(callContractOutput -> {
+                    final var result = callContractOutput.contractCallResultOrThrow();
+                    recordBuilder.contractCallResult(result);
+                    if (parts.transactionIdOrThrow().nonce() == 0) {
+                        receiptBuilder.contractID(result.contractID());
+                    }
+                }));
     }
 }

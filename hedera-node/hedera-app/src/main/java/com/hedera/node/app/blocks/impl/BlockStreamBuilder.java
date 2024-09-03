@@ -158,40 +158,26 @@ public class BlockStreamBuilder
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private boolean hasAssessedCustomFees = false;
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
-    private final List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
-    private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private TransferList transferList = TransferList.DEFAULT;
-    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private List<Long> serialNumbers = new LinkedList<>();
     private long newTotalSupply = 0L;
-    // If non-null, a builder to be used to set the transaction output
-    private TransactionOutput.Builder transactionOutputBuilder = null;
-    // Sidecar data, booleans are the migration flag
-    private final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges =
-            new LinkedList<>();
-    private final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
-    private final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
-
-    // Fields that are not in TransactionRecord, but are needed for computing staking rewards
-    // These are not persisted to the record file
-    private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
-
     // A set of ids that should be explicitly considered as in a "reward situation",
     // despite the canonical definition of a reward situation; needed for mono-service
     // fidelity only
     @Nullable
     private Set<AccountID> explicitRewardReceiverIds;
-
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
     private long transactionFee;
     // If non-null, a contract function result
     private ContractFunctionResult contractFunctionResult;
+    // If non-null, the output of a UTIL_PRNG
+    private BlockItem utilPrngOutputItem;
 
     private enum ContractOpType {
         CREATE,
@@ -200,9 +186,21 @@ public class BlockStreamBuilder
         ETH_CREATE,
         ETH_CALL,
     }
-
     // The type of contract operation that was performed
     private ContractOpType contractOpType = null;
+    private Bytes ethereumHash = Bytes.EMPTY;
+
+    private final List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
+    private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+    private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
+    // Sidecar data, booleans are the migration flag
+    private final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges =
+            new LinkedList<>();
+    private final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
+    private final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
+    // Fields that are not in TransactionRecord, but are needed for computing staking rewards
+    // These are not persisted to the record file
+    private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
 
     @Nullable
     private HederaFunctionality functionality;
@@ -263,10 +261,7 @@ public class BlockStreamBuilder
         final var resultBlockItem = getTransactionResultBlockItem();
         blockItems.add(resultBlockItem);
 
-        final var output = getTransactionOutput();
-        if (output != null) {
-            blockItems.add(BlockItem.newBuilder().transactionOutput(output).build());
-        }
+        addOutputItems(blockItems);
 
         if (!stateChanges.isEmpty()) {
             final var stateChangesBlockItem = BlockItem.newBuilder()
@@ -404,7 +399,6 @@ public class BlockStreamBuilder
     public BlockStreamBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
         this.contractFunctionResult = contractCallResult;
         if (contractCallResult != null) {
-            ensureOutputBuilder();
             if (contractOpType != ContractOpType.ETH_TBD) {
                 contractOpType = ContractOpType.CALL;
             } else {
@@ -419,7 +413,6 @@ public class BlockStreamBuilder
     public BlockStreamBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
         this.contractFunctionResult = contractCreateResult;
         if (contractCreateResult != null) {
-            ensureOutputBuilder();
             if (contractOpType != ContractOpType.ETH_TBD) {
                 contractOpType = ContractOpType.CREATE;
             } else {
@@ -466,7 +459,6 @@ public class BlockStreamBuilder
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
         requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
-        ensureOutputBuilder();
         return this;
     }
 
@@ -482,7 +474,6 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
         this.assessedCustomFees = requireNonNull(assessedCustomFees);
-        ensureOutputBuilder();
         hasAssessedCustomFees = true;
         return this;
     }
@@ -498,7 +489,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
         contractOpType = ContractOpType.ETH_TBD;
-        ensureOutputBuilder();
+        this.ethereumHash = requireNonNull(ethereumHash);
         return this;
     }
 
@@ -515,8 +506,8 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder entropyNumber(final int num) {
-        ensureOutputBuilder()
-                .utilPrng(UtilPrngOutput.newBuilder().prngNumber(num).build());
+        utilPrngOutputItem = itemWith(TransactionOutput.newBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngNumber(num).build()));
         return this;
     }
 
@@ -524,8 +515,8 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes);
-        ensureOutputBuilder()
-                .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build());
+        utilPrngOutputItem = itemWith(TransactionOutput.newBuilder()
+                .utilPrng(UtilPrngOutput.newBuilder().prngBytes(prngBytes).build()));
         return this;
     }
 
@@ -677,7 +668,6 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
         this.scheduledTransactionId = requireNonNull(scheduledTransactionID);
-        ensureOutputBuilder();
         return this;
     }
 
@@ -784,11 +774,6 @@ public class BlockStreamBuilder
         transactionResultBuilder.scheduleRef((ScheduleID) null);
         transactionResultBuilder.automaticTokenAssociations(emptyList());
         transactionResultBuilder.congestionPricingMultiplier(0);
-
-        // Contract results are not side effects, we don't want to null them out
-        if (contractFunctionResult == null) {
-            transactionOutputBuilder = null;
-        }
     }
 
     @NonNull
@@ -813,48 +798,56 @@ public class BlockStreamBuilder
         }
     }
 
-    @Nullable
-    private TransactionOutput getTransactionOutput() {
-        if (transactionOutputBuilder == null) {
-            return null;
+    private void addOutputItems(@NonNull final List<BlockItem> items) {
+        if (utilPrngOutputItem != null) {
+            items.add(utilPrngOutputItem);
         }
         if (contractFunctionResult != null) {
             final var sidecars = getSidecars();
+            final var builder = TransactionOutput.newBuilder();
             switch (requireNonNull(contractOpType)) {
-                case CREATE -> transactionOutputBuilder.contractCreate(CreateContractOutput.newBuilder()
+                case CREATE -> builder.contractCreate(CreateContractOutput.newBuilder()
                         .contractCreateResult(contractFunctionResult)
                         .sidecars(sidecars)
                         .build());
-                case CALL -> transactionOutputBuilder.contractCall(CallContractOutput.newBuilder()
+                case CALL -> builder.contractCall(CallContractOutput.newBuilder()
                         .contractCallResult(contractFunctionResult)
                         .sidecars(sidecars)
                         .build());
-                case ETH_CALL -> transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
+                case ETH_CALL -> builder.ethereumCall(EthereumOutput.newBuilder()
                         .ethereumCallResult(contractFunctionResult)
+                        .ethereumHash(ethereumHash)
                         .sidecars(sidecars)
                         .build());
-                case ETH_CREATE -> transactionOutputBuilder.ethereumCall(EthereumOutput.newBuilder()
+                case ETH_CREATE -> builder.ethereumCall(EthereumOutput.newBuilder()
                         .ethereumCreateResult(contractFunctionResult)
+                        .ethereumHash(ethereumHash)
                         .sidecars(sidecars)
                         .build());
                 case ETH_TBD -> throw new IllegalStateException("EthereumTransaction result not set");
             }
-        } else if (createsOrDeletesSchedule && scheduledTransactionId != null) {
-            transactionOutputBuilder.createSchedule(CreateScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionId)
-                    .build());
-        } else if (scheduledTransactionId != null) {
-            transactionOutputBuilder.signSchedule(SignScheduleOutput.newBuilder()
-                    .scheduledTransactionId(scheduledTransactionId)
-                    .build());
-        } else if (functionality == CRYPTO_TRANSFER && hasAssessedCustomFees) {
-            transactionOutputBuilder.cryptoTransfer(CryptoTransferOutput.newBuilder()
-                    .assessedCustomFees(assessedCustomFees)
-                    .build());
-        } else if (functionality == TOKEN_AIRDROP && (hasAssessedCustomFees || !pendingAirdropRecords.isEmpty())) {
-            transactionOutputBuilder.tokenAirdrop(new TokenAirdropOutput(assessedCustomFees, pendingAirdropRecords));
+            items.add(itemWith(builder));
         }
-        return transactionOutputBuilder.build();
+        if (createsOrDeletesSchedule && scheduledTransactionId != null) {
+            items.add(itemWith(TransactionOutput.newBuilder()
+                    .createSchedule(CreateScheduleOutput.newBuilder()
+                            .scheduledTransactionId(scheduledTransactionId)
+                            .build())));
+        } else if (scheduledTransactionId != null) {
+            items.add(itemWith(TransactionOutput.newBuilder()
+                    .signSchedule(SignScheduleOutput.newBuilder()
+                            .scheduledTransactionId(scheduledTransactionId)
+                            .build())));
+        }
+        if (functionality == CRYPTO_TRANSFER && hasAssessedCustomFees) {
+            items.add(itemWith(TransactionOutput.newBuilder()
+                    .cryptoTransfer(CryptoTransferOutput.newBuilder()
+                            .assessedCustomFees(assessedCustomFees)
+                            .build())));
+        } else if (functionality == TOKEN_AIRDROP && (hasAssessedCustomFees || !pendingAirdropRecords.isEmpty())) {
+            items.add(itemWith(TransactionOutput.newBuilder()
+                    .tokenAirdrop(new TokenAirdropOutput(assessedCustomFees, pendingAirdropRecords))));
+        }
     }
 
     private List<TransactionSidecarRecord> getSidecars() {
@@ -890,10 +883,7 @@ public class BlockStreamBuilder
         return serializedTransaction != null ? serializedTransaction : Transaction.PROTOBUF.toBytes(transaction);
     }
 
-    private TransactionOutput.Builder ensureOutputBuilder() {
-        if (transactionOutputBuilder == null) {
-            transactionOutputBuilder = TransactionOutput.newBuilder();
-        }
-        return transactionOutputBuilder;
+    private BlockItem itemWith(@NonNull final TransactionOutput.Builder output) {
+        return BlockItem.newBuilder().transactionOutput(output).build();
     }
 }

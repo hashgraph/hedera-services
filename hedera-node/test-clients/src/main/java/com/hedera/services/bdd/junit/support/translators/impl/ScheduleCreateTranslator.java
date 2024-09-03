@@ -57,9 +57,8 @@ public class ScheduleCreateTranslator implements BlockTransactionPartsTranslator
                         if (scheduleId.scheduleNum() == createdNum) {
                             receiptBuilder
                                     .scheduleID(scheduleId)
-                                    .scheduledTransactionID(parts.outputOrThrow()
-                                            .createScheduleOrThrow()
-                                            .scheduledTransactionId());
+                                    .scheduledTransactionID(
+                                            parts.createScheduleOutputOrThrow().scheduledTransactionId());
                             iter.remove();
                             return;
                         }
