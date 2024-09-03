@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeServiceMigrator implements ServiceMigrator {
@@ -45,8 +47,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
     public List<StateChanges.Builder> doMigrations(
             @NonNull final State state,
             @NonNull final ServicesRegistry servicesRegistry,
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion currentVersion,
+            @Nullable final SoftwareVersion previousVersion,
+            @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
@@ -75,10 +77,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
         if (!(entityIdRegistration.registry() instanceof FakeSchemaRegistry entityIdRegistry)) {
             throw new IllegalArgumentException("Can only be used with FakeSchemaRegistry instances");
         }
+        final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
+                .map(SoftwareVersion::getPbjSemanticVersion)
+                .orElse(null);
         entityIdRegistry.migrate(
                 NAME_OF_ENTITY_ID_SERVICE,
                 fakeState,
-                previousVersion,
+                deserializedPbjVersion,
                 networkInfo,
                 config,
                 sharedValues,
@@ -92,7 +97,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                     schemaRegistry.migrate(
                             registration.serviceName(),
                             fakeState,
-                            previousVersion,
+                            deserializedPbjVersion,
                             networkInfo,
                             config,
                             sharedValues,

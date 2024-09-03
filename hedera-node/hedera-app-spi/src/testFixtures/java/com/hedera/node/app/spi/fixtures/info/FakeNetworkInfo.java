@@ -86,12 +86,6 @@ public class FakeNetworkInfo implements NetworkInfo {
                 return CURRENT_VERSION;
             }
 
-            @NonNull
-            @Override
-            public SemanticVersion appVersion() {
-                return CURRENT_VERSION;
-            }
-
             @Override
             public boolean zeroStake() {
                 return FAKE_NODE_INFOS.get(0).zeroStake();
