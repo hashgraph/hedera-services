@@ -42,6 +42,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A utility class for serializing and deserializing events using legacy serialization. This will be removed as soon as
+ * event serialization is completely migrated to protobuf.
+ */
 public final class EventSerializationUtils {
     private EventSerializationUtils() {
         // Utility class
@@ -66,7 +70,7 @@ public final class EventSerializationUtils {
      *
      * @throws IOException if an I/O error occurs
      */
-    public static void serializeUnsignedEvent(
+    private static void serializeUnsignedEvent(
             @NonNull final SerializableDataOutputStream out,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventCore eventCore,
@@ -136,6 +140,12 @@ public final class EventSerializationUtils {
         out.writeInt(Integer.MIN_VALUE); // epochHash is always null
     }
 
+    /**
+     * Serialize the given {@link PlatformEvent} to the output stream {@code out}.
+     * @param out the stream to which this object is to be written
+     * @param event the event to serialize
+     * @throws IOException if an I/O error occurs
+     */
     public static void serializePlatformEvent(
             @NonNull final SerializableDataOutputStream out, @NonNull final PlatformEvent event) throws IOException {
         out.writeInt(PLATFORM_EVENT_VERSION);
@@ -162,7 +172,7 @@ public final class EventSerializationUtils {
      *
      * @throws IOException if an I/O error occurs
      */
-    public static void serializeSignedEvent(
+    private static void serializeSignedEvent(
             @NonNull final SerializableDataOutputStream out,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventCore eventCore,
@@ -184,7 +194,7 @@ public final class EventSerializationUtils {
      * @throws IOException if unsupported transaction types are encountered
      */
     @NonNull
-    public static UnsignedEvent deserializeUnsignedEvent(@NonNull final SerializableDataInputStream in)
+    private static UnsignedEvent deserializeUnsignedEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
         final int version = in.readInt();
         if (version != UNSIGNED_EVENT_VERSION) {
@@ -248,7 +258,7 @@ public final class EventSerializationUtils {
 
     @NonNull
     private static StateSignatureTransaction deserializeStateSignatureTransaction(
-            SerializableDataInputStream in, int classVersion) throws IOException {
+            final SerializableDataInputStream in, final int classVersion) throws IOException {
         if (classVersion != STATE_SIGNATURE_VERSION) {
             throw new IOException("Unsupported state signature class version: " + classVersion);
         }
@@ -289,7 +299,7 @@ public final class EventSerializationUtils {
     @NonNull
     public static PlatformEvent serializeDeserializePlatformEvent(@NonNull final PlatformEvent original)
             throws IOException {
-        try (ByteArrayOutputStream io = new ByteArrayOutputStream()) {
+        try (final ByteArrayOutputStream io = new ByteArrayOutputStream()) {
             final SerializableDataOutputStream out = new SerializableDataOutputStream(io);
             serializePlatformEvent(out, original);
             out.flush();
