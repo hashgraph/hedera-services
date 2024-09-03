@@ -193,7 +193,7 @@ public record BlockTransactionParts(
      * Returns whether the transaction has an output.
      */
     public boolean hasOutputs() {
-        return transactionOutputs != null;
+        return transactionOutputs != null && transactionOutputs.length > 0;
     }
 
     /**
