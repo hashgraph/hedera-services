@@ -45,7 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Validator for {@link CryptoDeleteAllowanceTransactionBody}
+ * Validator for {@link CryptoDeleteAllowanceTransactionBody}.
  */
 @Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
@@ -58,7 +58,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
     }
 
     /**
-     * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}
+     * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}.
      *
      * @param handleContext handle context
      * @param nftAllowances given nft serials allowances to remove
@@ -93,7 +93,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
     /**
      * Validates all the {@link NftRemoveAllowance}s in the {@link
-     * com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction
+     * com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction.
      *
      * @param nftAllowances nft remove allowances
      * @param payerAccount payer for the txn

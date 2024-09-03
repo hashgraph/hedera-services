@@ -75,7 +75,7 @@ public class CustomFeesValidator {
      * @param tokenRelationStore The token relation store.
      * @param tokenStore The token store.
      * @param customFees The custom fees to validate.
-     * @return The set of custom fees that need to auto associate collector accounts.
+     * @return The set of custom fees that need to auto associate collector accounts
      */
     public List<CustomFee> validateForCreation(
             @NonNull final Token createdToken,
@@ -190,7 +190,7 @@ public class CustomFeesValidator {
     /**
      * Validates that the given token type is fungible common.
      * @param tokenType The token type to validate.
-     * @return {@code true} if the token type is fungible common, otherwise {@code false}.
+     * @return {@code true} if the token type is fungible common, otherwise {@code false}
      */
     private boolean isFungibleCommon(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.FUNGIBLE_COMMON);
@@ -199,7 +199,7 @@ public class CustomFeesValidator {
     /**
      * Validates that the given token type is non-fungible unique.
      * @param tokenType The token type to validate.
-     * @return {@code true} if the token type is non-fungible unique, otherwise {@code false}.
+     * @return {@code true} if the token type is non-fungible unique, otherwise {@code false}
      */
     private boolean isNonFungibleUnique(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE);

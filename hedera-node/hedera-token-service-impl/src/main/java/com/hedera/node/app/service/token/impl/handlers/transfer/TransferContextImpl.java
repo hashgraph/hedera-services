@@ -178,7 +178,7 @@ public class TransferContextImpl implements TransferContext {
 
     /**
      * Get the automatic associations.
-     * @return The automatic associations.
+     * @return The automatic associations
      */
     public List<TokenAssociation> getAutomaticAssociations() {
         return automaticAssociations;

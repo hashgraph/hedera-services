@@ -37,11 +37,11 @@ public interface ReadableTokenRelationStore {
      * @return the token-relation with the given IDs, or {@code null} if no such token-relation exists
      */
     @Nullable
-    TokenRelation get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId);
+    TokenRelation get(@NonNull AccountID accountId, @NonNull TokenID tokenId);
 
     /**
      * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of tokens in the state
      */
     long sizeOfState();
 

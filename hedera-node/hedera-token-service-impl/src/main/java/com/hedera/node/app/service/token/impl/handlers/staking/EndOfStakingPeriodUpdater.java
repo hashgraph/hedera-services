@@ -124,7 +124,8 @@ public class EndOfStakingPeriodUpdater {
         // plus a boundary-case check for zero whole hbars staked
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
-                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
+                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, "
+                        + "given {} total stake reward start)",
                 rewardRate,
                 perHbarRate,
                 totalStakedRewardStart);
@@ -272,7 +273,8 @@ public class EndOfStakingPeriodUpdater {
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes]
+     * from the consensus weight range [0, sumOfConsensusWeights].
      *
      * @param weight weight of the node
      * @param newMinStake min stake of the node
@@ -296,7 +298,8 @@ public class EndOfStakingPeriodUpdater {
         if (totalStakeOfAllNodes == 0) {
             // This should never happen, but if it does, return zero
             log.warn(
-                    "Total stake of all nodes is 0, which shouldn't happen (weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
+                    "Total stake of all nodes is 0, which shouldn't happen "
+                            + "(weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
                     weight,
                     newMinStake,
                     newMaxStake,
@@ -325,9 +328,9 @@ public class EndOfStakingPeriodUpdater {
      * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
      * total sum of weight is approximately as described by {@code StakingConfig#sumOfConsensusWeights}.
      * The stake field in {@code StakingNodeInfo} is already clamped to [minStake, maxStake].
-     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
-     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
-     * out of every 250 whole hbars staked will have weight >= 2.
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake,
+     * the weight of a node A will be computed so that every node above minStake has weight at least 1;
+     * but any node that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
