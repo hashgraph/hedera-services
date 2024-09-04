@@ -59,7 +59,6 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
@@ -198,15 +197,15 @@ public class ServicesMain implements SwirldMain {
         final var cryptography = CryptographyFactory.create();
 
         final var configuration = buildConfiguration();
-        final var keysAndCerts = initNodeSecurity(bootstrapAddressBook, configuration)
-                .get(selfId);
+        final var keysAndCerts =
+                initNodeSecurity(bootstrapAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
         final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
-        final var recycleBin = RecycleBin.create(metrics, configuration,
-                getStaticThreadManager(), time, fileSystemManager, selfId);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
         final var platformContext = PlatformContext.create(
                 configuration,
@@ -228,8 +227,8 @@ public class ServicesMain implements SwirldMain {
         // the AddressBook is not changed after this point, so we calculate the hash now
         cryptography.digestSync(bootstrapAddressBook);
 
-        final var addressBook = initializeAddressBook(selfId, version, initialState,
-                bootstrapAddressBook, platformContext);
+        final var addressBook =
+                initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
 
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
@@ -331,7 +330,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun the list of nodes configured to run based on the address book.
+     * @param nodesToRun        the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
