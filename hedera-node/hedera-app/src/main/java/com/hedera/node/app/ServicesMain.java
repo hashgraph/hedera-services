@@ -26,13 +26,13 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.state.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
@@ -62,9 +62,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.state.address.AddressBookInitializer;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -195,6 +192,7 @@ public class ServicesMain implements SwirldMain {
 
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
+
         final var cryptography = CryptographyFactory.create();
         CryptographyHolder.set(cryptography);
 
@@ -208,7 +206,8 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
+
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
         final var platformContext = PlatformContext.create(
@@ -236,6 +235,8 @@ public class ServicesMain implements SwirldMain {
 
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
+                .withPlatformContext(platformContext)
+                .withMerkleCryptography(merkleCryptography)
                 .withConfiguration(configuration)
                 .withConfiguration(configuration)
                 .withTime(Time.getCurrent())
@@ -277,42 +278,43 @@ public class ServicesMain implements SwirldMain {
         hedera.run();
     }
 
-    public static @NonNull AddressBook initializeAddressBook(
-            final NodeId selfId,
-            final SoftwareVersion version,
-            final ReservedSignedState initialState,
-            final AddressBook bootstrapAddressBook,
-            final PlatformContext platformContext) {
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
-        // Initialize the address book from the configuration and platform saved state.
-        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
-
-        if (addressBookInitializer.hasAddressBookChanged()) {
-            final MerkleRoot state = initialState.get().getState();
-            // Update the address book with the current address book read from config.txt.
-            // Eventually we will not do this, and only transactions will be capable of
-            // modifying the address book.
-            final PlatformStateAccessor platformState = state.getPlatformState();
-            platformState.bulkUpdate(v -> {
-                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
-                v.setPreviousAddressBook(
-                        addressBookInitializer.getPreviousAddressBook() == null
-                                ? null
-                                : addressBookInitializer
-                                        .getPreviousAddressBook()
-                                        .copy());
-            });
-        }
-
-        // At this point the initial state must have the current address book set.  If not, something is wrong.
-        final AddressBook addressBook =
-                initialState.get().getState().getPlatformState().getAddressBook();
-        if (addressBook == null) {
-            throw new IllegalStateException("The current address book of the initial state is null.");
-        }
-        return addressBook;
-    }
+    //    public static @NonNull AddressBook initializeAddressBook(
+    //            final NodeId selfId,
+    //            final SoftwareVersion version,
+    //            final ReservedSignedState initialState,
+    //            final AddressBook bootstrapAddressBook,
+    //            final PlatformContext platformContext) {
+    //        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+    //        // Initialize the address book from the configuration and platform saved state.
+    //        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+    //                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(),
+    // platformContext);
+    //
+    //        if (addressBookInitializer.hasAddressBookChanged()) {
+    //            final MerkleRoot state = initialState.get().getState();
+    //            // Update the address book with the current address book read from config.txt.
+    //            // Eventually we will not do this, and only transactions will be capable of
+    //            // modifying the address book.
+    //            final PlatformStateAccessor platformState = state.getPlatformState();
+    //            platformState.bulkUpdate(v -> {
+    //                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
+    //                v.setPreviousAddressBook(
+    //                        addressBookInitializer.getPreviousAddressBook() == null
+    //                                ? null
+    //                                : addressBookInitializer
+    //                                        .getPreviousAddressBook()
+    //                                        .copy());
+    //            });
+    //        }
+    //
+    //        // At this point the initial state must have the current address book set.  If not, something is wrong.
+    //        final AddressBook addressBook =
+    //                initialState.get().getState().getPlatformState().getAddressBook();
+    //        if (addressBook == null) {
+    //            throw new IllegalStateException("The current address book of the initial state is null.");
+    //        }
+    //        return addressBook;
+    //    }
 
     /**
      * Build the configuration for this node.

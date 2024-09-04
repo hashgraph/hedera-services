@@ -29,15 +29,12 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.WiringConfig;
@@ -131,6 +128,14 @@ public final class PlatformBuilder {
      * The source of non-cryptographic randomness for this platform.
      */
     private RandomBuilder randomBuilder;
+    /**
+     * The platform context for this platform.
+     */
+    private PlatformContext platformContext;
+    /**
+     * The merkle cryptography for this platform
+     */
+    private MerkleCryptography merkleCryptography;
 
     private Consumer<PlatformEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
@@ -334,6 +339,23 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Register a callback that is called when a stale self event is detected (i.e. an event that will never reach
+     * consensus). Depending on the use case, it may be a good idea to resubmit the transactions in the stale event.
+     * <p>
+     * Stale event detection is guaranteed to catch all stale self events as long as the node remains online. However,
+     * if the node restarts or reconnects, any event that went stale "in the gap" may not be detected.
+     *
+     * @param staleEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<PlatformEvent> staleEventConsumer) {
+        throwIfAlreadyUsed();
+        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
+        return this;
+    }
+
+    /**
      * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
      * the config.txt file.
      *
@@ -344,6 +366,20 @@ public final class PlatformBuilder {
     public PlatformBuilder withAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
         this.addressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the merkle cryptography for this platform.
+     *
+     * @param merkleCryptography the source of merkle cryptography
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withMerkleCryptography(@NonNull final MerkleCryptography merkleCryptography) {
+        throwIfAlreadyUsed();
+        this.merkleCryptography = Objects.requireNonNull(merkleCryptography);
+        MerkleCryptoFactory.set(this.merkleCryptography);
         return this;
     }
 
@@ -400,6 +436,19 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the  platform context for this platform.
+     *
+     * @param platformContext the platform context
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
+        throwIfAlreadyUsed();
+        this.platformContext = Objects.requireNonNull(platformContext);
+        return this;
+    }
+
+    /**
      * Throw an exception if this builder has been used to build a platform or a platform factory.
      */
     private void throwIfAlreadyUsed() {
@@ -420,23 +469,9 @@ public final class PlatformBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-        CryptographyHolder.set(cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
         if (executorFactory == null) {
             executorFactory = ExecutorFactory.create("platform", null, DEFAULT_UNCAUGHT_EXCEPTION_HANDLER);
         }
-
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration,
-                metrics,
-                cryptography,
-                time,
-                executorFactory,
-                fileSystemManager,
-                recycleBin,
-                merkleCryptography);
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
@@ -450,8 +485,7 @@ public final class PlatformBuilder {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
+        final PcesConfig preconsensusEventStreamConfig = configuration.getConfigData(PcesConfig.class);
 
         final PcesFileTracker initialPcesFiles;
         try {
@@ -488,7 +522,7 @@ public final class PlatformBuilder {
                 softwareVersion);
 
         if (model == null) {
-            final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
+            final WiringConfig wiringConfig = configuration.getConfigData(WiringConfig.class);
 
             final int coreCount = Runtime.getRuntime().availableProcessors();
             final int parallelism = (int)
