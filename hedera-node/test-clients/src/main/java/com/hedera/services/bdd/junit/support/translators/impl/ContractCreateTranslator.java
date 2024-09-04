@@ -54,20 +54,28 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                         recordBuilder.contractCreateResult(result);
                     });
             if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
-                final var iter = remainingStateChanges.listIterator();
-                while (iter.hasNext()) {
-                    final var stateChange = iter.next();
-                    if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
-                        final var accountId =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().accountIdKeyOrThrow();
-                        if (accountId.accountNumOrThrow() == createdNum) {
-                            receiptBuilder.contractID(ContractID.newBuilder()
-                                    .contractNum(createdNum)
-                                    .build());
-                            iter.remove();
-                            return;
+                final var output = parts.createContractOutputOrThrow();
+                final var contractNum =
+                        output.contractCreateResultOrThrow().contractIDOrThrow().contractNumOrThrow();
+                if (baseTranslator.createdThisUnit(contractNum)) {
+                    final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
+                    if (createdNum != contractNum) {
+                        log.error("Expected {} to be the next created account, but got {}", createdNum, contractNum);
+                    }
+                    final var iter = remainingStateChanges.listIterator();
+                    while (iter.hasNext()) {
+                        final var stateChange = iter.next();
+                        if (stateChange.hasMapUpdate()
+                                && stateChange.mapUpdateOrThrow().keyOrThrow().hasAccountIdKey()) {
+                            final var accountId =
+                                    stateChange.mapUpdateOrThrow().keyOrThrow().accountIdKeyOrThrow();
+                            if (accountId.accountNumOrThrow() == createdNum) {
+                                receiptBuilder.contractID(ContractID.newBuilder()
+                                        .contractNum(createdNum)
+                                        .build());
+                                iter.remove();
+                                return;
+                            }
                         }
                     }
                 }

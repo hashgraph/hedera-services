@@ -90,6 +90,7 @@ public class BlockUnitSplit {
     public List<BlockTransactionalUnit> split(@NonNull final Block block) {
         final List<BlockTransactionalUnit> units = new ArrayList<>();
 
+        TxnIdType lastTxnIdType = null;
         TransactionID unitTxnId = null;
         PendingBlockTransactionParts pendingParts = new PendingBlockTransactionParts();
         final List<BlockTransactionParts> unitParts = new ArrayList<>();
@@ -109,7 +110,7 @@ public class BlockUnitSplit {
                         if (pendingParts.areComplete()) {
                             unitParts.add(pendingParts.toBlockTransactionParts());
                         }
-                        final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts);
+                        final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts, lastTxnIdType);
                         if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
                             completeAndAdd(units, unitParts, unitStateChanges);
                         }
@@ -118,6 +119,7 @@ public class BlockUnitSplit {
                             unitTxnId = txnId;
                         }
                         pendingParts.parts = nextParts;
+                        lastTxnIdType = txnIdType;
                     }
                 }
                 case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
@@ -136,26 +138,29 @@ public class BlockUnitSplit {
     private TxnIdType classifyTxnId(
             @NonNull final TransactionID nextId,
             @Nullable final TransactionID unitTxnId,
-            @NonNull final TransactionParts parts) {
+            @NonNull final TransactionParts parts,
+            @Nullable final TxnIdType lastTxnIdType) {
+        if (isAutoSysFileMgmtTxn(parts)) {
+            return TxnIdType.AUTO_SYSFILE_MGMT_ID;
+        }
+        if (lastTxnIdType == TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+            // Automatic system file management transactions never end a transactional unit
+            return TxnIdType.SAME_UNIT_BY_ID;
+        }
         if (unitTxnId == null) {
             return TxnIdType.NEW_UNIT_BY_ID;
         }
-        // Scheduled transactions never begin a new transactional unit in the current system
-        final var answer = !nextId.scheduled()
+        // Scheduled transactions never begin a new transactional unit and
+        final var radicallyDifferent = !nextId.scheduled()
                 && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
                         || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
                                 .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
-        if (!isAutoSysFileMgmtTxn(parts)) {
-            return answer ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
-        } else {
-            return TxnIdType.AUTO_SYSFILE_MGMT_ID;
-        }
+        return radicallyDifferent ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
     }
 
     private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
         return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
-                && (parts.transactionIdOrThrow().nonce() > 0
-                        || parts.transactionIdOrThrow().accountIDOrThrow().accountNumOrThrow() == 50L);
+                && parts.transactionIdOrThrow().nonce() > 0;
     }
 
     private enum TxnIdType {

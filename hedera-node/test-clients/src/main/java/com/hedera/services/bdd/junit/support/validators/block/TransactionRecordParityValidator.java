@@ -135,9 +135,11 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         if (diffs.isEmpty()) {
             logger.info("Validation complete. Summary: {}", validatorSummary);
         } else {
-            final var rcDiffSummary = rcDiff.buildDiffOutput(diffs);
-            final var errorMsg = new StringBuilder("Differences found between translated and expected records");
-            rcDiffSummary.forEach(summary -> errorMsg.append("\n\n").append(summary));
+            final var diffOutput = rcDiff.buildDiffOutput(diffs);
+            final var errorMsg = new StringBuilder()
+                    .append(diffOutput.size())
+                    .append(" differences found between translated and expected records");
+            diffOutput.forEach(summary -> errorMsg.append("\n\n").append(summary));
             Assertions.fail(errorMsg.toString());
         }
     }

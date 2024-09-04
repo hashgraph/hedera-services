@@ -21,6 +21,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.CallContractOutput;
+import com.hedera.hapi.block.stream.output.CreateContractOutput;
 import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.TokenAirdropOutput;
@@ -206,12 +207,24 @@ public record BlockTransactionParts(
     /**
      * Returns a contract call output or throws if it is not present.
      */
-    public CallContractOutput contractOutputOrThrow() {
+    public CallContractOutput callContractOutputOrThrow() {
         requireNonNull(transactionOutputs);
         return Stream.of(transactionOutputs)
                 .filter(TransactionOutput::hasContractCall)
                 .findAny()
                 .map(TransactionOutput::contractCallOrThrow)
+                .orElseThrow();
+    }
+
+    /**
+     * Returns a contract create output or throws if it is not present.
+     */
+    public CreateContractOutput createContractOutputOrThrow() {
+        requireNonNull(transactionOutputs);
+        return Stream.of(transactionOutputs)
+                .filter(TransactionOutput::hasContractCreate)
+                .findAny()
+                .map(TransactionOutput::contractCreateOrThrow)
                 .orElseThrow();
     }
 

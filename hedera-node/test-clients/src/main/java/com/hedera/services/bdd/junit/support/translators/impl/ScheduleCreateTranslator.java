@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static java.util.Objects.requireNonNull;
@@ -67,6 +68,11 @@ public class ScheduleCreateTranslator implements BlockTransactionPartsTranslator
                 log.error(
                         "No matching state change found for successful schedule create with id {}",
                         parts.transactionIdOrThrow());
+            } else if (parts.status() == IDENTICAL_SCHEDULE_ALREADY_CREATED) {
+                final var output = parts.createScheduleOutputOrThrow();
+                receiptBuilder
+                        .scheduleID(output.scheduleIdOrThrow())
+                        .scheduledTransactionID(output.scheduledTransactionIdOrThrow());
             }
         });
     }

@@ -219,6 +219,7 @@ public class BlockStreamBuilder
     private final ExternalizedRecordCustomizer customizer;
 
     private TokenID tokenID;
+    private ScheduleID scheduleID;
     private boolean createsOrDeletesSchedule;
     private TransactionID scheduledTransactionId;
 
@@ -661,6 +662,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
         this.createsOrDeletesSchedule = true;
+        this.scheduleID = requireNonNull(scheduleID);
         return this;
     }
 
@@ -773,7 +775,6 @@ public class BlockStreamBuilder
         transactionFee = 0L;
         transactionResultBuilder.scheduleRef((ScheduleID) null);
         transactionResultBuilder.automaticTokenAssociations(emptyList());
-        transactionResultBuilder.congestionPricingMultiplier(0);
     }
 
     @NonNull
@@ -802,7 +803,7 @@ public class BlockStreamBuilder
         if (utilPrngOutputItem != null) {
             items.add(utilPrngOutputItem);
         }
-        if (contractFunctionResult != null) {
+        if (contractFunctionResult != null || ethereumHash != Bytes.EMPTY) {
             final var sidecars = getSidecars();
             final var builder = TransactionOutput.newBuilder();
             switch (requireNonNull(contractOpType)) {
@@ -824,13 +825,18 @@ public class BlockStreamBuilder
                         .ethereumHash(ethereumHash)
                         .sidecars(sidecars)
                         .build());
-                case ETH_TBD -> throw new IllegalStateException("EthereumTransaction result not set");
+                    // CONSENSUS_GAS_EXHAUSTED if there is no contract function result
+                case ETH_TBD -> builder.ethereumCall(EthereumOutput.newBuilder()
+                        .ethereumHash(ethereumHash)
+                        .sidecars(sidecars)
+                        .build());
             }
             items.add(itemWith(builder));
         }
         if (createsOrDeletesSchedule && scheduledTransactionId != null) {
             items.add(itemWith(TransactionOutput.newBuilder()
                     .createSchedule(CreateScheduleOutput.newBuilder()
+                            .scheduleId(scheduleID)
                             .scheduledTransactionId(scheduledTransactionId)
                             .build())));
         } else if (scheduledTransactionId != null) {

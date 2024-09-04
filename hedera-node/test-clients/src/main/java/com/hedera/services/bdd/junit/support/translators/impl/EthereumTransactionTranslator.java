@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
@@ -52,7 +53,8 @@ public class EthereumTransactionTranslator implements BlockTransactionPartsTrans
                         recordBuilder.ethereumHash(ethTxOutput.ethereumHash());
                         final var result =
                                 switch (ethTxOutput.ethResult().kind()) {
-                                    case UNSET -> throw new IllegalStateException("Missing result kind");
+                                        // CONSENSUS_GAS_EXHAUSTED
+                                    case UNSET -> ContractFunctionResult.DEFAULT;
                                     case ETHEREUM_CALL_RESULT -> {
                                         final var callResult = ethTxOutput.ethereumCallResultOrThrow();
                                         recordBuilder.contractCallResult(callResult);

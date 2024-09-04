@@ -79,6 +79,7 @@ public class BaseTranslator {
     public static final Set<String> AUTO_CREATION_MEMOS = Set.of(LAZY_MEMO, AUTO_MEMO);
 
     private long highestKnownEntityNum = 0L;
+    private long prevHighestKnownEntityNum = 0L;
     private ExchangeRateSet activeRates;
     private Instant userTimestamp;
     private ScheduleID scheduleRef;
@@ -144,6 +145,7 @@ public class BaseTranslator {
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
         this.unit = unit;
+        this.prevHighestKnownEntityNum = highestKnownEntityNum;
         numMints.clear();
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
@@ -166,6 +168,15 @@ public class BaseTranslator {
         });
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Determines if the given number was created in the ongoing transactional unit.
+     * @param num the number to query
+     * @return true if the number was created
+     */
+    public boolean createdThisUnit(final long num) {
+        return num > prevHighestKnownEntityNum;
     }
 
     /**
@@ -293,7 +304,7 @@ public class BaseTranslator {
         spec.accept(receiptBuilder, recordBuilder);
         if (!isContractOp(parts) && parts.hasContractOutput()) {
             try {
-                final var output = parts.contractOutputOrThrow();
+                final var output = parts.callContractOutputOrThrow();
                 recordBuilder.contractCallResult(output.contractCallResultOrThrow());
             } catch (Exception e) {
                 log.error(
