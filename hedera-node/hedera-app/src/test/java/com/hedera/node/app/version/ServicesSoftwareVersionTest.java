@@ -21,7 +21,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.SoftwareVersion;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 class ServicesSoftwareVersionTest {
@@ -33,7 +38,9 @@ class ServicesSoftwareVersionTest {
     private static final SemanticVersion MIDDLE_ALPHA_1 = new SemanticVersion(0, 1, 0, "alpha.1", "");
     private static final SemanticVersion MIDDLE_ALPHA_2 = new SemanticVersion(0, 1, 0, "alpha.2", "");
     private static final SemanticVersion LATE = new SemanticVersion(1, 0, 0, "", "");
-    private static final SemanticVersion LATE_WITH_BUILD = new SemanticVersion(1, 0, 0, "", "ignored");
+    private static final SemanticVersion LATE_WITH_IGNORED_BUILD = new SemanticVersion(1, 0, 0, "", "ignored");
+    private static final SemanticVersion LATE_WITH_CONFIG_VERSION = new SemanticVersion(1, 0, 0, "", "1");
+    private static final SemanticVersion MISC = new SemanticVersion(1, 2, 3, "alpha.4", "5");
 
     @Test
     void returnsStateSemverFromPbjGetter() {
@@ -99,9 +106,42 @@ class ServicesSoftwareVersionTest {
     }
 
     @Test
-    void buildIsNotConsidered() {
+    void nonNumericBuildIsNotConsidered() {
         final var prevVersion = new ServicesSoftwareVersion(LATE, DEFAULT_CONFIG_VERSION);
-        final var subject = new ServicesSoftwareVersion(LATE_WITH_BUILD, DEFAULT_CONFIG_VERSION);
+        final var subject = new ServicesSoftwareVersion(LATE_WITH_IGNORED_BUILD, DEFAULT_CONFIG_VERSION);
         assertThat(subject.compareTo(prevVersion)).isEqualTo(0);
+    }
+
+    @Test
+    void numericBuildIsConsidered() {
+        final var prevVersion = new ServicesSoftwareVersion(LATE, DEFAULT_CONFIG_VERSION);
+        final var subject = new ServicesSoftwareVersion(LATE_WITH_CONFIG_VERSION);
+        assertThat(subject.compareTo(prevVersion)).isEqualTo(1);
+    }
+
+    @Test
+    void toStringIsSemverToString() {
+        final var subject = new ServicesSoftwareVersion(MIDDLE_ALPHA_1, DEFAULT_CONFIG_VERSION);
+        assertThat(subject.toString()).isEqualTo("SemanticVersion[major=0, minor=1, patch=0, pre=alpha.1, build=0]");
+    }
+
+    @Test
+    void versionIsOne() {
+        final var subject = new ServicesSoftwareVersion(MIDDLE_ALPHA_1, DEFAULT_CONFIG_VERSION);
+        assertThat(subject.getVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void serdeWorks() throws IOException {
+        final var baos = new ByteArrayOutputStream();
+        final var out = new SerializableDataOutputStream(baos);
+        final var subject = new ServicesSoftwareVersion(MISC);
+        subject.serialize(out);
+        out.flush();
+        final var encoded = baos.toByteArray();
+        final var in = new SerializableDataInputStream(new ByteArrayInputStream(encoded));
+        final var recovered = new ServicesSoftwareVersion();
+        recovered.deserialize(in, 1);
+        assertThat(recovered.getPbjSemanticVersion()).isEqualTo(subject.getPbjSemanticVersion());
     }
 }

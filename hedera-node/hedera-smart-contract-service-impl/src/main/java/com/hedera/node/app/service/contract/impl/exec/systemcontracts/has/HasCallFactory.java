@@ -39,18 +39,18 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Factory to create a new {@link HasCallAttempt} for a given input and message frame.
  */
 @Singleton
-public class HasCallFactory implements CallFactory {
+public class HasCallFactory implements CallFactory<HasCallAttempt> {
     private final SyntheticIds syntheticIds;
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
-    private final List<CallTranslator> callTranslators;
+    private final List<CallTranslator<HasCallAttempt>> callTranslators;
 
     @Inject
     public HasCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull @Named("HasTranslators") final List<CallTranslator> callTranslators) {
+            @NonNull @Named("HasTranslators") final List<CallTranslator<HasCallAttempt>> callTranslators) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
