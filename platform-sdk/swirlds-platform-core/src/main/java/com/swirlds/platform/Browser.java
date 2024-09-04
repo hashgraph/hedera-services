@@ -240,8 +240,8 @@ public class Browser {
                     FileSystemManager.create(configuration),
                     nodeId);
             final var cryptography = CryptographyFactory.create();
-            final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
-                    .get(nodeId);
+            final KeysAndCerts keysAndCerts =
+                    initNodeSecurity(appDefinition.getConfigAddressBook(), configuration).get(nodeId);
 
             // the AddressBook is not changed after this point, so we calculate the hash now
             cryptography.digestSync(appDefinition.getConfigAddressBook());
@@ -268,28 +268,26 @@ public class Browser {
                     appMain.getSoftwareVersion(),
                     initialState,
                     nodeId);
-            final AddressBook addressBook = initializeAddressBook(
-                    nodeId,
-                    appMain.getSoftwareVersion(),
-                    initialState,
-                    appDefinition.getConfigAddressBook(),
-                    platformContext);
+            final AddressBook addressBook =
+                    initializeAddressBook(nodeId, appMain.getSoftwareVersion(), initialState, appDefinition.getConfigAddressBook(), platformContext);
+
 
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
 
-            final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
-                    .withMetrics(guiMetrics)
-                    .withFileSystemManager(platformContext.getFileSystemManager())
-                    .withTime(platformContext.getTime())
-                    .withCryptography(platformContext.getCryptography())
-                    .withAddressBook(addressBook)
-                    .withRecycleBin(recycleBin)
-                    .withRoster(createRoster(appDefinition.getConfigAddressBook()))
-                    .withKeysAndCerts(keysAndCerts)
-                    .build();
+            final SwirldsPlatform platform =
+                    (SwirldsPlatform) builder.withConfiguration(configuration)
+                            .withMetrics(guiMetrics)
+                            .withFileSystemManager(platformContext.getFileSystemManager())
+                            .withTime(platformContext.getTime())
+                            .withCryptography(platformContext.getCryptography())
+                            .withAddressBook(addressBook)
+                            .withRecycleBin(recycleBin)
+                            .withRoster(createRoster(appDefinition.getConfigAddressBook()))
+                            .withKeysAndCerts(keysAndCerts)
+                            .build();
             platforms.put(nodeId, platform);
 
             if (showUi) {
@@ -328,7 +326,8 @@ public class Browser {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
+                selfId, version, softwareUpgrade, initialState.get(),
+                bootstrapAddressBook.copy(), platformContext);
 
         if (addressBookInitializer.hasAddressBookChanged()) {
             final MerkleRoot state = initialState.get().getState();
@@ -342,8 +341,8 @@ public class Browser {
                         addressBookInitializer.getPreviousAddressBook() == null
                                 ? null
                                 : addressBookInitializer
-                                        .getPreviousAddressBook()
-                                        .copy());
+                                .getPreviousAddressBook()
+                                .copy());
             });
         }
 
@@ -355,6 +354,7 @@ public class Browser {
         }
         return addressBook;
     }
+
 
     /**
      * Start all local platforms.
