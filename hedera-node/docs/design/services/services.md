@@ -170,7 +170,7 @@ network integrity.
 
 ### Key Functions
 
-- **Account Querying:** Allows querying of user accounts, but not modification 
+- **Account Querying:** Allows querying of user accounts, but not modification
   or deletion.
 - **Transaction Processing:** Handle the validation and processing of
   transactions across the network.
