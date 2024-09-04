@@ -229,8 +229,10 @@ public class Browser {
             rethrowIO(() ->
                     BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
+
             setupGlobalMetrics(configuration);
             guiMetrics = getMetricsProvider().createPlatformMetrics(nodeId);
+
             final var recycleBin = RecycleBin.create(
                     guiMetrics,
                     configuration,
@@ -245,9 +247,12 @@ public class Browser {
 
             // the AddressBook is not changed after this point, so we calculate the hash now
             cryptography.digestSync(appDefinition.getConfigAddressBook());
+
+            // Set the MerkleCryptography instance for this node
             final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
             MerkleCryptoFactory.set(merkleCryptography);
 
+            // Create platform context
             final var platformContext = PlatformContext.create(
                     configuration,
                     Time.getCurrent(),
@@ -256,6 +261,7 @@ public class Browser {
                     FileSystemManager.create(configuration),
                     recycleBin,
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
+            // Create the initial state for the platform
             final ReservedSignedState initialState = getInitialState(
                     platformContext,
                     appMain.getSoftwareVersion(),
@@ -265,12 +271,7 @@ public class Browser {
                     appDefinition.getSwirldName(),
                     nodeId,
                     appDefinition.getConfigAddressBook());
-            final PlatformBuilder builder = PlatformBuilder.create(
-                    appMain.getClass().getName(),
-                    appDefinition.getSwirldName(),
-                    appMain.getSoftwareVersion(),
-                    initialState,
-                    nodeId);
+            // Initialize the address book
             final AddressBook addressBook = initializeAddressBook(
                     nodeId,
                     appMain.getSoftwareVersion(),
@@ -278,6 +279,13 @@ public class Browser {
                     appDefinition.getConfigAddressBook(),
                     platformContext);
 
+            // Build the platform with the given values
+            final PlatformBuilder builder = PlatformBuilder.create(
+                    appMain.getClass().getName(),
+                    appDefinition.getSwirldName(),
+                    appMain.getSoftwareVersion(),
+                    initialState,
+                    nodeId);
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
@@ -285,12 +293,8 @@ public class Browser {
 
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
                     .withPlatformContext(platformContext)
-                    .withMetrics(guiMetrics)
-                    .withFileSystemManager(platformContext.getFileSystemManager())
-                    .withTime(platformContext.getTime())
-                    .withCryptography(platformContext.getCryptography())
+                    .withConfiguration(configuration)
                     .withAddressBook(addressBook)
-                    .withRecycleBin(recycleBin)
                     .withRoster(createRoster(appDefinition.getConfigAddressBook()))
                     .withKeysAndCerts(keysAndCerts)
                     .build();

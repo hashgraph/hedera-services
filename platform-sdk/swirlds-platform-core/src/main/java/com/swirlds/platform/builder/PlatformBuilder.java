@@ -27,21 +27,14 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseD
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -92,11 +85,6 @@ public final class PlatformBuilder {
     private final String swirldName;
 
     private Configuration configuration;
-    private Cryptography cryptography;
-    private Metrics metrics;
-    private Time time;
-    private FileSystemManager fileSystemManager;
-    private RecycleBin recycleBin;
     private ExecutorFactory executorFactory;
 
     private static final UncaughtExceptionHandler DEFAULT_UNCAUGHT_EXCEPTION_HANDLER =
@@ -132,10 +120,6 @@ public final class PlatformBuilder {
      * The platform context for this platform.
      */
     private PlatformContext platformContext;
-    /**
-     * The merkle cryptography for this platform
-     */
-    private MerkleCryptography merkleCryptography;
 
     private Consumer<PlatformEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
@@ -216,80 +200,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Provide the cryptography to use for this platform. If not provided then the default cryptography is used.
-     *
-     * @param cryptography the cryptography to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withCryptography(@NonNull final Cryptography cryptography) {
-        this.cryptography = Objects.requireNonNull(cryptography);
-        return this;
-    }
-
-    /**
-     * Provide the metrics to use for this platform. If not provided then default metrics are created.
-     *
-     * @param metrics the metrics to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withMetrics(@NonNull final Metrics metrics) {
-        this.metrics = Objects.requireNonNull(metrics);
-        return this;
-    }
-
-    /**
-     * Provide the time to use for this platform. If not provided then the default wall clock time is used.
-     *
-     * @param time the time to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withTime(@NonNull final Time time) {
-        this.time = Objects.requireNonNull(time);
-        return this;
-    }
-
-    /**
-     * Provide the file system manager to use for this platform. If not provided then the default file system manager is
-     * used.
-     *
-     * @param fileSystemManager the file system manager to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withFileSystemManager(@NonNull final FileSystemManager fileSystemManager) {
-        this.fileSystemManager = Objects.requireNonNull(fileSystemManager);
-        return this;
-    }
-
-    /**
-     * Provide the recycle bin to use for this platform. If not provided then the default recycle bin is used.
-     *
-     * @param recycleBin the recycle bin to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withRecycleBin(@NonNull final RecycleBin recycleBin) {
-        this.recycleBin = Objects.requireNonNull(recycleBin);
-        return this;
-    }
-
-    /**
-     * Provide the executor factory to use for this platform. If not provided then the default executor factory is
-     * used.
-     *
-     * @param executorFactory the executor factory to use
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withExecutorFactory(@NonNull final ExecutorFactory executorFactory) {
-        this.executorFactory = Objects.requireNonNull(executorFactory);
-        return this;
-    }
-
-    /**
      * Registers a callback that is called for each valid non-ancient preconsensus event in topological order (i.e.
      * after each event exits the orphan buffer). Useful for scenarios where access to this internal stream of events is
      * useful (e.g. UI hashgraph visualizers).
@@ -366,20 +276,6 @@ public final class PlatformBuilder {
     public PlatformBuilder withAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
         this.addressBook = Objects.requireNonNull(bootstrapAddressBook);
-        return this;
-    }
-
-    /**
-     * Provide the merkle cryptography for this platform.
-     *
-     * @param merkleCryptography the source of merkle cryptography
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withMerkleCryptography(@NonNull final MerkleCryptography merkleCryptography) {
-        throwIfAlreadyUsed();
-        this.merkleCryptography = Objects.requireNonNull(merkleCryptography);
-        MerkleCryptoFactory.set(this.merkleCryptography);
         return this;
     }
 
@@ -485,7 +381,8 @@ public final class PlatformBuilder {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        final PcesConfig preconsensusEventStreamConfig = configuration.getConfigData(PcesConfig.class);
+        final PcesConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PcesConfig.class);
 
         final PcesFileTracker initialPcesFiles;
         try {
@@ -522,7 +419,7 @@ public final class PlatformBuilder {
                 softwareVersion);
 
         if (model == null) {
-            final WiringConfig wiringConfig = configuration.getConfigData(WiringConfig.class);
+            final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
 
             final int coreCount = Runtime.getRuntime().availableProcessors();
             final int parallelism = (int)
