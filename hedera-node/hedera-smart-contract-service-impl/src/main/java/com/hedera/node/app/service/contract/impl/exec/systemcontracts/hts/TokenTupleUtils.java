@@ -277,17 +277,6 @@ public class TokenTupleUtils {
      */
     @NonNull
     private static Tuple hederaTokenTupleFor(@NonNull final Token token) {
-        //
-        final Tuple[] keyList = {
-            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT))
-        };
-
         return Tuple.of(
                 token.name(),
                 token.symbol(),
@@ -296,25 +285,31 @@ public class TokenTupleUtils {
                 token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
                 token.maxSupply(),
                 token.accountsFrozenByDefault(),
-                keyList,
+                prepareKeyList(token, false),
                 expiryTupleFor(token));
+    }
+
+    private static Tuple[] prepareKeyList(@NonNull final Token token, final boolean isV2) {
+        final var keyList = new java.util.ArrayList<>(List.of(
+                typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(
+                        TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
+                typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT))));
+        if (isV2) {
+            keyList.add(typedKeyTupleFor(
+                    TokenKeyType.METADATA_KEY.bigIntegerValue(), token.metadataKeyOrElse(Key.DEFAULT)));
+        }
+        return keyList.toArray(Tuple[]::new);
     }
 
     @NonNull
     private static Tuple hederaTokenTupleForV2(@NonNull final Token token) {
-        //
-        final Tuple[] keyList = {
-            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT)),
-            typedKeyTupleFor(TokenKeyType.METADATA_KEY.bigIntegerValue(), token.metadataKeyOrElse(Key.DEFAULT))
-        };
-
-        final var tokenMetaData = token.metadata() != null ? token.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
+        final var tokenMetaData =
+                token.metadata().length() > 0 ? token.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
         return Tuple.of(
                 token.name(),
                 token.symbol(),
@@ -323,7 +318,7 @@ public class TokenTupleUtils {
                 token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
                 token.maxSupply(),
                 token.accountsFrozenByDefault(),
-                keyList,
+                prepareKeyList(token, true),
                 expiryTupleFor(token),
                 tokenMetaData);
     }
