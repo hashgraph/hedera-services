@@ -268,7 +268,7 @@ public class ServicesMain implements SwirldMain {
         hedera.run();
     }
 
-    private static @NonNull AddressBook initializeAddressBook(
+    public static @NonNull AddressBook initializeAddressBook(
             final NodeId selfId,
             final SoftwareVersion version,
             final ReservedSignedState initialState,

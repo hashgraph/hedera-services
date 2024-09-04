@@ -25,6 +25,7 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTIN
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -32,7 +33,9 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
@@ -52,6 +55,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
@@ -60,11 +64,16 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
@@ -230,12 +239,18 @@ public class Browser {
                     Time.getCurrent(),
                     FileSystemManager.create(configuration),
                     nodeId);
+            final var cryptography = CryptographyFactory.create();
+            final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
+                    .get(nodeId);
+
+            // the AddressBook is not changed after this point, so we calculate the hash now
+            cryptography.digestSync(appDefinition.getConfigAddressBook());
 
             final var platformContext = PlatformContext.create(
                     configuration,
                     Time.getCurrent(),
                     guiMetrics,
-                    CryptographyFactory.create(),
+                    cryptography,
                     FileSystemManager.create(configuration),
                     recycleBin);
             final ReservedSignedState initialState = getInitialState(
@@ -253,21 +268,28 @@ public class Browser {
                     appMain.getSoftwareVersion(),
                     initialState,
                     nodeId);
+            final AddressBook addressBook = initializeAddressBook(
+                    nodeId,
+                    appMain.getSoftwareVersion(),
+                    initialState,
+                    appDefinition.getConfigAddressBook(),
+                    platformContext);
 
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
 
-            final SwirldsPlatform platform =
-                    (SwirldsPlatform) builder.withConfiguration(configuration)
-                            .withMetrics(guiMetrics)
-                            .withFileSystemManager(platformContext.getFileSystemManager())
-                            .withTime(platformContext.getTime())
-                            .withCryptography(platformContext.getCryptography())
-                            .withAddressBook(appDefinition.getConfigAddressBook())
-                            .withRecycleBin(recycleBin)
-                            .build();
+            final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
+                    .withMetrics(guiMetrics)
+                    .withFileSystemManager(platformContext.getFileSystemManager())
+                    .withTime(platformContext.getTime())
+                    .withCryptography(platformContext.getCryptography())
+                    .withAddressBook(addressBook)
+                    .withRecycleBin(recycleBin)
+                    .withRoster(createRoster(appDefinition.getConfigAddressBook()))
+                    .withKeysAndCerts(keysAndCerts)
+                    .build();
             platforms.put(nodeId, platform);
 
             if (showUi) {
@@ -295,6 +317,43 @@ public class Browser {
             showBrowserWindow(null);
             moveBrowserWindowToFront();
         }
+    }
+
+    public static @NonNull AddressBook initializeAddressBook(
+            final NodeId selfId,
+            final SoftwareVersion version,
+            final ReservedSignedState initialState,
+            final AddressBook bootstrapAddressBook,
+            final PlatformContext platformContext) {
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+        // Initialize the address book from the configuration and platform saved state.
+        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
+
+        if (addressBookInitializer.hasAddressBookChanged()) {
+            final MerkleRoot state = initialState.get().getState();
+            // Update the address book with the current address book read from config.txt.
+            // Eventually we will not do this, and only transactions will be capable of
+            // modifying the address book.
+            final PlatformStateAccessor platformState = state.getPlatformState();
+            platformState.bulkUpdate(v -> {
+                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
+                v.setPreviousAddressBook(
+                        addressBookInitializer.getPreviousAddressBook() == null
+                                ? null
+                                : addressBookInitializer
+                                        .getPreviousAddressBook()
+                                        .copy());
+            });
+        }
+
+        // At this point the initial state must have the current address book set.  If not, something is wrong.
+        final AddressBook addressBook =
+                initialState.get().getState().getPlatformState().getAddressBook();
+        if (addressBook == null) {
+            throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+        return addressBook;
     }
 
     /**
