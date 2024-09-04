@@ -68,8 +68,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implements shared translation logic for transaction records, in particular providing a
- * source of token types by {@link com.hedera.hapi.node.base.TokenID}.
+ * Implements shared translation logic for transaction records, maintaining all the extra-stream
+ * context needed to recover the traditional record stream from a block stream.
  */
 public class BaseTranslator {
     private static final Logger log = LogManager.getLogger(BaseTranslator.class);
@@ -83,7 +83,6 @@ public class BaseTranslator {
     private ExchangeRateSet activeRates;
     private Instant userTimestamp;
     private ScheduleID scheduleRef;
-    private BlockTransactionalUnit unit;
 
     private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
@@ -131,6 +130,7 @@ public class BaseTranslator {
 
     /**
      * Provides the token type for the given token ID.
+     *
      * @param tokenId the token ID to query
      * @return the token type
      */
@@ -144,7 +144,6 @@ public class BaseTranslator {
      * @param unit the unit to prepare for
      */
     public void prepareForUnit(@NonNull final BlockTransactionalUnit unit) {
-        this.unit = unit;
         this.prevHighestKnownEntityNum = highestKnownEntityNum;
         numMints.clear();
         highestPutSerialNos.clear();
@@ -172,6 +171,7 @@ public class BaseTranslator {
 
     /**
      * Determines if the given number was created in the ongoing transactional unit.
+     *
      * @param num the number to query
      * @return true if the number was created
      */
@@ -303,27 +303,11 @@ public class BaseTranslator {
         }
         spec.accept(receiptBuilder, recordBuilder);
         if (!isContractOp(parts) && parts.hasContractOutput()) {
-            try {
-                final var output = parts.callContractOutputOrThrow();
-                recordBuilder.contractCallResult(output.contractCallResultOrThrow());
-            } catch (Exception e) {
-                log.error(
-                        "Failed to add synthetic call result to transaction record for {} - outputs were {}",
-                        parts.body(),
-                        parts.transactionOutputs(),
-                        e);
-            }
+            final var output = parts.callContractOutputOrThrow();
+            recordBuilder.contractCallResult(output.contractCallResultOrThrow());
         }
         if (parts.transactionIdOrThrow().scheduled()) {
-            try {
-                recordBuilder.scheduleRef(scheduleRefOrThrow());
-            } catch (Exception e) {
-                log.error(
-                        "Failed to add schedule ref to transaction record for {} - state changes were {}",
-                        parts.body(),
-                        unit.stateChanges(),
-                        e);
-            }
+            recordBuilder.scheduleRef(scheduleRefOrThrow());
         }
         return new SingleTransactionRecord(
                 parts.transactionParts().wrapper(),

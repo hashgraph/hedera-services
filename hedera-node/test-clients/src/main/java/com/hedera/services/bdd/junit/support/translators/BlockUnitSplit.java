@@ -43,7 +43,7 @@ public class BlockUnitSplit {
     /**
      * Holds the parts of a transaction that are pending processing.
      */
-    private class PendingBlockTransactionParts {
+    private static class PendingBlockTransactionParts {
         @Nullable
         private TransactionParts parts;
 
@@ -87,6 +87,11 @@ public class BlockUnitSplit {
         }
     }
 
+    /**
+     * Splits the given block into transactional units.
+     * @param block the block to split
+     * @return the transactional units
+     */
     public List<BlockTransactionalUnit> split(@NonNull final Block block) {
         final List<BlockTransactionalUnit> units = new ArrayList<>();
 
