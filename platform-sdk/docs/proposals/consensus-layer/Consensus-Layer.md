@@ -535,9 +535,8 @@ previously known roster. So when a new roster is supplied, it is **applied** 3 r
 processing round.
 
 The Hashgraph module also includes a `state` section in the metadata of the round. This is used by the Execution layer
-to persist the Consensus state, for reconnect and for restart. In the state is the roster and the judges for the round,
-and possibly other information. When `initialize` is called, this same state is made available again to the Consensus
-node.
+to persist the Consensus state, for reconnect and for restart. In the state are the judges for the round, and possibly
+other information. When `initialize` is called, this same state is made available again to the Consensus node.
 
 ### Event Creator Module
 
