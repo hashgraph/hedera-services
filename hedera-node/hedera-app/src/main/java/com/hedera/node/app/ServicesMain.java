@@ -197,15 +197,17 @@ public class ServicesMain implements SwirldMain {
         logger.info("Starting node {} with version {}", selfId, version);
         final var cryptography = CryptographyFactory.create();
 
-        final Configuration configuration = buildConfiguration();
-        final KeysAndCerts keysAndCerts =
-                initNodeSecurity(bootstrapAddressBook, configuration).get(selfId);
+        final var configuration = buildConfiguration();
+        final var keysAndCerts = initNodeSecurity(bootstrapAddressBook, configuration)
+                .get(selfId);
+
         setupGlobalMetrics(configuration);
         final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(configuration);
-        final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+        final var recycleBin = RecycleBin.create(metrics, configuration,
+                getStaticThreadManager(), time, fileSystemManager, selfId);
+
         final var platformContext = PlatformContext.create(
                 configuration,
                 Time.getCurrent(),
@@ -214,7 +216,7 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(configuration),
                 recycleBin,
                 MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
-        final ReservedSignedState initialState = getInitialState(
+        final var initialState = getInitialState(
                 platformContext,
                 version,
                 hedera::newMerkleStateRoot,
@@ -226,10 +228,10 @@ public class ServicesMain implements SwirldMain {
         // the AddressBook is not changed after this point, so we calculate the hash now
         cryptography.digestSync(bootstrapAddressBook);
 
-        final AddressBook addressBook =
-                initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
+        final var addressBook = initializeAddressBook(selfId, version, initialState,
+                bootstrapAddressBook, platformContext);
 
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+        final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withConfiguration(configuration)
                 .withConfiguration(configuration)
@@ -240,7 +242,8 @@ public class ServicesMain implements SwirldMain {
                 .withMetrics(metrics)
                 .withFileSystemManager(fileSystemManager)
                 .withRecycleBin(recycleBin)
-                .withKeysAndCerts(keysAndCerts);
+                .withKeysAndCerts(keysAndCerts)
+                .withCryptography(cryptography);
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
