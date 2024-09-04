@@ -162,20 +162,6 @@ Once the block is exported from the node, the transaction execution is truly fin
 the block, users have an iron-clad guarantee that the contents of the block represent the consensus result of executing
 those transactions. Since they are included in a blockchain, there is an immutable, cryptographic proof of execution.
 
-### Lifecycle of the Consensus Module
-
-When Execution starts, it will (at the appropriate time in its startup routine) create an instance of Consensus, and
-`initialize` it with appropriate arguments, which will be defined in detail in further documents. Critically,
-Consensus **does not persist state**. Execution is wholly responsible for the management of state. To start Consensus
-from a particular moment in time, Execution will need to initialize it with some information such as the judges of the
-round it wants to start from. It is by using this `initialize` method that Execution is able to create a Consensus
-instance that starts from genesis, or from a particular round.
-
-Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus instance, and create a new one,
-and `initialize` it appropriately with information from the starting round, after having downloaded necessary data and
-initializing itself with the correct round. Reconnect therefore is the responsibility of Execution. Consensus does not
-have to consider reconnect at all.
-
 ### Liveness Under Stress
 
 A node is under stress when it is unable to process events fast enough to keep up with the other nodes in the network.
@@ -277,6 +263,20 @@ is continually falling behind, it will wait a longer and longer time before it a
 Eventually, the PI may encounter a quieter network, and successfully reconnect and rejoin the network. Or the node
 operator may decide to upgrade to a more capable machine so it can rejoin the network and participate. In either case,
 the node was able to gracefully handle slow execution without having to take any direct or extraordinary action.
+
+### Lifecycle of the Consensus Module
+
+When Execution starts, it will (at the appropriate time in its startup routine) create an instance of Consensus, and
+`initialize` it with appropriate arguments, which will be defined in detail in further documents. Critically,
+Consensus **does not persist state**. Execution is wholly responsible for the management of state. To start Consensus
+from a particular moment in time, Execution will need to initialize it with some information such as the judges of the
+round it wants to start from. It is by using this `initialize` method that Execution is able to create a Consensus
+instance that starts from genesis, or from a particular round.
+
+Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus instance, and create a new one,
+and `initialize` it appropriately with information from the starting round, after having downloaded necessary data and
+initializing itself with the correct round. Reconnect therefore is the responsibility of Execution. Consensus does not
+have to consider reconnect at all.
 
 ## Modules
 
