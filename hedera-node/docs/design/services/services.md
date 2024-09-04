@@ -84,8 +84,7 @@ secure transaction ordering.
 - **Decentralized Applications (dApps)**
 - **Audit Logs**
 
-**Full Documentation:
-** [Consensus Service](consensus-service/consensus-service.md)
+**Full Documentation:** [Consensus Service](consensus-service/consensus-service.md)
 
 ## Hedera Token Service (HTS)
 
@@ -171,8 +170,8 @@ network integrity.
 
 ### Key Functions
 
-- **Account Management:** Manage user accounts, including creation, updates, and
-  deletion.
+- **Account Querying:** Allows querying of user accounts, but not modification 
+  or deletion.
 - **Transaction Processing:** Handle the validation and processing of
   transactions across the network.
 - **Network Security:** Ensure the overall security and stability of the network
@@ -184,8 +183,7 @@ network integrity.
 - **Secure Transactions**
 - **Network Governance**
 
-**Full Documentation:
-** [Network Service](network-admin-service/network-admin-service.md)
+**Full Documentation:** [Network Service](network-admin-service/network-admin-service.md)
 
 ## Hedera Schedule Service
 
@@ -261,7 +259,6 @@ operations.
 - **Network Configuration**
 - **Secure Node Communication**
 
-**Full Documentation:
-** [Address Book Service](address-book-service/address-book-service.md)
+**Full Documentation:** [Address Book Service](address-book-service/address-book-service.md)
 
 ---
