@@ -46,6 +46,7 @@ import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
@@ -242,11 +243,14 @@ public class Browser {
                     FileSystemManager.create(configuration),
                     nodeId);
             final var cryptography = CryptographyFactory.create();
+            CryptographyHolder.set(cryptography);
             final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
                     .get(nodeId);
 
             // the AddressBook is not changed after this point, so we calculate the hash now
             cryptography.digestSync(appDefinition.getConfigAddressBook());
+            final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
+            MerkleCryptoFactory.set(merkleCryptography);
 
             final var platformContext = PlatformContext.create(
                     configuration,

@@ -47,6 +47,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -195,6 +196,7 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
         final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
 
         final var configuration = buildConfiguration();
         final var keysAndCerts =
@@ -206,6 +208,8 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
+        MerkleCryptoFactory.set(merkleCryptography);
 
         final var platformContext = PlatformContext.create(
                 configuration,
@@ -214,7 +218,7 @@ public class ServicesMain implements SwirldMain {
                 cryptography,
                 FileSystemManager.create(configuration),
                 recycleBin,
-                MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
+                merkleCryptography);
         final var initialState = getInitialState(
                 platformContext,
                 version,

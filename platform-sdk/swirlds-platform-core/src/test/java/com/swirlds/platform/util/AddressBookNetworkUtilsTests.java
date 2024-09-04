@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -93,8 +94,12 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromNonEmptyAddressBook() {
-        final PlatformBuilder platformBuilder =
-                PlatformBuilder.create("name", "swirldName", new BasicSoftwareVersion(1), null, new NodeId(0));
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                "name",
+                "swirldName",
+                new BasicSoftwareVersion(1),
+                ReservedSignedState.createNullReservation(),
+                new NodeId(0));
 
         final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
         final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
@@ -120,8 +125,12 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromEmptyAddressBook() {
-        final PlatformBuilder platformBuilder =
-                PlatformBuilder.create("name", "swirldName", new BasicSoftwareVersion(1), null, new NodeId(0));
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                "name",
+                "swirldName",
+                new BasicSoftwareVersion(1),
+                ReservedSignedState.createNullReservation(),
+                new NodeId(0));
         final AddressBook addressBook = new AddressBook();
         platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
