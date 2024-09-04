@@ -558,7 +558,7 @@ public class EnhancedKeyStoreLoader {
             }
 
             if (isLocal(address)) {
-                //The agreement certificate is loaded by the local nodes and provided to peers through mTLS handshaking
+                // The agreement certificate is loaded by the local nodes and provided to peers through mTLS handshaking
                 logger.trace(
                         STARTUP.getMarker(),
                         "Injecting agreement certificate for local node {} [ alias = {} ] into public stores",
