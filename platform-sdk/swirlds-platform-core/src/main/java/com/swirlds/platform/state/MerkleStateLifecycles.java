@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -26,6 +27,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Implements the major lifecycle events for the Merkle state.
@@ -34,6 +36,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * interface; but in the future will be callbacks registered with a platform builder.
  */
 public interface MerkleStateLifecycles {
+    /**
+     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateAccessor} implementation
+     * is initialized.
+     *
+     * @param state the root of the state to be initialized
+     * @return the list of builders for state changes that occurred during the initialization
+     */
+    List<StateChanges.Builder> initPlatformState(@NonNull State state);
+
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.
@@ -48,24 +59,27 @@ public interface MerkleStateLifecycles {
      * by the network.
      *
      * @param round the round that has just reached consensus
-     * @param platformState the working state of the platform
      * @param state the working state of the network
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
+    void onHandleConsensusRound(@NonNull Round round, @NonNull State state);
+
+    /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     * @param round the round whose platform state changes are completed
+     */
+    void onSealConsensusRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Called when the platform is initializing the network state.
      *
      * @param state the working state of the network to be initialized
      * @param platform the platform used by this node
-     * @param platformState the working state of the platform
      * @param trigger the reason for the initialization
      * @param previousVersion if non-null, the network version that was previously in use
      */
     void onStateInitialized(
             @NonNull State state,
             @NonNull Platform platform,
-            @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion);
 

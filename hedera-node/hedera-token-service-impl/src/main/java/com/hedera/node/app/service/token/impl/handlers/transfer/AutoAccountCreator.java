@@ -83,11 +83,11 @@ public class AutoAccountCreator {
                 ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
                 : requiredAutoAssociations;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
+            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations, LAZY_MEMO);
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, autoAssociations);
+            syntheticCreation = createZeroBalanceAccount(alias, key, autoAssociations);
             memo = AUTO_MEMO;
         }
 
@@ -114,16 +114,20 @@ public class AutoAccountCreator {
 
     /**
      * Create a transaction body for new hollow-account with the given alias.
+     *
      * @param alias alias of the account
      * @param balance initial balance of the account
      * @param maxAutoAssociations maxAutoAssociations of the account
+     * @param memo the memo to set on the transaction body
      * @return transaction body for new hollow-account
      */
     public TransactionBody.Builder createHollowAccount(
-            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
+            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations, @NonNull final String memo) {
+        requireNonNull(alias);
+        requireNonNull(memo);
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
-        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
+        return TransactionBody.newBuilder().memo(memo).cryptoCreateAccount(baseBuilder.build());
     }
 
     /**
@@ -141,16 +145,16 @@ public class AutoAccountCreator {
 
     /**
      * Create a transaction body for new account with the given alias, key, balance and maxAutoAssociations.
+     *
      * @param alias alias of the account
      * @param key key of the account
-     * @param balance initial balance of the account
      * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new account
      */
-    private TransactionBody.Builder createAccount(
-            @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
+    private TransactionBody.Builder createZeroBalanceAccount(
+            @NonNull final Bytes alias, @NonNull final Key key, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(0L, maxAutoAssociations);
         baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
-        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
+        return TransactionBody.newBuilder().memo(AUTO_MEMO).cryptoCreateAccount(baseBuilder.build());
     }
 }

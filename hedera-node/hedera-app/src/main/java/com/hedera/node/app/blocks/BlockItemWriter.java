@@ -35,7 +35,7 @@ public interface BlockItemWriter {
      *
      * @param serializedItem the serialized item to write
      */
-    void writeItem(@NonNull Bytes serializedItem);
+    BlockItemWriter writeItem(@NonNull Bytes serializedItem);
 
     /**
      * Closes the block.

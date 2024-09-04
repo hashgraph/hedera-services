@@ -77,7 +77,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -139,7 +138,6 @@ public class ChildDispatchFactory {
      * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
      * @param creatorInfo the node info of the creator
-     * @param platformState the platform state
      * @param topLevelFunction the top level functionality
      * @param consensusNow the consensus time
      * @param blockRecordInfo the block record info
@@ -158,7 +156,6 @@ public class ChildDispatchFactory {
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final NodeInfo creatorInfo,
-            @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
@@ -182,7 +179,6 @@ public class ChildDispatchFactory {
                 consensusNow,
                 creatorInfo,
                 config,
-                platformState,
                 topLevelFunction,
                 throttleAdviser,
                 authorizer,
@@ -210,7 +206,6 @@ public class ChildDispatchFactory {
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
-            @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             // @Singleton
@@ -234,7 +229,7 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var feeAccumulator =
+        final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -248,7 +243,6 @@ public class ChildDispatchFactory {
                 storeFactory,
                 payerId,
                 keyVerifier,
-                platformState,
                 topLevelFunction,
                 Key.DEFAULT,
                 exchangeRateManager,
@@ -259,11 +253,14 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                childFeeAccumulator);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (RecordStreamBuilder) builder);
+        final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+        if (congestionMultiplier > 1) {
+            builder.congestionMultiplier(congestionMultiplier);
+        }
         final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
         return new RecordDispatch(
                 builder,
@@ -282,7 +279,6 @@ public class ChildDispatchFactory {
                 childStack,
                 category,
                 childTokenContext,
-                platformState,
                 preHandleResult,
                 throttleStrategy);
     }
@@ -452,7 +448,8 @@ public class ChildDispatchFactory {
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
-                functionOfTxn(txBody));
+                functionOfTxn(txBody),
+                null);
     }
 
     /**

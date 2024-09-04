@@ -53,24 +53,23 @@ public interface ReadableScheduleStore {
      * actual equality (within the constraints of schedule duplication) before asserting that the requested
      * schedule is a duplicate.
      * @param scheduleToMatch a {@link Schedule} to match according to hash
-     * @return a {@link List<Schedule>} of entries that have the same hash as the provided schedule.
-     *     These may not actually be equal to the provided schedule, and further comparison should be performed.
+     * @return a {@code List<Schedule>} of entries that have the same hash as the provided schedule
      */
     @Nullable
-    List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch);
+    List<Schedule> getByEquality(@NonNull Schedule scheduleToMatch);
 
     /**
      * Given a time as seconds since the epoch, find all schedules currently in state that expire at that time.
-     * The {@link List<Schedule>} returned will contain all {@link Schedule} entries in the system that have a
+     * The {@code List<Schedule>} returned will contain all {@link Schedule} entries in the system that have a
      * calculated expiration time that matches the requested value.  The check is no more precise than one second,
      * so the list may be quite large (significantly larger than the "schedules created" throttle).
      *
      * @param expirationTime the number of seconds since the epoch that describes the expiration time of schedules
      *     to be returned.
-     * @return a {@link List<Schedule>} of entries that have expiration times within the requested second.
+     * @return a {@code List<Schedule>} of entries that have expiration times within the requested second
      */
     @Nullable
-    List<Schedule> getByExpirationSecond(final long expirationTime);
+    List<Schedule> getByExpirationSecond(long expirationTime);
 
     /**
      * Returns the number of schedules in state, for use in enforcing creation limits.

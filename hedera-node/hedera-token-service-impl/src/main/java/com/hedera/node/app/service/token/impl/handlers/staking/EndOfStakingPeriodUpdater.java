@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,8 +41,10 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -74,6 +77,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     *
      * @param accountNumbers the account numbers
      * @param stakeRewardsHelper the staking rewards helper
      */
@@ -90,8 +94,12 @@ public class EndOfStakingPeriodUpdater {
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
      * @param context the context of the transaction used to end the staking period
+     * @param exchangeRates the active exchange rate set
      */
-    public void updateNodes(@NonNull final TokenContext context) {
+    public @Nullable StreamBuilder updateNodes(
+            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+        requireNonNull(context);
+        requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
@@ -99,7 +107,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         if (!stakingConfig.isEnabled()) {
             log.info("Staking not enabled, nothing to do");
-            return;
+            return null;
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
@@ -116,7 +124,8 @@ public class EndOfStakingPeriodUpdater {
         // plus a boundary-case check for zero whole hbars staked
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
-                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
+                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, "
+                        + "given {} total stake reward start)",
                 rewardRate,
                 perHbarRate,
                 totalStakedRewardStart);
@@ -256,15 +265,16 @@ public class EndOfStakingPeriodUpdater {
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
-        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class);
-        nodeStakeUpdateBuilder
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record")
+                .exchangeRate(exchangeRates)
                 .status(SUCCESS);
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes]
+     * from the consensus weight range [0, sumOfConsensusWeights].
      *
      * @param weight weight of the node
      * @param newMinStake min stake of the node
@@ -288,7 +298,8 @@ public class EndOfStakingPeriodUpdater {
         if (totalStakeOfAllNodes == 0) {
             // This should never happen, but if it does, return zero
             log.warn(
-                    "Total stake of all nodes is 0, which shouldn't happen (weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
+                    "Total stake of all nodes is 0, which shouldn't happen "
+                            + "(weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
                     weight,
                     newMinStake,
                     newMaxStake,
@@ -317,9 +328,9 @@ public class EndOfStakingPeriodUpdater {
      * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
      * total sum of weight is approximately as described by {@code StakingConfig#sumOfConsensusWeights}.
      * The stake field in {@code StakingNodeInfo} is already clamped to [minStake, maxStake].
-     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
-     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
-     * out of every 250 whole hbars staked will have weight >= 2.
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake,
+     * the weight of a node A will be computed so that every node above minStake has weight at least 1;
+     * but any node that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
@@ -347,6 +358,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     *
      * @param consensusTime the consensus time
      * @return the timestamp that is just before midnight of the day of the given consensus time
      */
@@ -512,6 +524,8 @@ public class EndOfStakingPeriodUpdater {
                 .maxStakeRewarded(maxStakeRewarded)
                 .build();
 
-        return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
+        return TransactionBody.newBuilder()
+                .memo("End of staking period calculation record")
+                .nodeStakeUpdate(txnBody);
     }
 }

@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.version;
 
-import static com.hedera.hapi.util.HapiUtils.alphaNumberOrMaxValue;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.deserializeSemVer;
+import static com.swirlds.state.spi.HapiUtils.serializeSemVer;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
@@ -59,6 +60,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // For ConstructableRegistry. Do not use.
     }
 
+    /**
+     * Constructs a new instance with the given versions.
+     * @param hapiVersion HAPI version
+     * @param servicesVersion services version
+     * @param configVersion config version
+     */
     public HederaSoftwareVersion(
             final SemanticVersion hapiVersion,
             @NonNull final SemanticVersion servicesVersion,
@@ -66,6 +73,14 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         this.hapiVersion = hapiVersion;
         this.configVersion = configVersion;
         this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
+    }
+
+    public SemanticVersion servicesVersion() {
+        return servicesVersion;
+    }
+
+    public int configVersion() {
+        return configVersion;
     }
 
     @Override
@@ -121,18 +136,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
-        final var ans = SemanticVersion.newBuilder();
-        ans.major(in.readInt()).minor(in.readInt()).patch(in.readInt());
-        if (in.readBoolean()) {
-            ans.pre(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        if (in.readBoolean()) {
-            ans.build(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        return ans.build();
-    }
-
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
@@ -140,32 +143,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         if (deserializedVersion >= RELEASE_048_VERSION) {
             out.writeInt(configVersion);
         }
-    }
-
-    private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
-            throws IOException {
-        out.writeInt(semVer.major());
-        out.writeInt(semVer.minor());
-        out.writeInt(semVer.patch());
-        serializeIfUsed(semVer.pre(), out);
-        serializeIfUsed(semVer.build(), out);
-    }
-
-    private static void serializeIfUsed(final String semVerPart, final SerializableDataOutputStream out)
-            throws IOException {
-        if (semVerPart.isBlank()) {
-            out.writeBoolean(false);
-        } else {
-            out.writeBoolean(true);
-            out.writeNormalisedString(semVerPart);
-        }
-    }
-
-    public boolean isBefore(@Nullable final SoftwareVersion deserializedVersion) {
-        if (deserializedVersion == null) {
-            return false;
-        }
-        return compareTo(deserializedVersion) < 0;
     }
 
     @Override
@@ -203,5 +180,22 @@ public class HederaSoftwareVersion implements SoftwareVersion {
             builder.build("");
         }
         return builder.build();
+    }
+
+    /**
+     * Given a pre-release version, returns the numeric part of the version or {@link Integer#MAX_VALUE} if the
+     * pre-release version is not a number. (Which implies the version is not an alpha version, and comes after
+     * any alpha version.)
+     *
+     * @param pre the pre-release version
+     * @return the numeric part of the pre-release version or {@link Integer#MAX_VALUE}
+     */
+    private static int alphaNumberOrMaxValue(@Nullable final String pre) {
+        if (pre == null) {
+            return Integer.MAX_VALUE;
+        }
+        final var alphaMatch = HapiUtils.ALPHA_PRE_PATTERN.matcher(pre);
+        // alpha versions come before everything else
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 }

@@ -26,9 +26,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_A
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
@@ -243,7 +243,6 @@ public class ThrottleAccumulator {
      *
      * @param txnInfo the transaction to leak the gas for
      * @param value the amount of gas to leak
-     *
      */
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value) {
         final var configuration = configProvider.getConfiguration();
@@ -454,7 +453,8 @@ public class ThrottleAccumulator {
                         effectivePayer,
                         SignatureMap.DEFAULT,
                         Bytes.EMPTY,
-                        scheduledFunction);
+                        scheduledFunction,
+                        null);
 
                 return shouldThrottleTxn(true, innerTxnInfo, now, state);
             }
@@ -517,7 +517,8 @@ public class ThrottleAccumulator {
                     effectivePayer,
                     SignatureMap.DEFAULT,
                     Bytes.EMPTY,
-                    scheduledFunction);
+                    scheduledFunction,
+                    null);
 
             return shouldThrottleTxn(true, innerTxnInfo, now, state);
         }
@@ -748,11 +749,8 @@ public class ThrottleAccumulator {
             @NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.aliasOrElse(Bytes.EMPTY);
-            if (isOfEvmAddressSize(alias)) {
-                final var evmAddress = alias.toByteArray();
-                if (isMirror(evmAddress)) {
-                    return false;
-                }
+            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias)) {
+                return false;
             }
             return accountStore.getAccountIDByAlias(alias) == null;
         }

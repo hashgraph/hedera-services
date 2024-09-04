@@ -60,10 +60,10 @@ public class CustomRoyaltyFeeAssessor {
     /**
      * Assesses royalty fees for given token transfer.
      *
-     * @param token
-     * @param sender
-     * @param receiver
-     * @param result
+     * @param token the token
+     * @param sender the sender
+     * @param receiver the receiver
+     * @param result the assessment result
      */
     // Suppressing the warning about using two "continue" statements and having unused variable
     @SuppressWarnings({"java:S1854", "java:S135"})

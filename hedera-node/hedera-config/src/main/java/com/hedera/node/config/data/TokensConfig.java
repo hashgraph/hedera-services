@@ -60,10 +60,10 @@ public record TokensConfig(
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
         @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
                 boolean balancesInQueriesEnabled,
-        @ConfigProperty(value = "airdrops.enabled", defaultValue = "false") @NetworkProperty boolean airdropsEnabled,
-        @ConfigProperty(value = "airdrops.cancel.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "airdrops.enabled", defaultValue = "true") @NetworkProperty boolean airdropsEnabled,
+        @ConfigProperty(value = "airdrops.cancel.enabled", defaultValue = "true") @NetworkProperty
                 boolean cancelTokenAirdropEnabled,
-        @ConfigProperty(value = "airdrops.claim.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "airdrops.claim.enabled", defaultValue = "true") @NetworkProperty
                 boolean airdropsClaimEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
                 int nftsMaxBatchSizeUpdate) {}

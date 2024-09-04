@@ -287,7 +287,7 @@ public class RecordFinalizerBase {
             final NftID nftId,
             final AccountID senderAccountId,
             final AccountID receiverAccountId,
-            final HashMap<TokenID, List<NftTransfer>> nftChanges,
+            final Map<TokenID, List<NftTransfer>> nftChanges,
             @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
         final var isMint = senderAccountId.accountNum() == 0;
         final var isWipeOrBurn = receiverAccountId.accountNum() == 0;

@@ -64,7 +64,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
     /**
      * With unlimited associations enabled, the fee computed by TokenAssociateToAccountHandler depends
      * only on the number of tokens associated and nothing else; so a placeholder transaction body works
-     * fine for us when calling dispatchComputeFees()
+     * fine for us when calling dispatchComputeFees().
      */
     public static final TransactionBody PLACEHOLDER_SYNTHETIC_ASSOCIATION = TransactionBody.newBuilder()
             .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
@@ -156,12 +156,14 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
     }
 
-    private boolean mayNeedTranslation(final HandleException e, final AccountAmount adjustment) {
-        return e.getStatus() == TOKEN_NOT_ASSOCIATED_TO_ACCOUNT && adjustment.isApproval() && adjustment.amount() < 0;
+    private boolean mayNeedTranslation(final HandleException exception, final AccountAmount adjustment) {
+        return exception.getStatus() == TOKEN_NOT_ASSOCIATED_TO_ACCOUNT
+                && adjustment.isApproval()
+                && adjustment.amount() < 0;
     }
 
-    private boolean mayNeedTranslation(final HandleException e, final NftTransfer nftTransfer) {
-        return e.getStatus() == TOKEN_NOT_ASSOCIATED_TO_ACCOUNT && nftTransfer.isApproval();
+    private boolean mayNeedTranslation(final HandleException exception, final NftTransfer nftTransfer) {
+        return exception.getStatus() == TOKEN_NOT_ASSOCIATED_TO_ACCOUNT && nftTransfer.isApproval();
     }
 
     /**
@@ -208,7 +210,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     }
                 }
             }
-            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
+            final var newRelation =
+                    autoAssociate(account.accountIdOrThrow(), token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

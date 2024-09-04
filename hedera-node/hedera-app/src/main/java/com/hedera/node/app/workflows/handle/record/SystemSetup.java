@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
@@ -54,7 +55,6 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -124,7 +124,6 @@ public class SystemSetup {
     public void doGenesisSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
         fileService.createSystemEntities(systemContext);
-        dispatch.stack().commitFullStack();
     }
 
     /**
@@ -250,6 +249,7 @@ public class SystemSetup {
                             recordBuilder.status());
                 }
                 controlledNum.put(new EntityNumber(firstUserNum - 1));
+                dispatch.stack().commitSystemStateChanges();
             }
 
             @Override
@@ -285,13 +285,14 @@ public class SystemSetup {
     /**
      * Called only once, before handling the first transaction in network history. Externalizes
      * side effects of genesis setup done in
-     * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}.
-     * <p>
-     * Should be removed once
+     * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}.
      *
      * @throws NullPointerException if called more than once
      */
-    public void externalizeInitSideEffects(@NonNull final TokenContext context) {
+    public void externalizeInitSideEffects(
+            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRateSet) {
+        requireNonNull(context);
+        requireNonNull(exchangeRateSet);
         final var firstConsensusTime = context.consensusTime();
         log.info("Doing genesis setup at {}", firstConsensusTime);
         // The account creator registers all its synthetics accounts based on the
@@ -306,32 +307,33 @@ public class SystemSetup {
                 this::blocklistAccounts);
 
         if (!systemAccounts.isEmpty()) {
-            createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
+            createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO, exchangeRateSet);
             log.info(" - Queued {} system account records", systemAccounts.size());
             systemAccounts = null;
         }
 
+        if (!treasuryClones.isEmpty()) {
+            createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO, exchangeRateSet);
+            log.info("Queued {} treasury clone account records", treasuryClones.size());
+            treasuryClones = null;
+        }
+
         if (!stakingAccounts.isEmpty()) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - firstConsensusTime.getEpochSecond();
-            createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
+            createAccountRecordBuilders(
+                    stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod, exchangeRateSet);
             log.info(" - Queued {} staking account records", stakingAccounts.size());
             stakingAccounts = null;
         }
 
         if (!miscAccounts.isEmpty()) {
-            createAccountRecordBuilders(miscAccounts, context, null);
+            createAccountRecordBuilders(miscAccounts, context, null, exchangeRateSet);
             log.info("Queued {} misc account records", miscAccounts.size());
             miscAccounts = null;
         }
 
-        if (!treasuryClones.isEmpty()) {
-            createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
-            log.info("Queued {} treasury clone account records", treasuryClones.size());
-            treasuryClones = null;
-        }
-
         if (!blocklistAccounts.isEmpty()) {
-            createAccountRecordBuilders(blocklistAccounts, context, null);
+            createAccountRecordBuilders(blocklistAccounts, context, null, exchangeRateSet);
             log.info("Queued {} blocklist account records", blocklistAccounts.size());
             blocklistAccounts = null;
         }
@@ -360,20 +362,22 @@ public class SystemSetup {
     private void createAccountRecordBuilders(
             @NonNull final SortedSet<Account> map,
             @NonNull final TokenContext context,
-            @Nullable final String recordMemo) {
-        createAccountRecordBuilders(map, context, recordMemo, null);
+            @Nullable final String recordMemo,
+            @NonNull final ExchangeRateSet exchangeRateSet) {
+        createAccountRecordBuilders(map, context, recordMemo, null, exchangeRateSet);
     }
 
     private void createAccountRecordBuilders(
             @NonNull final SortedSet<Account> accts,
             @NonNull final TokenContext context,
             @Nullable final String recordMemo,
-            @Nullable final Long overrideAutoRenewPeriod) {
+            @Nullable final Long overrideAutoRenewPeriod,
+            @NonNull final ExchangeRateSet exchangeRateSet) {
         for (final Account account : accts) {
             // Since this is only called at genesis, the active savepoint's preceding record capacity will be
             // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
             final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class);
-            recordBuilder.accountID(account.accountId());
+            recordBuilder.accountID(account.accountIdOrThrow()).exchangeRate(exchangeRateSet);
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);
             }

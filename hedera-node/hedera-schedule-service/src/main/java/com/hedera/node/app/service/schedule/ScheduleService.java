@@ -39,7 +39,7 @@ public interface ScheduleService extends RpcService {
     }
 
     /**
-     * Returns the RPC definitions for the service
+     * Returns the RPC definitions for the service.
      *
      * @return the RPC definitions
      */
@@ -50,7 +50,7 @@ public interface ScheduleService extends RpcService {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */

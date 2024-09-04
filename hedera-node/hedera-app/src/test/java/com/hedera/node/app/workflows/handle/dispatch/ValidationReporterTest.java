@@ -534,7 +534,12 @@ class ValidationReporterTest {
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
     private static final TransactionInfo TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, HederaFunctionality.CRYPTO_TRANSFER);
+            Transaction.DEFAULT,
+            TXN_BODY,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            HederaFunctionality.CRYPTO_TRANSFER,
+            null);
 
     private static final Fees FEES = new Fees(1L, 2L, 3L);
 
