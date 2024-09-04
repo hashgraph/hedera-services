@@ -43,7 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Helper class for staking reward calculations
+ * Helper class for staking reward calculations.
  */
 @Singleton
 public class StakingRewardsHelper {
@@ -113,7 +113,7 @@ public class StakingRewardsHelper {
     /**
      * Returns true if the account is staked to a node and the current transaction modified the stakedToMe field
      * (by changing balance of the current account or the account which is staking to current account) or
-     * declineReward or the stakedId field
+     * declineReward or the stakedId field.
      *
      * @param modifiedAccount the account which is modified in the current transaction and is in modifications
      * @param originalAccount the account before the current transaction
@@ -157,7 +157,7 @@ public class StakingRewardsHelper {
      * reduced by that amount, since they no more need to be paid.
      * If the node is deleted, we do not decrease the pending rewards on the network, and on the node.
      *
-     * @param stakingInfoStore
+     * @param stakingInfoStore   The store to write to for updated values
      * @param stakingRewardsStore The store to write to for updated values
      * @param amount              The amount to decrease by
      * @param nodeId              The node id to decrease pending rewards for
@@ -282,11 +282,11 @@ public class StakingRewardsHelper {
         return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
     }
 
-    private static long clampedAdd(final long a, final long b) {
+    private static long clampedAdd(final long addendA, final long addendB) {
         try {
-            return Math.addExact(a, b);
+            return Math.addExact(addendA, addendB);
         } catch (final ArithmeticException ae) {
-            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+            return addendA > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
     }
 }

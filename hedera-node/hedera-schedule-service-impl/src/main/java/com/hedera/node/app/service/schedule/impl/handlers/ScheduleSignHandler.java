@@ -64,9 +64,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
-    public ScheduleSignHandler() {
-        super();
-    }
+    public ScheduleSignHandler() {}
 
     @Override
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {

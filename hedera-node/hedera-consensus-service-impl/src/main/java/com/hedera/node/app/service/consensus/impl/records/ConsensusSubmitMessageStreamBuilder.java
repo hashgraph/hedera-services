@@ -41,7 +41,7 @@ public interface ConsensusSubmitMessageStreamBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash);
+    ConsensusSubmitMessageStreamBuilder topicRunningHash(@NonNull Bytes topicRunningHash);
 
     /**
      * Tracks the running hash version for the topic receiving the submitted message in the associated transaction.

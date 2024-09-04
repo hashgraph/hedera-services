@@ -41,7 +41,7 @@ public final class FreezeServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the the base path for the freeze service
+     * Returns the the base path for the freeze service.
      *
      * @return the base path
      */
@@ -52,7 +52,7 @@ public final class FreezeServiceDefinition implements RpcServiceDefinition {
     }
 
     /**
-     * Returns the set of rpc methods supported by the freeze service
+     * Returns the set of rpc methods supported by the freeze service.
      *
      * @return the methods
      */
