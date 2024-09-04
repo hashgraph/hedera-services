@@ -113,8 +113,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
             response.accountID(accountId);
 
             if (responseType != COST_ANSWER) {
-                final var acctRecords = recordCache.getRecords(accountId);
-                response.records(acctRecords);
+                response.records(recordCache.getRecords(accountId));
             }
         }
 

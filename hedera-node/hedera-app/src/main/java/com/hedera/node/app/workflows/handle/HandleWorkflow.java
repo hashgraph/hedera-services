@@ -364,13 +364,12 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
-            // Note that we don't yet support producing ONLY blocks, because we haven't integrated
-            // translators from block items to records for answering queries
             if (blockStreamConfig.streamRecords()) {
                 recordCache.add(
                         userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
             } else {
-                throw new IllegalStateException("Records must be produced directly without block item translators");
+                recordCache.addBlockItems(
+                        userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.blocksItemsOrThrow());
             }
             return handleOutput;
         } catch (final Exception e) {
@@ -403,10 +402,18 @@ public class HandleWorkflow {
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
         final var failInvalidRecord = failInvalidBuilder.build();
-        recordCache.add(
-                userTxn.creatorInfo().nodeId(),
-                requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidRecord));
+        if (blockStreamConfig.streamRecords()) {
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(),
+                    requireNonNull(userTxn.txnInfo().payerID()),
+                    List.of(failInvalidRecord));
+        } else {
+            recordCache.addBlockItems(
+                    userTxn.creatorInfo().nodeId(),
+                    requireNonNull(userTxn.txnInfo().payerID()),
+                    blockItems);
+        }
+
         return new HandleOutput(blockItems, List.of(failInvalidRecord));
     }
 

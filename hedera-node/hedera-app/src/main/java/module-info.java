@@ -56,7 +56,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures,
-            com.hedera.node.test.clients;
+            com.hedera.node.test.clients,
+            com.hedera.node.app.hapi.utils;
     exports com.hedera.node.app.workflows.ingest to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.query to
@@ -106,6 +107,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.blocks.impl;
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
+    exports com.hedera.node.app.blocks.translators;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

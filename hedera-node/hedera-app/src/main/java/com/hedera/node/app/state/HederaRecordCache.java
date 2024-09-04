@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -59,6 +60,17 @@ public interface HederaRecordCache extends RecordCache {
      */
     /*HANDLE THREAD ONLY*/
     void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
+
+    /**
+     * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
+     * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
+     *
+     * @param nodeId             The node ID of the node that submitted this transaction to consensus, as known in the address book
+     * @param payerAccountId     The {@link AccountID} of the "payer" of the transaction
+     * @param blockItems         The list of all related transaction {@link BlockItem}s. It may be a list including preceding
+     *                           transactions, user transactions, and child transactions.
+     */
+    void addBlockItems(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<BlockItem> blockItems);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is

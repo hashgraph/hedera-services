@@ -23,13 +23,18 @@ import static com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSche
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.blocks.translators.BlockTransactionalUnit;
+import com.hedera.node.app.blocks.translators.BlockTransactionalUnitTranslator;
+import com.hedera.node.app.blocks.translators.BlockUnitSplit;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -92,6 +97,17 @@ public class RecordCacheImpl implements HederaRecordCache {
     public static final Comparator<TransactionReceiptEntry> TRANSACTION_VALID_START_COMPARATOR = Comparator.comparing(
             e -> e.transactionIdOrElse(TransactionID.DEFAULT).transactionValidStartOrElse(Timestamp.DEFAULT),
             TIMESTAMP_COMPARATOR);
+
+    // nested ternary expressions
+    @SuppressWarnings("java:S3358")
+    Comparator<BlockTransactionalUnit> BLOCK_TRANSACTIONAL_UNIT_COMPARATOR =
+            Comparator.<BlockTransactionalUnit, ResponseCodeEnum>comparing(
+                            unit -> unit.blockTransactionParts().getFirst().status(),
+                            (a, b) -> DUE_DILIGENCE_FAILURES.contains(a) == DUE_DILIGENCE_FAILURES.contains(b)
+                                    ? 0
+                                    : (DUE_DILIGENCE_FAILURES.contains(b) ? -1 : 1))
+                    .thenComparing(
+                            unit -> unit.blockTransactionParts().getFirst().consensusTimestamp(), TIMESTAMP_COMPARATOR);
 
     /**
      * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
@@ -185,6 +201,44 @@ public class RecordCacheImpl implements HederaRecordCache {
     // ---------------------------------------------------------------------------------------------------------------
     // Implementation methods of HederaRecordCache
     // ---------------------------------------------------------------------------------------------------------------
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addBlockItems(
+            final long nodeId, @NonNull final AccountID payerAccountId, @NonNull final List<BlockItem> blockItems) {
+        requireNonNull(payerAccountId);
+        requireNonNull(blockItems);
+
+        // This really shouldn't ever happen. If it does, we'll log a warning and bail.
+        if (blockItems.isEmpty()) {
+            logger.warn("Received an empty list of blockItems. This should never happen");
+            return;
+        }
+
+        final BlockUnitSplit blockUnitSplit = new BlockUnitSplit();
+        final BlockTransactionalUnitTranslator translator = new BlockTransactionalUnitTranslator();
+
+        final var blockTransactionalUnits = blockUnitSplit.split(blockItems);
+        blockTransactionalUnits.sort(BLOCK_TRANSACTIONAL_UNIT_COMPARATOR);
+
+        List<SingleTransactionRecord> singleTransactionRecords = new ArrayList<>();
+        for (final var blockTransactionalUnit : blockTransactionalUnits) {
+            singleTransactionRecords.addAll(translator.translate(blockTransactionalUnit));
+        }
+
+        // For each transaction, in order, add to the in-memory data structures.
+        for (final var singleTransactionRecord : singleTransactionRecords) {
+            final var rec = singleTransactionRecord.transactionRecord();
+            // Make the full record queryable, but don't include all the details in state (so a reconnected node
+            // will only have a partial record available)
+            addToInMemoryCache(nodeId, payerAccountId, rec);
+            // Include its receipt in the current round's entries, to be committed to state and the end of the round
+            transactionReceipts.add(new TransactionReceiptEntry(
+                    nodeId, rec.transactionIDOrThrow(), rec.receiptOrThrow().status()));
+        }
+    }
 
     /**
      * {@inheritDoc}

@@ -24,6 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.blocks.translators.BlockTransactionalUnitTranslator;
+import com.hedera.node.app.blocks.translators.BlockUnitSplit;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
@@ -31,8 +33,6 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
-import com.hedera.services.bdd.junit.support.translators.BlockTransactionalUnitTranslator;
-import com.hedera.services.bdd.junit.support.translators.BlockUnitSplit;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.utils.RcDiff;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -115,7 +115,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                 .toList();
         final var numStateChanges = new AtomicInteger();
         final List<RecordStreamEntry> actualEntries = blocks.stream()
-                .flatMap(block -> blockUnitSplit.split(block).stream())
+                .flatMap(block -> blockUnitSplit.split(block.items()).stream())
                 .peek(unit -> numStateChanges.getAndAdd(unit.stateChanges().size()))
                 .flatMap(unit -> translator.translate(unit).stream())
                 .map(this::asEntry)

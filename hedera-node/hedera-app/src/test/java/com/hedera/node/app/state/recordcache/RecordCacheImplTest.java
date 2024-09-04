@@ -30,15 +30,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -58,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -398,6 +403,34 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // When the record is added to the cache
             cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(getReceipt(cache, txId)).isEqualTo(receipt);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for receipt for a txn with a proper record (block items)")
+        void queryForReceiptForTxnWithRecordBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can query for the receipt by transaction ID
             assertThat(getReceipt(cache, txId)).isEqualTo(receipt);
