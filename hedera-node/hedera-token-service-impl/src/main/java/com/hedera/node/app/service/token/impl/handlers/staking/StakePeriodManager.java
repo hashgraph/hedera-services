@@ -184,7 +184,7 @@ public class StakePeriodManager {
      * <ol>
      *   <li>{@code -1} if the {@code stakePeriodStart} doesn't need to change; or,
      *   <li>The value to which the {@code stakePeriodStart} should be changed.
-     * </ol>
+     * </ol>.
      *
      * @param originalAccount the original account before the transaction
      * @param modifiedAccount the modified account after the transaction

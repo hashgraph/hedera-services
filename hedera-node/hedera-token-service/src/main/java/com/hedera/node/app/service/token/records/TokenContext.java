@@ -37,7 +37,7 @@ public interface TokenContext {
     Instant consensusTime();
 
     /**
-     * Returns the current {@link Configuration}
+     * Returns the current {@link Configuration}.
      *
      * @return the {@code Configuration}
      */

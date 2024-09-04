@@ -17,12 +17,14 @@
 package com.swirlds.state;
 
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The full state used of the app. The primary implementation is based on a merkle tree, and the data
@@ -72,8 +74,26 @@ public interface State extends FastCopyable {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     default State copy() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns a calculated hash of the state.
+     */
+    @Nullable
+    default Hash getHash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Hashes the state on demand if it is not already hashed. If the state is already hashed, this method is a no-op.
+     */
+    default void computeHash() {
         throw new UnsupportedOperationException();
     }
 }

@@ -38,13 +38,13 @@ public interface StakeRewardCalculator {
      * @param stakingInfoStore The store from which the staking info of the node is to be retrieved.
      * @param rewardsStore The store from which the rewards are to be retrieved.
      * @param consensusNow The consensus time at which the rewards are to be calculated.
-     * @return The pending rewards for the account.
+     * @return The pending rewards for the account
      */
     long computePendingReward(
-            @NonNull final Account account,
-            @NonNull final WritableStakingInfoStore stakingInfoStore,
-            @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
-            @NonNull final Instant consensusNow);
+            @NonNull Account account,
+            @NonNull WritableStakingInfoStore stakingInfoStore,
+            @NonNull ReadableNetworkStakingRewardsStore rewardsStore,
+            @NonNull Instant consensusNow);
 
     /**
      * Estimate the pending rewards for the given account. This method is called only on
@@ -53,17 +53,17 @@ public interface StakeRewardCalculator {
      * @param account The account for which the pending rewards are to be calculated.
      * @param nodeStakingInfo The staking info of the node to which the account is staked.
      * @param rewardsStore The store from which the rewards are to be retrieved.
-     * @return The pending rewards for the account.
+     * @return The pending rewards for the account
      */
     long estimatePendingRewards(
-            @NonNull final Account account,
-            @Nullable final StakingNodeInfo nodeStakingInfo,
-            @NonNull final ReadableNetworkStakingRewardsStore rewardsStore);
+            @NonNull Account account,
+            @Nullable StakingNodeInfo nodeStakingInfo,
+            @NonNull ReadableNetworkStakingRewardsStore rewardsStore);
 
     /**
      * Gives the epoch second at the start of the given stake period.
      * @param stakePeriod The stake period for which the epoch second is to be calculated.
-     * @return The epoch second at the start of the given stake period.
+     * @return The epoch second at the start of the given stake period
      */
-    long epochSecondAtStartOfPeriod(final long stakePeriod);
+    long epochSecondAtStartOfPeriod(long stakePeriod);
 }

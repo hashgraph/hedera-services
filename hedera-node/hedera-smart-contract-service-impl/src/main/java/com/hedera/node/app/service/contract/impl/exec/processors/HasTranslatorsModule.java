@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevmaddressalias.EvmAddressAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator;
@@ -40,8 +41,8 @@ public interface HasTranslatorsModule {
     @Provides
     @Singleton
     @Named("HasTranslators")
-    static List<CallTranslator> provideCallAttemptTranslators(
-            @NonNull @Named("HasTranslators") final Set<CallTranslator> translators) {
+    static List<CallTranslator<HasCallAttempt>> provideCallAttemptTranslators(
+            @NonNull @Named("HasTranslators") final Set<CallTranslator<HasCallAttempt>> translators) {
         return List.copyOf(translators);
     }
 
@@ -49,7 +50,8 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideHbarAllowanceTranslator(@NonNull final HbarAllowanceTranslator translator) {
+    static CallTranslator<HasCallAttempt> provideHbarAllowanceTranslator(
+            @NonNull final HbarAllowanceTranslator translator) {
         return translator;
     }
 
@@ -57,7 +59,8 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideHbarApproveTranslator(@NonNull final HbarApproveTranslator translator) {
+    static CallTranslator<HasCallAttempt> provideHbarApproveTranslator(
+            @NonNull final HbarApproveTranslator translator) {
         return translator;
     }
 

@@ -27,6 +27,8 @@ import java.util.Comparator;
  * Utility methods for the Hedera API.
  */
 public final class HapiUtils {
+    private static final String ALPHA_PREFIX = "alpha.";
+    private static final int ALPHA_PREFIX_LENGTH = ALPHA_PREFIX.length();
 
     // FUTURE WORK: Add unit tests for this class.
     /**
@@ -37,11 +39,23 @@ public final class HapiUtils {
                     SemanticVersion::major)
             .thenComparingInt(SemanticVersion::minor)
             .thenComparingInt(SemanticVersion::patch)
-            .thenComparingInt(semVer -> HapiUtils.parsedIntOrZero(semVer.pre()))
+            .thenComparingInt(semVer -> HapiUtils.parsedAlphaIntOrMaxValue(semVer.pre()))
             .thenComparingInt(semVer -> HapiUtils.parsedIntOrZero(semVer.build()));
 
+    private static int parsedAlphaIntOrMaxValue(@Nullable final String s) {
+        if (s == null || s.isBlank() || !s.startsWith(ALPHA_PREFIX)) {
+            return Integer.MAX_VALUE;
+        } else {
+            try {
+                return Integer.parseInt(s.substring(ALPHA_PREFIX_LENGTH));
+            } catch (NumberFormatException ignore) {
+                return Integer.MAX_VALUE;
+            }
+        }
+    }
+
     private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null || s.isBlank()) {
+        if (s == null || s.isBlank() || "0".equals(s)) {
             return 0;
         } else {
             try {
