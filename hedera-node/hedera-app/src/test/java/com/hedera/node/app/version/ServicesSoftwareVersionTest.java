@@ -115,7 +115,7 @@ class ServicesSoftwareVersionTest {
     @Test
     void numericBuildIsConsidered() {
         final var prevVersion = new ServicesSoftwareVersion(LATE, DEFAULT_CONFIG_VERSION);
-        final var subject = new ServicesSoftwareVersion(LATE_WITH_CONFIG_VERSION, DEFAULT_CONFIG_VERSION);
+        final var subject = new ServicesSoftwareVersion(LATE_WITH_CONFIG_VERSION);
         assertThat(subject.compareTo(prevVersion)).isEqualTo(1);
     }
 
