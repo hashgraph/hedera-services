@@ -648,7 +648,7 @@ or when it is back in the good graces of the Sheriff.
 
 #### onNewEvent
 
-Called by the Event Intake module of Consensus to give the Execution layer a change to fill the event with transactions.
+Called by the Event Intake module of Consensus to give the Execution layer a chance to fill the event with transactions.
 Note that in the current system the control in inverted -- transactions are submitted by Execution to Consensus, which
 buffers them and includes them in events. As per this design, Consensus will reach out to Execution to ask it for all
 transactions that should be included in the next event, allowing the Execution layer (the application) to decide which
