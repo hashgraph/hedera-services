@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
-import static com.hedera.services.bdd.junit.support.translators.BaseTranslator.AUTO_CREATION_MEMOS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -63,7 +62,7 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
                                     .valueOrThrow()
                                     .accountValueOrThrow();
                             receiptBuilder.accountID(accountId);
-                            if (!isOfEvmAddressSize(account.alias()) || AUTO_CREATION_MEMOS.contains(account.memo())) {
+                            if (!isOfEvmAddressSize(account.alias())) {
                                 final var maybeEvmAddress = extractEvmAddress(account.alias());
                                 if (maybeEvmAddress != null) {
                                     recordBuilder.evmAddress(maybeEvmAddress);

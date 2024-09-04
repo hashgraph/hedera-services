@@ -584,8 +584,7 @@ public class BlockStreamBuilder
 
     @NonNull
     @Override
-    public BlockStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate);
+    public BlockStreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
         transactionResultBuilder.exchangeRate(exchangeRate);
         return this;
     }

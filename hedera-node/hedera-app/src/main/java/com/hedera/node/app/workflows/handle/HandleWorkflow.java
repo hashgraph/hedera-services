@@ -430,7 +430,7 @@ public class HandleWorkflow {
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
-     * @param blockStreamConfig
+     * @param blockStreamConfig the block stream configuration
      * @return the user dispatch
      */
     private Dispatch dispatchFor(@NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {

@@ -22,8 +22,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
@@ -75,8 +73,6 @@ public class BaseTranslator {
     private static final Logger log = LogManager.getLogger(BaseTranslator.class);
 
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
-
-    public static final Set<String> AUTO_CREATION_MEMOS = Set.of(LAZY_MEMO, AUTO_MEMO);
 
     private long highestKnownEntityNum = 0L;
     private long prevHighestKnownEntityNum = 0L;
@@ -296,7 +292,7 @@ public class BaseTranslator {
         if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
-        if (!followsUserRecord || AUTO_CREATION_MEMOS.contains(parts.memo())) {
+        if (!followsUserRecord) {
             // Only preceding and user transactions get exchange rates in their receipts; note that
             // auto-account creations are always preceding dispatches and so get exchange rates
             receiptBuilder.exchangeRate(activeRates);
