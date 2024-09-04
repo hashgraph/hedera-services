@@ -504,9 +504,9 @@ execute first. This is extremely unlikely, but must be defended against in the E
 
 The Hashgraph module orders events into rounds, and assigns timestamps to events. It is given ordered, persisted
 events from Event Intake. Sometimes when an event is added, it turns out to be the last event that was needed to cause
-an entire "round" of events to come to consensus. When this happens, the Hashgraph module emits a `round`. The round
-includes metadata about the round (the list of judge hashes, the round number, the roster, etc.) along with the events
-that were included in the round, in order, with their consensus-assigned timestamps.
+one or more entire "rounds" of events to come to consensus. When this happens, the Hashgraph module emits a `round`.
+The round includes metadata about the round (the list of judge hashes, the round number, the roster, etc.) along with
+the events that were included in the round, in order, with their consensus-assigned timestamps.
 
 ![Hashgraph](hashgraph-module.png)
 
