@@ -93,20 +93,15 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromNonEmptyAddressBook() {
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                "name",
-                "swirldName",
-                new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
-                new NodeId(0));
+        final PlatformBuilder platformBuilder =
+                PlatformBuilder.create("name", "swirldName", new BasicSoftwareVersion(1), null, new NodeId(0));
 
         final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
         final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
         addressBook.add(address1);
         addressBook.add(address2);
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
@@ -125,15 +120,10 @@ class AddressBookNetworkUtilsTests {
 
     @Test
     void testCreateRosterFromEmptyAddressBook() {
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                "name",
-                "swirldName",
-                new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
-                new NodeId(0));
+        final PlatformBuilder platformBuilder =
+                PlatformBuilder.create("name", "swirldName", new BasicSoftwareVersion(1), null, new NodeId(0));
         final AddressBook addressBook = new AddressBook();
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);

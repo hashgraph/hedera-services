@@ -18,13 +18,21 @@ package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
@@ -33,20 +41,28 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.CommandLineArgs;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -154,7 +170,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook addressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook bootstrapAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
@@ -169,7 +185,7 @@ public class ServicesMain implements SwirldMain {
         // get the list of configured nodes from the address book
         // for each node in the address book, check if it has a local IP (local to this computer)
         // additionally if a command line arg is supplied then limit matching nodes to that node id
-        final List<NodeId> nodesToRun = getNodesToRun(addressBook, commandLineArgs.localNodesToStart());
+        final List<NodeId> nodesToRun = getNodesToRun(bootstrapAddressBook, commandLineArgs.localNodesToStart());
         // hard exit if no nodes are configured to run
         checkNodesToRun(nodesToRun);
 
@@ -177,20 +193,51 @@ public class ServicesMain implements SwirldMain {
 
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
+        final var cryptography = CryptographyFactory.create();
 
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                Hedera.APP_NAME,
-                Hedera.SWIRLD_NAME,
+        final Configuration configuration = buildConfiguration();
+        final KeysAndCerts keysAndCerts =
+                initNodeSecurity(bootstrapAddressBook, configuration).get(selfId);
+        setupGlobalMetrics(configuration);
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var time = Time.getCurrent();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+        final var platformContext = PlatformContext.create(
+                configuration,
+                Time.getCurrent(),
+                metrics,
+                cryptography,
+                FileSystemManager.create(configuration),
+                recycleBin);
+        final ReservedSignedState initialState = getInitialState(
+                platformContext,
                 version,
                 hedera::newMerkleStateRoot,
                 SignedStateFileUtils::readState,
-                selfId);
+                Hedera.APP_NAME,
+                Hedera.SWIRLD_NAME,
+                selfId,
+                bootstrapAddressBook);
+        // the AddressBook is not changed after this point, so we calculate the hash now
+        cryptography.digestSync(bootstrapAddressBook);
 
-        // Add additional configuration to the platform
-        final Configuration configuration = buildConfiguration();
-        platformBuilder.withConfiguration(configuration);
-        platformBuilder.withCryptography(CryptographyFactory.create());
-        platformBuilder.withTime(Time.getCurrent());
+        final AddressBook addressBook =
+                initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
+
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
+                .withConfiguration(configuration)
+                .withConfiguration(configuration)
+                .withTime(Time.getCurrent())
+                .withAddressBook(addressBook)
+                .withRoster(createRoster(addressBook))
+                .withTime(time)
+                .withMetrics(metrics)
+                .withFileSystemManager(fileSystemManager)
+                .withRecycleBin(recycleBin)
+                .withKeysAndCerts(keysAndCerts);
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -221,6 +268,43 @@ public class ServicesMain implements SwirldMain {
         hedera.run();
     }
 
+    private static @NonNull AddressBook initializeAddressBook(
+            final NodeId selfId,
+            final SoftwareVersion version,
+            final ReservedSignedState initialState,
+            final AddressBook bootstrapAddressBook,
+            final PlatformContext platformContext) {
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+        // Initialize the address book from the configuration and platform saved state.
+        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
+
+        if (addressBookInitializer.hasAddressBookChanged()) {
+            final MerkleRoot state = initialState.get().getState();
+            // Update the address book with the current address book read from config.txt.
+            // Eventually we will not do this, and only transactions will be capable of
+            // modifying the address book.
+            final PlatformStateAccessor platformState = state.getPlatformState();
+            platformState.bulkUpdate(v -> {
+                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
+                v.setPreviousAddressBook(
+                        addressBookInitializer.getPreviousAddressBook() == null
+                                ? null
+                                : addressBookInitializer
+                                        .getPreviousAddressBook()
+                                        .copy());
+            });
+        }
+
+        // At this point the initial state must have the current address book set.  If not, something is wrong.
+        final AddressBook addressBook =
+                initialState.get().getState().getPlatformState().getAddressBook();
+        if (addressBook == null) {
+            throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+        return addressBook;
+    }
+
     /**
      * Build the configuration for this node.
      *
@@ -233,7 +317,9 @@ public class ServicesMain implements SwirldMain {
                 .withSource(SystemPropertiesConfigSource.getInstance());
         rethrowIO(() ->
                 BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
-        return configurationBuilder.build();
+        final Configuration configuration = configurationBuilder.build();
+        checkConfiguration(configuration);
+        return configuration;
     }
 
     /**
@@ -288,6 +374,7 @@ public class ServicesMain implements SwirldMain {
         try {
             final LegacyConfigProperties props =
                     LegacyConfigPropertiesLoader.loadConfigFile(FileUtils.getAbsolutePath(addressBookPath));
+            props.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
             return props.getAddressBook();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);

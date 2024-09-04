@@ -23,17 +23,25 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -52,6 +60,7 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
@@ -212,13 +221,37 @@ public class Browser {
             rethrowIO(() ->
                     BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
+            setupGlobalMetrics(configuration);
+            guiMetrics = getMetricsProvider().createPlatformMetrics(nodeId);
+            final var recycleBin = RecycleBin.create(
+                    guiMetrics,
+                    configuration,
+                    getStaticThreadManager(),
+                    Time.getCurrent(),
+                    FileSystemManager.create(configuration),
+                    nodeId);
 
+            final var platformContext = PlatformContext.create(
+                    configuration,
+                    Time.getCurrent(),
+                    guiMetrics,
+                    CryptographyFactory.create(),
+                    FileSystemManager.create(configuration),
+                    recycleBin);
+            final ReservedSignedState initialState = getInitialState(
+                    platformContext,
+                    appMain.getSoftwareVersion(),
+                    appMain::newMerkleStateRoot,
+                    SignedStateFileUtils::readState,
+                    appMain.getClass().getName(),
+                    appDefinition.getSwirldName(),
+                    nodeId,
+                    appDefinition.getConfigAddressBook());
             final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
-                    appMain::newMerkleStateRoot,
-                    SignedStateFileUtils::readState,
+                    initialState,
                     nodeId);
 
             if (showUi && index == 0) {
@@ -227,7 +260,14 @@ public class Browser {
             }
 
             final SwirldsPlatform platform =
-                    (SwirldsPlatform) builder.withConfiguration(configuration).build();
+                    (SwirldsPlatform) builder.withConfiguration(configuration)
+                            .withMetrics(guiMetrics)
+                            .withFileSystemManager(platformContext.getFileSystemManager())
+                            .withTime(platformContext.getTime())
+                            .withCryptography(platformContext.getCryptography())
+                            .withAddressBook(appDefinition.getConfigAddressBook())
+                            .withRecycleBin(recycleBin)
+                            .build();
             platforms.put(nodeId, platform);
 
             if (showUi) {

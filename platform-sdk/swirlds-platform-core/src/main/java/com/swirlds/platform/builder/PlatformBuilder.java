@@ -17,34 +17,23 @@
 package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
-import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
-import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
-import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -55,12 +44,8 @@ import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.legacy.LegacyConfigProperties;
-import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
@@ -74,10 +59,7 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
@@ -85,7 +67,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -97,7 +78,6 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -110,8 +90,7 @@ public final class PlatformBuilder {
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
-    private final Supplier<MerkleRoot> genesisStateBuilder;
-    private final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader;
+    private final ReservedSignedState initialState;
     private final NodeId selfId;
     private final String swirldName;
 
@@ -129,7 +108,7 @@ public final class PlatformBuilder {
     /**
      * An address book that is used to bootstrap the system. Traditionally read from config.txt.
      */
-    private AddressBook bootstrapAddressBook;
+    private AddressBook addressBook;
 
     private Roster roster;
 
@@ -178,19 +157,16 @@ public final class PlatformBuilder {
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
-     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
-     * @param snapshotStateReader a function to read an existing state snapshot, if exists
+     * @param initialState        a supplier that will be called to create the genesis state, if necessary
      */
     @NonNull
     public static PlatformBuilder create(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull final ReservedSignedState initialState,
             @NonNull final NodeId selfId) {
-        return new PlatformBuilder(
-                appName, swirldName, softwareVersion, genesisStateBuilder, snapshotStateReader, selfId);
+        return new PlatformBuilder(appName, swirldName, softwareVersion, initialState, selfId);
     }
 
     /**
@@ -200,23 +176,20 @@ public final class PlatformBuilder {
      *                              disk
      * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
      * @param softwareVersion       the software version of the application
-     * @param genesisStateBuilder   a supplier that will be called to create the genesis state, if necessary
-     * @param snapshotStateReader   a function to read an existing state snapshot, if exists
+     * @param initialState   a supplier that will be called to create the genesis state, if necessary
      * @param selfId                the ID of this node
      */
     private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull final ReservedSignedState initialState,
             @NonNull final NodeId selfId) {
 
         this.appName = Objects.requireNonNull(appName);
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
-        this.snapshotStateReader = Objects.requireNonNull(snapshotStateReader);
+        this.initialState = Objects.requireNonNull(initialState);
         this.selfId = Objects.requireNonNull(selfId);
 
         StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
@@ -361,23 +334,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Register a callback that is called when a stale self event is detected (i.e. an event that will never reach
-     * consensus). Depending on the use case, it may be a good idea to resubmit the transactions in the stale event.
-     * <p>
-     * Stale event detection is guaranteed to catch all stale self events as long as the node remains online. However,
-     * if the node restarts or reconnects, any event that went stale "in the gap" may not be detected.
-     *
-     * @param staleEventConsumer the callback to register
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<PlatformEvent> staleEventConsumer) {
-        throwIfAlreadyUsed();
-        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
-        return this;
-    }
-
-    /**
      * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
      * the config.txt file.
      *
@@ -385,9 +341,9 @@ public final class PlatformBuilder {
      * @return this
      */
     @NonNull
-    public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
+    public PlatformBuilder withAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
         throwIfAlreadyUsed();
-        this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        this.addressBook = Objects.requireNonNull(bootstrapAddressBook);
         return this;
     }
 
@@ -444,18 +400,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Parse the address book from the config.txt file.
-     *
-     * @return the address book
-     */
-    @NonNull
-    private AddressBook loadConfigAddressBook() {
-        final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
-        legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
-        return legacyConfig.getAddressBook();
-    }
-
-    /**
      * Throw an exception if this builder has been used to build a platform or a platform factory.
      */
     private void throwIfAlreadyUsed() {
@@ -476,38 +420,9 @@ public final class PlatformBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        if (configuration == null) {
-            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-            rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
-                    configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
-            configuration = configurationBuilder.build();
-            checkConfiguration(configuration);
-        }
-
-        if (time == null) {
-            time = Time.getCurrent();
-        }
-
-        if (metrics == null) {
-            setupGlobalMetrics(configuration);
-            metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        }
-
-        if (cryptography == null) {
-            cryptography = CryptographyFactory.create();
-        }
         final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         CryptographyHolder.set(cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
-
-        if (fileSystemManager == null) {
-            fileSystemManager = FileSystemManager.create(configuration);
-        }
-
-        if (recycleBin == null) {
-            recycleBin = RecycleBin.create(
-                    metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-        }
 
         if (executorFactory == null) {
             executorFactory = ExecutorFactory.create("platform", null, DEFAULT_UNCAUGHT_EXCEPTION_HANDLER);
@@ -518,66 +433,7 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        final AddressBook boostrapAddressBook =
-                this.bootstrapAddressBook == null ? loadConfigAddressBook() : this.bootstrapAddressBook;
-
         checkNodesToRun(List.of(selfId));
-
-        final KeysAndCerts keysAndCerts = this.keysAndCerts == null
-                ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId)
-                : this.keysAndCerts;
-
-        // the AddressBook is not changed after this point, so we calculate the hash now
-        platformContext.getCryptography().digestSync(boostrapAddressBook);
-
-        final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                softwareVersion,
-                genesisStateBuilder,
-                snapshotStateReader,
-                appName,
-                swirldName,
-                selfId,
-                boostrapAddressBook);
-
-        final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
-
-        // Initialize the address book from the configuration and platform saved state.
-        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                selfId,
-                softwareVersion,
-                softwareUpgrade,
-                initialState.get(),
-                boostrapAddressBook.copy(),
-                platformContext);
-
-        if (addressBookInitializer.hasAddressBookChanged()) {
-            final MerkleRoot state = initialState.get().getState();
-            // Update the address book with the current address book read from config.txt.
-            // Eventually we will not do this, and only transactions will be capable of
-            // modifying the address book.
-            final PlatformStateAccessor platformState = state.getPlatformState();
-            platformState.bulkUpdate(v -> {
-                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
-                v.setPreviousAddressBook(
-                        addressBookInitializer.getPreviousAddressBook() == null
-                                ? null
-                                : addressBookInitializer
-                                        .getPreviousAddressBook()
-                                        .copy());
-            });
-        }
-
-        // At this point the initial state must have the current address book set.  If not, something is wrong.
-        final AddressBook addressBook =
-                initialState.get().getState().getPlatformState().getAddressBook();
-        if (addressBook == null) {
-            throw new IllegalStateException("The current address book of the initial state is null.");
-        }
-
-        if (roster == null) {
-            roster = createRoster(boostrapAddressBook);
-        }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
