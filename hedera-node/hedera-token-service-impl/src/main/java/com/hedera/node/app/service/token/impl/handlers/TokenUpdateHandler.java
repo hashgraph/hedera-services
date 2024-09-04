@@ -489,7 +489,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * If the original token has RoleKey, only then updating role key is possible. Otherwise, fail with TOKEN_IS_IMMUTABLE.
+     * If the original token has RoleKey, only then updating role key is possible. Otherwise,
+     * fail with TOKEN_IS_IMMUTABLE.
      * If the original token has AdminKey, then require the admin key to sign the transaction. Otherwise, require the
      * role key to sign the transaction.
      * If the original token has neither AdminKey nor RoleKey, then fail with TOKEN_IS_IMMUTABLE.
@@ -534,7 +535,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Checks if the token update transaction body has any key removals, by using immutable sentinel keys to remove the key.
+     * Checks if the token update transaction body has any key removals, by using immutable sentinel keys
+     * to remove the key.
      * @param op token update transaction body
      * @return true if the token update transaction body has any key removals, false otherwise
      */

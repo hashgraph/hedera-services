@@ -35,7 +35,7 @@ public class DispatchPredicate implements Predicate<Key> {
     /**
      * Create a new DispatchPredicate using the given set of keys as deemed-valid.
      *
-     * @param preValidatedKeys an <strong>unmodifiable</strong> {@link Set<Key>} of primitive keys
+     * @param preValidatedKeys an <strong>unmodifiable</strong> {@code Set<Key>} of primitive keys
      *         previously verified.
      */
     public DispatchPredicate(@NonNull final Set<Key> preValidatedKeys) {

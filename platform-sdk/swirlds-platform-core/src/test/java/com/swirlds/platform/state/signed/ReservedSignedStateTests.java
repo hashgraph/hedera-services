@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

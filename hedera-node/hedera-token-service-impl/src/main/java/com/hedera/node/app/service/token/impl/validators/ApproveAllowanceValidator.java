@@ -53,7 +53,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class validates the {@link CryptoApproveAllowanceTransactionBody} transaction
+ * This class validates the {@link CryptoApproveAllowanceTransactionBody} transaction.
  */
 @Singleton
 public class ApproveAllowanceValidator extends AllowanceValidator {
@@ -104,7 +104,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
     }
 
     /**
-     * Validates the CryptoAllowances given in {@link CryptoApproveAllowanceTransactionBody}
+     * Validates the CryptoAllowances given in {@link CryptoApproveAllowanceTransactionBody}.
      * @param cryptoAllowances crypto allowances list
      * @param payer payer account for the approveAllowance txn
      * @param accountStore readable account store
@@ -173,7 +173,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
     }
 
     /**
-     * Validate nft allowances list in {@link CryptoApproveAllowanceTransactionBody}
+     * Validate nft allowances list in {@link CryptoApproveAllowanceTransactionBody}.
      * @param nftAllowancesList nft allowances
      * @param payer payer for approveAllowance txn
      * @param accountStore account store

@@ -61,7 +61,7 @@ public enum TokenKey {
         }
 
         @Override
-        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
+        public void setOn(Token.Builder builder, TokenUpdateTransactionBody update) {
             builder.adminKey(getNewKeyValue(update.adminKey()));
         }
 
@@ -378,7 +378,7 @@ public enum TokenKey {
      * @param builder the token builder
      * @param update the update transaction body
      */
-    public abstract void setOn(final Token.Builder builder, TokenUpdateTransactionBody update);
+    public abstract void setOn(Token.Builder builder, TokenUpdateTransactionBody update);
 
     /**
      * Get the key from the update transaction body.
@@ -435,7 +435,8 @@ public enum TokenKey {
     }
 
     /**
-     * Get the new key value. If the key is a sentinel key used for key removals, return null. Otherwise, return the key.
+     * Get the new key value. If the key is a sentinel key used for key removals, return null. Otherwise,
+     * return the key.
      * @param newKey the new key
      * @return the new key value
      */

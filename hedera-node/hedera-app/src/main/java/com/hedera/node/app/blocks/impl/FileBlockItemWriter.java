@@ -156,7 +156,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * {@inheritDoc}
      */
     @Override
-    public void writeItem(@NonNull Bytes serializedItem) {
+    public FileBlockItemWriter writeItem(@NonNull Bytes serializedItem) {
         requireNonNull(serializedItem, "The supplied argument 'serializedItem' cannot be null!");
         if (serializedItem.length() <= 0) throw new IllegalArgumentException("Item must be non-empty");
         if (state != State.OPEN) {
@@ -170,6 +170,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
         writableStreamingData.writeVarInt((int) serializedItem.length(), false);
         // Write the item bytes themselves.
         serializedItem.writeTo(writableStreamingData);
+        return this;
     }
 
     /**
@@ -191,11 +192,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
             logger.error("Error closing the FileBlockItemWriter output stream", e);
             throw new UncheckedIOException(e);
         }
-    }
-
-    @Override
-    public boolean isClosed() {
-        return state == State.CLOSED;
     }
 
     /**

@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -40,7 +41,7 @@ public class EventMigrationTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(new HederaSoftwareVersion());
+        StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
     }
 
     /**

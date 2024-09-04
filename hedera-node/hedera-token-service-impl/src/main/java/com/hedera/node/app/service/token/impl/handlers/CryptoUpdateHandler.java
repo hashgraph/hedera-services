@@ -173,7 +173,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     }
 
     /**
-     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object
+     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object.
      * @param op Crypto update transaction body
      * @return builder
      */
