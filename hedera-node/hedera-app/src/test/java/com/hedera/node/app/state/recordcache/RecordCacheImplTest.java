@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -55,6 +56,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.ListWritableQueueState;
@@ -410,8 +412,8 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
-        @DisplayName("Query for receipt for a txn with a proper record (block items)")
-        void queryForReceiptForTxnWithRecordBlockItems(@NonNull final ResponseCodeEnum status) {
+        @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
+        void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -459,6 +461,34 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
+        void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache using addBlockItems
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(getReceipts(cache, txId)).containsExactly(receipt);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record")
         void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
@@ -473,6 +503,34 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // When the record is added to the cache
             cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(getReceipts(cache, PAYER_ACCOUNT_ID)).containsExactly(receipt);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for receipts for an account ID with a proper record using addBlockItems")
+        void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can query for the receipt by transaction ID
             assertThat(getReceipts(cache, PAYER_ACCOUNT_ID)).containsExactly(receipt);
@@ -503,6 +561,44 @@ final class RecordCacheImplTest extends AppTestBase {
                             0,
                             PAYER_ACCOUNT_ID,
                             List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+                }
+            }
+
+            // When we query for the receipts for the payer account ID
+            final var receipts = getReceipts(cache, PAYER_ACCOUNT_ID);
+
+            // Then we get back the most recent recordsMaxQueryableByAccount receipts
+            assertThat(receipts).hasSize(MAX_QUERYABLE_PER_ACCOUNT);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {20, 30, 40})
+        @DisplayName(
+                "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records using addBlockItems")
+        void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
+            // Given a number of transactions with several records each, all for the same payer
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            // Normally consensus time is AFTER the transaction ID time by a couple of seconds
+            var consensusTime = Instant.now().plusSeconds(2);
+            for (int i = 0; i < numRecords; i++) {
+                final var txId = transactionID(i);
+                final var tx = simpleCryptoTransfer(txId);
+                for (int j = 0; j < 3; j++) {
+                    consensusTime = consensusTime.plus(1, ChronoUnit.NANOS);
+                    final var status = j == 0 ? OK : DUPLICATE_TRANSACTION;
+                    List<BlockItem> blockItems = new ArrayList<>();
+                    BlockItem eventTransaction = BlockItem.newBuilder()
+                            .eventTransaction(EventTransaction.newBuilder()
+                                    .applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                            .build();
+                    BlockItem transactionResult = BlockItem.newBuilder()
+                            .transactionResult(TransactionResult.newBuilder()
+                                    .status(status)
+                                    .consensusTimestamp(Timestamp.DEFAULT))
+                            .build();
+                    blockItems.add(eventTransaction);
+                    blockItems.add(transactionResult);
+                    cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
                 }
             }
 
@@ -603,6 +699,41 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for record for a txn with a proper record using addBlockItems")
+        void queryForRecordForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .consensusTimestamp(Timestamp.DEFAULT)
+                    .transactionHash(Bytes.wrap(
+                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
+                    .receipt(receipt)
+                    .build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(getRecord(cache, txId)).isEqualTo(record);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for a txn with a proper record")
         void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
@@ -617,6 +748,41 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // When the record is added to the cache
             cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(getRecords(cache, txId)).containsExactly(record);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for records for a txn with a proper record using addBlockItems")
+        void queryForRecordsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .consensusTimestamp(Timestamp.DEFAULT)
+                    .transactionHash(Bytes.wrap(
+                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
+                    .receipt(receipt)
+                    .build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can query for the receipt by transaction ID
             assertThat(getRecords(cache, txId)).containsExactly(record);
@@ -660,6 +826,67 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(userRecord).isEqualTo(classifiableRecord);
         }
 
+        @Test
+        void unclassifiableStatusIsNotPriorityUsingAddBlockItems() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var unclassifiableReceipt =
+                    TransactionReceipt.newBuilder().status(INVALID_NODE_ACCOUNT).build();
+            final var unclassifiableRecord = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(unclassifiableReceipt)
+                    .consensusTimestamp(Timestamp.DEFAULT)
+                    .transactionHash(Bytes.wrap(
+                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
+                    .build();
+            List<BlockItem> unclassifiableBlockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(TransactionResult.newBuilder()
+                            .status(INVALID_NODE_ACCOUNT)
+                            .consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            unclassifiableBlockItems.add(eventTransaction);
+            unclassifiableBlockItems.add(transactionResult);
+            final var classifiableReceipt =
+                    TransactionReceipt.newBuilder().status(SUCCESS).build();
+            final var classifiableRecord = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(classifiableReceipt)
+                    .consensusTimestamp(Timestamp.DEFAULT)
+                    .transactionHash(Bytes.wrap(
+                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
+                    .build();
+            List<BlockItem> classifiableBlockItems = new ArrayList<>();
+            eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(SUCCESS).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            classifiableBlockItems.add(eventTransaction);
+            classifiableBlockItems.add(transactionResult);
+
+            // When the unclassifiable record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, unclassifiableBlockItems);
+            // It does not prevent a "good" record from using this transaction id
+            assertThat(cache.hasDuplicate(txId, 0L)).isEqualTo(NO_DUPLICATE);
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, classifiableBlockItems);
+
+            // And we get the success record from userTransactionRecord()
+            assertThat(cache.getHistory(txId)).isNotNull();
+            final var userRecord =
+                    Objects.requireNonNull(cache.getHistory(txId)).userTransactionRecord();
+            assertThat(userRecord).isEqualTo(classifiableRecord);
+        }
+
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for an account ID with a proper record")
@@ -676,6 +903,41 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // When the record is added to the cache
             cache.add(0, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can query for the receipt by transaction ID
+            assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).containsExactly(record);
+        }
+
+        @ParameterizedTest
+        @MethodSource("receiptStatusCodes")
+        @DisplayName("Query for records for an account ID with a proper record using addBlockItems")
+        void queryForRecordsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            final var receipt = TransactionReceipt.newBuilder().status(status).build();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .consensusTimestamp(Timestamp.DEFAULT)
+                    .transactionHash(Bytes.wrap(
+                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
+                    .receipt(receipt)
+                    .build();
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(
+                            TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(0, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).containsExactly(record);
@@ -741,6 +1003,31 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
+        @DisplayName("Check duplicate for txn with a proper record from other node using addBlockItems")
+        void duplicateCheckForTxnFromOtherNodeUsingAddBlockItems() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(1L, PAYER_ACCOUNT_ID, blockItems);
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 2L)).isEqualTo(OTHER_NODE);
+        }
+
+        @Test
         @DisplayName("Check duplicate for txn with a proper record from same node")
         void duplicateCheckForTxnFromSameNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
@@ -755,6 +1042,31 @@ final class RecordCacheImplTest extends AppTestBase {
 
             // When the record is added to the cache
             cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 1L)).isEqualTo(SAME_NODE);
+        }
+
+        @Test
+        @DisplayName("Check duplicate for txn with a proper record from same node using addBlockItems")
+        void duplicateCheckForTxnFromSameNodeUsingAddBlockItems() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(1L, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, 1L)).isEqualTo(SAME_NODE);
@@ -782,6 +1094,33 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(cache.hasDuplicate(txId, 11L)).isEqualTo(OTHER_NODE);
         }
 
+        @Test
+        @DisplayName("Check duplicate for txn with a proper record from several other nodes using addBlockitems")
+        void duplicateCheckForTxnFromMultipleOtherNodesUsingAddBlockItems() {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(1L, PAYER_ACCOUNT_ID, blockItems);
+            cache.addBlockItems(2L, PAYER_ACCOUNT_ID, blockItems);
+            cache.addBlockItems(3L, PAYER_ACCOUNT_ID, blockItems);
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, 11L)).isEqualTo(OTHER_NODE);
+        }
+
         @ParameterizedTest
         @ValueSource(longs = {1L, 2L, 3L})
         @DisplayName("Check duplicate for txn with a proper record from several nodes including the current")
@@ -800,6 +1139,35 @@ final class RecordCacheImplTest extends AppTestBase {
             cache.add(1L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
             cache.add(2L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
             cache.add(3L, PAYER_ACCOUNT_ID, List.of(new SingleTransactionRecord(tx, record, List.of(), SIMPLE_OUTPUT)));
+
+            // Then we can check for a duplicate by transaction ID
+            assertThat(cache.hasDuplicate(txId, currentNodeId)).isEqualTo(SAME_NODE);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {1L, 2L, 3L})
+        @DisplayName(
+                "Check duplicate for txn with a proper record from several nodes including the current using addBlockItems")
+        void duplicateCheckForTxnFromMultipleNodesIncludingCurrentUsingAddBlockItems(final long currentNodeId) {
+            // Given a transaction known to the de-duplication cache but not the record cache
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            final var txId = transactionID();
+            final var tx = simpleCryptoTransfer(txId);
+            List<BlockItem> blockItems = new ArrayList<>();
+            BlockItem eventTransaction = BlockItem.newBuilder()
+                    .eventTransaction(
+                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
+                    .build();
+            BlockItem transactionResult = BlockItem.newBuilder()
+                    .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
+                    .build();
+            blockItems.add(eventTransaction);
+            blockItems.add(transactionResult);
+
+            // When the record is added to the cache
+            cache.addBlockItems(1L, PAYER_ACCOUNT_ID, blockItems);
+            cache.addBlockItems(2L, PAYER_ACCOUNT_ID, blockItems);
+            cache.addBlockItems(3L, PAYER_ACCOUNT_ID, blockItems);
 
             // Then we can check for a duplicate by transaction ID
             assertThat(cache.hasDuplicate(txId, currentNodeId)).isEqualTo(SAME_NODE);
