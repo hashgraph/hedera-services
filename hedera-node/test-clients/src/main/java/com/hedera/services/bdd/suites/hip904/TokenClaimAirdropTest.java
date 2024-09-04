@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -730,6 +730,34 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("both associated and not associated FTs and receiver sig required")
+    final Stream<DynamicTest> withTwoTokensAndReceiverSigReq() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(flattened(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(0)
+                        .receiverSigRequired(true),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createFT(FUNGIBLE_TOKEN_2, ALICE, 1000L),
+                tokenAssociate(BOB, FUNGIBLE_TOKEN_1),
+                tokenAirdrop(
+                                moving(10, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                                moving(10, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 0),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 0),
+                tokenClaimAirdrop(
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 10)));
+    }
+
+    @HapiTest
     @DisplayName("multiple FT airdrops to same receiver")
     final Stream<DynamicTest> multipleFtAirdropsSameReceiver() {
         final String BOB = "BOB";
@@ -743,6 +771,25 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .signedBy(BOB)
                         .payingWith(BOB),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 30)));
+    }
+
+    @HapiTest
+    @DisplayName("not associated FT and receiver sig required")
+    final Stream<DynamicTest> notAssociatedFTAndReceiverSigRequired() {
+        final String BOB = "BOB";
+        final String ALICE = "ALICE";
+        return hapiTest(flattened(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(5)
+                        .receiverSigRequired(true),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10)));
     }
 
     @HapiTest

@@ -65,8 +65,7 @@ public class TokenTypesDumpUtils {
     public static List<Pair<String, BiConsumer<FieldBuilder, BBMToken>>> tokenTypeFieldFormatters = List.of(
             Pair.of(
                     "tokenType",
-                    getFieldFormatter(
-                            BBMToken::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
+                    getFieldFormatter(BBMToken::tokenType, com.hedera.node.app.hapi.utils.TokenType::name)),
             Pair.of("tokenSupplyType", getFieldFormatter(BBMToken::tokenSupplyType, TokenSupplyType::name)),
             Pair.of("tokenTypeId", getFieldFormatter(BBMToken::tokenTypeId, Object::toString)),
             Pair.of("symbol", getFieldFormatter(BBMToken::symbol, csvQuote)),
@@ -314,7 +313,7 @@ public class TokenTypesDumpUtils {
                 (JKey) LegacyTypeUtils.fromPbjKey(token.supplyKey()).orElse(null);
         final var wipeKey = (JKey) LegacyTypeUtils.fromPbjKey(token.wipeKey()).orElse(null);
         final BBMToken tokenRes = new BBMToken(
-                com.hedera.node.app.service.evm.store.tokens.TokenType.valueOf(
+                com.hedera.node.app.hapi.utils.TokenType.valueOf(
                         token.tokenType().protoName()),
                 token.supplyType(),
                 token.tokenIdOrThrow().tokenNum(),

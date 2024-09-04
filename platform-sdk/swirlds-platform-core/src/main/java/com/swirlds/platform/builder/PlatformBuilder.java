@@ -514,7 +514,14 @@ public final class PlatformBuilder {
         }
 
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, metrics, cryptography, time, executorFactory, fileSystemManager, recycleBin);
+                configuration,
+                metrics,
+                cryptography,
+                time,
+                executorFactory,
+                fileSystemManager,
+                recycleBin,
+                merkleCryptography);
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
@@ -559,7 +566,6 @@ public final class PlatformBuilder {
             final PlatformStateAccessor platformState = state.getPlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
-
                 v.setPreviousAddressBook(
                         addressBookInitializer.getPreviousAddressBook() == null
                                 ? null

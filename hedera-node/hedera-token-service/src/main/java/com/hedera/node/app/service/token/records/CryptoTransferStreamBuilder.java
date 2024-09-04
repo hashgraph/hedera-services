@@ -34,7 +34,7 @@ import java.util.List;
 public interface CryptoTransferStreamBuilder extends StreamBuilder {
     /**
      * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
-     * (accounts are specified in the {@code TransferList} input param)
+     * (accounts are specified in the {@code TransferList} input param).
      *
      * @param hbarTransfers the net list of adjustments to make to account balances
      * @return this builder
@@ -44,7 +44,7 @@ public interface CryptoTransferStreamBuilder extends StreamBuilder {
 
     /**
      * Tracks the <b>net</b> token transfers that need to be applied to the associated accounts,
-     * including both fungible and non-fungible types
+     * including both fungible and non-fungible types.
      *
      * @param tokenTransferLists the net list of balance or ownership changes for the given
      *                           fungible and non-fungible tokens
@@ -54,19 +54,19 @@ public interface CryptoTransferStreamBuilder extends StreamBuilder {
     CryptoTransferStreamBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
 
     /**
-     * Tracks the total custom fees assessed in the transaction
+     * Tracks the total custom fees assessed in the transaction.
      * @param assessedCustomFees the total custom fees assessed in the transaction
      * @return this builder
      */
     @NonNull
-    CryptoTransferStreamBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees);
+    CryptoTransferStreamBuilder assessedCustomFees(@NonNull List<AssessedCustomFee> assessedCustomFees);
 
     /**
-     * Tracks the total amount of hbars paid as staking rewards in the transaction
+     * Tracks the total amount of hbars paid as staking rewards in the transaction.
      * @param paidStakingRewards the total amount of hbars paid as staking rewards
      * @return this builder
      */
-    CryptoTransferStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards);
+    CryptoTransferStreamBuilder paidStakingRewards(@NonNull List<AccountAmount> paidStakingRewards);
 
     /**
      * Adds the token relations that are created by auto associations.
@@ -74,7 +74,7 @@ public interface CryptoTransferStreamBuilder extends StreamBuilder {
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    CryptoTransferStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    CryptoTransferStreamBuilder addAutomaticTokenAssociation(@NonNull TokenAssociation tokenAssociation);
 
     /**
      * Tracks the result of a contract call, if any. It is used to update the transaction record.

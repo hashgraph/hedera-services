@@ -79,7 +79,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the id of the token to be retrieved.
-     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists.
+     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists
      */
     @NonNull
     public Optional<Token> getForModify(final TokenID tokenId) {
@@ -90,7 +90,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
 
     /**
      * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of tokens in the state
      */
     public long sizeOfState() {
         return tokenState.size();

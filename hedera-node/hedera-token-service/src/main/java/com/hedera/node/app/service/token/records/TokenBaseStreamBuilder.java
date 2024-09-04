@@ -29,5 +29,5 @@ public interface TokenBaseStreamBuilder extends StreamBuilder {
      * @param tokenType the token type
      * @return this builder
      */
-    TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType);
+    TokenBaseStreamBuilder tokenType(@NonNull TokenType tokenType);
 }
