@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -46,7 +47,7 @@ public class TopicCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(EntityType.TOPIC);
+                final var createdNum = baseTranslator.nextCreatedNum(TOPIC);
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();

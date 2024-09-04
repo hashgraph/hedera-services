@@ -56,8 +56,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures,
-            com.hedera.node.test.clients,
-            com.hedera.node.app.hapi.utils;
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.ingest to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.query to
