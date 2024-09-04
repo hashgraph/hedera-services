@@ -354,7 +354,7 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null)
+                .errorMessage("")
                 .signerNonce(signerNonce);
     }
 
@@ -365,7 +365,7 @@ public record HederaEvmTransactionResult(
                 .contractCallResult(output)
                 .contractID(recipientId)
                 .logInfo(pbjLogsFrom(logs))
-                .errorMessage(null)
+                .errorMessage("")
                 .signerNonce(signerNonce)
                 .build();
     }
