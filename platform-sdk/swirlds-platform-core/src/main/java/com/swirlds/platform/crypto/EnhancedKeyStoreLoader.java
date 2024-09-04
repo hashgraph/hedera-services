@@ -319,6 +319,12 @@ public class EnhancedKeyStoreLoader {
 
         for (final NodeId node : localNodes) {
             if (!agrPrivateKeys.containsKey(node)) {
+                final String alias = nameToAlias(addressBook.getAddress(node).getSelfName());
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Generating agreement key pair for local node {} [ alias = {} ]",
+                        node,
+                        alias);
                 // Generate a new agreement key since it does not exist
                 final KeyPair agrKeyPair = KeysAndCerts.generateAgreementKeyPair();
                 agrPrivateKeys.put(node, agrKeyPair.getPrivate());
@@ -330,8 +336,7 @@ public class EnhancedKeyStoreLoader {
                 final KeyPair signingKeyPair = new KeyPair(publicSigningKey, privateSigningKey);
 
                 // generate the agreement certificate
-                final String dnA = CryptoStatic.distinguishedName(KeyCertPurpose.AGREEMENT.storeName(
-                        nameToAlias(addressBook.getAddress(node).getSelfName())));
+                final String dnA = CryptoStatic.distinguishedName(KeyCertPurpose.AGREEMENT.storeName(alias));
                 final X509Certificate agrCert = CryptoStatic.generateCertificate(
                         dnA,
                         agrKeyPair,
@@ -391,16 +396,17 @@ public class EnhancedKeyStoreLoader {
                     throw new KeyLoadingException("No private key found for node %s [ alias = %s, purpose = %s ]"
                             .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
                 }
+
+                // the agreement certificate must be present for local nodes
+                if (!agrCertificates.containsKey(nodeId)) {
+                    throw new KeyLoadingException("No certificate found for node %s [ alias = %s, purpose = %s ]"
+                            .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+                }
             }
 
             if (!sigCertificates.containsKey(nodeId)) {
                 throw new KeyLoadingException("No certificate found for node %s [ alias = %s, purpose = %s ]"
                         .formatted(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
-            }
-
-            if (!agrCertificates.containsKey(nodeId)) {
-                throw new KeyLoadingException("No certificate found for node %s [ alias = %s, purpose = %s ]"
-                        .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
             }
         });
 
@@ -441,19 +447,14 @@ public class EnhancedKeyStoreLoader {
 
         iterateAddressBook(validatingBook, (i, nodeId, address, nodeAlias) -> {
             final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, nodeAlias);
-            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, nodeAlias);
 
             if (sigCert == null) {
                 throw new KeyLoadingException(
                         "No signing certificate found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
             }
 
-            if (agrCert == null) {
-                throw new KeyLoadingException(
-                        "No agreement certificate found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
-            }
-
             if (localNodes.contains(nodeId)) {
+                final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, nodeAlias);
                 final PrivateKey sigPrivateKey = sigPrivateKeys.get(nodeId);
                 final PrivateKey agrPrivateKey = agrPrivateKeys.get(nodeId);
 
@@ -465,6 +466,12 @@ public class EnhancedKeyStoreLoader {
                 if (agrPrivateKey == null) {
                     throw new KeyLoadingException(
                             "No agreement private key found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
+                }
+
+                // the agreement certificate must be present for local nodes
+                if (agrCert == null) {
+                    throw new KeyLoadingException(
+                            "No agreement certificate found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
                 }
 
                 final KeyPair sigKeyPair = new KeyPair(sigCert.getPublicKey(), sigPrivateKey);
@@ -550,14 +557,22 @@ public class EnhancedKeyStoreLoader {
                                 .formatted(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
             }
 
-            if (!(agrCert instanceof X509Certificate)) {
-                throw new KeyLoadingException(
-                        "Illegal agreement certificate type for node %s [ alias = %s, purpose = %s ]"
-                                .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+            if (isLocal(address)) {
+                //The agreement certificate is loaded by the local nodes and provided to peers through mTLS handshaking
+                logger.trace(
+                        STARTUP.getMarker(),
+                        "Injecting agreement certificate for local node {} [ alias = {} ] into public stores",
+                        nodeId,
+                        nodeAlias);
+                if (!(agrCert instanceof X509Certificate)) {
+                    throw new KeyLoadingException(
+                            "Illegal agreement certificate type for node %s [ alias = %s, purpose = %s ]"
+                                    .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+                }
+                publicStores.setCertificate(KeyCertPurpose.AGREEMENT, (X509Certificate) agrCert, nodeAlias);
             }
 
             publicStores.setCertificate(KeyCertPurpose.SIGNING, (X509Certificate) sigCert, nodeAlias);
-            publicStores.setCertificate(KeyCertPurpose.AGREEMENT, (X509Certificate) agrCert, nodeAlias);
         });
 
         return publicStores;
