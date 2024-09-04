@@ -432,7 +432,7 @@ Each event must be validated using the roster associated with its birth-round. I
 receives an event for a birth-round she doesn't have the roster for, then she cannot validate the event. So the Event
 Intake module will drop events with a birth-round too far in the future.
 
-If the event has been dropped, it is possible to fetch missing events from neighbors using Gossip or, if the nodes has
+If the event has been dropped, it is possible to fetch missing events from neighbors using Gossip or, if the node has
 fallen so far behind it can no longer fetch events from neighbors in gossip, then the node will reconnect.
 
 #### Self Events
