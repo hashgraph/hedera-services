@@ -19,7 +19,7 @@ package com.swirlds.state.spi;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -42,8 +42,8 @@ public final class HapiUtils {
             .thenComparingInt(semVer -> HapiUtils.parsedAlphaIntOrMaxValue(semVer.pre()))
             .thenComparingInt(semVer -> HapiUtils.parsedIntOrZero(semVer.build()));
 
-    private static int parsedAlphaIntOrMaxValue(@Nullable final String s) {
-        if (s == null || s.isBlank() || !s.startsWith(ALPHA_PREFIX)) {
+    private static int parsedAlphaIntOrMaxValue(@NonNull final String s) {
+        if (s.isBlank() || !s.startsWith(ALPHA_PREFIX)) {
             return Integer.MAX_VALUE;
         } else {
             try {
@@ -54,8 +54,8 @@ public final class HapiUtils {
         }
     }
 
-    private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null || s.isBlank() || "0".equals(s)) {
+    private static int parsedIntOrZero(@NonNull final String s) {
+        if (s.isBlank() || "0".equals(s)) {
             return 0;
         } else {
             try {
