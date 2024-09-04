@@ -111,16 +111,12 @@ public class TurtleNode {
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)
                 .withModel(model)
-                .withCryptography(platformContext.getCryptography())
-                .withMetrics(platformContext.getMetrics())
-                .withTime(platformContext.getTime())
-                .withFileSystemManager(platformContext.getFileSystemManager())
-                .withRecycleBin(platformContext.getRecycleBin())
-                .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withAddressBook(addressBook)
                 .withRoster(createRoster(addressBook))
-                .withKeysAndCerts(privateKeys);
+                .withKeysAndCerts(privateKeys)
+                .withPlatformContext(platformContext)
+                .withConfiguration(configuration);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
 
