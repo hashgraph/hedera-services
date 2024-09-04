@@ -34,9 +34,9 @@ Based on this given constraints the `module-info.java` of an api module looks li
 ```
 module com.hedera.node.app.service.foo {
     exports com.hedera.node.app.service.foo;
-    
+
     uses com.hedera.node.app.service.foo.FooService;
-    
+
     requires transitive com.hedera.node.app.spi;
 }
 ```
@@ -154,10 +154,10 @@ module com.hedera.node.app.service.foo.impl {
     requires transitive com.hedera.node.app.service.foo;
 
     provides com.hedera.node.app.service.foo.FooService with
-			 com.hedera.node.app.service.foo.impl.FooServiceImpl;
+             com.hedera.node.app.service.foo.impl.FooServiceImpl;
 
     exports com.hedera.node.app.service.foo.impl to
-			com.hedera.node.app.service.foo.impl.itest;
+            com.hedera.node.app.service.foo.impl.itest;
 }
 ```
 
@@ -184,18 +184,18 @@ import org.junit.jupiter.api.Test;
 
 class FooServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final FooService service = FooService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final FooService service = FooService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				FooServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type " + FooServiceImpl.class.getName());
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                FooServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + FooServiceImpl.class.getName());
+    }
 }
 ```
 

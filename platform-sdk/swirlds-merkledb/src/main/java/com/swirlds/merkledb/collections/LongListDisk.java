@@ -323,19 +323,19 @@ public class LongListDisk extends AbstractLongList<Long> {
             if (currentFileChannel.isOpen()) {
                 currentFileChannel.force(false);
             }
+            // release all chunks
+            super.close();
             // now close
             currentFileChannel.close();
             freeChunks.clear();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        super.close();
     }
 
     /** {@inheritDoc} */
     @Override
-    protected void releaseChunk(@NonNull final Long chunk) {
+    protected void closeChunk(@NonNull final Long chunk) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         fillBufferWithZeroes(transferBuffer);
         try {
