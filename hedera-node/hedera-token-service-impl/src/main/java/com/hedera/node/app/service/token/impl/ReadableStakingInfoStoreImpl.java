@@ -30,15 +30,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Default implementation of {@link ReadableStakingInfoStore}
+ * Default implementation of {@link ReadableStakingInfoStore}.
  */
 public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
     /** The underlying data storage class that holds node staking data. */
     private final ReadableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
+
     /**
      * Create a new {@link ReadableStakingInfoStoreImpl} instance.
-     *
      * @param states The state to use.
      */
     public ReadableStakingInfoStoreImpl(@NonNull final ReadableStates states) {

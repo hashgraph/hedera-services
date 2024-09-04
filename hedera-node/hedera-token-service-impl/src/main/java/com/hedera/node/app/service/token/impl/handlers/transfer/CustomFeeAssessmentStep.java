@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.*;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -67,8 +67,8 @@ import org.apache.logging.log4j.Logger;
  * We do this in 2 steps:
  * 1. Assess custom fees for the transaction body given as input (Level-0 Body)
  * 2. If there are any fractional fees, adjust the assessed changes in the Level-0 Body
- * 3. Any non-self denominated fixed (HBAR or HTS) fees, assess them and create Level-1 Body.
- * But any self denominated fees will be adjusted in Level- 0 Body (since they can't trigger further custom fee charging.)
+ * 3. Any non-self denominated fixed (HBAR or HTS) fees, assess them and create Level-1 Body. But any
+ * self denominated fees will be adjusted in Level- 0 Body (since they can't trigger further custom fee charging.)
  * 4.Any royalty fees which are not self denominated will be added to level-1 body.
  */
 public class CustomFeeAssessmentStep {

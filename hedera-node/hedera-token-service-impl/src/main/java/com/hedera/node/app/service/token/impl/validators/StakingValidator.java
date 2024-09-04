@@ -31,7 +31,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Validations needed for staking related fields in token operations
+ * Validations needed for staking related fields in token operations.
  */
 @Singleton
 public class StakingValidator {
@@ -114,7 +114,7 @@ public class StakingValidator {
     }
 
     /**
-     * Validates staked id if present
+     * Validates staked id if present.
      *
      * @param stakedIdKind           staked id kind (account or node)
      * @param stakedAccountIdInOp    staked account id

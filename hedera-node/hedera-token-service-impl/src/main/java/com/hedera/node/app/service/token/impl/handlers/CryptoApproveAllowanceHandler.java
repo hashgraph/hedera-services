@@ -93,6 +93,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
+     * Validates the transaction body for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
      * @param txn the transaction body
      * @throws PreCheckException if the transaction is invalid for any reason
      */
@@ -196,7 +197,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         approveAllowance(context, payer, accountStore);
     }
     /**
-     * Validate the transaction body fields that include state or configuration
+     * Validate the transaction body fields that include state or configuration.
      * @param context the handle context
      * @param payerAccount the payer account
      * @param accountStore the account store
@@ -213,7 +214,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Apply all changes to the state modifications for crypto, token, and nft allowances
+     * Apply all changes to the state modifications for crypto, token, and nft allowances.
      * @param context the handle context
      * @param payerId the payer account id
      * @param accountStore the account store
@@ -287,14 +288,14 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Updates the crypto allowance amount if the allowance exists, otherwise adds a new allowance
-     * If the amount is zero removes the allowance if it exists in the list
+     * Updates the crypto allowance amount if the allowance exists, otherwise adds a new allowance.
+     * If the amount is zero removes the allowance if it exists in the list.
      * @param mutableAllowances the list of mutable allowances of owner
      * @param amount the amount
      * @param spenderId the spender id
      */
     private void updateCryptoAllowance(
-            final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final AccountID spenderId) {
+            final List<AccountCryptoAllowance> mutableAllowances, final long amount, final AccountID spenderId) {
         final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderId(spenderId);
         // get the index of the allowance with same spender in existing list
         final var index = lookupSpender(mutableAllowances, spenderId);
@@ -314,9 +315,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Applies all changes needed for fungible token allowances from the transaction.If the key
+     * Applies all changes needed for fungible token allowances from the transaction. If the key
      * {token, spender} already has an allowance, the allowance value will be replaced with values
-     * from transaction
+     * from transaction.
      * @param tokenAllowances the list of token allowances
      * @param payerId the payer account id
      * @param accountStore the account store
@@ -360,7 +361,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param tokenId the token number
      */
     private void updateTokenAllowance(
-            final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
+            final List<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
             final AccountID spenderId,
             final TokenID tokenId) {
@@ -434,7 +435,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Updates the spender of the given NFTs to the new spender
+     * Updates the spender of the given NFTs to the new spender.
      * @param tokenStore the token store
      * @param uniqueTokenStore the unique token store
      * @param owner the owner account
@@ -467,7 +468,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Returns the index of the allowance with the given spender in the list if it exists,
-     * otherwise returns -1
+     * otherwise returns -1.
      * @param ownerAllowances list of allowances
      * @param spenderNum spender account number
      * @return index of the allowance if it exists, otherwise -1
@@ -484,7 +485,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Returns the index of the allowance  with the given spender and token in the list if it exists,
-     * otherwise returns -1
+     * otherwise returns -1.
      * @param ownerAllowances list of allowances
      * @param spenderId spender account number
      * @param tokenId token number
@@ -554,7 +555,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Gets total bytes used in transaction
+     * Gets total bytes used in transaction.
      * @param op the crypto approve allowance transaction body
      * @return the total bytes used in transaction
      */
@@ -567,7 +568,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Gets the new bytes that will be added to state from the transaction, if it is successful compared to
-     * what is already present in state
+     * what is already present in state.
      * @param op the crypto approve allowance transaction body
      * @param account the account existing in state
      * @return the new bytes that will be added to state

@@ -28,12 +28,13 @@ import com.hedera.hapi.node.transaction.CustomFee;
  *   <li>A fee collection account is exempt from any fee for which it would be the collector.
  *   <li>A fee collection account is exempt from any of its token's fees with {@code
  *       all_collectors_are_exempt=true}.
- * </ul>
+ * </ul>.
  */
 public final class CustomFeeExemptions {
     private CustomFeeExemptions() {
         throw new UnsupportedOperationException("Utility Class");
     }
+
     /**
      * Given the fee metadata for a token, and one of this token's custom fees, returns whether the
      * given payer is exempt from the specific custom fee provided.

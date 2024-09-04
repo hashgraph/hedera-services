@@ -67,7 +67,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
-     * Persists a new {@link TokenRelation} into the state
+     * Persists a new {@link TokenRelation} into the state.
      *
      * @param tokenRelation - the tokenRelation to be persisted
      */
@@ -83,7 +83,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
-     * Removes a {@link TokenRelation} from the state
+     * Removes a {@link TokenRelation} from the state.
      *
      * @param tokenRelation the {@code TokenRelation} to be removed
      */
@@ -131,6 +131,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
+     * Returns the set of token relations modified in the state.
      * @return the set of token relations modified in existing state
      */
     public Set<EntityIDPair> modifiedTokens() {

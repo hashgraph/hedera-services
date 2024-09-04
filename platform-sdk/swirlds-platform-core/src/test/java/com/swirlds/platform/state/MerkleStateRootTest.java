@@ -29,6 +29,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,7 +44,13 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
@@ -1065,6 +1072,84 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.setChild(1, node2);
 
             assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Hashing test")
+    class HashingTest {
+
+        private MerkleCryptography merkleCryptography;
+
+        @BeforeEach
+        void setUp() {
+            setupAnimalMerkleMap();
+            setupSingletonCountry();
+            setupSteamQueue();
+            setupFruitMerkleMap();
+
+            add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
+            add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
+            add(animalMerkleMap, animalMetadata, C_KEY, CUTTLEFISH);
+            add(animalMerkleMap, animalMetadata, D_KEY, DOG);
+            add(animalMerkleMap, animalMetadata, F_KEY, FOX);
+            countrySingleton.setValue(GHANA);
+            steamQueue.add(ART);
+
+            // Given a State with the fruit and animal and country states
+            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
+            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
+            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
+            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
+
+            final Platform platform = mock(Platform.class);
+            merkleCryptography = MerkleCryptographyFactory.create(
+                    ConfigurationBuilder.create()
+                            .withConfigDataType(CryptoConfig.class)
+                            .build(),
+                    CryptographyFactory.create());
+            final PlatformContext platformContext = mock(PlatformContext.class);
+            when(platform.getContext()).thenReturn(platformContext);
+            when(platformContext.getMerkleCryptography()).thenReturn(merkleCryptography);
+            stateRoot.init(platform, InitTrigger.GENESIS, mock(SoftwareVersion.class));
+        }
+
+        @Test
+        @DisplayName("No hash by default")
+        void noHashByDefault() {
+            assertNull(stateRoot.getHash());
+        }
+
+        @Test
+        @DisplayName("computeHash is doesn't work on mutable states")
+        void calculateHashOnMutable() {
+            assertThrows(IllegalStateException.class, stateRoot::computeHash);
+        }
+
+        @Test
+        @DisplayName("computeHash is doesn't work on destroyed states")
+        void calculateHashOnDestroyed() {
+            stateRoot.destroyNode();
+            assertThrows(IllegalStateException.class, stateRoot::computeHash);
+        }
+
+        @Test
+        @DisplayName("Hash is computed after computeHash invocation")
+        void calculateHash() {
+            stateRoot.copy();
+            stateRoot.computeHash();
+            assertNotNull(stateRoot.getHash());
+        }
+
+        @Test
+        @DisplayName("computeHash is idempotent")
+        void calculateHash_idempotent() {
+            stateRoot.copy();
+            stateRoot.computeHash();
+            Hash hash1 = stateRoot.getHash();
+            stateRoot.computeHash();
+            Hash hash2 = stateRoot.getHash();
+            assertSame(hash1, hash2);
         }
     }
 }

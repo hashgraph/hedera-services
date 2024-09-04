@@ -64,7 +64,7 @@ abstract class AbstractScheduleHandler {
      * @param remainingRequiredKeys A Set of Key entries that have not yet signed the scheduled transaction, but
      *     must sign that transaction before it can be executed.
      */
-    protected static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
+    protected record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
     /**
      * Gets the set of all the keys required to sign a transaction.
@@ -88,7 +88,7 @@ abstract class AbstractScheduleHandler {
     }
 
     /**
-     * Get the schedule keys result to sign the transaction
+     * Get the schedule keys result to sign the transaction.
      *
      * @param scheduleInState the schedule in state
      * @param context         the Prehandle context
@@ -157,8 +157,9 @@ abstract class AbstractScheduleHandler {
             @NonNull final List<Key> existingSignatories, @NonNull final Set<Key> newSignatories)
             throws HandleException {
         SortedSet<Key> preExisting = setOfKeys(existingSignatories);
-        if (preExisting.containsAll(newSignatories))
+        if (preExisting.containsAll(newSignatories)) {
             throw new HandleException(ResponseCodeEnum.NO_NEW_VALID_SIGNATURES);
+        }
     }
 
     /**
@@ -399,14 +400,14 @@ abstract class AbstractScheduleHandler {
     }
 
     /**
-     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link SortedSet<Key>} containing
+     * Given an arbitrary {@code Iterable<Key>}, return a <strong>modifiable</strong> {@code SortedSet<Key>} containing
      * the same objects as the input.
      * This set must be sorted to ensure a deterministic order of values in state.
      * If there are any duplicates in the input, only one of each will be in the result.
      * If there are any null values in the input, those values will be excluded from the result.
      * @param keyCollection an Iterable of Key values.
-     * @return a {@link SortedSet<Key>} containing the same contents as the input.
-     * Duplicates and null values are excluded from this Set.  This Set is always a modifiable set.
+     * @return a modifiable {@code SortedSet<Key>} containing the same contents as the input with duplicates
+     * and null values excluded
      */
     @NonNull
     private SortedSet<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {

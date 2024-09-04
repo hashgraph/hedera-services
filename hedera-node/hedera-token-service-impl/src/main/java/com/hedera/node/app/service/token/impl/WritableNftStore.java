@@ -80,7 +80,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param id - the number of the unique token id to be retrieved.
-     * @return the Nft with the given NftId, or null if no such token exists.
+     * @return the Nft with the given NftId, or null if no such token exists
      */
     @Nullable
     public Nft getForModify(final NftID id) {
@@ -92,7 +92,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the number of the unique token id to be retrieved.
      * @param serialNumber - the serial number of the NFT to be retrieved.
-     * @return the Nft with the given tokenId and serial, or null if no such token exists.
+     * @return the Nft with the given tokenId and serial, or null if no such token exists
      */
     @Nullable
     public Nft getForModify(final TokenID tokenId, final long serialNumber) {
@@ -111,7 +111,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     }
 
     /**
-     * Removes the {@link Nft} with the given serial number
+     * Removes the {@link Nft} with the given serial number.
      *
      * @param serialNum - the combined unique ID of the NFT to remove
      */
@@ -120,7 +120,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     }
 
     /**
-     * Removes the {@link Nft} with the given serial number
+     * Removes the {@link Nft} with the given serial number.
      *
      * @param tokenId - the token id of the NFT to remove
      * @param serialNum - the serial number of the NFT to remove
