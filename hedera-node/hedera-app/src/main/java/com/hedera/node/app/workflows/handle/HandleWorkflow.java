@@ -49,6 +49,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -120,6 +121,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final StakePeriodManager stakePeriodManager;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
@@ -149,6 +151,7 @@ public class HandleWorkflow {
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final List<StateChanges.Builder> migrationStateChanges) {
@@ -175,6 +178,7 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
@@ -288,6 +292,7 @@ public class HandleWorkflow {
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
+        stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
         if (blockStreamConfig.streamRecords()) {
