@@ -47,8 +47,6 @@ public class DefaultSelfEventSigner implements SelfEventSigner {
     @Override
     public PlatformEvent signEvent(@NonNull final UnsignedEvent event) {
         final Signature signature = new PlatformSigner(keysAndCerts).sign(event.getHash());
-        final PlatformEvent platformEvent = new PlatformEvent(event, signature.getSignatureBytes());
-        platformEvent.setHash(event.getHash());
-        return platformEvent;
+        return new PlatformEvent(event, signature.getSignatureBytes());
     }
 }

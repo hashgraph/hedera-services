@@ -32,11 +32,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A class used to store base event data that is used to create the hash of that event.
- * <p>
- * A base event is a set of data describing an event at the point when it is created, before it is added to the
- * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
- * data is additional and does not affect the hash.
+ * An event that has not yet been signed
  */
 public class UnsignedEvent implements Hashable {
     /**
@@ -49,6 +45,9 @@ public class UnsignedEvent implements Hashable {
      */
     private final List<EventTransaction> eventTransactions;
 
+    /**
+     * The metadata of the event.
+     */
     private final EventMetadata metadata;
 
     /**
@@ -84,6 +83,9 @@ public class UnsignedEvent implements Hashable {
                 softwareVersion.getPbjSemanticVersion());
     }
 
+    /**
+     * @return the metadata of the event
+     */
     public EventMetadata getMetadata() {
         return metadata;
     }

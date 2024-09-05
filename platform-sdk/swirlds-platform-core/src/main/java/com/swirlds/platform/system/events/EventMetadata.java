@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * Metadata for an event that can be derived from the event itself
+ */
 public class EventMetadata extends AbstractHashable {
     /**
      * the software version of the node that created this event.
@@ -73,7 +76,7 @@ public class EventMetadata extends AbstractHashable {
     private EventDescriptorWrapper descriptor;
 
     /**
-     * Create a EventDataWrappers object
+     * Create a EventMetadata object
      *
      * @param softwareVersion the software version of the node that created this event.
      * @param creatorId       ID of this event's creator
@@ -100,17 +103,19 @@ public class EventMetadata extends AbstractHashable {
         this.allParents = selfParent == null
                 ? otherParents
                 : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
-        this.generation = 1
-                + allParents.stream()
-                        .mapToLong(d -> d.eventDescriptor().generation())
-                        .max()
-                        .orElse(EventConstants.GENERATION_UNDEFINED);
+        this.generation = calculateGeneration(allParents);
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = Objects.requireNonNull(transactions, "transactions must not be null").stream()
                 .map(TransactionWrapper::new)
                 .toList();
     }
 
+    /**
+     * Create a EventMetadata object
+     *
+     * @param softwareVersion the software version of the node that created this event.
+     * @param gossipEvent     the gossip event to extract metadata from
+     */
     public EventMetadata(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
@@ -127,17 +132,21 @@ public class EventMetadata extends AbstractHashable {
             this.selfParent = null;
             this.otherParents = allParents;
         }
-        this.generation = 1
-                + allParents.stream()
-                        .mapToLong(d -> d.eventDescriptor().generation())
-                        .max()
-                        .orElse(EventConstants.GENERATION_UNDEFINED);
+        this.generation = calculateGeneration(allParents);
         this.timeCreated = HapiUtils.asInstant(
                 Objects.requireNonNull(gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null"));
         this.transactions =
                 Objects.requireNonNull(gossipEvent.eventTransaction(), "transactions must not be null").stream()
                         .map(TransactionWrapper::new)
                         .toList();
+    }
+
+    private static long calculateGeneration(
+            @NonNull final List<EventDescriptorWrapper> allParents) {
+        return 1 + Objects.requireNonNull(allParents).stream()
+                .mapToLong(d -> d.eventDescriptor().generation())
+                .max()
+                .orElse(EventConstants.GENERATION_UNDEFINED);
     }
 
     /**
