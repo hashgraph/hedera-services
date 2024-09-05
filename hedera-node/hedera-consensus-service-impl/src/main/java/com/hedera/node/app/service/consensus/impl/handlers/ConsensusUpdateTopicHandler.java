@@ -161,6 +161,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
+        // TODO: added so unit tests pass (fix this when implementing the actual logic)
+        builder.feeScheduleKey(topic.feeScheduleKey());
+        builder.freeMessagesKeyList(topic.freeMessagesKeyList());
+        builder.customFees(topic.customFees());
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(handleContext, op, builder, topic);
         topicStore.put(builder.build());
