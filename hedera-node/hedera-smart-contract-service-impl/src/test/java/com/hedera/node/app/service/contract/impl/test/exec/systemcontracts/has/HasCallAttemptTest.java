@@ -52,7 +52,7 @@ class HasCallAttemptTest extends CallTestBase {
     @Mock
     private AddressIdConverter addressIdConverter;
 
-    private List<CallTranslator> callTranslators;
+    private List<CallTranslator<HasCallAttempt>> callTranslators;
 
     @BeforeEach
     void setUp() {

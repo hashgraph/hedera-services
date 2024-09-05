@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
@@ -76,8 +77,8 @@ public interface HtsTranslatorsModule {
     @Provides
     @Singleton
     @Named("HtsTranslators")
-    static List<CallTranslator> provideCallAttemptTranslators(
-            @NonNull @Named("HtsTranslators") final Set<CallTranslator> translators) {
+    static List<CallTranslator<HtsCallAttempt>> provideCallAttemptTranslators(
+            @NonNull @Named("HtsTranslators") final Set<CallTranslator<HtsCallAttempt>> translators) {
         return List.copyOf(translators);
     }
 
@@ -85,7 +86,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideAssociationsTranslator(@NonNull final AssociationsTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideAssociationsTranslator(
+            @NonNull final AssociationsTranslator translator) {
         return translator;
     }
 
@@ -93,7 +95,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideIsAssociatedTranslator(@NonNull final IsAssociatedTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideIsAssociatedTranslator(
+            @NonNull final IsAssociatedTranslator translator) {
         return translator;
     }
 
@@ -101,7 +104,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideErc20TransfersTranslator(@NonNull final Erc20TransfersTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideErc20TransfersTranslator(
+            @NonNull final Erc20TransfersTranslator translator) {
         return translator;
     }
 
@@ -109,7 +113,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideErc721TransferFromTranslator(@NonNull final Erc721TransferFromTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideErc721TransferFromTranslator(
+            @NonNull final Erc721TransferFromTranslator translator) {
         return translator;
     }
 
@@ -117,7 +122,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideClassicTransfersTranslator(@NonNull final ClassicTransfersTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideClassicTransfersTranslator(
+            @NonNull final ClassicTransfersTranslator translator) {
         return translator;
     }
 
@@ -125,7 +131,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideMintTranslator(@NonNull final MintTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideMintTranslator(@NonNull final MintTranslator translator) {
         return translator;
     }
 
@@ -133,7 +139,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideBurnTranslator(@NonNull final BurnTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideBurnTranslator(@NonNull final BurnTranslator translator) {
         return translator;
     }
 
@@ -141,7 +147,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideCreateTranslator(@NonNull final CreateTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideCreateTranslator(@NonNull final CreateTranslator translator) {
         return translator;
     }
 
@@ -149,7 +155,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideBalanceOfTranslator(@NonNull final BalanceOfTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideBalanceOfTranslator(@NonNull final BalanceOfTranslator translator) {
         return translator;
     }
 
@@ -157,7 +163,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideIsApprovedForAllTranslator(@NonNull final IsApprovedForAllTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideIsApprovedForAllTranslator(
+            @NonNull final IsApprovedForAllTranslator translator) {
         return translator;
     }
 
@@ -165,7 +172,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideNameTranslator(@NonNull final NameTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideNameTranslator(@NonNull final NameTranslator translator) {
         return translator;
     }
 
@@ -173,7 +180,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideSymbolTranslator(@NonNull final SymbolTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideSymbolTranslator(@NonNull final SymbolTranslator translator) {
         return translator;
     }
 
@@ -181,7 +188,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTotalSupplyTranslator(@NonNull final TotalSupplyTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTotalSupplyTranslator(
+            @NonNull final TotalSupplyTranslator translator) {
         return translator;
     }
 
@@ -189,7 +197,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideOwnerOfTranslator(@NonNull final OwnerOfTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideOwnerOfTranslator(@NonNull final OwnerOfTranslator translator) {
         return translator;
     }
 
@@ -197,7 +205,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideSetApprovalForAllTranslator(@NonNull final SetApprovalForAllTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideSetApprovalForAllTranslator(
+            @NonNull final SetApprovalForAllTranslator translator) {
         return translator;
     }
 
@@ -205,7 +214,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideDecimalsTranslator(@NonNull final DecimalsTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideDecimalsTranslator(@NonNull final DecimalsTranslator translator) {
         return translator;
     }
 
@@ -213,7 +222,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenUriTranslator(@NonNull final TokenUriTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenUriTranslator(@NonNull final TokenUriTranslator translator) {
         return translator;
     }
 
@@ -221,7 +230,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideGetAllowanceTranslator(@NonNull final GetAllowanceTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideGetAllowanceTranslator(
+            @NonNull final GetAllowanceTranslator translator) {
         return translator;
     }
 
@@ -229,7 +239,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideGrantApproval(@NonNull final GrantApprovalTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideGrantApproval(@NonNull final GrantApprovalTranslator translator) {
         return translator;
     }
 
@@ -237,7 +247,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator providePausesTranslator(@NonNull final PausesTranslator translator) {
+    static CallTranslator<HtsCallAttempt> providePausesTranslator(@NonNull final PausesTranslator translator) {
         return translator;
     }
 
@@ -245,7 +255,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideGrantRevokeKycTranslator(@NonNull final GrantRevokeKycTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideGrantRevokeKycTranslator(
+            @NonNull final GrantRevokeKycTranslator translator) {
         return translator;
     }
 
@@ -253,7 +264,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideGetApprovedTranslator(@NonNull final GetApprovedTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideGetApprovedTranslator(
+            @NonNull final GetApprovedTranslator translator) {
         return translator;
     }
 
@@ -261,7 +273,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideWipeTranslator(@NonNull final WipeTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideWipeTranslator(@NonNull final WipeTranslator translator) {
         return translator;
     }
 
@@ -269,7 +281,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideIsFrozenTranslator(@NonNull final IsFrozenTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideIsFrozenTranslator(@NonNull final IsFrozenTranslator translator) {
         return translator;
     }
 
@@ -277,7 +289,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideIsKycTranslator(@NonNull final IsKycTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideIsKycTranslator(@NonNull final IsKycTranslator translator) {
         return translator;
     }
 
@@ -285,7 +297,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideIsTokenTranslator(@NonNull final IsTokenTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideIsTokenTranslator(@NonNull final IsTokenTranslator translator) {
         return translator;
     }
 
@@ -293,7 +305,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenTypeTranslator(@NonNull final TokenTypeTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenTypeTranslator(@NonNull final TokenTypeTranslator translator) {
         return translator;
     }
 
@@ -301,7 +313,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideDefaultFreezeStatusTranslator(
+    static CallTranslator<HtsCallAttempt> provideDefaultFreezeStatusTranslator(
             @NonNull final DefaultFreezeStatusTranslator translator) {
         return translator;
     }
@@ -310,7 +322,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideDefaultKycStatusTranslator(@NonNull final DefaultKycStatusTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideDefaultKycStatusTranslator(
+            @NonNull final DefaultKycStatusTranslator translator) {
         return translator;
     }
 
@@ -318,7 +331,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideFreezeUnfreezeTranslator(@NonNull final FreezeUnfreezeTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideFreezeUnfreezeTranslator(
+            @NonNull final FreezeUnfreezeTranslator translator) {
         return translator;
     }
 
@@ -326,7 +340,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideDeleteTranslator(@NonNull final DeleteTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideDeleteTranslator(@NonNull final DeleteTranslator translator) {
         return translator;
     }
 
@@ -334,7 +348,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenExpiryTranslator(@NonNull final TokenExpiryTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenExpiryTranslator(
+            @NonNull final TokenExpiryTranslator translator) {
         return translator;
     }
 
@@ -342,7 +357,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenKeyTranslator(@NonNull final TokenKeyTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenKeyTranslator(@NonNull final TokenKeyTranslator translator) {
         return translator;
     }
 
@@ -350,7 +365,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideUpdateTranslator(@NonNull final UpdateTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideUpdateTranslator(@NonNull final UpdateTranslator translator) {
         return translator;
     }
 
@@ -358,7 +373,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenCustomFeesTranslator(@NonNull final TokenCustomFeesTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenCustomFeesTranslator(
+            @NonNull final TokenCustomFeesTranslator translator) {
         return translator;
     }
 
@@ -366,7 +382,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideTokenInfoTranslator(@NonNull final TokenInfoTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideTokenInfoTranslator(@NonNull final TokenInfoTranslator translator) {
         return translator;
     }
 
@@ -374,7 +390,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideUpdateExpiryTranslator(@NonNull final UpdateExpiryTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideUpdateExpiryTranslator(
+            @NonNull final UpdateExpiryTranslator translator) {
         return translator;
     }
 
@@ -382,7 +399,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideFungibleTokenInfoTranslator(@NonNull final FungibleTokenInfoTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideFungibleTokenInfoTranslator(
+            @NonNull final FungibleTokenInfoTranslator translator) {
         return translator;
     }
 
@@ -390,7 +408,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideNonFungibleTokenInfoTranslator(@NonNull final NftTokenInfoTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideNonFungibleTokenInfoTranslator(
+            @NonNull final NftTokenInfoTranslator translator) {
         return translator;
     }
 
@@ -398,7 +417,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideUpdateKeysTranslator(@NonNull final UpdateKeysTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideUpdateKeysTranslator(@NonNull final UpdateKeysTranslator translator) {
         return translator;
     }
 
@@ -406,7 +425,8 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideUpdateNFTsMetadataTranslator(@NonNull final UpdateNFTsMetadataTranslator translator) {
+    static CallTranslator<HtsCallAttempt> provideUpdateNFTsMetadataTranslator(
+            @NonNull final UpdateNFTsMetadataTranslator translator) {
         return translator;
     }
 
@@ -414,7 +434,7 @@ public interface HtsTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HtsTranslators")
-    static CallTranslator provideUpdateTokenCustomFeesTranslator(
+    static CallTranslator<HtsCallAttempt> provideUpdateTokenCustomFeesTranslator(
             @NonNull final UpdateTokenCustomFeesTranslator translator) {
         return translator;
     }
