@@ -172,7 +172,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        final var entropy = context.blockRecordInfo().prngSeed();
         return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
@@ -370,7 +370,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ExternalizeInitcodeOnSuccess externalizeInitcodeOnSuccess) {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
-        // in the contract creation body for the dispatched crypto create body
+        // in the contract creation body for the dispatched crypto create body. This child transaction will not
+        // be throttled at consensus.
         final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
@@ -379,7 +380,8 @@ public class HandleHederaOperations implements HederaOperations {
                 context.payer(),
                 isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(number, bodyToExternalize));
+                        : contractBodyCustomizerFor(number, bodyToExternalize),
+                HandleContext.ConsensusThrottling.OFF);
         if (recordBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure

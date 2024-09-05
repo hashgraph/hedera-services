@@ -26,12 +26,13 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Default implementation of {@link ReadableNetworkStakingRewardsStore}
+ * Default implementation of {@link ReadableNetworkStakingRewardsStore}.
  */
 public class ReadableNetworkStakingRewardsStoreImpl implements ReadableNetworkStakingRewardsStore {
 
     /** The underlying data storage class that holds staking reward data for all nodes. */
     private final ReadableSingletonState<NetworkStakingRewards> stakingRewardsState;
+
     /**
      * Create a new {@link ReadableNetworkStakingRewardsStoreImpl} instance.
      *

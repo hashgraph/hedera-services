@@ -37,7 +37,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -87,13 +86,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
-
-    private static final Response DEFAULT_UNSUPPORTED_RESPONSE = Response.newBuilder()
-            .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-                    .header(ResponseHeader.newBuilder()
-                            .nodeTransactionPrecheckCode(NOT_SUPPORTED)
-                            .build()))
-            .build();
 
     private final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
     private final SubmissionManager submissionManager;

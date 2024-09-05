@@ -16,7 +16,7 @@
 
 plugins {
     id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.feature.benchmark")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
@@ -31,7 +31,6 @@ testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
-    requires("org.assertj.core")
     requires("org.mockito.junit.jupiter")
     requires("com.swirlds.metrics.api")
     requires("org.mockito")

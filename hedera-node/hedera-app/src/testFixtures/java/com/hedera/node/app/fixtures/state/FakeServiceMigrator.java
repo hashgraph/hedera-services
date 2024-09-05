@@ -18,6 +18,7 @@ package com.hedera.node.app.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -26,13 +27,16 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeServiceMigrator implements ServiceMigrator {
@@ -40,11 +44,11 @@ public class FakeServiceMigrator implements ServiceMigrator {
     private static final String NAME_OF_ENTITY_ID_SINGLETON = "ENTITY_ID";
 
     @Override
-    public void doMigrations(
+    public List<StateChanges.Builder> doMigrations(
             @NonNull final State state,
             @NonNull final ServicesRegistry servicesRegistry,
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion currentVersion,
+            @Nullable final SoftwareVersion previousVersion,
+            @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
@@ -73,10 +77,13 @@ public class FakeServiceMigrator implements ServiceMigrator {
         if (!(entityIdRegistration.registry() instanceof FakeSchemaRegistry entityIdRegistry)) {
             throw new IllegalArgumentException("Can only be used with FakeSchemaRegistry instances");
         }
+        final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
+                .map(SoftwareVersion::getPbjSemanticVersion)
+                .orElse(null);
         entityIdRegistry.migrate(
                 NAME_OF_ENTITY_ID_SERVICE,
                 fakeState,
-                previousVersion,
+                deserializedPbjVersion,
                 networkInfo,
                 config,
                 sharedValues,
@@ -90,7 +97,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
                     schemaRegistry.migrate(
                             registration.serviceName(),
                             fakeState,
-                            previousVersion,
+                            deserializedPbjVersion,
                             networkInfo,
                             config,
                             sharedValues,
@@ -102,5 +109,15 @@ public class FakeServiceMigrator implements ServiceMigrator {
         }
         mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(prevEntityNum.get()));
         mapWritableStates.commit();
+        return List.of();
+    }
+
+    @Override
+    public SemanticVersion creationVersionOf(@NonNull final State state) {
+        if (!(state instanceof FakeState)) {
+            throw new IllegalArgumentException("Can only be used with FakeState instances");
+        }
+        // Fake states are always from genesis and have no creation version
+        return null;
     }
 }

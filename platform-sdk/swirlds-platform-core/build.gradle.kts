@@ -17,8 +17,9 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.benchmark")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
@@ -50,10 +51,10 @@ testModuleInfo {
     requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.platform.test")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
-    requires("com.swirlds.platform.test")
     requires("jakarta.inject")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
@@ -61,4 +62,14 @@ testModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+}
+
+timingSensitiveModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

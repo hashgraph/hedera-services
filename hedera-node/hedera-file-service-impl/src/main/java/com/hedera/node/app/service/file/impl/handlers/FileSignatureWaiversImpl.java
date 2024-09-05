@@ -29,7 +29,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A Singleton implementation of signature waivers needed for transactions in {@link com.hedera.node.app.service.file.FileService}
+ * A Singleton implementation of signature waivers needed for transactions in
+ * {@link com.hedera.node.app.service.file.FileService}.
  */
 @Singleton
 public class FileSignatureWaiversImpl implements FileSignatureWaivers {

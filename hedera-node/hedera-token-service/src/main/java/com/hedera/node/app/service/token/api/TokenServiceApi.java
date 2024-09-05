@@ -24,7 +24,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,11 +76,12 @@ public interface TokenServiceApi {
             @NonNull AccountID deletedId,
             @NonNull AccountID obtainerId,
             @NonNull ExpiryValidator expiryValidator,
-            @NonNull DeleteCapableTransactionRecordBuilder recordBuilder,
+            @NonNull DeleteCapableTransactionStreamBuilder recordBuilder,
             @NonNull FreeAliasOnDeletion freeAliasOnDeletion);
 
     /**
-     * Validates the creation of a given staking election relative to the given account store, network info, and staking config.
+     * Validates the creation of a given staking election relative to the given account store, network info,
+     * and staking config.
      *
      * @param isStakingEnabled       if staking is enabled
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
@@ -101,7 +102,8 @@ public interface TokenServiceApi {
             @NonNull NetworkInfo networkInfo);
 
     /**
-     * Validates the update of a given staking election relative to the given account store, network info, and staking config.
+     * Validates the update of a given staking election relative to the given account store, network info,
+     * and staking config.
      *
      * @param isStakingEnabled       if staking is enabled
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
@@ -198,7 +200,7 @@ public interface TokenServiceApi {
      * @param recordBuilder the record builder to record the fees in
      * @return true if the full amount was charged, false otherwise
      */
-    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeStreamBuilder recordBuilder);
+    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull FeeStreamBuilder recordBuilder);
 
     /**
      * Charges the payer the given fees, and records those fees in the given record builder.
@@ -212,7 +214,7 @@ public interface TokenServiceApi {
             @NonNull AccountID payer,
             AccountID nodeAccount,
             @NonNull Fees fees,
-            @NonNull final FeeStreamBuilder recordBuilder);
+            @NonNull FeeStreamBuilder recordBuilder);
 
     /**
      * Refunds the given fees to the given receiver, and records those fees in the given record builder.
@@ -221,7 +223,7 @@ public interface TokenServiceApi {
      * @param fees          the fees to refund
      * @param recordBuilder the record builder to record the fees in
      */
-    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeStreamBuilder recordBuilder);
+    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull FeeStreamBuilder recordBuilder);
 
     /**
      * Returns the number of storage slots used by the given account before any changes were made via
@@ -233,7 +235,7 @@ public interface TokenServiceApi {
     long originalKvUsageFor(@NonNull ContractID id);
 
     /**
-     * Updates the passed contract
+     * Updates the passed contract.
      * @param contract the contract that is updated
      */
     void updateContract(Account contract);

@@ -33,7 +33,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -100,7 +100,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // a SCHEDULED dispatch)
         rewardReceivers.removeAll(prePaidRewards.keySet());
         // Pay rewards to all possible reward receivers, returns all rewards paid
-        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
 
@@ -250,18 +250,17 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @Nullable Set<AccountID> specialRewardReceivers,
             @NonNull final Account account,
             @NonNull final WritableAccountStore accountStore) {
-        if (specialRewardReceivers == null) {
-            // Always trigger a reward situation for the new stakee when they are
-            // gaining an indirect staker, even if it doesn't change their total stake
-            specialRewardReceivers = new LinkedHashSet<>();
-        }
+        // Always trigger a reward situation for the new stakee when they are
+        // gaining an indirect staker, even if it doesn't change their total stake
+        var updatedSpecialRewardReceivers =
+                (specialRewardReceivers == null ? new LinkedHashSet<AccountID>() : specialRewardReceivers);
         final var stakedAccountId = account.stakedAccountId();
         final var stakedAccount = accountStore.getOriginalValue(stakedAccountId);
         // if the special reward receiver account is not staked to a node, it will not need to receive reward
         if (stakedAccount != null && stakedAccount.hasStakedNodeId()) {
-            specialRewardReceivers.add(stakedAccountId);
+            updatedSpecialRewardReceivers.add(stakedAccountId);
         }
-        return specialRewardReceivers;
+        return updatedSpecialRewardReceivers;
     }
 
     /**
@@ -338,7 +337,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                                     && earnedZeroRewardsBecauseOfZeroStake(
                                             originalAccount, stakingRewardStore, consensusNow)));
             final var stakePeriodStart = stakePeriodManager.startUpdateFor(
-                    originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges, consensusNow);
+                    originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges);
             if (stakePeriodStart != -1) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakePeriodStart(stakePeriodStart);
@@ -366,7 +365,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @NonNull final ReadableNetworkStakingRewardsStore stakingRewardStore,
             @NonNull final Instant consensusNow) {
         return Objects.requireNonNull(account).stakePeriodStart()
-                < stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardStore, consensusNow);
+                < stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardStore);
     }
 
     private void adjustNodeStakes(
@@ -389,8 +388,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                     // So, it will be leaving some rewards from its current node unclaimed.
                     // We need to record that, so we don't include them in the pendingRewards
                     // calculation later
-                    final var effectiveStakeRewardStart = rewardableStakeStartFor(
-                            stakingRewardStore.isStakingRewardsActivated(), originalAccount, consensusNow);
+                    final var effectiveStakeRewardStart =
+                            rewardableStakeStartFor(stakingRewardStore.isStakingRewardsActivated(), originalAccount);
                     stakeInfoHelper.increaseUnclaimedStakeRewards(
                             currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
                 }
@@ -402,8 +401,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
             // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
-            if (modifiedStakedNodeId != SENTINEL_NODE_ID)
+            if (modifiedStakedNodeId != SENTINEL_NODE_ID) {
                 stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
+            }
         }
     }
 
@@ -466,17 +466,16 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // either because she is staking < 1 hbar, or because she started staking only
             // today or yesterday; we don't care about the exact reason, we just remember
             // her total stake as long as she didn't begin staking today exactly
-            return account.stakePeriodStart() < stakePeriodManager.currentStakePeriod(consensusNow);
+            return account.stakePeriodStart() < stakePeriodManager.currentStakePeriod();
         }
     }
 
-    private long rewardableStakeStartFor(
-            final boolean rewardsActivated, @NonNull final Account account, @NonNull final Instant consensusNow) {
+    private long rewardableStakeStartFor(final boolean rewardsActivated, @NonNull final Account account) {
         if (!rewardsActivated || account.declineReward()) {
             return 0;
         }
         final var startPeriod = account.stakePeriodStart();
-        final var currentPeriod = stakePeriodManager.currentStakePeriod(consensusNow);
+        final var currentPeriod = stakePeriodManager.currentStakePeriod();
         if (startPeriod >= currentPeriod) {
             return 0;
         } else {

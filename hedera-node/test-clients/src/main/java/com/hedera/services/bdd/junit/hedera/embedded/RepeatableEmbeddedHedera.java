@@ -94,8 +94,10 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
             hedera.onPreHandle(platform.lastCreatedEvent, state);
+            final var round = platform.nextConsensusRound();
             // Handle each transaction in own round
-            hedera.handleWorkflow().handleRound(state, platformState, platform.nextConsensusRound());
+            hedera.handleWorkflow().handleRound(state, round);
+            hedera.onSealConsensusRound(round, state);
         }
         return response;
     }

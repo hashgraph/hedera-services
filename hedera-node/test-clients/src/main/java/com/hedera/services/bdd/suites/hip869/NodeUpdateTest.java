@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.invalidServiceEndpoint;
@@ -46,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_IPV4_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -218,6 +220,60 @@ public class NodeUpdateTest {
                 }));
     }
 
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    @LeakyHapiTest(overrides = {"nodes.updateAccountIdAllowed"})
+    final Stream<DynamicTest> updateAccountIdWork() throws CertificateEncodingException {
+        final var updateOp = nodeUpdate("testNode")
+                .adminKey("adminKey2")
+                .signedBy(DEFAULT_PAYER, "adminKey", "adminKey2")
+                .description("updated description")
+                .accountId("0.0.100")
+                .gossipEndpoint(List.of(
+                        asServiceEndpoint("127.0.0.1:60"),
+                        asServiceEndpoint("127.0.0.2:60"),
+                        asServiceEndpoint("127.0.0.3:60")))
+                .serviceEndpoint(List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")))
+                .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
+                .grpcCertificateHash("grpcCert".getBytes());
+        return hapiTest(
+                overriding("nodes.updateAccountIdAllowed", "true"),
+                newKeyNamed("adminKey"),
+                newKeyNamed("adminKey2"),
+                nodeCreate("testNode")
+                        .description("description to be changed")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                updateOp,
+                viewNode("testNode", node -> {
+                    assertEquals("updated description", node.description(), "Node description should be updated");
+                    assertIterableEquals(
+                            List.of(
+                                    asServiceEndpoint("127.0.0.1:60"),
+                                    asServiceEndpoint("127.0.0.2:60"),
+                                    asServiceEndpoint("127.0.0.3:60")),
+                            node.gossipEndpoint(),
+                            "Node gossipEndpoint should be updated");
+                    assertIterableEquals(
+                            List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")),
+                            node.serviceEndpoint(),
+                            "Node serviceEndpoint should be updated");
+                    try {
+                        assertEquals(
+                                Bytes.wrap(gossipCertificates.getLast().getEncoded()),
+                                node.gossipCaCertificate(),
+                                "Node gossipCaCertificate should be updated");
+                    } catch (CertificateEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+                    assertEquals(
+                            Bytes.wrap("grpcCert"),
+                            node.grpcCertificateHash(),
+                            "Node grpcCertificateHash should be updated");
+                    assertEquals(toPbj(updateOp.getAdminKey()), node.adminKey(), "Node adminKey should be updated");
+                    assertEquals(toPbj(asAccount("0.0.100")), node.accountId());
+                }));
+    }
+
     @HapiTest
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
@@ -288,5 +344,20 @@ public class NodeUpdateTest {
                         .adminKey("adminKey")
                         .description("toolarge")
                         .hasKnownStatus(INVALID_NODE_DESCRIPTION));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.enableDAB"})
+    @DisplayName("DAB enable test")
+    final Stream<DynamicTest> checkDABEnable() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                overriding("nodes.enableDAB", "false"),
+                nodeUpdate("testNode")
+                        .adminKey("adminKey")
+                        .serviceEndpoint(List.of(asServiceEndpoint("127.0.0.2:60"), invalidServiceEndpoint()))
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 }

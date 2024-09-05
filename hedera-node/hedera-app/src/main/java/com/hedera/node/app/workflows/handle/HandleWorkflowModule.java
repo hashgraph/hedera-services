@@ -28,6 +28,8 @@ import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.CacheConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
 import dagger.Module;
@@ -60,6 +62,14 @@ public interface HandleWorkflowModule {
     static Supplier<AutoCloseableWrapper<State>> provideStateSupplier(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
         return () -> new AutoCloseableWrapper<>(workingStateAccessor.getState(), NO_OP);
+    }
+
+    @Provides
+    @Named("CacheWarmer")
+    static Executor provideCacheWarmerExecutor(@NonNull final ConfigProvider configProvider) {
+        final var config = configProvider.getConfiguration();
+        final int parallelism = config.getConfigData(CacheConfig.class).warmThreads();
+        return new ForkJoinPool(parallelism);
     }
 
     @Provides
@@ -128,8 +138,8 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
                 tokenHandlers.tokenRejectHandler(),
-                tokenHandlers.tokenCancelAirdropHandler(),
                 tokenHandlers.tokenAirdropsHandler(),
+                tokenHandlers.tokenCancelAirdropHandler(),
                 addressBookHandlers.nodeCreateHandler(),
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),

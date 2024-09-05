@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_D
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -543,6 +544,17 @@ public class NodeCreateTest {
                 .gossipEndpoint(GOSSIP_ENDPOINTS)
                 .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.enableDAB"})
+    @DisplayName("test DAB enable")
+    final Stream<DynamicTest> checkDABEnable() throws CertificateEncodingException {
+        return hapiTest(
+                overriding("nodes.enableDAB", "false"),
+                nodeCreate("testNode")
+                        .description("toolarge")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     private static void assertEqualServiceEndpoints(

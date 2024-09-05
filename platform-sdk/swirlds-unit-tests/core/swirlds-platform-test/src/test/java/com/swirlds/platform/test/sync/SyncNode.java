@@ -30,8 +30,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -197,7 +197,7 @@ public class SyncNode {
 
             // Only add the event to the graphs and the list of generated events if the test passes
             if (shouldAddToGraph.test(newEvent)) {
-                addToShadowGraph(newEvent);
+                addToShadowGraph(newEvent.getBaseEvent());
                 if (saveGeneratedEvents) {
                     generatedEvents.add(newEvent);
                 }
@@ -209,7 +209,7 @@ public class SyncNode {
         return List.copyOf(newEvents);
     }
 
-    private void addToShadowGraph(final EventImpl newEvent) {
+    private void addToShadowGraph(final PlatformEvent newEvent) {
         try {
             shadowGraph.addEvent(newEvent);
         } catch (ShadowgraphInsertionException e) {
@@ -223,7 +223,7 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        final EventHasher hasher = new StatefulEventHasher();
+        final EventHasher hasher = new DefaultEventHasher();
         receivedEvents.forEach(hasher::hashEvent);
     }
 

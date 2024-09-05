@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
- * Default implementation of {@link ReadableAccountStore}
+ * Default implementation of {@link ReadableAccountStore}.
  */
 public class ReadableAccountStoreImpl implements ReadableAccountStore {
     /** The underlying data storage class that holds the account data. */
@@ -180,7 +180,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      * containing an alias that we simply don't know about, then return null.
      *
      * @param id The account ID that possibly has an alias to convert to an Account ID without an alias.
-     * @return The result, or null if the id is invalid or there is no known alias-to-account mapping for it.
+     * @return The result, or null if the id is invalid or there is no known alias-to-account mapping for it
      */
     @Nullable
     protected AccountID lookupAliasedAccountId(@NonNull final AccountID id) {

@@ -34,7 +34,7 @@ public final class EndOfStakingPeriodUtils {
     }
 
     /**
-     * Creates a human-readable string summary of the given reward sums history, omitting any trailing zeros
+     * Creates a human-readable string summary of the given reward sums history, omitting any trailing zeros.
      *
      * @param rewardSumHistory the rewards sum history to summarize
      * @return the summary
@@ -57,7 +57,7 @@ public final class EndOfStakingPeriodUtils {
     }
 
     /**
-     * Stores both the new reward sum history and the new per-hbar reward rate for a node
+     * Stores both the new reward sum history and the new per-hbar reward rate for a node.
      */
     public record RewardSumHistory(List<Long> rewardSumHistory, long pendingRewardRate) {}
 
@@ -69,7 +69,8 @@ public final class EndOfStakingPeriodUtils {
      * @param currentInfo the node's current staking info
      * @param perHbarRate the current per-hbar reward rate for this node
      * @param maxPerHbarRate the maximum per-hbar reward rate for this node
-     * @param requireMinStakeToReward if true, will require the node's stake to meet a certain threshold in order to receive rewards
+     * @param requireMinStakeToReward if true, will require the node's stake to meet a threshold
+     *                                in order to receive rewards
      * @return the calculated {@link RewardSumHistory}
      */
     public static RewardSumHistory calculateRewardSumHistory(
@@ -113,7 +114,7 @@ public final class EndOfStakingPeriodUtils {
     }
 
     /**
-     * Stores both the new stake and the new stakeRewardStart for a node
+     * Stores both the new stake and the new stakeRewardStart for a node.
      */
     public record StakeResult(long stake, long stakeRewardStart) {}
 

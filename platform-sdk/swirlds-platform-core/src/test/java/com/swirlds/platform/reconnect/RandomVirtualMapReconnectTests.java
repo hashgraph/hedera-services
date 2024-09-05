@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
@@ -46,7 +45,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,16 +59,13 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
     @Override
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
+    protected VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) 1, new TestKeySerializer(),
-                (short) 1, new TestValueSerializer());
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     public String randomWord(final Random random, final int maximumKeySize) {
@@ -173,7 +168,6 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Random Operations Reconnect Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void randomOperationsReconnectTest(final RandomOperationsConfig config) throws Exception {
         final Random random = getRandomPrintSeed();
 

@@ -125,12 +125,4 @@ public interface BuilderSink {
      * @param parentSink the parent sink to flush to
      */
     void flushFollowing(@NonNull BuilderSink parentSink);
-
-    /**
-     * A temporary method to support {@link SavepointStackImpl#getChildBuilders()} until we switch
-     * to per-dispatch throttling per HIP-993.
-     * @return the following builders in the sink
-     */
-    @Deprecated
-    List<StreamBuilder> followingBuilders();
 }

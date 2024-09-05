@@ -193,7 +193,7 @@ class HandleHederaOperationsTest {
     void delegatesEntropyToBlockRecordInfo() {
         final var pretendEntropy = Bytes.fromHex("0123456789");
         given(context.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(pretendEntropy);
+        given(blockRecordInfo.prngSeed()).willReturn(pretendEntropy);
         assertSame(pretendEntropy, subject.entropy());
     }
 
@@ -346,7 +346,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        captor.capture()))
+                        captor.capture(),
+                        any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -386,7 +387,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        captor.capture()))
+                        captor.capture(),
+                        any()))
                 .willThrow(new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED));
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -433,7 +435,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        captor.capture()))
+                        captor.capture(),
+                        any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -509,7 +512,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -523,7 +527,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class));
+                        any(ExternalizedRecordCustomizer.class),
+                        any());
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -560,7 +565,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -574,7 +580,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        captor.capture());
+                        captor.capture(),
+                        any());
         assertNotSame(SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER, captor.getValue());
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
@@ -597,7 +604,8 @@ class HandleHederaOperationsTest {
                         eq(ContractCreateStreamBuilder.class),
                         eq(null),
                         eq(A_NEW_ACCOUNT_ID),
-                        any(ExternalizedRecordCustomizer.class)))
+                        any(ExternalizedRecordCustomizer.class),
+                        any()))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

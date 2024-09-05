@@ -17,13 +17,10 @@
 package com.hedera.node.config.types;
 
 /**
- * Enumerates the choices of what stream to produce; blocks, records, or both.
+ * Enumerates the choices of what stream to produce; currently only records or both records and blocks are supported,
+ * because record queries are not yet supported by translating from blocks.
  */
 public enum StreamMode {
-    /**
-     * Stream blocks only.
-     */
-    BLOCKS,
     /**
      * Stream records only.
      */

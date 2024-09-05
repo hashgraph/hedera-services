@@ -124,7 +124,7 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        final var entropy = context.blockRecordInfo().prngSeed();
         return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 

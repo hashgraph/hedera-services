@@ -60,6 +60,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators;
     exports com.hedera.services.bdd.junit.support;
     exports com.hedera.services.bdd.junit.support.validators.utils;
+    exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
 
     requires transitive com.hedera.node.app.hapi.fees;
@@ -86,10 +87,16 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.platform.launcher;
     requires transitive org.testcontainers;
     requires transitive tuweni.bytes;
+    requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
+    requires com.hedera.node.app.service.consensus.impl;
     requires com.hedera.node.app.service.contract.impl;
+    requires com.hedera.node.app.service.file.impl;
+    requires com.hedera.node.app.service.network.admin.impl;
+    requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
+    requires com.hedera.node.app.service.util.impl;
     requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
@@ -97,7 +104,6 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
-    requires com.hedera.evm;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;

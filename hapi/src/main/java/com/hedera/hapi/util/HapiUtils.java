@@ -118,10 +118,7 @@ public class HapiUtils {
 
     /** Converts the given {@link Instant} into a {@link Timestamp}. */
     public static Timestamp asTimestamp(@NonNull final Instant instant) {
-        return Timestamp.newBuilder()
-                .seconds(instant.getEpochSecond())
-                .nanos(instant.getNano())
-                .build();
+        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 
     /** Converts the given {@link Timestamp} into an {@link Instant}. */
@@ -288,12 +285,10 @@ public class HapiUtils {
                 .append(version.minor())
                 .append(".")
                 .append(version.patch());
-        if (version.pre() != null
-                && !version.pre().isBlank()
-                && alphaNumberOrMaxValue(version.pre()) != Integer.MAX_VALUE) {
+        if (!version.pre().isBlank()) {
             baseVersion.append("-").append(version.pre());
         }
-        if (version.build() != null && !version.build().isBlank()) {
+        if (!version.build().isBlank()) {
             baseVersion.append("+").append(version.build());
         }
         return baseVersion.toString();
@@ -338,34 +333,5 @@ public class HapiUtils {
             builder.append("-");
         }
         return builder.toString();
-    }
-
-    private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null || s.isBlank()) {
-            return 0;
-        } else {
-            try {
-                return Integer.parseInt(s);
-            } catch (NumberFormatException ignore) {
-                return 0;
-            }
-        }
-    }
-
-    /**
-     * Given a pre-release version, returns the numeric part of the version or {@link Integer#MAX_VALUE} if the
-     * pre-release version is not a number. (Which implies the version is not an alpha version, and comes after
-     * any alpha version.)
-     *
-     * @param pre the pre-release version
-     * @return the numeric part of the pre-release version or {@link Integer#MAX_VALUE}
-     */
-    public static int alphaNumberOrMaxValue(@Nullable final String pre) {
-        if (pre == null) {
-            return Integer.MAX_VALUE;
-        }
-        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
-        // alpha versions come before everything else
-        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 }

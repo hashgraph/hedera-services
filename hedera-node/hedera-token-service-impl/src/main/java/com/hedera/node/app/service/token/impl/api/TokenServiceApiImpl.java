@@ -45,7 +45,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -76,7 +76,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private final Predicate<CryptoTransferTransactionBody> customFeeTest;
 
     /**
-     * Constructs a {@link TokenServiceApiImpl}
+     * Constructs a {@link TokenServiceApiImpl}.
      * @param config the configuration
      * @param storeMetricsService the store metrics service
      * @param writableStates the writable states
@@ -356,14 +356,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // no conceivable way that these accounts *should* be null at this point.
         final var payerAccount = lookupAccount("Payer", payerId);
         if (payerAccount.tinybarBalance() < fees.networkFee()) {
-            throw new IllegalArgumentException(
-                    "Payer %s (balance=%d) cannot afford network fee of %d, which should have been a due diligence failure"
-                            .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
+            throw new IllegalArgumentException(("Payer %s (balance=%d) cannot afford network fee of %d, "
+                            + "which should have been a due diligence failure")
+                    .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
         }
         if (fees.serviceFee() > 0 && payerAccount.tinybarBalance() < fees.totalFee()) {
-            throw new IllegalArgumentException(
-                    "Payer %s (balance=%d) cannot afford total fee of %d, which means service component should have been zeroed out"
-                            .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
+            throw new IllegalArgumentException(("Payer %s (balance=%d) cannot afford total fee of %d, "
+                            + "which means service component should have been zeroed out")
+                    .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
         }
         // Prioritize network fee over node fee
         final long chargeableNodeFee = Math.min(fees.nodeFee(), payerAccount.tinybarBalance() - fees.networkFee());
@@ -460,7 +460,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      *
      * @param logName The name of this account to use in log statements.
      * @param id The account ID to lookup
-     * @return The looked up account.
+     * @return The looked up account
      * @throws IllegalStateException if the given account doesn't exist
      */
     @NonNull
@@ -492,7 +492,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final AccountID deletedId,
             @NonNull final AccountID obtainerId,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final DeleteCapableTransactionRecordBuilder recordBuilder,
+            @NonNull final DeleteCapableTransactionStreamBuilder recordBuilder,
             @NonNull final FreeAliasOnDeletion freeAliasOnDeletion) {
         // validate the semantics involving dynamic properties and state.
         // Gets delete and transfer accounts from state

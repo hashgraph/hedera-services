@@ -38,7 +38,7 @@ public interface ReadableAccountStore {
      * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
      */
     @Nullable
-    Account getAccountById(@NonNull final AccountID accountID);
+    Account getAccountById(@NonNull AccountID accountID);
 
     /**
      * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
@@ -49,7 +49,7 @@ public interface ReadableAccountStore {
      * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
      */
     @Nullable
-    Account getAliasedAccountById(@NonNull final AccountID accountID);
+    Account getAliasedAccountById(@NonNull AccountID accountID);
 
     /**
      * Fetches an {@link Account} object from state with the given alias. If the account could not be
@@ -59,23 +59,23 @@ public interface ReadableAccountStore {
      * @return AccountID object if successfully fetched or {@code null} if the account doesn't exist
      */
     @Nullable
-    AccountID getAccountIDByAlias(@NonNull final Bytes alias);
+    AccountID getAccountIDByAlias(@NonNull Bytes alias);
 
     /**
      * Gets whether the given alias is known to this store. It is known if it is present in the alias-to-accountID
      * map.
      *
      * @param alias The alias to check.
-     * @return true if the given alias has a mapping to an AccountID in this store.
+     * @return true if the given alias has a mapping to an AccountID in this store
      */
-    boolean containsAlias(@NonNull final Bytes alias);
+    boolean containsAlias(@NonNull Bytes alias);
 
     /**
      * Returns true if the given account ID exists in state.
      * @param accountID the ID to check
      * @return true if the account exists in state
      */
-    boolean contains(@NonNull final AccountID accountID);
+    boolean contains(@NonNull AccountID accountID);
 
     /**
      * Returns true if the given account ID exists in state, or if the given account ID is an alias that exists in

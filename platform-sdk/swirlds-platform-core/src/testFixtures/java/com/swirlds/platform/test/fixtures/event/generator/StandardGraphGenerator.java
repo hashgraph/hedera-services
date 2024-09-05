@@ -24,7 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
@@ -498,7 +498,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
-        new StatefulEventHasher().hashEvent(next.getBaseEvent());
+        new DefaultEventHasher().hashEvent(next.getBaseEvent());
         final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
         consensus.addEvent(inOrderLinker.linkEvent(tmp));
