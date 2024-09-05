@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
@@ -54,12 +55,13 @@ public class HederaAccountNumAliasCall extends AbstractCall {
             return gasOnly(fullResultsFor(INVALID_SOLIDITY_ADDRESS, ZERO_ADDRESS), INVALID_SOLIDITY_ADDRESS, true);
         }
         final var account = enhancement.nativeOperations().getAccount(accountNum);
-        if (account == null) {
-            // (Can't actually be reached - see `accountNumberForEvmReference`)
+        if (account == null
+                || !account.hasAccountId()
+                || !account.accountIdOrElse(AccountID.DEFAULT).hasAccountNum()) {
             return gasOnly(fullResultsFor(INVALID_SOLIDITY_ADDRESS, ZERO_ADDRESS), INVALID_SOLIDITY_ADDRESS, true);
         }
-        final var accountAsAddress =
-                asHeadlongAddress(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
+        final var accountAsAddress = asHeadlongAddress(
+                asEvmAddress(account.accountIdOrElse(AccountID.DEFAULT).accountNumOrElse(0L)));
         return gasOnly(fullResultsFor(SUCCESS, accountAsAddress), SUCCESS, true);
     }
 
