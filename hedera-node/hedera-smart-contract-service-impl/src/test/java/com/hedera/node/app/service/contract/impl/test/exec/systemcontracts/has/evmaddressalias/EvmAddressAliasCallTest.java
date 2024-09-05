@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.has.
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevmaddressalias.EvmAddressAliasTranslator.EVM_ADDRESS_ALIAS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_RECEIVER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR;
@@ -112,7 +111,7 @@ class EvmAddressAliasCallTest extends CallTestBase {
         given(nativeOperations.getAccount(numberOfLongZero(NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS)))
                 .willReturn(account);
         given(account.hasAccountId()).willReturn(true);
-        given(account.accountId()).willReturn(ALIASED_RECEIVER_ID);
+        given(account.alias()).willReturn(RECEIVER_ADDRESS);
         subject = new EvmAddressAliasCall(attempt, asHeadlongAddress(NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS.toArray()));
 
         final var result = subject.execute(frame).fullResult().result();
