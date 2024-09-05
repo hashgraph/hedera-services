@@ -190,7 +190,6 @@ public class BlockStreamBuilder
     private ContractOpType contractOpType = null;
     private Bytes ethereumHash = Bytes.EMPTY;
 
-    private final List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
     private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
     // Sidecar data, booleans are the migration flag
@@ -459,7 +458,6 @@ public class BlockStreamBuilder
     @Override
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
         requireNonNull(pendingAirdropRecord);
-        this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 
@@ -849,9 +847,9 @@ public class BlockStreamBuilder
                     .cryptoTransfer(CryptoTransferOutput.newBuilder()
                             .assessedCustomFees(assessedCustomFees)
                             .build())));
-        } else if (functionality == TOKEN_AIRDROP && (hasAssessedCustomFees || !pendingAirdropRecords.isEmpty())) {
-            items.add(itemWith(TransactionOutput.newBuilder()
-                    .tokenAirdrop(new TokenAirdropOutput(assessedCustomFees, pendingAirdropRecords))));
+        } else if (functionality == TOKEN_AIRDROP && hasAssessedCustomFees) {
+            items.add(
+                    itemWith(TransactionOutput.newBuilder().tokenAirdrop(new TokenAirdropOutput(assessedCustomFees))));
         }
     }
 

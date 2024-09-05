@@ -37,11 +37,15 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
@@ -61,6 +65,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,19 +79,28 @@ public class BaseTranslator {
 
     private static final long EXCHANGE_RATES_FILE_NUM = 112L;
 
+    /**
+     * These fields are context maintained for the full lifetime of the translator.
+     */
     private long highestKnownEntityNum = 0L;
-    private long prevHighestKnownEntityNum = 0L;
+
     private ExchangeRateSet activeRates;
+    private final Map<TokenID, Long> totalSupplies = new HashMap<>();
+    private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Set<TokenAssociation> knownAssociations = new HashSet<>();
+    private final Map<PendingAirdropId, PendingAirdropValue> pendingAirdrops = new HashMap<>();
+
+    /**
+     * These fields are used to translate a single "unit" of block items connected to a {@link TransactionID}.
+     */
+    private long prevHighestKnownEntityNum = 0L;
+
     private Instant userTimestamp;
     private ScheduleID scheduleRef;
-
     private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
-    private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
-    private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
-    private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
-    private final Set<TokenAssociation> knownAssociations = new HashSet<>();
+    private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -265,6 +279,30 @@ public class BaseTranslator {
             return -1L;
         }
         return nextCreatedNums.get(type).removeFirst();
+    }
+
+    /**
+     * Tracks the given pending airdrop record if it was not already in the set of known pending airdrops.
+     *
+     * @param pendingAirdropRecord the pending airdrop record to track
+     * @return true if the record was tracked
+     */
+    public boolean track(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        final var airdropId = pendingAirdropRecord.pendingAirdropIdOrThrow();
+        final var currentValue = pendingAirdrops.get(airdropId);
+        final var newValue = pendingAirdropRecord.pendingAirdropValue();
+        final var changed = !pendingAirdrops.containsKey(airdropId) || !Objects.equals(currentValue, newValue);
+        pendingAirdrops.put(airdropId, newValue);
+        return changed;
+    }
+
+    /**
+     * Removes the given pending airdrop record from the set of known pending airdrops.
+     *
+     * @param pendingAirdropId the id to remove
+     */
+    public void remove(@NonNull final PendingAirdropId pendingAirdropId) {
+        pendingAirdrops.remove(pendingAirdropId);
     }
 
     /**

@@ -66,6 +66,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
+import static com.hedera.services.bdd.junit.support.translators.impl.AirdropRemovalTranslator.AIRDROP_REMOVAL_TRANSLATOR;
 import static com.hedera.services.bdd.junit.support.translators.impl.NoExplicitSideEffectsTranslator.NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR;
 import static java.util.Objects.requireNonNull;
 
@@ -153,9 +154,9 @@ public class BlockTransactionalUnitTranslator {
                     put(SYSTEM_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(SYSTEM_UNDELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_AIRDROP, new TokenAirdropTranslator());
+                    put(TOKEN_CLAIM_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
+                    put(TOKEN_CANCEL_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
                     put(TOKEN_FEE_SCHEDULE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(TOKEN_CLAIM_AIRDROP, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(TOKEN_CANCEL_AIRDROP, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_REJECT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(TOKEN_ACCOUNT_WIPE, new TokenWipeTranslator());
                     put(TOKEN_ASSOCIATE_TO_ACCOUNT, new TokenAssociateTranslator());
