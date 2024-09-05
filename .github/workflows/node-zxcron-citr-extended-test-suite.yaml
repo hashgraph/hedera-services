@@ -20,6 +20,9 @@ on:
     # Runs Extended Test Suite every three hours
     - cron: '0 */3 * * *'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
