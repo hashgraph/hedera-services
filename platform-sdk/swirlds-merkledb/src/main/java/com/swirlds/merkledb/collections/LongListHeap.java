@@ -161,12 +161,6 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    protected void releaseChunk(@NonNull AtomicLongArray chunk) {
-        // no action needed, the array will be collected by GC
-    }
-
-    /** {@inheritDoc} */
-    @Override
     protected void partialChunkCleanup(
             @NonNull final AtomicLongArray atomicLongArray, final boolean leftSide, final long entriesToCleanUp) {
         if (leftSide) {

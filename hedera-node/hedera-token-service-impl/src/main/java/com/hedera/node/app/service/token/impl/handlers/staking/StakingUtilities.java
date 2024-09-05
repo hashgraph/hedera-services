@@ -61,7 +61,8 @@ public class StakingUtilities {
     }
 
     /**
-     * Checks if the account has any changes that modified the staking metadata, which is stakedId or declineReward field.
+     * Checks if the account has any changes that modified the staking metadata,
+     * which is stakedId or declineReward field.
      * @param originalAccount the original account before the transaction
      * @param modifiedAccount the modified account after the transaction
      * @return true if the account has any changes that modified the staking metadata, false otherwise

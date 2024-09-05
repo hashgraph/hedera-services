@@ -110,7 +110,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -123,7 +123,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     }
 
     /**
-     * Performs checks that require state and context
+     * Performs checks that require state and context.
      */
     @NonNull
     private Validated validateSemantics(
@@ -176,7 +176,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
 
     /**
      * Method that checks if the number of token associations for the given account is within the
-     * allowable limit set by the config (if the limit is enabled)
+     * allowable limit set by the config (if the limit is enabled).
      *
      * @return true if tokenAssociationsLimited is false or if the number of token associations is
      * within the allowed maxTokensPerAccount

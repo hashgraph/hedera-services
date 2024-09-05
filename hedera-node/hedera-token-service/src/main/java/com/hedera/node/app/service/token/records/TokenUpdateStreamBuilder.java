@@ -30,5 +30,5 @@ public interface TokenUpdateStreamBuilder extends TokenBaseStreamBuilder {
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    TokenUpdateStreamBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenUpdateStreamBuilder addAutomaticTokenAssociation(@NonNull TokenAssociation tokenAssociation);
 }

@@ -37,11 +37,11 @@ public interface ReadableTopicStore {
      * @return topic's metadata
      */
     @Nullable
-    Topic getTopic(@NonNull final TopicID id);
+    Topic getTopic(@NonNull TopicID id);
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     long sizeOfState();
 }

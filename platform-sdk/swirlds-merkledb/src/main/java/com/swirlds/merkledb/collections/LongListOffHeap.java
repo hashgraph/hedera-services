@@ -20,10 +20,10 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNullElse;
 
+import com.swirlds.merkledb.utilities.MemoryUtils;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -48,16 +48,6 @@ import org.apache.logging.log4j.Logger;
  * writes.
  */
 public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implements OffHeapUser {
-    /** Offset of the {@code java.nio.Buffer#address} field. */
-    private static final long BYTE_BUFFER_ADDRESS_FIELD_OFFSET;
-
-    static {
-        try {
-            BYTE_BUFFER_ADDRESS_FIELD_OFFSET = UNSAFE.objectFieldOffset(Buffer.class.getDeclaredField("address"));
-        } catch (final NoSuchFieldException | SecurityException | IllegalArgumentException e) {
-            throw new InternalError(e);
-        }
-    }
 
     private static final Logger logger = LogManager.getLogger(LongListOffHeap.class);
     /**
@@ -118,12 +108,10 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
         }
     }
 
-    /**
-     * Cleans up the direct buffers reserved for the chunk.
-     */
+    /** {@inheritDoc} */
     @Override
     protected void closeChunk(@NonNull final ByteBuffer directBuffer) {
-        UNSAFE.invokeCleaner(directBuffer);
+        MemoryUtils.closeDirectByteBuffer(directBuffer);
     }
 
     /** {@inheritDoc} */
@@ -134,8 +122,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
         get its native memory address from the Buffer.address field; and, second, store
         the given long at the appropriate offset from that address. */
         final int subIndexOffset = subIndex * Long.BYTES;
-        final long chunkPointer = address(chunk);
-        UNSAFE.putLongVolatile(null, chunkPointer + subIndexOffset, value);
+        MemoryUtils.putLongVolatile(chunk, subIndexOffset, value);
     }
 
     /** {@inheritDoc} */
@@ -147,8 +134,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
         Buffer.address field; and, second, compare-and-swap the given long at the
         appropriate offset from that address. */
         final int subIndexBytes = subIndex * Long.BYTES;
-        final long chunkPointer = address(chunk);
-        return UNSAFE.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
+        return MemoryUtils.compareAndSwapLong(chunk, subIndexBytes, oldValue, newValue);
     }
 
     /**
@@ -190,7 +176,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
             }
         } finally {
             // releasing memory allocated
-            UNSAFE.invokeCleaner(emptyBuffer);
+            MemoryUtils.closeDirectByteBuffer(emptyBuffer);
         }
     }
 
@@ -205,9 +191,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
     protected long lookupInChunk(@NonNull final ByteBuffer chunk, final long subIndex) {
         try {
             /* Do a volatile memory read from off-heap memory */
-            final long chunkPointer = address(chunk);
-            final int subIndexOffset = toIntExact(subIndex * Long.BYTES);
-            return UNSAFE.getLongVolatile(null, chunkPointer + subIndexOffset);
+            return MemoryUtils.getLongVolatile(chunk, subIndex * Long.BYTES);
         } catch (final IndexOutOfBoundsException e) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -225,10 +209,6 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
         return directBuffer;
     }
 
-    protected void releaseChunk(@NonNull ByteBuffer newChunk) {
-        UNSAFE.invokeCleaner(newChunk);
-    }
-
     /**
      * Looks up a chunk by {@code chunkIndex} and, if the chunk exists,
      * zeros values up to {@code elementsToCleanUp} index.
@@ -239,28 +219,14 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
     @Override
     protected void partialChunkCleanup(
             @NonNull final ByteBuffer chunk, final boolean leftSide, final long entriesToCleanUp) {
-        final long chunkPointer = address(chunk);
         if (leftSide) {
             // cleans up all values up to newMinValidIndex in the first chunk
-            UNSAFE.setMemory(chunkPointer, entriesToCleanUp * Long.BYTES, (byte) 0);
+            MemoryUtils.setMemory(chunk, 0, entriesToCleanUp * Long.BYTES, (byte) 0);
         } else {
             // cleans up all values on the right side of the last chunk
             final long offset = (numLongsPerChunk - entriesToCleanUp) * Long.BYTES;
-            UNSAFE.setMemory(chunkPointer + offset, entriesToCleanUp * Long.BYTES, (byte) 0);
+            MemoryUtils.setMemory(chunk, offset, entriesToCleanUp * Long.BYTES, (byte) 0);
         }
-    }
-
-    /**
-     * Get the address at which the underlying buffer storage begins.
-     *
-     * @param buffer that wraps the underlying storage.
-     * @return the memory address at which the buffer storage begins.
-     */
-    static long address(final Buffer buffer) {
-        if (!buffer.isDirect()) {
-            throw new IllegalArgumentException("buffer.isDirect() must be true");
-        }
-        return UNSAFE.getLong(buffer, BYTE_BUFFER_ADDRESS_FIELD_OFFSET);
     }
 
     /**

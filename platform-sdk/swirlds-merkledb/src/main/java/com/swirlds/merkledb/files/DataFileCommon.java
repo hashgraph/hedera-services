@@ -31,8 +31,6 @@ import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongList;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -51,7 +49,6 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import sun.misc.Unsafe;
 
 /**
  * Common static content for data files. As much as possible is package protected but some is used
@@ -60,22 +57,6 @@ import sun.misc.Unsafe;
 public final class DataFileCommon {
 
     private static final Logger logger = LogManager.getLogger(DataFileCommon.class);
-
-    /**
-     * Access to sun.misc.Unsafe required to close mapped byte buffers explicitly rather than
-     * to rely on GC to collect them.
-     */
-    private static final Unsafe UNSAFE;
-
-    static {
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            UNSAFE = (Unsafe) f.get(null);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError(e);
-        }
-    }
 
     /** The inverse of the minimum decimal value to be reflected in rounding (that is, 0.01). */
     private static final int ROUNDING_SCALE_FACTOR = 100;
@@ -138,11 +119,6 @@ public final class DataFileCommon {
 
     private DataFileCommon() {
         throw new IllegalStateException("Utility class; should not be instantiated.");
-    }
-
-    public static void closeMmapBuffer(final MappedByteBuffer buffer) {
-        assert buffer != null;
-        UNSAFE.invokeCleaner(buffer);
     }
 
     /**

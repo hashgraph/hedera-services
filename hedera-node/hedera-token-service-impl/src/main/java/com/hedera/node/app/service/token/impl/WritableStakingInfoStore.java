@@ -38,7 +38,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     private final WritableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
 
     /**
-     * Create a new {@link WritableStakingInfoStore} instance
+     * Create a new {@link WritableStakingInfoStore} instance.
      *
      * @param states The state to use
      */
@@ -50,7 +50,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     }
 
     /**
-     * Returns the {@link StakingNodeInfo} for the given node's numeric ID (NOT the account ID)
+     * Returns the {@link StakingNodeInfo} for the given node's numeric ID (NOT the account ID).
      *
      * @param nodeId - the node ID of the node to retrieve the staking info for
      * @return the staking info for the given node ID, or null if no such node exists
@@ -62,7 +62,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     }
 
     /**
-     * Persists a new {@link StakingNodeInfo} into state
+     * Persists a new {@link StakingNodeInfo} into state.
      *
      * @param nodeId the node's ID
      * @param stakingNodeInfo the staking info to persist

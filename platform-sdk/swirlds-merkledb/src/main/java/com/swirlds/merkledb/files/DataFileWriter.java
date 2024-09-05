@@ -22,6 +22,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.utilities.MemoryUtils;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.MappedByteBuffer;
@@ -117,7 +118,7 @@ public final class DataFileWriter {
                 throw new IOException("Failed to map file channel to memory");
             }
             if (writingMmap != null) {
-                DataFileCommon.closeMmapBuffer(writingMmap);
+                MemoryUtils.closeMmapBuffer(writingMmap);
             }
             mmapPositionInFile = newMmapPos;
             writingMmap = newMmap;
@@ -226,8 +227,8 @@ public final class DataFileWriter {
         // the buffer will be closed below anyway
         metadata.updateDataItemCount(writingHeaderPbjData, dataItemCount);
         // release all the resources
-        DataFileCommon.closeMmapBuffer(writingHeaderMmap);
-        DataFileCommon.closeMmapBuffer(writingMmap);
+        MemoryUtils.closeMmapBuffer(writingHeaderMmap);
+        MemoryUtils.closeMmapBuffer(writingMmap);
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             channel.truncate(totalFileSize);

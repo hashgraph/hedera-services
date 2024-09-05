@@ -38,7 +38,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state, or the ID
      *     value has a mismatched realm or shard for this node.
      */
-    Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime);
+    Schedule delete(@Nullable ScheduleID scheduleToDelete, @NonNull Instant consensusTime);
 
     /**
      * Given the ID of a schedule, return a mutable reference to the schedule in this state.
@@ -46,7 +46,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param idToFind The ID to find
      * @return the Schedule to modify
      */
-    Schedule getForModify(final ScheduleID idToFind);
+    Schedule getForModify(ScheduleID idToFind);
 
     /**
      * Add a schedule to this state.
