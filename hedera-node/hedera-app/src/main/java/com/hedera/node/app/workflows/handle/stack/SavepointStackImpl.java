@@ -482,7 +482,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
-                builder.parentConsensus(consensusTime);
+                // Only set exchange rates on transactions preceding the user transaction, since
+                // no subsequent child can change the exchange rate
+                builder.parentConsensus(consensusTime).exchangeRate(null);
             }
             switch (streamMode) {
                 case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
