@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.stale;
 
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
@@ -33,12 +34,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.ToLongFunction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Detects when a self event becomes stale. Note that this detection may not observe a self event go stale if the node
  * needs to reconnect or restart.
  */
 public class DefaultStaleEventDetector implements StaleEventDetector {
+
+    private static final Logger logger = LogManager.getLogger(DefaultStaleEventDetector.class);
 
     /**
      * The ID of this node.
@@ -102,6 +107,11 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         if (currentEventWindow.isAncient(event)) {
             // Although unlikely, it is plausible for an event to go stale before it is added to the detector.
             handleStaleEvent(event);
+            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addSelfEvent gen: {}  created: {}  #txn: {}  threshold: {}",
+                    event.getGeneration(),
+                    event.getTimeCreated(),
+                    event.getTransactionCount(),
+                    currentEventWindow.getAncientThreshold());
 
             final RoutableData<StaleEventDetectorOutput> staleEvent =
                     new RoutableData<>(StaleEventDetectorOutput.STALE_SELF_EVENT, event);
@@ -132,6 +142,11 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         final List<RoutableData<StaleEventDetectorOutput>> output = new ArrayList<>(staleEvents.size());
         for (final PlatformEvent event : staleEvents) {
             handleStaleEvent(event);
+            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addConsensusRound gen: {}  created: {}  #txn: {}  threshold: {}",
+                    event.getGeneration(),
+                    event.getTimeCreated(),
+                    event.getTransactionCount(),
+                    currentEventWindow.getAncientThreshold());
             output.add(new RoutableData<>(StaleEventDetectorOutput.STALE_SELF_EVENT, event));
         }
 
