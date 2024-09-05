@@ -90,7 +90,7 @@ public class EndOfStakingPeriodUpdaterTest {
     private WritableStakingInfoStore stakingInfoStore;
     private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
-    public static final ConfigProvider DEFAULT_CONFIG_PROVIDER = HederaTestConfigBuilder.createConfigProvider();
+    private static final ConfigProvider DEFAULT_CONFIG_PROVIDER = HederaTestConfigBuilder.createConfigProvider();
 
     @BeforeEach
     void setup() {
