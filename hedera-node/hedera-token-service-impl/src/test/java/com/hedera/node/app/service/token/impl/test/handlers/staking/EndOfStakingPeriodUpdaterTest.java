@@ -50,7 +50,6 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
@@ -92,7 +91,6 @@ public class EndOfStakingPeriodUpdaterTest {
     private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
     public static final ConfigProvider DEFAULT_CONFIG_PROVIDER = HederaTestConfigBuilder.createConfigProvider();
-
 
     @BeforeEach
     void setup() {
