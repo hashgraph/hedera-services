@@ -41,8 +41,7 @@ public class RosterUtils {
             hasher.putBytes(entry.gossipCaCertificate().toByteArray());
             hasher.putBytes(entry.tssEncryptionKey().toByteArray());
             entry.gossipEndpoint().forEach(endpoint -> {
-                final byte[] bytes =
-                        ServiceEndpoint.PROTOBUF.toBytes(endpoint).toByteArray();
+                final byte[] bytes = ServiceEndpoint.PROTOBUF.toBytes(endpoint).toByteArray();
                 hasher.putInt(bytes.length);
                 hasher.putBytes(bytes);
             });
