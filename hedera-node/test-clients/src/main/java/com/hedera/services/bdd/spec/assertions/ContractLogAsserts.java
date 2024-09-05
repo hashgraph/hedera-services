@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.assertions;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static java.util.Arrays.copyOfRange;
 
 import com.google.common.primitives.Longs;

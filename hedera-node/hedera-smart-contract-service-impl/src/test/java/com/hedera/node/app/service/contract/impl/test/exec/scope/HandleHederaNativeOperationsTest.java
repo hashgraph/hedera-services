@@ -65,10 +65,9 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
-import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
@@ -180,6 +179,7 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatching() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
@@ -192,6 +192,7 @@ class HandleHederaNativeOperationsTest {
                 .thenReturn(cryptoCreateRecordBuilder);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+        given(cryptoCreateRecordBuilder.memo(LAZY_CREATION_MEMO)).willReturn(cryptoCreateRecordBuilder);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);
         assertEquals(OK, status);
@@ -203,6 +204,7 @@ class HandleHederaNativeOperationsTest {
     void createsHollowAccountByDispatchingDoesNotThrowErrors() {
         final var synthLazyCreate = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(CANONICAL_ALIAS))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.dispatchRemovablePrecedingTransaction(
@@ -222,7 +224,6 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void finalizeHollowAccountAsContractUsesApiAndStore() {
-        final var entityNumGenerator = mock(EntityNumGenerator.class);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -301,7 +302,7 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void trackDeletionUpdatesMap() {
-        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        final DeleteCapableTransactionStreamBuilder beneficiaries = mock(DeleteCapableTransactionStreamBuilder.class);
         given(frame.getMessageFrameStack()).willReturn(stack);
         stack.push(frame);
         given(frame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE)).willReturn(beneficiaries);

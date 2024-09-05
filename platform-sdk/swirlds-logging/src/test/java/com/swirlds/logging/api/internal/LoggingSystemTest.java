@@ -17,10 +17,10 @@
 package com.swirlds.logging.api.internal;
 
 import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
-import static com.swirlds.logging.util.LoggingTestUtils.EXPECTED_STATEMENTS;
-import static com.swirlds.logging.util.LoggingTestUtils.countLinesInStatements;
-import static com.swirlds.logging.util.LoggingTestUtils.getLines;
-import static com.swirlds.logging.util.LoggingTestUtils.linesToStatements;
+import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.EXPECTED_STATEMENTS;
+import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.countLinesInStatements;
+import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.getLines;
+import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.linesToStatements;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,9 +44,9 @@ import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.test.fixtures.InMemoryHandler;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
-import com.swirlds.logging.util.LoggingSystemTestOrchestrator;
-import com.swirlds.logging.util.LoggingTestScenario;
-import com.swirlds.logging.util.LoggingTestUtils;
+import com.swirlds.logging.test.fixtures.util.LoggingSystemTestOrchestrator;
+import com.swirlds.logging.test.fixtures.util.LoggingTestScenario;
+import com.swirlds.logging.test.fixtures.util.LoggingTestUtils;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;

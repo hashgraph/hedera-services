@@ -63,7 +63,9 @@ public class TokenAirdropBase {
     protected static final String ASSOCIATED_RECEIVER = "associatedReceiver";
     // tokens
     protected static final String FUNGIBLE_TOKEN = "fungibleToken";
+    protected static final String FUNGIBLE_TOKEN2 = "fungibleToken2";
     protected static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    protected static final String FUNGIBLE_FREEZE_KEY = "fungibleTokenFreeze";
     protected static final String NFT_FOR_CONTRACT_TESTS = "nonFungibleTokens";
     // tokens with custom fees
     protected static final String FT_WITH_HBAR_FIXED_FEE = "fungibleTokenWithHbarCustomFee";
@@ -77,7 +79,21 @@ public class TokenAirdropBase {
     protected static final String HTS_COLLECTOR = "htsCollector";
     protected static final String HBAR_COLLECTOR = "hbarCollector";
     protected static final String TREASURY_FOR_CUSTOM_FEE_TOKENS = "treasuryForCustomFeeTokens";
+    protected static final String TREASURY_AS_SENDER = "treasuryAsSender";
+    protected static final String TREASURY_AS_SENDER_TOKEN = "treasuryAsSenderToken";
     protected static final String OWNER_OF_TOKENS_WITH_CUSTOM_FEES = "ownerOfTokensWithCustomFees";
+
+    // all collectors exempt
+    protected static final String NFT_ALL_COLLECTORS_EXEMPT_OWNER = "nftAllCollectorsExemptOwner";
+    protected static final String NFT_ALL_COLLECTORS_EXEMPT_RECEIVER = "nftAllCollectorsExemptReceiver";
+    protected static final String NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR = "nftAllCollectorsExemptCollector";
+    protected static final String NFT_ALL_COLLECTORS_EXEMPT_TOKEN = "nftAllCollectorsExemptToken";
+    protected static final String NFT_ALL_COLLECTORS_EXEMPT_KEY = "nftAllCollectorsExemptKey";
+
+    protected static final String FT_ALL_COLLECTORS_EXEMPT_OWNER = "ftAllCollectorsExemptOwner";
+    protected static final String FT_ALL_COLLECTORS_EXEMPT_RECEIVER = "ftAllCollectorsExemptReceiver";
+    protected static final String FT_ALL_COLLECTORS_EXEMPT_COLLECTOR = "ftAllCollectorsExemptCollector";
+    protected static final String FT_ALL_COLLECTORS_EXEMPT_TOKEN = "ftAllCollectorsExemptToken";
 
     protected TokenMovement defaultMovementOfToken(String token) {
         return moving(10, token).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
@@ -102,7 +118,13 @@ public class TokenAirdropBase {
         final var t = new ArrayList<SpecOperation>(List.of(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
                 // base tokens
+                newKeyNamed(FUNGIBLE_FREEZE_KEY),
                 tokenCreate(FUNGIBLE_TOKEN)
+                        .treasury(OWNER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .freezeKey(FUNGIBLE_FREEZE_KEY)
+                        .initialSupply(1000L),
+                tokenCreate(FUNGIBLE_TOKEN2)
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(1000L),
@@ -132,7 +154,12 @@ public class TokenAirdropBase {
                         .supplyKey(nftSupplyKey),
                 mintToken(
                         NFT_FOR_CONTRACT_TESTS,
-                        IntStream.range(1, 10)
+                        IntStream.range(0, 10)
+                                .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                .toList()),
+                mintToken(
+                        NFT_FOR_CONTRACT_TESTS,
+                        IntStream.range(10, 20)
                                 .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
                                 .toList()),
                 // all kind of receivers
@@ -199,7 +226,7 @@ public class TokenAirdropBase {
                         .initialSupply(Long.MAX_VALUE)
                         .payingWith(HTS_COLLECTOR),
                 tokenCreate(NFT_WITH_ROYALTY_FEE)
-                        .maxSupply(10L)
+                        .maxSupply(100L)
                         .initialSupply(0)
                         .supplyType(TokenSupplyType.FINITE)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -208,7 +235,57 @@ public class TokenAirdropBase {
                         .withCustom(
                                 royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
                 tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
-                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
+                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+
+                // token treasury as sender
+                cryptoCreate(TREASURY_AS_SENDER),
+                tokenCreate(TREASURY_AS_SENDER_TOKEN)
+                        .treasury(TREASURY_AS_SENDER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(tokenTotal)
+                        .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN, HTS_COLLECTOR)),
+                tokenAssociate(HTS_COLLECTOR, TREASURY_AS_SENDER_TOKEN),
+
+                // all collectors exempt setup
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR),
+                newKeyNamed(NFT_ALL_COLLECTORS_EXEMPT_KEY),
+                tokenCreate(NFT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                        .maxSupply(100L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(NFT_ALL_COLLECTORS_EXEMPT_KEY)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                        .withCustom(royaltyFeeWithFallback(
+                                1,
+                                2,
+                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR,
+                                true))
+                        // set the receiver as a custom fee collector
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
+                tokenAssociate(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_TOKEN),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_OWNER),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_RECEIVER),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR).balance(0L),
+                tokenCreate(FT_ALL_COLLECTORS_EXEMPT_TOKEN)
+                        .initialSupply(100L)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                        // setting a custom fee with allCollectorsExempt=true(see HIP-573)
+                        .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_COLLECTOR, true))
+                        // set the receiver as a custom fee collector
+                        .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
+                tokenAssociate(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_TOKEN)));
+
+        // mint 99 NFTs
+        for (int i = 0; i < 99; i++) {
+            t.add(mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely(("meta" + i).getBytes()))));
+        }
 
         return t.toArray(new SpecOperation[0]);
     }
@@ -216,16 +293,20 @@ public class TokenAirdropBase {
     protected static SpecOperation[] setUpEntitiesPreHIP904() {
         final var validAlias = "validAlias";
         final var aliasTwo = "alias2.0";
+        final var validAliasForAirdrop = "validAliasForAirdrop";
         final var sponsor = "sponsor";
         final var t = new ArrayList<SpecOperation>(List.of(
                 // create hollow account with 0 auto associations
                 cryptoCreate(sponsor).balance(ONE_HUNDRED_HBARS),
                 newKeyNamed(validAlias).shape(SECP_256K1_SHAPE),
-                newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE)));
+                newKeyNamed(aliasTwo).shape(SECP_256K1_SHAPE),
+                newKeyNamed(validAliasForAirdrop).shape(SECP_256K1_SHAPE)));
         t.addAll(Arrays.stream(createHollowAccountFrom(validAlias)).toList());
         t.addAll(Arrays.stream(createHollowAccountFrom(aliasTwo)).toList());
+        t.addAll(Arrays.stream(createHollowAccountFrom(validAliasForAirdrop)).toList());
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAlias)));
         t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, aliasTwo)));
+        t.add(withOpContext((spec, opLog) -> updateSpecFor(spec, validAliasForAirdrop)));
         return t.toArray(new SpecOperation[0]);
     }
 

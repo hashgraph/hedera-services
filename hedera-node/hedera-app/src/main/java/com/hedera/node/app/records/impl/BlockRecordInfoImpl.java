@@ -28,7 +28,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 /**
  * A simple implementation of {@link BlockRecordInfo} that uses the objects stored in state ({@link BlockInfo} and
@@ -66,41 +65,19 @@ public final class BlockRecordInfoImpl implements BlockRecordInfo {
     }
 
     /** {@inheritDoc} */
-    @Nullable
     @Override
-    public Bytes getRunningHash() {
-        return runningHashes.runningHash();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable
-    @Override
-    public Bytes getNMinus3RunningHash() {
+    public Bytes prngSeed() {
         return runningHashes.nMinus3RunningHash();
     }
 
     /** {@inheritDoc} */
     @Override
-    public long lastBlockNo() {
-        return blockInfo.lastBlockNumber();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable
-    @Override
-    public Instant firstConsTimeOfLastBlock() {
-        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(blockInfo);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable
-    @Override
-    public Bytes lastBlockHash() {
-        return BlockRecordInfoUtils.lastBlockHash(blockInfo);
+    public long blockNo() {
+        return blockInfo.lastBlockNumber() + 1;
     }
 
     @Override
-    public @NonNull Timestamp currentBlockTimestamp() {
+    public @NonNull Timestamp blockTimestamp() {
         // There should always be a current block and a first consensus time within it
         return blockInfo.firstConsTimeOfCurrentBlockOrThrow();
     }

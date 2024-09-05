@@ -33,7 +33,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -100,7 +100,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // a SCHEDULED dispatch)
         rewardReceivers.removeAll(prePaidRewards.keySet());
         // Pay rewards to all possible reward receivers, returns all rewards paid
-        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
+        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
 
@@ -250,18 +250,17 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @Nullable Set<AccountID> specialRewardReceivers,
             @NonNull final Account account,
             @NonNull final WritableAccountStore accountStore) {
-        if (specialRewardReceivers == null) {
-            // Always trigger a reward situation for the new stakee when they are
-            // gaining an indirect staker, even if it doesn't change their total stake
-            specialRewardReceivers = new LinkedHashSet<>();
-        }
+        // Always trigger a reward situation for the new stakee when they are
+        // gaining an indirect staker, even if it doesn't change their total stake
+        var updatedSpecialRewardReceivers =
+                (specialRewardReceivers == null ? new LinkedHashSet<AccountID>() : specialRewardReceivers);
         final var stakedAccountId = account.stakedAccountId();
         final var stakedAccount = accountStore.getOriginalValue(stakedAccountId);
         // if the special reward receiver account is not staked to a node, it will not need to receive reward
         if (stakedAccount != null && stakedAccount.hasStakedNodeId()) {
-            specialRewardReceivers.add(stakedAccountId);
+            updatedSpecialRewardReceivers.add(stakedAccountId);
         }
-        return specialRewardReceivers;
+        return updatedSpecialRewardReceivers;
     }
 
     /**
@@ -402,8 +401,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
             // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
-            if (modifiedStakedNodeId != SENTINEL_NODE_ID)
+            if (modifiedStakedNodeId != SENTINEL_NODE_ID) {
                 stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
+            }
         }
     }
 

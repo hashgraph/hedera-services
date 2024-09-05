@@ -27,6 +27,8 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -65,7 +67,9 @@ import java.util.stream.Stream;
 public abstract class AbstractHashListener<K extends VirtualKey, V extends VirtualValue>
         implements VirtualHashListener<K, V> {
 
-    private final VirtualDataSource<K, V> dataSource;
+    private final KeySerializer<K> keySerializer;
+    private final ValueSerializer<V> valueSerializer;
+    private final VirtualDataSource dataSource;
     private final long firstLeafPath;
     private final long lastLeafPath;
     private List<VirtualLeafRecord<K, V>> leaves;
@@ -86,11 +90,19 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * 		The first leaf path. Must be a valid path.
      * @param lastLeafPath
      * 		The last leaf path. Must be a valid path.
+     * @param keySerializer
+     *      Virtual key serializer. Cannot be null
+     * @param valueSerializer
+     *      Virtual value serializer. Cannot be null
      * @param dataSource
      * 		The data source. Cannot be null.
      */
     protected AbstractHashListener(
-            final long firstLeafPath, final long lastLeafPath, final VirtualDataSource<K, V> dataSource) {
+            final long firstLeafPath,
+            final long lastLeafPath,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final VirtualDataSource dataSource) {
 
         if (firstLeafPath != Path.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
             throw new IllegalArgumentException("The first leaf path is invalid. firstLeafPath=" + firstLeafPath
@@ -104,6 +116,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
         this.firstLeafPath = firstLeafPath;
         this.lastLeafPath = lastLeafPath;
+        this.keySerializer = Objects.requireNonNull(keySerializer);
+        this.valueSerializer = Objects.requireNonNull(valueSerializer);
         this.dataSource = Objects.requireNonNull(dataSource);
     }
 
@@ -178,8 +192,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                         firstLeafPath,
                         lastLeafPath,
                         hashesToFlush.stream(),
-                        leavesToFlush.stream(),
-                        findLeavesToRemove(),
+                        leavesToFlush.stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
+                        findLeavesToRemove().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         true);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

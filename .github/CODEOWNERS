@@ -35,12 +35,10 @@
 /hedera-node/docker/                            @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
-/hedera-node/hedera-mono-service/               @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hapi*/                             @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-admin*/                     @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-app*/                       @hashgraph/hedera-base
 /hedera-node/hedera-consensus*/                 @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-evm*/                       @hashgraph/hedera-smart-contracts-core
 /hedera-node/hedera-file*/                      @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-network*/                   @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-schedule*/                  @hashgraph/hedera-base @hashgraph/hedera-services
@@ -73,7 +71,7 @@
 /platform-sdk/swirlds-config-*/                 @hashgraph/platform-base
 /platform-sdk/swirlds-fchashmap/                @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/swirlds-jasperdb/                 @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-merkledb/                 @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-logging/                  @hashgraph/platform-hashgraph @hashgraph/platform-base
 /platform-sdk/swirlds-logging-*/                @hashgraph/platform-base
 /platform-sdk/swirlds-merkle/                   @hashgraph/platform-data @hashgraph/platform-architects
@@ -98,18 +96,18 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.github/workflows/                             @hashgraph/devops-ci
+/.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Legacy Maven project files
 **/pom.xml                                      @hashgraph/devops-ci
 
 # Gradle project files and inline plugins
-/gradle/                                        @hashgraph/devops-ci
-gradlew                                         @hashgraph/devops-ci
-gradlew.bat                                     @hashgraph/devops-ci
-**/build-logic/                                 @hashgraph/devops-ci
-**/gradle.*                                     @hashgraph/devops-ci
-**/*.gradle.*                                   @hashgraph/devops-ci
+/gradle/                                        @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
+gradlew.bat                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/build-logic/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/gradle.*                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
+**/*.gradle.*                                   @hashgraph/devops-ci @hashgraph/devops-ci-committers
 
 # Codacy Tool Configurations
 /config/                                        @hashgraph/devops-ci @hashgraph/release-engineering-managers

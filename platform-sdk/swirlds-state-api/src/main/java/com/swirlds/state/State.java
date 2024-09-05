@@ -16,19 +16,22 @@
 
 package com.swirlds.state;
 
+import com.swirlds.common.FastCopyable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The full state used of the app. The primary implementation is based on a merkle tree, and the data
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface State {
+public interface State extends FastCopyable {
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
@@ -52,13 +55,45 @@ public interface State {
 
     /**
      * Registers a listener to be notified on each commit if the {@link WritableStates} created by this {@link State}
-     * are marked as {@link CommittableWritableStates}. Implementations need not support unregistering listeners, as
-     * there is no real case that a client would want to be notified of only some commits made to the state.
+     * are marked as {@link CommittableWritableStates}.
      *
      * @param listener The listener to be notified.
      * @throws UnsupportedOperationException if the state does not support listeners.
      */
     default void registerCommitListener(@NonNull final StateChangeListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Unregisters a listener from being notified on each commit if the {@link WritableStates} created by this {@link State}
+     * are marked as {@link CommittableWritableStates}.
+     * @param listener The listener to be unregistered.
+     * @throws UnsupportedOperationException if the state does not support listeners.
+     */
+    default void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default State copy() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns a calculated hash of the state.
+     */
+    @Nullable
+    default Hash getHash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Hashes the state on demand if it is not already hashed. If the state is already hashed, this method is a no-op.
+     */
+    default void computeHash() {
         throw new UnsupportedOperationException();
     }
 }

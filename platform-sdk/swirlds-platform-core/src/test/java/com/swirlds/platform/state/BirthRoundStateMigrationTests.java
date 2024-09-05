@@ -30,6 +30,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -81,11 +83,10 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getPlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
                 signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion);
@@ -106,11 +107,11 @@ class BirthRoundStateMigrationTests {
 
         final SignedState signedState = generateSignedState(random, platformContext);
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getPlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        ;
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         signedState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
         signedState.getState().getPlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
@@ -129,6 +130,11 @@ class BirthRoundStateMigrationTests {
         assertEquals(originalHash, signedState.getState().getHash());
     }
 
+    private static SoftwareVersion createNextVersion(SoftwareVersion previousSoftwareVersion) {
+        return new BasicSoftwareVersion(
+                previousSoftwareVersion.getPbjSemanticVersion().major() + 1);
+    }
+
     @Test
     void migrationTest() {
         final Random random = getRandomPrintSeed();
@@ -138,11 +144,10 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getPlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         final long lastRoundMinimumJudgeGeneration = signedState
                 .getState()
@@ -159,7 +164,12 @@ class BirthRoundStateMigrationTests {
 
         // We expect these fields to be populated at the migration boundary
         assertEquals(
-                newSoftwareVersion, signedState.getState().getPlatformState().getFirstVersionInBirthRoundMode());
+                newSoftwareVersion.getPbjSemanticVersion(),
+                signedState
+                        .getState()
+                        .getPlatformState()
+                        .getFirstVersionInBirthRoundMode()
+                        .getPbjSemanticVersion());
         assertEquals(
                 lastRoundMinimumJudgeGeneration,
                 signedState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());

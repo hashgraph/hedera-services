@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -61,6 +63,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TransferExecutor extends BaseTokenHandler {
     private final CryptoTransferValidator validator;
+
     /**
      * Default constructor for injection.
      */
@@ -70,7 +73,21 @@ public class TransferExecutor extends BaseTokenHandler {
         this.validator = validator;
     }
 
+    /**
+     * Pre-handle for crypto transfer transaction.
+     * @param context handle context
+     * @param op transaction body
+     * @throws PreCheckException if any error occurs during the process
+     */
     protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) throws PreCheckException {
+        preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED);
+    }
+
+    private void preHandle(
+            @NonNull final PreHandleContext context,
+            @NonNull final CryptoTransferTransactionBody op,
+            @NonNull final OptionalKeyCheck receiverKeyCheck)
+            throws PreCheckException {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenTransfers = op.tokenTransfers();
@@ -79,11 +96,24 @@ public class TransferExecutor extends BaseTokenHandler {
         for (final var transfers : tokenTransfers) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
-            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
+            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false, receiverKeyCheck);
+            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore, receiverKeyCheck);
         }
 
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
+    }
+
+    /**
+     * Pre-handle for airdrop transaction, that ignore receiver sign required check. Because airdrops to
+     * receiver with signature required, should result in a pending airdrop or crypto transfer transaction depending
+     * on association and signature.
+     * @param context handle context
+     * @param op transaction body
+     * @throws PreCheckException if any error occurs during the process
+     */
+    protected void preHandleWithOptionalReceiverSignature(PreHandleContext context, CryptoTransferTransactionBody op)
+            throws PreCheckException {
+        preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL);
     }
 
     /**
@@ -100,6 +130,41 @@ public class TransferExecutor extends BaseTokenHandler {
             HandleContext context,
             CryptoTransferStreamBuilder recordBuilder) {
         executeCryptoTransfer(txn, transferContext, context, recordBuilder, false);
+    }
+
+    /**
+     * Execute crypto transfer transaction.
+     *
+     * @param txn transaction body
+     * @param transferContext transfer context
+     * @param context handle context
+     * @param recordBuilder crypto transfer record builder
+     * @param skipCustomFee should execute custom fee steps
+     */
+    protected void executeCryptoTransfer(
+            TransactionBody txn,
+            TransferContextImpl transferContext,
+            HandleContext context,
+            CryptoTransferStreamBuilder recordBuilder,
+            boolean skipCustomFee) {
+        final var topLevelPayer = context.payer();
+        // Use the op with replaced aliases in further steps
+        transferContext.validateHbarAllowances();
+
+        // Replace all aliases in the transaction body with its account ids
+        final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context, validator);
+        // Use the op with replaced aliases in further steps
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext, skipCustomFee);
+        for (final var step : steps) {
+            // Apply all changes to the handleContext's States
+            step.doIn(transferContext);
+        }
+        if (!transferContext.getAutomaticAssociations().isEmpty()) {
+            transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
+        }
+        if (!transferContext.getAssessedCustomFees().isEmpty()) {
+            recordBuilder.assessedCustomFees(transferContext.getAssessedCustomFees());
+        }
     }
 
     protected void executeAirdropCryptoTransfer(
@@ -171,41 +236,6 @@ public class TransferExecutor extends BaseTokenHandler {
     }
 
     /**
-     * Execute crypto transfer transaction
-     *
-     * @param txn transaction body
-     * @param transferContext transfer context
-     * @param context handle context
-     * @param recordBuilder crypto transfer record builder
-     * @param skipCustomFee should execute custom fee steps
-     */
-    protected void executeCryptoTransfer(
-            TransactionBody txn,
-            TransferContextImpl transferContext,
-            HandleContext context,
-            CryptoTransferStreamBuilder recordBuilder,
-            boolean skipCustomFee) {
-        final var topLevelPayer = context.payer();
-        // Use the op with replaced aliases in further steps
-        transferContext.validateHbarAllowances();
-
-        // Replace all aliases in the transaction body with its account ids
-        final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context, validator);
-        // Use the op with replaced aliases in further steps
-        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext, skipCustomFee);
-        for (final var step : steps) {
-            // Apply all changes to the handleContext's States
-            step.doIn(transferContext);
-        }
-        if (!transferContext.getAutomaticAssociations().isEmpty()) {
-            transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
-        }
-        if (!transferContext.getAssessedCustomFees().isEmpty()) {
-            recordBuilder.assessedCustomFees(transferContext.getAssessedCustomFees());
-        }
-    }
-
-    /**
      * Ensures all aliases specified in the transfer exist. If the aliases are in receiver section, and don't exist
      * they will be auto-created. This step populates resolved aliases and number of auto creations in the
      * transferContext, which is used by subsequent steps and throttling.
@@ -263,13 +293,14 @@ public class TransferExecutor extends BaseTokenHandler {
      *     <li>(+)Change NFT owners</li>
      *     <li>(+,c)Pay staking rewards, possibly to previously unmentioned stakee accounts</li>
      * </ol>
-     * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
+     * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule,
+     * or staking reward situation
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
      *
      * @param op              The crypto transfer transaction body
      * @param topLevelPayer   The payer of the transaction
-     * @param transferContext
+     * @param transferContext The transfer context
      * @return A list of steps to execute
      */
     private List<TransferStep> decomposeIntoSteps(
@@ -312,20 +343,33 @@ public class TransferExecutor extends BaseTokenHandler {
         return steps;
     }
 
+    private void checkFungibleTokenTransfers(
+            @NonNull final List<AccountAmount> transfers,
+            @NonNull final PreHandleContext ctx,
+            @NonNull final ReadableAccountStore accountStore,
+            final boolean hbarTransfer)
+            throws PreCheckException {
+        checkFungibleTokenTransfers(transfers, ctx, accountStore, hbarTransfer, RECEIVER_KEY_IS_REQUIRED);
+    }
+
     /**
      * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
      *
-     * @param transfers The transfers to check
-     * @param ctx The context we gather signing keys into
-     * @param accountStore The account store to use to look up accounts
-     * @param hbarTransfer Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
+     * @param transfers                The transfers to check
+     * @param ctx                      The context we gather signing keys into
+     * @param accountStore             The account store to use to look up accounts
+     * @param hbarTransfer             Whether this is a hbar transfer. When HIP-583 is implemented, we can remove
+     *                                 this argument.
+     * @param receiverKeyCheck Since in airdrops receiver key is optional to sign the transaction, add it to
+     *                         optional keys
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
             @NonNull final List<AccountAmount> transfers,
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore,
-            final boolean hbarTransfer)
+            final boolean hbarTransfer,
+            @NonNull final OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of hbar INTO a single account or OUT of a
@@ -365,7 +409,14 @@ public class TransferExecutor extends BaseTokenHandler {
                     }
 
                 } else if (isCredit && account.receiverSigRequired()) {
-                    ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
+                    // Add receiver key as an optional key to sign for airdrops.
+                    // If the receiver has not signed, we don't fail the transaction. Instead, it becomes a
+                    // pending airdrops
+                    if (receiverKeyCheck == RECEIVER_KEY_IS_OPTIONAL) {
+                        ctx.optionalKey(account.keyOrThrow());
+                    } else {
+                        ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
+                    }
                 }
             } else if (hbarTransfer) {
                 // It is possible for the transfer to be valid even if the account is not found. For example, we
@@ -389,7 +440,8 @@ public class TransferExecutor extends BaseTokenHandler {
             final PreHandleContext meta,
             final ReadableTokenStore.TokenMetadata tokenMeta,
             final CryptoTransferTransactionBody op,
-            final ReadableAccountStore accountStore)
+            final ReadableAccountStore accountStore,
+            final OptionalKeyCheck receiverKeyCheck)
             throws PreCheckException {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
@@ -398,7 +450,17 @@ public class TransferExecutor extends BaseTokenHandler {
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
-            checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore);
+            checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore, receiverKeyCheck);
         }
+    }
+
+    /**
+     * Enum to specify the receiver key check type. For airdrops, receiver key is optional to sign the transaction.
+     * If the receiver has not signed, we don't fail the transaction. Instead, it becomes a pending airdrops.
+     * For CryptoTransfer, receiver key is required to sign the transaction if receiverSigRequired is set to true.
+     */
+    public enum OptionalKeyCheck {
+        RECEIVER_KEY_IS_OPTIONAL,
+        RECEIVER_KEY_IS_REQUIRED
     }
 }

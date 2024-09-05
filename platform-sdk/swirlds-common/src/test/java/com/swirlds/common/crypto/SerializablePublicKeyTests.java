@@ -21,14 +21,12 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +39,6 @@ class SerializablePublicKeyTests {
 
     @ParameterizedTest
     @MethodSource("keyTypeProvider")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void serializeDeserialize(String keyType, int keySize, boolean writeClassId)
             throws NoSuchAlgorithmException, NoSuchProviderException, IOException {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(keyType);

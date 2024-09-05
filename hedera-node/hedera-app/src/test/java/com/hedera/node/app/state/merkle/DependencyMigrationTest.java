@@ -24,9 +24,11 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -73,7 +75,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new MerkleStateRoot(lifecycles);
+        merkleTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
     }
 
     @Nested
@@ -90,7 +92,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
@@ -118,7 +120,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             merkleTree,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             null,
                             networkInfo,
                             mock(Metrics.class)))
@@ -132,7 +134,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             merkleTree,
                             servicesRegistry,
                             null,
-                            CURRENT_VERSION,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
                             null,
                             mock(Metrics.class)))
@@ -143,7 +145,13 @@ class DependencyMigrationTest extends MerkleTestBase {
         void metricsRequired() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, servicesRegistry, null, CURRENT_VERSION, VERSIONED_CONFIG, networkInfo, null))
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
+                            VERSIONED_CONFIG,
+                            networkInfo,
+                            null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -171,7 +179,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         final DependentService dsService = new DependentService();
-        Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service));
+        Set.of(entityService, dsService).forEach(servicesRegistry::register);
 
         // When: the migrations are run
         final var subject = new OrderedServiceMigrator();
@@ -179,7 +187,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 merkleTree,
                 servicesRegistry,
                 null,
-                SemanticVersion.newBuilder().major(2).build(),
+                new ServicesSoftwareVersion(
+                        SemanticVersion.newBuilder().major(2).build()),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -196,10 +205,14 @@ class DependencyMigrationTest extends MerkleTestBase {
         // created, then the new mappings dependent on the incrementing entity ID are added
         final var postMigrationDsState =
                 merkleTree.getReadableStates(DependentService.NAME).get(DependentService.STATE_KEY);
-        assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID - 1)).isEqualTo("previously added");
-        assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID)).isEqualTo("last added");
-        assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID + 1)).isEqualTo("newly-added 1");
-        assertThat(postMigrationDsState.get(INITIAL_ENTITY_ID + 2)).isEqualTo("newly-added 2");
+        assertThat(postMigrationDsState.get(new EntityNumber(INITIAL_ENTITY_ID - 1)))
+                .isEqualTo(new ProtoString("previously added"));
+        assertThat(postMigrationDsState.get(new EntityNumber(INITIAL_ENTITY_ID)))
+                .isEqualTo(new ProtoString("last added"));
+        assertThat(postMigrationDsState.get(new EntityNumber(INITIAL_ENTITY_ID + 1)))
+                .isEqualTo(new ProtoString("newly-added 1"));
+        assertThat(postMigrationDsState.get(new EntityNumber(INITIAL_ENTITY_ID + 2)))
+                .isEqualTo(new ProtoString("newly-added 2"));
     }
 
     @Test
@@ -280,7 +293,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 merkleTree,
                 servicesRegistry,
                 null,
-                SemanticVersion.newBuilder().major(1).build(),
+                new ServicesSoftwareVersion(
+                        SemanticVersion.newBuilder().major(1).build()),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -299,8 +313,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     // This class represents a service that depends on EntityIdService. This class will create a simple mapping from an
     // entity ID to a string value.
     private static class DependentService implements Service {
-        static final String NAME = "DependentService";
-        static final String STATE_KEY = "DS_MAPPINGS";
+        static final String NAME = "TokenService";
+        static final String STATE_KEY = "ACCOUNTS";
 
         @NonNull
         @Override
@@ -314,13 +328,17 @@ class DependencyMigrationTest extends MerkleTestBase {
                 @NonNull
                 @Override
                 public Set<StateDefinition> statesToCreate() {
-                    return Set.of(StateDefinition.inMemory(STATE_KEY, LONG_CODEC, STRING_CODEC));
+                    return Set.of(StateDefinition.inMemory(STATE_KEY, EntityNumber.PROTOBUF, ProtoString.PROTOBUF));
                 }
 
                 public void migrate(@NonNull final MigrationContext ctx) {
                     WritableStates dsWritableStates = ctx.newStates();
-                    dsWritableStates.get(STATE_KEY).put(INITIAL_ENTITY_ID - 1, "previously added");
-                    dsWritableStates.get(STATE_KEY).put(INITIAL_ENTITY_ID, "last added");
+                    dsWritableStates
+                            .get(STATE_KEY)
+                            .put(new EntityNumber(INITIAL_ENTITY_ID - 1), new ProtoString("previously added"));
+                    dsWritableStates
+                            .get(STATE_KEY)
+                            .put(new EntityNumber(INITIAL_ENTITY_ID), new ProtoString("last added"));
                 }
             });
 
@@ -329,9 +347,13 @@ class DependencyMigrationTest extends MerkleTestBase {
                 public void migrate(@NonNull final MigrationContext ctx) {
                     final WritableStates dsWritableStates = ctx.newStates();
                     final var newEntityNum1 = ctx.newEntityNum();
-                    dsWritableStates.get(STATE_KEY).put(newEntityNum1, "newly-added 1");
+                    dsWritableStates
+                            .get(STATE_KEY)
+                            .put(new EntityNumber(newEntityNum1), new ProtoString("newly-added 1"));
                     final var newEntityNum2 = ctx.newEntityNum();
-                    dsWritableStates.get(STATE_KEY).put(newEntityNum2, "newly-added 2");
+                    dsWritableStates
+                            .get(STATE_KEY)
+                            .put(new EntityNumber(newEntityNum2), new ProtoString("newly-added 2"));
                 }
             });
         }

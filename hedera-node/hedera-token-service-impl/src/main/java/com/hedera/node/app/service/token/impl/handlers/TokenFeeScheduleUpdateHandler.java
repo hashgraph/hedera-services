@@ -100,7 +100,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     }
 
     /**
-     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}
+     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}.
      * @param context the context of the transaction
      */
     @Override

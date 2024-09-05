@@ -18,6 +18,7 @@ import com.google.protobuf.gradle.ProtobufExtract
 
 plugins {
     id("com.hedera.gradle.application")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
     id("com.google.protobuf")
 }
 
@@ -37,12 +38,26 @@ testModuleInfo {
     requires("org.mockito")
 }
 
+timingSensitiveModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.demo.platform")
+    requires("com.swirlds.fcqueue")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.merkle.test.fixtures")
+    requires("com.swirlds.platform.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+}
+
 protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
 
 configurations {
     // Give proto compile access to the dependency versions
     compileProtoPath { extendsFrom(configurations.internal.get()) }
     testCompileProtoPath { extendsFrom(configurations.internal.get()) }
+    timingSensitiveCompileProtoPath { extendsFrom(configurations.internal.get()) }
 }
 
 tasks.withType<ProtobufExtract>().configureEach {

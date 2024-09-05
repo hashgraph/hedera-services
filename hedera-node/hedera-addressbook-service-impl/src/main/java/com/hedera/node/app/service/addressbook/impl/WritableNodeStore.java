@@ -83,7 +83,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
 
     /**
      * Returns the number of nodes in the state.
-     * @return the number of nodes in the state.
+     * @return the number of nodes in the state
      */
     @Override
     public long sizeOfState() {

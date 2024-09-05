@@ -96,7 +96,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -112,7 +112,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
 
     /**
      * Performs checks that the given token and accounts from the state are valid and that the
-     * token is associated to the account
+     * token is associated to the account.
      *
      * @return the token relation for the given token and account
      */
