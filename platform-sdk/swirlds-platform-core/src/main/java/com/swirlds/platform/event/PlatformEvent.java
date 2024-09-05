@@ -103,11 +103,11 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final byte[] signature) {
         this(
                 new GossipEvent(
-                        Objects.requireNonNull(unsignedEvent, "The unsignedEvent must not be null").getEventCore(),
+                        Objects.requireNonNull(unsignedEvent, "The unsignedEvent must not be null")
+                                .getEventCore(),
                         Bytes.wrap(Objects.requireNonNull(signature, "The signature must not be null")),
                         unsignedEvent.getEventTransactions()),
-                unsignedEvent.getMetadata()
-        );
+                unsignedEvent.getMetadata());
     }
 
     /**
@@ -118,8 +118,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         this(
                 Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
                 new EventMetadata(
-                        Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent)
-        );
+                        Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent));
     }
 
     private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {

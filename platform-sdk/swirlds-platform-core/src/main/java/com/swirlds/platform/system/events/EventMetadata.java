@@ -141,12 +141,12 @@ public class EventMetadata extends AbstractHashable {
                         .toList();
     }
 
-    private static long calculateGeneration(
-            @NonNull final List<EventDescriptorWrapper> allParents) {
-        return 1 + Objects.requireNonNull(allParents).stream()
-                .mapToLong(d -> d.eventDescriptor().generation())
-                .max()
-                .orElse(EventConstants.GENERATION_UNDEFINED);
+    private static long calculateGeneration(@NonNull final List<EventDescriptorWrapper> allParents) {
+        return 1
+                + Objects.requireNonNull(allParents).stream()
+                        .mapToLong(d -> d.eventDescriptor().generation())
+                        .max()
+                        .orElse(EventConstants.GENERATION_UNDEFINED);
     }
 
     /**
