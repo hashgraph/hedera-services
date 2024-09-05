@@ -26,6 +26,12 @@ import java.util.Objects;
 public class RosterUtils {
     private RosterUtils() {}
 
+    /**
+     * Hashes the given {@link Roster} object.
+     *
+     * @param roster the roster to hash
+     * @return the hash of the roster
+     */
     public static byte[] hashOf(@NonNull final Roster roster) {
         Objects.requireNonNull(roster);
         final Hasher hasher = Hashing.sha256().newHasher();

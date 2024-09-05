@@ -24,7 +24,6 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedList;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,9 +64,7 @@ public class V0540RosterSchema extends Schema {
         final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
         if (rosterState.get() == null) {
             log.info("Creating default roster state");
-            rosterState.put(RosterState.newBuilder()
-                    .roundRosterPairs(new LinkedList<>())
-                    .build());
+            rosterState.put(RosterState.DEFAULT);
         }
     }
 }
