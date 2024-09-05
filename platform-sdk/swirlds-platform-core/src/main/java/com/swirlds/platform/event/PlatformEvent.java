@@ -52,22 +52,11 @@ import java.util.concurrent.CountDownLatch;
 public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
-    private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-
-    private static final class ClassVersion {
-        /**
-         * Event serialization changes
-         *
-         * @since 0.46.0
-         */
-        public static final int BIRTH_ROUND = 3;
-    }
-
     /** The gossip event */
     private final GossipEvent gossipEvent;
-
+    /** Metadata for an event that can be derived from a GossipEvent */
     private final EventMetadata metadata;
-
+    /** The time this event was received via gossip */
     private Instant timeReceived;
 
     /**
@@ -90,7 +79,7 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     private NodeId senderId;
 
     /** The consensus data for this event */
-    private EventConsensusData consensusData = NO_CONSENSUS;
+    private EventConsensusData consensusData;
     /**
      * The consensus timestamp of this event (if it has reached consensus). This is the same timestamp that is stored in
      * {@link #consensusData}, but converted to an {@link Instant}.
@@ -108,29 +97,34 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     private long birthRound;
 
     /**
-     * @param unsignedEvent   the hashed data for the event
+     * @param unsignedEvent   the unsigned event
      * @param signature the signature for the event
      */
-    public PlatformEvent(final UnsignedEvent unsignedEvent, final byte[] signature) {
-        this.gossipEvent = new GossipEvent(
-                unsignedEvent.getEventCore(), Bytes.wrap(signature), unsignedEvent.getEventTransactions());
-        this.metadata = unsignedEvent.getMetadata();
-
-        this.timeReceived = Instant.now();
-        this.senderId = null;
-        this.consensusData = NO_CONSENSUS;
-        Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
-        this.birthRound = gossipEvent.eventCore().birthRound();
+    public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final byte[] signature) {
+        this(
+                new GossipEvent(
+                        Objects.requireNonNull(unsignedEvent, "The unsignedEvent must not be null").getEventCore(),
+                        Bytes.wrap(Objects.requireNonNull(signature, "The signature must not be null")),
+                        unsignedEvent.getEventTransactions()),
+                unsignedEvent.getMetadata()
+        );
     }
 
     /**
+     * @param softwareVersion the software version instance
      * @param gossipEvent the gossip event
      */
     public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
-        this.gossipEvent = Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null");
-        this.metadata = new EventMetadata(
-                Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent);
+        this(
+                Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
+                new EventMetadata(
+                        Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent)
+        );
+    }
 
+    private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {
+        this.gossipEvent = gossipEvent;
+        this.metadata = metadata;
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
@@ -174,37 +168,10 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         return streamSequenceNumber;
     }
 
-    //    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-    //
-    //        EventSerializationUtils.serializeSignedEvent(
-    //                out,
-    //                softwareVersion,
-    //                getEventCore(),
-    //                getSelfParent(),
-    //                getOtherParents(),
-    //                gossipEvent.eventTransaction(),
-    //                gossipEvent.signature());
-    //    }
-    //
-    //    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-    //        final PlatformEvent platformEvent = EventSerializationUtils.deserializePlatformEvent(in);
-    //
-    //        this.gossipEvent = platformEvent.gossipEvent;
-    //        this.timeReceived = Instant.now();
-    //        this.senderId = null;
-    //        this.consensusData = NO_CONSENSUS;
-    //        if (gossipEvent.eventCore() != null) {
-    //            this.birthRound = gossipEvent.eventCore().birthRound();
-    //        }
-    //        transactions = gossipEvent.eventTransaction().stream()
-    //                .map(TransactionWrapper::new)
-    //                .toList();
-    //    }
-
     /**
-     * Get the hashed data for the event.
+     * The immutable gossip event
      */
-    public GossipEvent getGossipEvent() {
+    public @NonNull GossipEvent getGossipEvent() {
         return gossipEvent;
     }
 
@@ -218,11 +185,9 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
     }
 
     /**
-     * Get the descriptor for the event.
-     *
      * @return the descriptor for the event
      */
-    public EventDescriptorWrapper getDescriptor() {
+    public @NonNull EventDescriptorWrapper getDescriptor() {
         return metadata.getDescriptor(getBirthRound());
     }
 
