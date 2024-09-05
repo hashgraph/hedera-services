@@ -1088,7 +1088,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         // AIRDROP_27
         @HapiTest
         @DisplayName(
-                "airdrop max number of 10 tokens with custom fees to not associated accounts and different fee collectors does not hit the transaction limit")
+                "airdrop with max 10 tokens with custom fees to not associated accounts and different fee collectors does not hit the transaction limit")
         final Stream<DynamicTest>
                 transferMultipleFTAndNFTWithAllCustomFeesToNotAssociatedAccountsWithDifferentFeeCollectors() {
             final var initialBalance = 100 * ONE_HUNDRED_HBARS;
