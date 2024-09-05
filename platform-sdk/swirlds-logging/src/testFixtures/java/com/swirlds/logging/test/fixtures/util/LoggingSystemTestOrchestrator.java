@@ -53,7 +53,7 @@ public final class LoggingSystemTestOrchestrator {
             orchestrator.testScenario(index, loggingSystem);
         }
         if (durationLimit != null && !durationLimit.isZero()) {
-            long startTime = System.currentTimeMillis();
+            final long startTime = System.currentTimeMillis();
             long availableTime = durationLimit.toMillis() - (System.currentTimeMillis() - startTime);
             final Random random = new Random(System.currentTimeMillis());
             while (availableTime > 0) {
