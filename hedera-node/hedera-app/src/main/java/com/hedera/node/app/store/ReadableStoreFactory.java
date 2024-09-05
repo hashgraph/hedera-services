@@ -68,7 +68,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -114,7 +113,7 @@ public class ReadableStoreFactory {
         newMap.put(ReadableNodeStore.class, new StoreEntry(AddressBookService.NAME, ReadableNodeStoreImpl::new));
         newMap.put(
                 ReadablePlatformStateStore.class,
-                new StoreEntry(PlatformStateService.NAME, null, ReadablePlatformStateStore::new));
+                new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -150,45 +149,29 @@ public class ReadableStoreFactory {
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
             final var readableStates = state.getReadableStates(entry.name);
-            final var store = entry.createFrom(readableStates, versionFactory);
+            final var store = entry.createFrom(readableStates);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
+            }
+            if (store instanceof ReadablePlatformStateStore readablePlatformStateStore) {
+                readablePlatformStateStore.setVersionFactory(versionFactory);
             }
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of class " + storeInterface + " is available");
     }
 
-    private record StoreEntry(
-            @NonNull String name,
-            @Nullable Function<ReadableStates, ?> fromStates,
-            @Nullable
-                    BiFunction<ReadableStates, Function<SemanticVersion, SoftwareVersion>, ?>
-                            fromStatesAndVersionFactory) {
+    private record StoreEntry(@NonNull String name, @Nullable Function<ReadableStates, ?> fromStates) {
         private StoreEntry {
             requireNonNull(name);
-            if (fromStates == null) {
-                requireNonNull(fromStatesAndVersionFactory);
-            } else if (fromStatesAndVersionFactory != null) {
-                throw new IllegalArgumentException("Only one of fromStates or fromStatesAndVersionFactory must be set");
-            }
-        }
-
-        public StoreEntry(@NonNull final String name, @NonNull final Function<ReadableStates, ?> fromStates) {
-            this(name, fromStates, null);
+            requireNonNull(fromStates);
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T createFrom(
-                @NonNull final ReadableStates readableStates,
-                @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        public <T> T createFrom(@NonNull final ReadableStates readableStates) {
             requireNonNull(readableStates);
-            requireNonNull(versionFactory);
-            return (T)
-                    (fromStates == null
-                            ? requireNonNull(fromStatesAndVersionFactory).apply(readableStates, versionFactory)
-                            : fromStates.apply(readableStates));
+            return (T) fromStates.apply(readableStates);
         }
     }
 }

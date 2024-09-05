@@ -86,7 +86,7 @@ public interface ContractCallStreamBuilder extends ContractOperationStreamBuilde
      *
      * @return the in-progress {@link ContractFunctionResult}
      */
-    public ContractFunctionResult contractFunctionResult();
+    ContractFunctionResult contractFunctionResult();
 
     /**
      * Tracks the transaction contained in child records resulting from the contract call.

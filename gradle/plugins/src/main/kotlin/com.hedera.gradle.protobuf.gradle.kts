@@ -15,17 +15,10 @@
  */
 
 import com.google.protobuf.gradle.id
-import com.hedera.gradle.tasks.GitClone
 
 plugins {
     id("com.hedera.gradle.services")
     id("com.google.protobuf")
-}
-
-tasks.register<GitClone>("cloneHederaProtobufs") {
-    url = "https://github.com/hashgraph/hedera-protobufs.git"
-    offline = gradle.startParameter.isOffline
-    localCloneDirectory = layout.buildDirectory.dir("hedera-protobufs")
 }
 
 // Configure Protobuf Plugin to download protoc executable rather than using local installed version

@@ -39,6 +39,8 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -70,11 +72,12 @@ public class CustomFeesValidator {
      * for fixed fees with denominating token id set to sentinel value of 0.0.0.
      * NOTE: This logic is subject to change in future PR for TokenCreate
      *
-     * @param createdToken The token being created.
-     * @param accountStore The account store.
+     * @param createdToken       The token being created.
+     * @param accountStore       The account store.
      * @param tokenRelationStore The token relation store.
-     * @param tokenStore The token store.
-     * @param customFees The custom fees to validate.
+     * @param tokenStore         The token store.
+     * @param customFees         The custom fees to validate.
+     * @param expiryValidator    The expiry validator to use (for fee collector accounts)
      * @return The set of custom fees that need to auto associate collector accounts
      */
     public List<CustomFee> validateForCreation(
@@ -82,12 +85,14 @@ public class CustomFeesValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final List<CustomFee> customFees) {
+            @NonNull final List<CustomFee> customFees,
+            @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(createdToken);
         requireNonNull(accountStore);
         requireNonNull(tokenRelationStore);
         requireNonNull(tokenStore);
         requireNonNull(customFees);
+        requireNonNull(expiryValidator);
 
         // It is possible that denominating tokenId is set to sentinel value of 0.0.0.
         // In that scenario, the created token should be used as the denominating token.
@@ -97,8 +102,14 @@ public class CustomFeesValidator {
         final var tokenType = createdToken.tokenType();
         final var createdTokenId = createdToken.tokenId();
         for (final var fee : customFees) {
-            final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
-            validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
+            // Validate the fee collector account is in a usable state
+            TokenHandlerHelper.getIfUsable(
+                    fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT),
+                    accountStore,
+                    expiryValidator,
+                    INVALID_CUSTOM_FEE_COLLECTOR,
+                    INVALID_CUSTOM_FEE_COLLECTOR,
+                    TokenHandlerHelper.AccountIDType.NOT_ALIASED_ID);
 
             final var isSpecified = fee.hasFixedFee() || fee.hasFractionalFee() || fee.hasRoyaltyFee();
             validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);

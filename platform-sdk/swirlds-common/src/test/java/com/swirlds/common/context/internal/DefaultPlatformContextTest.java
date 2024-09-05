@@ -17,6 +17,7 @@
 package com.swirlds.common.context.internal;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
@@ -24,6 +25,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
@@ -42,6 +44,7 @@ class DefaultPlatformContextTest {
         final NodeId nodeId = new NodeId(3256733545L);
         final PlatformMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         metricsProvider.createGlobalMetrics();
+        final MerkleCryptography merkleCryptography = mock(MerkleCryptography.class);
 
         // when
         final PlatformContext context = new DefaultPlatformContext(
@@ -51,7 +54,8 @@ class DefaultPlatformContextTest {
                 Time.getCurrent(),
                 ExecutorFactory.create("test", new PlatformUncaughtExceptionHandler()),
                 new TestFileSystemManager(Path.of("/tmp/test")),
-                new NoOpRecycleBin());
+                new NoOpRecycleBin(),
+                merkleCryptography);
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
@@ -60,5 +64,6 @@ class DefaultPlatformContextTest {
         assertNotNull(context.getTime(), "Time must not be null");
         assertNotNull(context.getFileSystemManager(), "FileSystemManager must not be null");
         assertNotNull(context.getExecutorFactory(), "ExecutorFactory must not be null");
+        assertNotNull(context.getMerkleCryptography(), "MerkleCryptography must not be null");
     }
 }

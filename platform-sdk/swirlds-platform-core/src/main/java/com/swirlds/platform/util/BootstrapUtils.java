@@ -210,10 +210,7 @@ public final class BootstrapUtils {
                     appVersion);
         } else {
             softwareUpgrade = false;
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Not upgrading software, current software is version {}.",
-                    loadedSoftwareVersion);
+            logger.info(STARTUP.getMarker(), "Not upgrading software, current software is version {}.", appVersion);
         }
         return softwareUpgrade;
     }

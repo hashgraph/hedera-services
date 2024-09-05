@@ -85,7 +85,7 @@ message BlockStreamInfo {
      * The latest available hash SHALL be for block N-1.<br/>
      * This is REQUIRED to implement the EVM `BLOCKHASH` opcode.
      * <p>
-     * <h5>Field Length</h5>
+     * <div style="display: block;font-size: .83em;margin-top: 1.67em;margin-bottom: 1.67em;margin-left: 0;margin-right: 0;font-weight: bold;">Field Length</div>
      * Each hash value SHALL be the trailing 265 bits of a SHA2-384 hash.<br/>
      * The length of this field SHALL be an integer multiple of 32 bytes.<br/>
      * This field SHALL be at least 32 bytes.<br/>

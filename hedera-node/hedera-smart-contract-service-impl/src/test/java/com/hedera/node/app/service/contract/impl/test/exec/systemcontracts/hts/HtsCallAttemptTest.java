@@ -103,7 +103,7 @@ class HtsCallAttemptTest extends CallTestBase {
     @Mock
     private MintDecoder mintDecoder;
 
-    private List<CallTranslator> callTranslators;
+    private List<CallTranslator<HtsCallAttempt>> callTranslators;
 
     @BeforeEach
     void setUp() {
