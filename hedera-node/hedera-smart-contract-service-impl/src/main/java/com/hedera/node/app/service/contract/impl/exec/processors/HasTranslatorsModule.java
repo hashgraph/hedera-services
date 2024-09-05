@@ -65,7 +65,8 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideEvmAddressAliasTranslator(@NonNull final EvmAddressAliasTranslator translator) {
+    static CallTranslator<HasCallAttempt> provideEvmAddressAliasTranslator(
+            @NonNull final EvmAddressAliasTranslator translator) {
         return translator;
     }
 
@@ -73,7 +74,7 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideHederaAccountNumAliasTranslator(
+    static CallTranslator<HasCallAttempt> provideHederaAccountNumAliasTranslator(
             @NonNull final HederaAccountNumAliasTranslator translator) {
         return translator;
     }
@@ -82,7 +83,8 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideIsValidAliasTranslator(@NonNull final IsValidAliasTranslator translator) {
+    static CallTranslator<HasCallAttempt> provideIsValidAliasTranslator(
+            @NonNull final IsValidAliasTranslator translator) {
         return translator;
     }
 
@@ -90,7 +92,8 @@ public interface HasTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HasTranslators")
-    static CallTranslator provideIsAuthorizedRawTranslator(@NonNull final IsAuthorizedRawTranslator translator) {
+    static CallTranslator<HasCallAttempt> provideIsAuthorizedRawTranslator(
+            @NonNull final IsAuthorizedRawTranslator translator) {
         return translator;
     }
 }

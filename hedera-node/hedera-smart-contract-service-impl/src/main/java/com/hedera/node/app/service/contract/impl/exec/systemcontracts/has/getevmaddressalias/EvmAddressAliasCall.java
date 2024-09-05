@@ -65,13 +65,12 @@ public class EvmAddressAliasCall extends AbstractCall {
             return gasOnly(fullResultsFor(INVALID_ACCOUNT_ID, ZERO_ADDRESS), INVALID_ACCOUNT_ID, true);
         }
 
-        final var accountID = requireNonNull(account.accountId());
-        // If the account id does not have an alias then return bail
-        if (!accountID.hasAlias()) {
+        // If the account does not have an evm address as an alias
+        if (account.alias().length() != 20) {
             return gasOnly(fullResultsFor(INVALID_ACCOUNT_ID, ZERO_ADDRESS), INVALID_ACCOUNT_ID, true);
         }
 
-        final var aliasAddress = asHeadlongAddress(accountID.aliasOrThrow().toByteArray());
+        final var aliasAddress = asHeadlongAddress(account.alias().toByteArray());
         return gasOnly(fullResultsFor(SUCCESS, aliasAddress), SUCCESS, true);
     }
 
