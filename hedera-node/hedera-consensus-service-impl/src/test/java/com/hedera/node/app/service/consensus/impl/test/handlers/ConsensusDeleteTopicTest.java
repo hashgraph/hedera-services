@@ -201,6 +201,9 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 Bytes.wrap(runningHash),
                 memo,
                 null,
+                null,
+                null,
+                null,
                 null);
 
         writableTopicState = writableTopicStateWithOneKey();

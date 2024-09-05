@@ -23,6 +23,7 @@ package proto;
  */
 
 import "basic_types.proto";
+import "custom_fees.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.consensus">>> This comment is special code for setting PBJ Compiler java package
@@ -98,4 +99,16 @@ message Topic {
      * If present, enforces access control for message submission to the topic.
      */
     Key submit_key = 10;
+    /**
+     * If present, enforces access control for update/delete of this topic custom fees.
+     */
+    Key fee_schedule_key = 11;
+    /**
+      * If the transaction contains a signer from this list, no custom fees are applied.
+      */
+    repeated Key free_messages_key_list = 12;
+    /*
+     * The custom fee to be assessed during a message submission to this topic
+     */
+    repeated ConsensusCustomFee custom_fees = 13;
 }

@@ -28,6 +28,7 @@ option java_multiple_files = true;
 
 import "google/protobuf/wrappers.proto";
 import "basic_types.proto";
+import "custom_fees.proto";
 import "duration.proto";
 import "timestamp.proto";
 
@@ -87,4 +88,19 @@ message ConsensusUpdateTopicTransactionBody {
      * If unspecified, no change.
      */
     AccountID autoRenewAccount = 9;
+
+    /**
+     * Access control for update/delete of custom fees. Null if there is no key.
+     */
+    Key fee_schedule_key = 10;
+
+    /**
+      * If the transaction contains a signer from this list, no custom fees are applied.
+      */
+    repeated Key free_messages_key_list = 11;
+
+    /*
+     * The custom fee to be assessed during a message submission to this topic
+     */
+    repeated ConsensusCustomFee custom_fees = 12;
 }

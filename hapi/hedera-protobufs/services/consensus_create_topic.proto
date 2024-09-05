@@ -27,6 +27,7 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "basic_types.proto";
+import "custom_fees.proto";
 import "duration.proto";
 
 /**
@@ -70,4 +71,19 @@ message ConsensusCreateTopicTransactionBody {
      * If specified, there must be an adminKey and the autoRenewAccount must sign this transaction.
      */
     AccountID autoRenewAccount = 7;
+
+    /**
+     * Access control for update/delete of custom fees. Null if there is no key.
+     */
+    Key fee_schedule_key = 8;
+
+    /**
+      * If the transaction contains a signer from this list, no custom fees are applied.
+      */
+    repeated Key free_messages_key_list = 9;
+
+    /**
+      * The custom fee to be assessed during a message submission to this topic
+      */
+    repeated ConsensusCustomFee custom_fees = 10;
 }

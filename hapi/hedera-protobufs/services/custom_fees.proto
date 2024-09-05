@@ -173,3 +173,15 @@ message AssessedCustomFee {
    */
   repeated AccountID effective_payer_account_id = 4;
 }
+
+message ConsensusCustomFee {
+  /**
+  * Fixed fee to be charged
+  */
+  FixedFee fixed_fee = 1;
+
+  /**
+  * The account to receive the custom fee
+  */
+  AccountID fee_collector_account_id = 2;
+}

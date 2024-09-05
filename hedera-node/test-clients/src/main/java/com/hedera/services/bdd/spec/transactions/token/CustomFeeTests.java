@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import java.util.List;
 import java.util.OptionalLong;
@@ -91,7 +92,24 @@ public class CustomFeeTests {
         };
     }
 
+    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> fixedTopicHbarFee(long amount, String collector) {
+        return (spec, actual) -> {
+            final var expected = CustomFeeSpecs.builtFixedTopicHbar(amount, collector, spec);
+            failUnlessConsensusFeePresent("fixed ℏ", actual, expected);
+        };
+    }
+
     private static void failUnlessPresent(String detail, List<CustomFee> actual, CustomFee expected) {
+        for (var customFee : actual) {
+            if (expected.equals(customFee)) {
+                return;
+            }
+        }
+        Assertions.fail("Expected a " + detail + " fee " + expected + ", but only had: " + actual);
+    }
+
+    private static void failUnlessConsensusFeePresent(
+            String detail, List<ConsensusCustomFee> actual, ConsensusCustomFee expected) {
         for (var customFee : actual) {
             if (expected.equals(customFee)) {
                 return;
