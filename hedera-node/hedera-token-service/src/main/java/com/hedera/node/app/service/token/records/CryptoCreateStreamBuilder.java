@@ -43,7 +43,7 @@ public interface CryptoCreateStreamBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoCreateStreamBuilder evmAddress(@NonNull final Bytes evmAddress);
+    CryptoCreateStreamBuilder evmAddress(@NonNull Bytes evmAddress);
 
     /**
      * The transactionFee charged for this transaction.
@@ -51,7 +51,7 @@ public interface CryptoCreateStreamBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoCreateStreamBuilder transactionFee(@NonNull final long transactionFee);
+    CryptoCreateStreamBuilder transactionFee(@NonNull long transactionFee);
 
     /**
      * The memo associated with the transaction.
@@ -59,5 +59,5 @@ public interface CryptoCreateStreamBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoCreateStreamBuilder memo(@NonNull final String memo);
+    CryptoCreateStreamBuilder memo(@NonNull String memo);
 }

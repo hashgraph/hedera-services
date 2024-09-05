@@ -72,7 +72,7 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      *
      * @param txn the transaction to check
      */

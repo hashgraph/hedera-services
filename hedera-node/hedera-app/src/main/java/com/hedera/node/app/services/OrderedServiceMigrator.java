@@ -27,6 +27,7 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,8 +65,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
     public List<StateChanges.Builder> doMigrations(
             @NonNull final State state,
             @NonNull final ServicesRegistry servicesRegistry,
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion currentVersion,
+            @Nullable final SoftwareVersion previousVersion,
+            @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
@@ -82,10 +84,13 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 .findFirst()
                 .orElseThrow();
         final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
+        final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
+                .map(SoftwareVersion::getPbjSemanticVersion)
+                .orElse(null);
         entityIdRegistry.migrate(
                 state,
-                previousVersion,
-                currentVersion,
+                deserializedPbjVersion,
+                currentVersion.getPbjSemanticVersion(),
                 config,
                 networkInfo,
                 metrics,
@@ -121,8 +126,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                     final var registry = (MerkleSchemaRegistry) registration.registry();
                     registry.migrate(
                             state,
-                            previousVersion,
-                            currentVersion,
+                            deserializedPbjVersion,
+                            currentVersion.getPbjSemanticVersion(),
                             config,
                             networkInfo,
                             metrics,

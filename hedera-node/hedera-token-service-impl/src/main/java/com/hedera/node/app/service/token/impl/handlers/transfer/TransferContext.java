@@ -44,39 +44,39 @@ public interface TransferContext {
 
     /**
      * Creates an account from the given alias. This is called when the account associated with alias
-     * is not found in the account store
+     * is not found in the account store.
      *
      * @param alias                  the alias of the account
-     * @param reqMaxAutoAssociations
+     * @param reqMaxAutoAssociations the maximum number of auto-associations allowed for the account
      */
     void createFromAlias(Bytes alias, int reqMaxAutoAssociations);
 
     /**
-     * Returns the number of auto-creation of accounts in current transfer
+     * Returns the number of auto-creation of accounts in current transfer.
      * @return the number of auto-creation of accounts
      */
     int numOfAutoCreations();
 
     /**
-     * Returns the number of lazy-creation of accounts in current transfer
+     * Returns the number of lazy-creation of accounts in current transfer.
      * @return the number of lazy-creation of accounts
      */
     int numOfLazyCreations();
 
     /**
-     * Returns the resolved accounts with alias and its account ID
+     * Returns the resolved accounts with alias and its account ID.
      * @return the resolved accounts with alias and its account ID
      */
     Map<Bytes, AccountID> resolutions();
 
     /**
-     * Charges extra fee to the HAPI payer account in the current transfer context with the given amount
+     * Charges extra fee to the HAPI payer account in the current transfer context with the given amount.
      * @param amount the amount to charge
      */
     void chargeExtraFeeToHapiPayer(long amount);
 
     /**
-     * Returns the handle context of the current transfer context
+     * Returns the handle context of the current transfer context.
      * @return the handle context of the current transfer context
      */
     HandleContext getHandleContext();

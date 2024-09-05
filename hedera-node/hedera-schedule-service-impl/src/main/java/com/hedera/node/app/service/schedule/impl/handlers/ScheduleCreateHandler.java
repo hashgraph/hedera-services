@@ -68,7 +68,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
     @Inject
     public ScheduleCreateHandler(@NonNull final InstantSource instantSource) {
-        super();
         this.instantSource = instantSource;
     }
 
@@ -101,8 +100,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
         final ScheduleCreateTransactionBody scheduleBody = getValidScheduleCreateBody(currentTransaction);
-        if (scheduleBody.memo() != null && scheduleBody.memo().length() > hederaConfig.transactionMaxMemoUtf8Bytes())
+        if (scheduleBody.memo() != null && scheduleBody.memo().length() > hederaConfig.transactionMaxMemoUtf8Bytes()) {
             throw new PreCheckException(ResponseCodeEnum.MEMO_TOO_LONG);
+        }
         // @todo('future') add whitelist check here; mono checks very late, so we cannot check that here yet.
         // validate the schedulable transaction
         getSchedulableTransaction(currentTransaction);
@@ -169,10 +169,12 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
                 final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-                if (isPresentIn(context, possibleDuplicates, provisionalSchedule))
+                if (isPresentIn(context, possibleDuplicates, provisionalSchedule)) {
                     throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
-                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber())
+                }
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
                     throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+                }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
@@ -207,7 +209,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             @NonNull final HandleContext context,
             @Nullable final List<Schedule> possibleDuplicates,
             @NonNull final Schedule provisionalSchedule) {
-        if (possibleDuplicates != null)
+        if (possibleDuplicates != null) {
             for (final Schedule candidate : possibleDuplicates) {
                 if (compareForDuplicates(candidate, provisionalSchedule)) {
                     // Do not forget to set the ID of the existing duplicate in the receipt...
@@ -224,6 +226,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     return true;
                 }
             }
+        }
         return false;
     }
 

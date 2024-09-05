@@ -38,11 +38,11 @@ public interface ReadableNodeStore {
      * @return node's metadata
      */
     @Nullable
-    Node get(final long nodeId);
+    Node get(long nodeId);
 
     /**
      * Returns the number of nodes in the state.
-     * @return the number of nodes in the state.
+     * @return the number of nodes in the state
      */
     long sizeOfState();
 
@@ -57,7 +57,7 @@ public interface ReadableNodeStore {
 
     /**
      * Returns an iterator over the keys in the state.
-     * @return an iterator over the keys in the state.
+     * @return an iterator over the keys in the state
      */
     @NonNull
     Iterator<EntityNumber> keys();

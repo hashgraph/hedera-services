@@ -99,10 +99,9 @@ public final class ScheduleStoreUtility {
      * @param scheduleList The {@link ScheduleList} to which the {@code Schedule} will be added or replaced. May be
      *     {@code null}, in which case a new {@link ScheduleList} containing only the provided
      *     {@code Schedule} is returned.
-     * @return A new {@link ScheduleList} containing the {@code Schedule} either added or replacing an existing one.
-     *     Never returns {@code null}.
+     * @return A new {@link ScheduleList} containing the {@link Schedule} either added or replacing an existing one
      */
-    static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
+    static @NonNull ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
         if (scheduleList == null) {
             return new ScheduleList(Collections.singletonList(schedule));
         }

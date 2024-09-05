@@ -49,10 +49,14 @@ import org.testcontainers.shaded.org.bouncycastle.util.io.pem.PemWriter;
 public class AddressBookHelper {
     public static final String NODES_KEY = "NODES";
 
+    private AddressBookHelper() {
+        throw new IllegalStateException("Utility class");
+    }
+
     /**
-     * Get the next Node ID number from the reaReadableNodeStore
-     * @param nodeStore
-     * @return nextNodeId
+     * Get the next Node ID number from the ReadableNodeStore.
+     * @param nodeStore the ReadableNodeStore
+     * @return nextNodeId the next Node ID
      */
     public static long getNextNodeID(@NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(nodeStore);
@@ -65,10 +69,10 @@ public class AddressBookHelper {
     }
 
     /**
-     * Write the Certificate to a pem file
+     * Write the Certificate to a pem file.
      * @param pemFile to write
      * @param encodes Certificate encoded byte[]
-     * @throws IOException
+     * @throws IOException if an I/O error occurs while writing the file
      */
     public static void writeCertificatePemFile(@NonNull final Path pemFile, @NonNull final byte[] encodes)
             throws IOException {
@@ -84,11 +88,11 @@ public class AddressBookHelper {
     }
 
     /**
-     * Read from a Certificate pem file
-     * @param pemFile
-     * @return
-     * @throws IOException
-     * @throws CertificateException
+     * Read from a Certificate pem file.
+     * @param pemFile the file to read from
+     * @return the X509Certificate
+     * @throws IOException if an I/O error occurs while reading the file
+     * @throws CertificateException if the file does not contain a valid X509Certificate
      */
     public static X509Certificate readCertificatePemFile(@NonNull final Path pemFile)
             throws IOException, CertificateException {
@@ -111,8 +115,8 @@ public class AddressBookHelper {
     }
 
     /**
-     * Get Path of a resources file
-     * @param resourceFileName
+     * Get Path of a resources file.
+     * @param resourceFileName the file name
      * @return the Path
      */
     public static Path loadResourceFile(String resourceFileName) {
@@ -122,8 +126,8 @@ public class AddressBookHelper {
     }
 
     /**
-     * check DAB enable flag
-     * @param feeContext, the Fee context
+     * Check DAB enable flag.
+     * @param feeContext the Fee context
      */
     public static void checkDABEnabled(@NonNull final FeeContext feeContext) {
         final var nodeConfig = requireNonNull(feeContext.configuration()).getConfigData(NodesConfig.class);

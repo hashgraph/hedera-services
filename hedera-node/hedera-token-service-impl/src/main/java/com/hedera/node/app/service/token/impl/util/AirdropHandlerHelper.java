@@ -51,7 +51,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Utility class that provides static methods
+ * Utility class that provides static methods.
  */
 public class AirdropHandlerHelper {
     private static final Long LAST_RESERVED_SYSTEM_ACCOUNT = 1000L;
